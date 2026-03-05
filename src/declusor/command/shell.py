@@ -8,7 +8,7 @@ class LaunchShell(interface.ICommand):
         self._stop_event = util.TaskEvent()
         self._task_pool = util.TaskPool(self._stop_event)
 
-    def execute(self, session: interface.ISession, console: interface.IConsole, /) -> None:
+    def execute(self, session: interface.IConnection, console: interface.IConsole, /) -> None:
         """Execute the interactive shell session.
 
         Args:
@@ -31,7 +31,7 @@ class LaunchShell(interface.ICommand):
         finally:
             self._task_pool.stop()
 
-    def _create_request_handler(self, session: interface.ISession, console: interface.IConsole, /) -> util.TaskHandler:
+    def _create_request_handler(self, session: interface.IConnection, console: interface.IConsole, /) -> util.TaskHandler:
         """Handle reading commands from user input and sending them to the session."""
 
         def _handle_request(stop_event: util.TaskEvent) -> None:
@@ -43,7 +43,7 @@ class LaunchShell(interface.ICommand):
 
         return _handle_request
 
-    def _create_response_handler(self, session: interface.ISession, console: interface.IConsole, /) -> util.TaskHandler:
+    def _create_response_handler(self, session: interface.IConnection, console: interface.IConsole, /) -> util.TaskHandler:
         """Handle reading responses from the session and displaying them to the user."""
 
         def _handle_response(stop_event: util.TaskEvent) -> None:

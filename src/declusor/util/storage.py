@@ -42,52 +42,6 @@ def try_load_file(filepath: str | Path, /) -> bytes | None:
         return None
 
 
-def load_payload(module_name: str, /) -> bytes:
-    """Load a payload script from the default scripts directory.
-
-    Args:
-        module_filename: The name of the payload script file.
-
-    Returns:
-        The content of the payload script as bytes.
-
-    Raises:
-        InvalidOperation: If the file extension is not supported or the file is outside the scripts directory.
-    """
-
-    module_filepath = (config.BasePath.MODULES_DIR / module_name).resolve()
-
-    if not security.validate_file_extension(module_name, config.Settings.ALLOWED_PAYLOAD_EXTENSIONS):
-        raise config.InvalidOperation(f"extension of {module_filepath.name!r} is not supported")
-
-    if not security.validate_file_relative(module_filepath, config.BasePath.MODULES_DIR):
-        raise config.InvalidOperation(f"{module_filepath!r} is outside the scripts directory")
-
-    return load_file(module_filepath)
-
-
-def load_library() -> bytes:
-    """Load all library scripts from the default library directory.
-
-    Returns:
-        The concatenated content of all library scripts as bytes.
-    """
-
-    modules: list[bytes] = []
-
-    for file in config.BasePath.LIBRARY_DIR.iterdir():
-        if not file.is_file():
-            continue
-
-        if not security.validate_file_extension(file, config.Settings.ALLOWED_LIBRARY_EXTENSIONS):
-            continue
-
-        if module_content := try_load_file(file):
-            modules.append(module_content)
-
-    return b"\n".join(modules)
-
-
 def ensure_file_exists(filepath: str | Path, /) -> Path:
     """Ensure file existence or raise an error.
 

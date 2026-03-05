@@ -42,7 +42,7 @@ class InvalidOperation(DeclusorException):
         super().__init__(f"invalid operation: {self.description}")
 
 
-class SessionError(DeclusorException):
+class ConnectionFailure(DeclusorException):
     """Raised when a session operation fails.
 
     This exception indicates that a network session encountered an error

@@ -15,7 +15,7 @@ class LoadPayload(interface.ICommand):
 
         self._filepath = util.ensure_file_exists(filepath)
 
-    def execute(self, session: interface.ISession, console: interface.IConsole, /) -> None:
+    def execute(self, session: interface.IConnection, console: interface.IConsole, /) -> None:
         """Execute the load payload command.
 
         Args:

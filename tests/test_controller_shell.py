@@ -15,7 +15,7 @@ import pytest
 
 @pytest.fixture
 def mock_session() -> AsyncMock:
-    """Create a mock ISession with read/write methods."""
+    """Create a mock IConnection with read/write methods."""
 
 
 @pytest.fixture

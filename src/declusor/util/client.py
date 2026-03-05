@@ -1,80 +1,15 @@
-from shlex import quote
 from string import Template
 
-from declusor import config
-from declusor.util import encoding
 
-
-def hash_client_acknowledge(client_ack: bytes = config.Settings.ACK_CLIENT_VALUE) -> bytes:
-    """Format the client acknowledgement value as a hexadecimal MD5 hash.
-
-    Returns:
-        str: The hexadecimal MD5 hash of the client acknowledgement value.
-    """
-
-    return encoding.hash_md5(client_ack)
-
-
-def format_client_script(client_name: str, /, client_ack: bytes = config.Settings.ACK_CLIENT_VALUE, **kwargs: str | int) -> str:
+def format_client_script(client_script: str, /, **kwargs: str | int) -> str:
     """Read a client script from the default clients directory, substitute variables, and format it for use.
 
     Args:
-        client_name: The name of the client script file to read.
+        client_script: The client script.
         **kwargs: Key-value pairs to substitute into the client script template.
 
     Returns:
         The formatted client script with variables substituted.
     """
 
-    client_filepath = (config.BasePath.CLIENTS_DIR / client_name).resolve()
-
-    with open(client_filepath, "r", encoding="utf-8") as f:
-        client_script = f.read()
-
-    client_ack_digest = hash_client_acknowledge(client_ack)
-    client_ack_hexdigest = encoding.convert_bytes_to_hex(client_ack_digest)
-
-    kwargs[config.Settings.ACK_CLIENT_PLACEHOLDER] = client_ack_hexdigest
-
     return Template(client_script).safe_substitute(**kwargs)
-
-
-def format_function_call(language: config.Language, /, function_name: config.FileFunc, *args: str) -> str:
-    """Format a function call with properly escaped arguments.
-
-    Args:
-        language: The programming language of the function (e.g., 'bash', 'sh').
-        function_name: The name of the function to call.
-        *args: Variable length argument list to pass to the function.
-
-    Returns:
-        The formatted function call string.
-
-    Raises:
-        InvalidOperation: If the specified language is not supported.
-    """
-
-    match language:
-        case config.Language.BASH | config.Language.SH:
-            return _format_bash_function_call(function_name.value, *args)
-        case _:
-            raise config.InvalidOperation(f"Unsupported language: {language}")
-
-
-def _format_bash_function_call(function_name: str, /, *args: str) -> str:
-    """Format a Bash function call with properly escaped arguments.
-
-    Args:
-        function_name: The name of the Bash function.
-        *args: Variable length argument list to pass to the function.
-
-    Returns:
-        The formatted Bash function call string.
-    """
-
-    template = Template("$function_name $quoted_args")
-
-    return template.safe_substitute(
-        function_name=function_name,
-        quoted_args=" ".join(quote(arg) for arg in args),
-    )

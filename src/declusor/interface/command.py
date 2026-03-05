@@ -2,8 +2,8 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from declusor.interface.connection import IConnection
     from declusor.interface.console import IConsole
-    from declusor.interface.session import ISession
 
 
 class ICommand(ABC):
@@ -14,7 +14,7 @@ class ICommand(ABC):
     """
 
     @abstractmethod
-    def execute(self, session: "ISession", console: "IConsole", /) -> None:
+    def execute(self, session: "IConnection", console: "IConsole", /) -> None:
         """Execute the command in the given session.
 
         Args:

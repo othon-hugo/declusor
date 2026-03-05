@@ -15,7 +15,7 @@ This package serves as the operational layer of the application, providing:
 
 1. **Single Responsibility**: Each command performs exactly one operation.
 2. **Interface Compliance**: All commands implement the `ICommand` interface, ensuring consistent execution patterns.
-3. **Dependency on Abstractions**: Commands depend on `ISession` and `IConsole` interfaces, not concrete implementations.
+3. **Dependency on Abstractions**: Commands depend on `IConnection` and `IConsole` interfaces, not concrete implementations.
 4. **Stateless Execution**: Commands receive all necessary state through their constructors and execution parameters.
 
 ## Expected Behavior
@@ -24,6 +24,6 @@ Commands within this package should:
 
 - Accept configuration through constructor parameters
 - Execute their operation via a synchronous `execute` method
-- Interact with sessions solely through the `ISession` interface
+- Interact with sessions solely through the `IConnection` interface
 - Handle data encoding and formatting as required by the target protocol
 - Remain agnostic to the origin of their invocation

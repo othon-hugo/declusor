@@ -1,18 +1,35 @@
 [tool.poetry]
 name = "declusor"
-description = "Provides a unified, interactive CLI for remotely executing scripts, managing payloads, establishing interactive command sessions, and handling file transfers across remote environments."
-version = "0.2.0"
+description = "A unified, interactive CLI for remotely executing scripts, managing payloads, establishing interactive command sessions, and handling file transfers across remote environments."
+version = "0.3.0"
 readme = "README.md"
 license = "LICENSE"
 authors = ["Othon Hugo <othonhugo@users.noreply.github.com>"]
-keywords = ["security", "infosec", "cybersecurity", "pentesting", "ctf", "linux", "scripting", "framework", "post-exploitation", "payload-delivery"]
-classifiers = ["Development Status :: 4 - Beta", "Programming Language :: Python :: 3.10"]
+keywords = [
+    "security",
+    "infosec",
+    "cybersecurity",
+    "pentesting",
+    "ctf",
+    "linux",
+    "scripting",
+    "framework",
+    "post-exploitation",
+    "payload-delivery",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3.10",
+]
 packages = [{ include = "declusor", from = "src" }]
 
 [tool.poetry.urls]
 Homepage = "https://github.com/othonhugo/declusor/"
 Repository = "https://github.com/othonhugo/declusor.git"
 Issues = "https://github.com/othonhugo/declusor/issues"
+
+[tool.poetry.scripts]
+declusor = "declusor.main:main"
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -41,7 +58,7 @@ disable = [
     "too-many-arguments",
     "too-many-locals",
     "unused-argument",
-    "duplicate-code"
+    "duplicate-code",
 ]
 ignore-paths = [".venv/", "build/", "tests/"]
 
@@ -78,6 +95,4 @@ addopts = "-raqsv --strict-markers --tb=no"
 pythonpath = ["src"]
 testpaths = ["tests"]
 norecursedirs = [".vscode", "__pycache__"]
-markers = [
-    "asyncio: mark test as an asyncio test",
-]
+markers = ["asyncio: mark test as an asyncio test"]

@@ -5,13 +5,13 @@ class Router(interface.IRouter):
     """Router implementation."""
 
     def __init__(self) -> None:
-        self.route_table: dict[str, interface.Controller] = {}
+        self._route_table: dict[str, interface.Controller] = {}
 
     @property
     def routes(self) -> tuple[str, ...]:
         """Returns all registered routes."""
 
-        return tuple(self.route_table.keys())
+        return tuple(self._route_table.keys())
 
     def get_route_usage(self, route: str, /) -> str:
         """Returns the documentation of the controller associated with the given route."""
@@ -30,15 +30,15 @@ class Router(interface.IRouter):
 
         route = route.strip()
 
-        if route in self.route_table:
+        if route in self._route_table:
             raise ValueError("route already exists.")
 
-        self.route_table[route] = controller
+        self._route_table[route] = controller
 
     def locate(self, route: str, /) -> interface.Controller:
         """Locates the controller associated with the given route."""
 
-        if controller := self.route_table.get(route.strip()):
+        if controller := self._route_table.get(route.strip()):
             return controller
 
         raise config.RouterError(route)
@@ -47,14 +47,14 @@ class Router(interface.IRouter):
     def documentation(self) -> str:
         """Returns the documentation of all registered routes."""
 
-        if not self.route_table:
+        if not self._route_table:
             return ""
 
-        key_length = max(map(len, self.route_table.keys())) + 1
+        key_length = max(map(len, self._route_table.keys())) + 1
 
         documentation = ""
 
-        for route in self.route_table:
+        for route in self._route_table:
             documentation += f"{route:<{key_length}}: "
             documentation += f"{self.get_route_usage(route)}\n"
 

@@ -1,7 +1,7 @@
 from declusor import command, interface, util
 
 
-def call_execute(session: interface.ISession, console: interface.IConsole, line: str) -> None:
+def call_execute(session: interface.IConnection, console: interface.IConsole, line: str) -> None:
     """Execute a program or script from the local system on the remote system."""
 
     arguments, _ = util.parse_command_arguments(line, {"filepath": str})

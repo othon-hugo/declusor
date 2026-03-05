@@ -95,7 +95,7 @@ def test_session_initialize_raises_on_bad_ack(mock_socket: MagicMock) -> None:
     """
     Given: Client sends unexpected response (not ACK)
     When: initialize() reads response
-    Then: Raises SessionError about invalid client ACK
+    Then: Raises ConnectionError about invalid client ACK
     """
 
 
@@ -103,7 +103,7 @@ def test_session_initialize_raises_on_timeout(mock_socket: MagicMock) -> None:
     """
     Given: Client does not respond within timeout
     When: initialize() times out
-    Then: Raises SessionError about timeout waiting for client ACK
+    Then: Raises ConnectionError about timeout waiting for client ACK
     """
 
 
@@ -111,7 +111,7 @@ def test_session_initialize_raises_on_oserror(mock_socket: MagicMock) -> None:
     """
     Given: socket.recv() raises OSError during initialization
     When: initialize() attempts to read ACK
-    Then: Raises SessionError with descriptive message
+    Then: Raises ConnectionError with descriptive message
     """
 
 
@@ -214,13 +214,13 @@ def test_session_write_raises_on_oserror(mock_socket: MagicMock) -> None:
     """
     Given: socket.send() raises OSError
     When: write() attempts to send
-    Then: Raises SessionError with descriptive message
+    Then: Raises ConnectionError with descriptive message
     """
 
 
 def test_session_write_preserves_exception_chain(mock_socket: MagicMock) -> None:
     """
     Given: OSError is raised during write
-    When: SessionError is raised
+    When: ConnectionError is raised
     Then: Original OSError is chained with 'from'
     """

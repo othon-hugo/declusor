@@ -1,13 +1,12 @@
 from .console import Console
-from .parser import DeclusorParser
+from .parser import DeclusorOptions, DeclusorParser
 from .prompt import PromptCLI
 from .router import Router
-from .session import SocketSession
 
 __all__ = [
     "Console",
+    "DeclusorOptions",
     "DeclusorParser",
     "PromptCLI",
     "Router",
-    "SocketSession",
 ]

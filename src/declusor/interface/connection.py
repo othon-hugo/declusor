@@ -1,13 +1,27 @@
 from abc import ABC, abstractmethod
-from typing import Generator
+from typing import TYPE_CHECKING, Generator
+
+if TYPE_CHECKING:
+    from declusor.interface import profile
 
 
-class ISession(ABC):
+class IConnection(ABC):
     """Abstract base class defining the session interface.
 
     Sessions manage network connections with clients, handling data
     transmission and timeout configuration.
     """
+
+    @property
+    @abstractmethod
+    def client(self) -> "profile.IProfile":
+        """Returns the client associated with this session.
+
+        Returns:
+            An instance of IClient representing the connected client.
+        """
+
+        raise NotImplementedError
 
     @property
     @abstractmethod
@@ -27,6 +41,16 @@ class ISession(ABC):
 
         Args:
             value: Timeout duration in seconds.
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def initialize(self) -> None:
+        """Perform initial handshake/setup.
+
+        Args:
+            library: Binary data representing the library to load.
         """
 
         raise NotImplementedError

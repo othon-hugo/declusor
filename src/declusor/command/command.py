@@ -14,7 +14,7 @@ class ExecuteCommand(interface.ICommand):
 
         self._command_line = command_line.encode()
 
-    def execute(self, session: interface.ISession, console: interface.IConsole, /) -> None:
+    def execute(self, session: interface.IConnection, console: interface.IConsole, /) -> None:
         """Execute the command on the session.
 
         Args:
