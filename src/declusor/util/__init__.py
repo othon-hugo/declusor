@@ -1,4 +1,3 @@
-from .command import handle_command
 from .concurrency import Task, TaskEvent, TaskHandler, TaskPool
 from .encoding import (
     convert_base64_to_bytes,
@@ -27,7 +26,6 @@ __all__ = [
     "ensure_file_exists",
     "format_template",
     "format_template",
-    "handle_command",
     "hash_md5",
     "hash_sha256",
     "hash_sha384",

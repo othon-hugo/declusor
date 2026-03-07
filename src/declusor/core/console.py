@@ -116,7 +116,7 @@ class Console(interface.IConsole):
             This is a blocking call.
         """
 
-        return input(prompt)
+        return input(prompt) + "\n"
 
     def read_stripped_line(self, prompt: str = "", /) -> str:
         """Read a line from standard input and strip whitespace."""

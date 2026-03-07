@@ -44,8 +44,20 @@ class DeclusorParser(util.Parser, interface.IParser[DeclusorOptions]):
         )
 
         args = self.parse_args()
+        declusor_opts = DeclusorOptions(host=args.host, port=args.port, client=args.client)
+
+        self._validate_all_arguments(declusor_opts)
 
         try:
-            return DeclusorOptions(host=args.host, port=args.port, client=args.client)
+            return declusor_opts
         except AttributeError as e:
             raise config.ParserError(f"Missing argument: {e.name}") from e
+
+    def _validate_all_arguments(self, declusor_opts: DeclusorOptions) -> None:
+        self._validate_client_argument(declusor_opts["client"])
+
+    def _validate_client_argument(self, client_filename: str) -> None:
+        client_filepath = (config.BasePath.CLIENTS_DIR / client_filename).resolve()
+
+        if not util.validate_file_relative(client_filepath, config.BasePath.CLIENTS_DIR):
+            raise config.ParserError(f"Invalid client file: {client_filepath}")

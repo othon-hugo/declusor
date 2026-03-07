@@ -4,12 +4,12 @@ The **command** package implements the Command design pattern — each class enc
 
 ## Modules
 
-| Module       | Class                                           | Responsibility                                                    |
-| ------------ | ----------------------------------------------- | ----------------------------------------------------------------- |
-| `execute.py` | `ExecuteCommand`                                | UTF-8 encode a shell command and transmit it                      |
-| `file.py`    | `_BaseFileCommand`, `ExecuteFile`, `UploadFile` | Base64-encode a local file and transmit it with an operation code |
-| `load.py`    | `LoadPayload`                                   | Read a local payload script and transmit the raw bytes            |
-| `shell.py`   | `LaunchShell`                                   | Spawn request/response threads for an interactive shell session   |
+| Module       | Class                       | Responsibility                                                    |
+| ------------ | --------------------------- | ----------------------------------------------------------------- |
+| `execute.py` | `ExecuteCommand`            | UTF-8 encode a shell command and transmit it                      |
+| `file.py`    | `ExecuteFile`, `UploadFile` | Base64-encode a local file and transmit it with an operation code |
+| `load.py`    | `LoadPayload`               | Read a local payload script and transmit the raw bytes            |
+| `shell.py`   | `LaunchShell`               | Spawn request/response threads for an interactive shell session   |
 
 ## Design Principles
 

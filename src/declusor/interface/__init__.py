@@ -4,7 +4,8 @@ from .console import IConsole
 from .parser import IParser
 from .profile import IProfile
 from .prompt import IPrompt
-from .router import Controller, IRouter
+from .router import IRouter
+from .types import Controller
 
 __all__ = [
     "Controller",

@@ -9,7 +9,6 @@ The **util** package provides stateless helper functions consumed across every l
 
 | Module           | Key Exports                                                                                                  | Responsibility                                                   |
 | ---------------- | ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
-| `command.py`     | `handle_command`                                                                                             | Execute a command and stream the response to the console         |
 | `concurrency.py` | `Task`, `TaskEvent`, `TaskHandler`, `TaskPool`                                                               | Thread-based cooperative concurrency for the interactive shell   |
 | `encoding.py`    | `convert_bytes_to_hex`, `convert_to_base64`, `convert_base64_to_bytes`, `hash_*`, `quote`, `format_template` | Data encoding, hashing, shell quoting, and template formatting   |
 | `network.py`     | `await_connection`                                                                                           | Context-manager socket listener with user-friendly error mapping |

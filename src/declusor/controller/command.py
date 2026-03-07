@@ -7,4 +7,7 @@ def call_command(session: interface.IConnection, console: interface.IConsole, li
     arguments, _ = util.parse_command_arguments(line, {"command": str})
     command_line = arguments["command"]
 
-    util.handle_command(command.ExecuteCommand(command_line), session, console)
+    command.ExecuteCommand(command_line).execute(session, console)
+
+    for data in session.read():
+        console.write_binary_data(data)

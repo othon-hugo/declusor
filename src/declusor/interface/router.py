@@ -1,11 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from declusor.interface.connection import IConnection
     from declusor.interface.console import IConsole
-
-Controller = Callable[["IConnection", "IConsole", str], None]
+    from declusor.interface.types import Controller
 
 
 class IRouter(ABC):
@@ -53,7 +52,7 @@ class IRouter(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def connect(self, route: str, controller: Controller, /) -> None:
+    def connect(self, route: str, controller: "Controller", /) -> None:
         """Register a controller under a route name.
 
         Args:
@@ -68,7 +67,7 @@ class IRouter(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def locate(self, route: str, /) -> Controller:
+    def locate(self, route: str, /) -> "Controller":
         """Return the controller registered under *route*.
 
         Args:

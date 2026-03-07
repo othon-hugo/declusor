@@ -153,7 +153,7 @@ class ShellSocketConnection(interface.IConnection):
             self._connection.settimeout(self._timeout)
 
         remote_host, remote_port = self._connection.getpeername()
-        self._client_script = self._format_client_script(remote_host, remote_port)
+        self._client_script = self._profile.format_client_script(remote_host, remote_port)
 
     def initialize(self) -> None:
         """Perform the initial protocol handshake.
@@ -169,12 +169,12 @@ class ShellSocketConnection(interface.IConnection):
         self.write(self._load_library())
 
         try:
-            initial_data = self._connection.recv(self._profile.buffer_size)
+            initial_data = self._connection.recv(self._profile.bufsize)
 
             if initial_data != self._profile.ack_client_raw:
                 raise config.ConnectionFailure("invalid client ACK during session initialization.")
-        except TimeoutError as exc:
-            raise config.ConnectionFailure("timeout waiting for client ACK during session initialization.") from exc
+        except TimeoutError as e:
+            raise config.ConnectionFailure("timeout waiting for client ACK during session initialization.") from e
 
     @property
     def client(self) -> interface.IProfile:
@@ -227,12 +227,9 @@ class ShellSocketConnection(interface.IConnection):
 
         while True:
             try:
-                chunk = self._connection.recv(self._profile.buffer_size)
+                chunk = self._connection.recv(self._profile.bufsize)
 
                 if not chunk:
-                    # ConnectionResetError inherits from OSError, so it is
-                    # caught by the except OSError handler below and wrapped
-                    # into ConnectionFailure.
                     raise ConnectionResetError("Connection closed by peer")
 
                 combined = buffer + chunk
@@ -253,10 +250,10 @@ class ShellSocketConnection(interface.IConnection):
                 else:
                     buffer = combined
 
-            except TimeoutError as exc:
-                raise config.ConnectionFailure("Timeout while reading from connection") from exc
-            except OSError as exc:
-                raise config.ConnectionFailure(f"Failed to read from connection: {exc}") from exc
+            except TimeoutError as e:
+                raise config.ConnectionFailure("Timeout while reading from connection") from e
+            except (OSError, ConnectionResetError) as e:
+                raise config.ConnectionFailure(f"Failed to read from connection: {e}") from e
 
     def write(self, content: bytes, /) -> None:
         """Send *content* to the client, followed by the server ACK sentinel.
@@ -273,10 +270,10 @@ class ShellSocketConnection(interface.IConnection):
         try:
             self._connection.send(content)
             self._connection.send(self._profile.ack_server_raw)
-        except TimeoutError as exc:
-            raise config.ConnectionFailure("Timeout while writing to connection") from exc
-        except OSError as exc:
-            raise config.ConnectionFailure(f"Failed to write to connection: {exc}") from exc
+        except TimeoutError as e:
+            raise config.ConnectionFailure("Timeout while writing to connection") from e
+        except OSError as e:
+            raise config.ConnectionFailure(f"Failed to write to connection: {e}") from e
 
     def close(self) -> None:
         """Close the underlying socket, releasing the OS file descriptor."""
@@ -337,40 +334,12 @@ class ShellSocketConnection(interface.IConnection):
 
         return payload_data
 
-    def _format_client_script(self, host: str, port: int, /) -> str:
-        """Read the client script template and substitute connection parameters.
-
-        Args:
-            host: The peer hostname or IP address.
-            port: The port the operator's listener is bound to.
-
-        Returns:
-            The fully substituted client script string.
-
-        Raises:
-            ConnectionFailure: If the template file cannot be read.
-        """
-
-        try:
-            with self._profile.client_path.open("r") as f:
-                client_script_template = f.read()
-        except OSError as e:
-            raise config.ConnectionFailure(f"Failed to read client script: {e}") from e
-
-        script_kwargs: dict[str, str] = {
-            "HOST": host,
-            "PORT": str(port),
-            "ACKNOWLEDGE": util.convert_bytes_to_hex(self._profile.ack_client_raw),
-        }
-
-        return util.format_template(client_script_template, **script_kwargs)
-
 
 DEFAULT_SHELL_SOCKET = ShellSocketProfile(
     name="Shell Socket",
     client_path=config.BasePath.CLIENTS_DIR / "shell_socket.sh",
     ack_server_raw=b"\x00",
-    ack_client_raw=b"\xba\xdc\x00\xff\xee",
+    ack_client_raw=util.hash_sha256(b"\xba\xdc\x00\xff\xee"),
     allowed_payload_extensions=(".sh",),
     allowed_library_extensions=(".sh",),
 )

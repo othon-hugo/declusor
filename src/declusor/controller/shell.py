@@ -7,3 +7,4 @@ def call_shell(session: interface.IConnection, console: interface.IConsole, line
     util.parse_command_arguments(line, {})
 
     command.LaunchShell().execute(session, console)
+    # Output processing is performed by LaunchShell.
