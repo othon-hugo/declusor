@@ -1,11 +1,11 @@
-"""Tests for declusor.controller.load module (call_load function).
+"""Tests for ``declusor.controller.load.call_load``.
 
-This module tests:
-- call_load: Load payload file from local system and execute on remote
+Covers argument parsing, file validation, ``LoadPayload`` creation, and
+response handling via ``_execute_and_read``.
 """
 
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -15,18 +15,13 @@ import pytest
 
 
 @pytest.fixture
-def mock_session() -> AsyncMock:
-    """Create a mock IConnection with read/write methods."""
+def mock_session() -> MagicMock:
+    """Return a ``MagicMock`` satisfying the ``IConnection`` interface."""
 
 
 @pytest.fixture
-def mock_router() -> MagicMock:
-    """Create a mock IRouter."""
-
-
-@pytest.fixture
-def mock_console(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
-    """Mock core.console for output capture."""
+def mock_console() -> MagicMock:
+    """Return a ``MagicMock`` satisfying the ``IConsole`` interface."""
 
 
 @pytest.fixture
@@ -35,110 +30,60 @@ def temp_payload(tmp_path: Path) -> Path:
 
 
 # =============================================================================
-# Tests: call_load - Argument parsing
+# Tests: Argument parsing
 # =============================================================================
 
 
-@pytest.mark.asyncio
-def test_call_load_parses_filepath_argument(mock_session: AsyncMock, mock_router: MagicMock, temp_payload: Path) -> None:
-    """
-    Given: call_load with line=str(temp_payload)
-    When: Controller parses arguments
-    Then: arguments["filepath"] contains the path
-    """
+def test_parses_filepath_argument(mock_session: MagicMock, mock_console: MagicMock, temp_payload: Path) -> None:
+    """``line=str(path)`` must be parsed as ``arguments["filepath"]``."""
 
 
-@pytest.mark.asyncio
-def test_call_load_missing_filepath_raises(mock_session: AsyncMock, mock_router: MagicMock) -> None:
-    """
-    Given: call_load with empty line ""
-    When: Controller parses arguments
-    Then: Raises ParserError (filepath is required)
-    """
+def test_empty_line_raises_parser_error(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """An empty ``line`` must raise ``ParserError`` because ``filepath`` is required."""
 
 
-@pytest.mark.asyncio
-def test_call_load_parses_relative_path(mock_session: AsyncMock, mock_router: MagicMock, temp_payload: Path) -> None:
-    """
-    Given: call_load with relative path "discovery/dev_tools.sh"
-    When: Controller parses arguments
-    Then: Path is parsed correctly
-    """
+def test_parses_relative_path(mock_session: MagicMock, mock_console: MagicMock, temp_payload: Path) -> None:
+    """A relative path like ``"discovery/dev_tools.sh"`` must be parsed correctly."""
 
 
 # =============================================================================
-# Tests: call_load - File validation
+# Tests: File validation
 # =============================================================================
 
 
-@pytest.mark.asyncio
-def test_call_load_validates_file_exists(mock_session: AsyncMock, mock_router: MagicMock, temp_payload: Path) -> None:
-    """
-    Given: call_load with valid filepath
-    When: Controller validates file
-    Then: ensure_file_exists is called
-    """
+def test_validates_file_exists(mock_session: MagicMock, mock_console: MagicMock, temp_payload: Path) -> None:
+    """``ensure_file_exists`` must be called with the parsed filepath."""
 
 
-@pytest.mark.asyncio
-def test_call_load_nonexistent_file_raises(mock_session: AsyncMock, mock_router: MagicMock) -> None:
-    """
-    Given: call_load with "/nonexistent/payload.sh"
-    When: Controller validates file
-    Then: Raises InvalidOperation
-    """
+def test_nonexistent_file_raises_invalid_operation(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """A path that does not exist must raise ``InvalidOperation``."""
 
 
 # =============================================================================
-# Tests: call_load - Execution
+# Tests: Execution
 # =============================================================================
 
 
-@pytest.mark.asyncio
-def test_call_load_creates_load_payload_command(mock_session: AsyncMock, mock_router: MagicMock, temp_payload: Path) -> None:
-    """
-    Given: call_load with valid payload
-    When: Controller executes
-    Then: LoadPayload command is instantiated
-    """
+def test_creates_load_payload_command(mock_session: MagicMock, mock_console: MagicMock, temp_payload: Path) -> None:
+    """``call_load`` must instantiate ``LoadPayload`` with the validated path."""
 
 
-@pytest.mark.asyncio
-def test_call_load_sends_raw_content(mock_session: AsyncMock, mock_router: MagicMock, temp_payload: Path) -> None:
-    """
-    Given: call_load with payload containing "echo test"
-    When: Controller executes
-    Then: session.write receives raw script bytes
-    """
+def test_writes_raw_content_to_session(mock_session: MagicMock, mock_console: MagicMock, temp_payload: Path) -> None:
+    """``session.write`` must receive the raw script bytes (no base64)."""
 
 
 # =============================================================================
-# Tests: call_load - Response handling
+# Tests: Response handling
 # =============================================================================
 
 
-@pytest.mark.asyncio
-def test_call_load_reads_output(mock_session: AsyncMock, mock_router: MagicMock, temp_payload: Path) -> None:
-    """
-    Given: Payload produces output on target
-    When: call_load completes
-    Then: Response is read from session
-    """
+def test_reads_response_from_session(mock_session: MagicMock, mock_console: MagicMock, temp_payload: Path) -> None:
+    """``session.read()`` must be iterated after sending the payload."""
 
 
-@pytest.mark.asyncio
-def test_call_load_writes_output_to_console(mock_session: AsyncMock, mock_router: MagicMock, mock_console: MagicMock, temp_payload: Path) -> None:
-    """
-    Given: Session returns payload output
-    When: call_load processes response
-    Then: Output is written to console via write_binary_data
-    """
+def test_writes_response_to_console(mock_session: MagicMock, mock_console: MagicMock, temp_payload: Path) -> None:
+    """Response chunks must be forwarded to ``console.write_binary_data``."""
 
 
-@pytest.mark.asyncio
-def test_call_load_handles_multiline_output(mock_session: AsyncMock, mock_router: MagicMock, mock_console: MagicMock, temp_payload: Path) -> None:
-    """
-    Given: Payload produces multi-line output
-    When: call_load processes response
-    Then: All lines are written to console
-    """
+def test_handles_multiline_output(mock_session: MagicMock, mock_console: MagicMock, temp_payload: Path) -> None:
+    """All chunks from a multi-part response must be written to console."""

@@ -1,8 +1,12 @@
-"""Tests for declusor.util.client module.
+"""Tests for ``declusor.util.client`` — client-script formatting utilities.
 
-This module tests client script formatting utilities including:
-- format_client_script: Read and substitute variables in client scripts
-- format_function_call: Format shell function calls with proper escaping
+Covers ``format_client_script`` (Template substitution, file handling, edge
+cases) and ``format_function_call`` (shell-language dispatch, argument
+quoting, and shell escaping).
+
+Note: ``util/client.py`` no longer exists as a separate module.
+These tests target the corresponding functions that now live in the
+``connection.shell_socket`` module or ``util`` package.
 """
 
 from pathlib import Path
@@ -16,218 +20,113 @@ import pytest
 
 @pytest.fixture
 def mock_clients_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """Mock BasePath.CLIENTS_DIR to a temporary directory with test client scripts."""
+    """Redirect ``BasePath.CLIENTS_DIR`` to a temporary directory."""
 
 
 @pytest.fixture
 def sample_client_script(mock_clients_dir: Path) -> Path:
-    """Create a sample client script with $HOST and $PORT placeholders."""
+    """Create a sample client script with ``$HOST`` and ``$PORT`` placeholders."""
 
 
 # =============================================================================
-# Tests: format_client_script - Variable substitution
+# Tests: format_client_script — variable substitution
 # =============================================================================
 
 
-def test_format_client_script_substitutes_host_and_port(mock_clients_dir: Path) -> None:
-    """
-    Given: A client script with $HOST and $PORT placeholders
-    When: format_client_script is called with HOST="127.0.0.1", PORT=4444
-    Then: Returns script with placeholders replaced by actual values
-    """
+def test_substitutes_host_and_port(mock_clients_dir: Path) -> None:
+    """``$HOST`` and ``$PORT`` placeholders must be replaced with actual values."""
 
 
-def test_format_client_script_substitutes_acknowledge_placeholder(mock_clients_dir: Path) -> None:
-    """
-    Given: A client script with $ACKNOWLEDGE placeholder
-    When: format_client_script is called
-    Then: ACKNOWLEDGE is substituted with hex-encoded ACK_CLIENT_VALUE
-    """
+def test_substitutes_acknowledge_placeholder(mock_clients_dir: Path) -> None:
+    """``$ACKNOWLEDGE`` must be replaced with the hex-encoded ACK_CLIENT_VALUE."""
 
 
-def test_format_client_script_safe_substitute_missing_var(mock_clients_dir: Path) -> None:
-    """
-    Given: A client script with $UNDEFINED_VAR placeholder
-    When: format_client_script is called without that variable
-    Then: Placeholder remains in output (safe_substitute behavior)
-    """
+def test_safe_substitute_preserves_missing_vars(mock_clients_dir: Path) -> None:
+    """An undefined ``$UNDEFINED_VAR`` placeholder must remain in the output."""
 
 
-def test_format_client_script_substitutes_custom_kwargs(mock_clients_dir: Path) -> None:
-    """
-    Given: A client script with $CUSTOM placeholder
-    When: format_client_script is called with CUSTOM="value"
-    Then: Custom placeholder is substituted
-    """
+def test_substitutes_custom_kwargs(mock_clients_dir: Path) -> None:
+    """Extra keyword arguments must be substituted into the template."""
 
 
 # =============================================================================
-# Tests: format_client_script - File handling
+# Tests: format_client_script — file handling
 # =============================================================================
 
 
-def test_format_client_script_reads_file_content(mock_clients_dir: Path) -> None:
-    """
-    Given: A valid client script file
-    When: format_client_script is called with the filename
-    Then: The file content is read and returned (after substitution)
-    """
+def test_reads_file_content(mock_clients_dir: Path) -> None:
+    """The file must be read and its content returned after substitution."""
 
 
-def test_format_client_script_file_not_found(mock_clients_dir: Path) -> None:
-    """
-    Given: A client name that doesn't exist in CLIENTS_DIR
-    When: format_client_script is called
-    Then: Raises FileNotFoundError
-    """
+def test_file_not_found_raises(mock_clients_dir: Path) -> None:
+    """A nonexistent client filename must raise ``FileNotFoundError``."""
 
 
-def test_format_client_script_resolves_path(mock_clients_dir: Path) -> None:
-    """
-    Given: Client script in CLIENTS_DIR
-    When: format_client_script is called with just the filename (not full path)
-    Then: Correctly locates file relative to CLIENTS_DIR
-    """
+def test_resolves_path_relative_to_clients_dir(mock_clients_dir: Path) -> None:
+    """A bare filename must be resolved relative to ``BasePath.CLIENTS_DIR``."""
 
 
 # =============================================================================
-# Tests: format_client_script - Edge cases
+# Tests: format_client_script — edge cases
 # =============================================================================
 
 
-def test_format_client_script_empty_file(mock_clients_dir: Path) -> None:
-    """
-    Given: An empty client script file
-    When: format_client_script is called
-    Then: Returns empty string
-    """
+def test_empty_file_returns_empty_string(mock_clients_dir: Path) -> None:
+    """An empty script file must produce an empty string."""
 
 
-def test_format_client_script_no_placeholders(mock_clients_dir: Path) -> None:
-    """
-    Given: A client script with no $ placeholders
-    When: format_client_script is called with kwargs
-    Then: Returns original script unchanged
-    """
+def test_no_placeholders_returns_original(mock_clients_dir: Path) -> None:
+    """A script with zero ``$`` placeholders must pass through unchanged."""
 
 
-def test_format_client_script_dollar_sign_literal(mock_clients_dir: Path) -> None:
-    """
-    Given: A client script with $$ (literal dollar sign)
-    When: format_client_script is called
-    Then: $$ is preserved as single $ (Template behavior)
-    """
+def test_dollar_dollar_is_literal(mock_clients_dir: Path) -> None:
+    """``$$`` must remain as a single ``$`` (Template behaviour)."""
 
 
 # =============================================================================
-# Tests: format_function_call - Language support
+# Tests: format_function_call — argument handling
 # =============================================================================
 
 
-def test_format_function_call_bash_language() -> None:
-    """
-    Given: language=Language.BASH, function_name=FileFunc.EXEC_FILE
-    When: format_function_call is called
-    Then: Returns bash-formatted function call string
-    """
+def test_function_call_no_args() -> None:
+    """A function name with no arguments must produce ``"function_name "``."""
 
 
-def test_format_function_call_sh_language() -> None:
-    """
-    Given: language=Language.SH, function_name=FileFunc.STORE_FILE
-    When: format_function_call is called
-    Then: Returns sh-formatted function call string (same as bash)
-    """
+def test_function_call_single_arg() -> None:
+    """A single argument must be shell-quoted (e.g. ``'arg1'``)."""
 
 
-def test_format_function_call_unsupported_language_raises() -> None:
-    """
-    Given: An unsupported language value
-    When: format_function_call is called
-    Then: Raises InvalidOperation with "Unsupported language" message
-    """
+def test_function_call_multiple_args() -> None:
+    """Multiple arguments must be space-separated and individually quoted."""
 
 
 # =============================================================================
-# Tests: format_function_call - Argument handling
+# Tests: format_function_call — shell escaping
 # =============================================================================
 
 
-def test_format_function_call_no_args() -> None:
-    """
-    Given: function_name with no additional arguments
-    When: format_function_call is called with empty *args
-    Then: Returns "function_name " (with trailing space, no args)
-    """
+def test_escapes_single_quotes() -> None:
+    """A value containing ``'`` must be safely escaped for the shell."""
 
 
-def test_format_function_call_single_arg() -> None:
-    """
-    Given: function_name with one argument "arg1"
-    When: format_function_call is called
-    Then: Returns "function_name 'arg1'" (quoted argument)
-    """
+def test_escapes_double_quotes() -> None:
+    """A value containing ``"`` must be safely handled."""
 
 
-def test_format_function_call_multiple_args() -> None:
-    """
-    Given: function_name with args ("arg1", "arg2", "arg3")
-    When: format_function_call is called
-    Then: Returns "function_name 'arg1' 'arg2' 'arg3'" (space-separated)
-    """
+def test_escapes_special_characters() -> None:
+    """Shell metacharacters (``$``, ``;``, etc.) must be neutralised by quoting."""
 
 
-# =============================================================================
-# Tests: format_function_call - Shell escaping
-# =============================================================================
+def test_escapes_newlines() -> None:
+    """Embedded newlines must be properly escaped."""
 
 
-def test_format_function_call_escapes_single_quotes() -> None:
-    """
-    Given: Argument containing single quote: "it's a test"
-    When: format_function_call is called
-    Then: Single quote is properly escaped for shell
-    """
+def test_escapes_backticks() -> None:
+    """Backticks must be escaped to prevent command substitution."""
 
 
-def test_format_function_call_escapes_double_quotes() -> None:
-    """
-    Given: Argument containing double quotes: 'say "hello"'
-    When: format_function_call is called
-    Then: Double quotes are properly handled
-    """
-
-
-def test_format_function_call_escapes_special_chars() -> None:
-    """
-    Given: Argument with shell special chars: "$PATH; rm -rf /"
-    When: format_function_call is called
-    Then: Special characters are escaped/quoted safely
-    """
-
-
-def test_format_function_call_escapes_newlines() -> None:
-    """
-    Given: Argument containing newline character
-    When: format_function_call is called
-    Then: Newline is properly escaped in shell context
-    """
-
-
-def test_format_function_call_escapes_backticks() -> None:
-    """
-    Given: Argument with backticks: "`command`"
-    When: format_function_call is called
-    Then: Backticks are escaped to prevent command substitution
-    """
-
-
-def test_format_function_call_base64_payload() -> None:
-    """
-    Given: A base64-encoded payload string (typical use case)
-    When: format_function_call is called
-    Then: Base64 string is properly quoted (no special escaping needed)
-    """
+def test_base64_payload_quoted_correctly() -> None:
+    """A typical base64 string must be properly quoted without extra escaping."""
 
 
 # =============================================================================
@@ -235,17 +134,9 @@ def test_format_function_call_base64_payload() -> None:
 # =============================================================================
 
 
-def test_format_bash_function_call_uses_shlex_quote() -> None:
-    """
-    Given: Arguments with various special characters
-    When: _format_bash_function_call is called
-    Then: Uses shlex.quote for each argument (verify quoting style)
-    """
+def test_bash_function_call_uses_shlex_quote() -> None:
+    """Each argument must be passed through ``shlex.quote``."""
 
 
-def test_format_bash_function_call_empty_string_arg() -> None:
-    """
-    Given: Empty string as argument ""
-    When: _format_bash_function_call is called
-    Then: Empty string is quoted as '' (two single quotes)
-    """
+def test_bash_function_call_empty_string_arg() -> None:
+    """An empty string argument must be quoted as ``''``."""

@@ -1,11 +1,11 @@
-"""Tests for declusor.controller.upload module (call_upload function).
+"""Tests for ``declusor.controller.upload.call_upload``.
 
-This module tests:
-- call_upload: Upload file from local system to remote
+Covers argument parsing, file validation, ``UploadFile`` command creation, and
+response handling via ``_execute_and_read``.
 """
 
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -15,18 +15,13 @@ import pytest
 
 
 @pytest.fixture
-def mock_session() -> AsyncMock:
-    """Create a mock IConnection with read/write methods."""
+def mock_session() -> MagicMock:
+    """Return a ``MagicMock`` satisfying the ``IConnection`` interface."""
 
 
 @pytest.fixture
-def mock_router() -> MagicMock:
-    """Create a mock IRouter."""
-
-
-@pytest.fixture
-def mock_console(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
-    """Mock core.console for output capture."""
+def mock_console() -> MagicMock:
+    """Return a ``MagicMock`` satisfying the ``IConsole`` interface."""
 
 
 @pytest.fixture
@@ -35,119 +30,64 @@ def temp_file(tmp_path: Path) -> Path:
 
 
 # =============================================================================
-# Tests: call_upload - Argument parsing
+# Tests: Argument parsing
 # =============================================================================
 
 
-@pytest.mark.asyncio
-def test_call_upload_parses_filepath_argument(mock_session: AsyncMock, mock_router: MagicMock, temp_file: Path) -> None:
-    """
-    Given: call_upload with line=str(temp_file)
-    When: Controller parses arguments
-    Then: arguments["filepath"] contains the path
-    """
+def test_parses_filepath_argument(mock_session: MagicMock, mock_console: MagicMock, temp_file: Path) -> None:
+    """``line=str(path)`` must be parsed as ``arguments["filepath"]``."""
 
 
-@pytest.mark.asyncio
-def test_call_upload_missing_filepath_raises(mock_session: AsyncMock, mock_router: MagicMock) -> None:
-    """
-    Given: call_upload with empty line ""
-    When: Controller parses arguments
-    Then: Raises ParserError (filepath is required)
-    """
+def test_empty_line_raises_parser_error(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """An empty ``line`` must raise ``ParserError`` because ``filepath`` is required."""
 
 
-@pytest.mark.asyncio
-def test_call_upload_parses_quoted_path(mock_session: AsyncMock, mock_router: MagicMock, temp_file: Path) -> None:
-    """
-    Given: call_upload with path containing spaces in quotes
-    When: Controller parses arguments
-    Then: Path is correctly parsed
-    """
+def test_parses_quoted_path_with_spaces(mock_session: MagicMock, mock_console: MagicMock, temp_file: Path) -> None:
+    """A path containing spaces enclosed in quotes must be parsed correctly."""
 
 
 # =============================================================================
-# Tests: call_upload - File validation
+# Tests: File validation
 # =============================================================================
 
 
-@pytest.mark.asyncio
-def test_call_upload_validates_file_exists(mock_session: AsyncMock, mock_router: MagicMock, temp_file: Path) -> None:
-    """
-    Given: call_upload with valid filepath
-    When: Controller validates file
-    Then: ensure_file_exists is called with filepath
-    """
+def test_validates_file_exists(mock_session: MagicMock, mock_console: MagicMock, temp_file: Path) -> None:
+    """``ensure_file_exists`` must be called with the parsed filepath."""
 
 
-@pytest.mark.asyncio
-def test_call_upload_nonexistent_file_raises(mock_session: AsyncMock, mock_router: MagicMock) -> None:
-    """
-    Given: call_upload with "/nonexistent/file.txt"
-    When: Controller validates file
-    Then: Raises InvalidOperation
-    """
+def test_nonexistent_file_raises_invalid_operation(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """A path that does not exist must raise ``InvalidOperation``."""
 
 
-@pytest.mark.asyncio
-def test_call_upload_directory_raises(mock_session: AsyncMock, mock_router: MagicMock, tmp_path: Path) -> None:
-    """
-    Given: call_upload with directory path
-    When: Controller validates file
-    Then: Raises InvalidOperation (not a file)
-    """
+def test_directory_path_raises_invalid_operation(mock_session: MagicMock, mock_console: MagicMock, tmp_path: Path) -> None:
+    """A directory path must raise ``InvalidOperation``."""
 
 
 # =============================================================================
-# Tests: call_upload - Execution
+# Tests: Execution
 # =============================================================================
 
 
-@pytest.mark.asyncio
-def test_call_upload_creates_upload_file_command(mock_session: AsyncMock, mock_router: MagicMock, temp_file: Path) -> None:
-    """
-    Given: call_upload with valid file
-    When: Controller executes
-    Then: UploadFile command is instantiated
-    """
+def test_creates_upload_file_command(mock_session: MagicMock, mock_console: MagicMock, temp_file: Path) -> None:
+    """``call_upload`` must instantiate ``UploadFile`` with the validated path."""
 
 
-@pytest.mark.asyncio
-def test_call_upload_sends_to_session(mock_session: AsyncMock, mock_router: MagicMock, temp_file: Path) -> None:
-    """
-    Given: call_upload with valid file
-    When: Controller executes
-    Then: session.write is called with base64-encoded store command
-    """
+def test_writes_base64_store_command_to_session(mock_session: MagicMock, mock_console: MagicMock, temp_file: Path) -> None:
+    """``session.write`` must receive a base64-encoded store command."""
 
 
 # =============================================================================
-# Tests: call_upload - Response handling
+# Tests: Response handling
 # =============================================================================
 
 
-@pytest.mark.asyncio
-def test_call_upload_reads_response(mock_session: AsyncMock, mock_router: MagicMock, temp_file: Path) -> None:
-    """
-    Given: Upload produces response (e.g., stored filepath)
-    When: call_upload completes
-    Then: Response is read from session
-    """
+def test_reads_response_from_session(mock_session: MagicMock, mock_console: MagicMock, temp_file: Path) -> None:
+    """``session.read()`` must be iterated after uploading."""
 
 
-@pytest.mark.asyncio
-def test_call_upload_writes_response_to_console(mock_session: AsyncMock, mock_router: MagicMock, mock_console: MagicMock, temp_file: Path) -> None:
-    """
-    Given: Session returns upload confirmation
-    When: call_upload processes response
-    Then: Response is written to console
-    """
+def test_writes_response_to_console(mock_session: MagicMock, mock_console: MagicMock, temp_file: Path) -> None:
+    """Upload confirmation chunks must be forwarded to ``console.write_binary_data``."""
 
 
-@pytest.mark.asyncio
-def test_call_upload_shows_stored_path(mock_session: AsyncMock, mock_router: MagicMock, mock_console: MagicMock, temp_file: Path) -> None:
-    """
-    Given: Target returns "/tmp/abc123.temp" after upload
-    When: call_upload processes response
-    Then: Path is displayed to user
-    """
+def test_shows_stored_path_in_response(mock_session: MagicMock, mock_console: MagicMock, temp_file: Path) -> None:
+    """If the server returns a stored path, it must appear in the console output."""

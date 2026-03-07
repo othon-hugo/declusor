@@ -1,158 +1,85 @@
-"""Tests for declusor.config.enums module.
+"""Tests for ``declusor.config.enums`` (``ClientFile``, ``OperationCode``).
 
-This module tests the enum classes:
-- FileFunc: File function names for shell commands
-- Language: Supported shell languages
+Verifies enum membership, ``StrEnum`` behaviour, string equality semantics,
+hashability, and pattern-matching compatibility.
 """
 
 import pytest
 
 # =============================================================================
-# Tests: FileFunc enum
+# Tests: ClientFile enum
 # =============================================================================
 
 
-def test_file_func_exec_file_value() -> None:
-    """
-    Given: FileFunc.EXEC_FILE
-    When: .value is accessed
-    Then: Returns "execute_base64_encoded_value"
-    """
+def test_client_file_shell_socket_value() -> None:
+    """``ClientFile.SHELL_SOCKET`` must have value ``"shell_socket.sh"``."""
 
 
-def test_file_func_store_file_value() -> None:
-    """
-    Given: FileFunc.STORE_FILE
-    When: .value is accessed
-    Then: Returns "store_base64_encoded_value"
-    """
+def test_client_file_is_str_enum() -> None:
+    """``ClientFile`` members must be usable directly as ``str`` values."""
 
 
-def test_file_func_is_str_enum() -> None:
-    """
-    Given: FileFunc enum member
-    When: Used as string (e.g., in f-string)
-    Then: Behaves as string value
-    """
+def test_client_file_str_conversion() -> None:
+    """``str(ClientFile.SHELL_SOCKET)`` must return the underlying value."""
 
 
-def test_file_func_str_conversion() -> None:
-    """
-    Given: FileFunc.EXEC_FILE
-    When: str() is called
-    Then: Returns the value string
-    """
+def test_client_file_equality_with_string() -> None:
+    """``ClientFile.SHELL_SOCKET == "shell_socket.sh"`` must be ``True``."""
 
 
-def test_file_func_equality_with_string() -> None:
-    """
-    Given: FileFunc.EXEC_FILE
-    When: Compared to "execute_base64_encoded_value"
-    Then: Returns True (StrEnum behavior)
-    """
+def test_client_file_all_members() -> None:
+    """``ClientFile`` must contain exactly ``SHELL_SOCKET``."""
 
 
-def test_file_func_all_members() -> None:
-    """
-    Given: FileFunc enum
-    When: All members are listed
-    Then: Contains EXEC_FILE and STORE_FILE
-    """
+def test_client_file_hashable() -> None:
+    """``ClientFile`` members must be usable as ``dict`` keys and in ``set`` collections."""
 
 
 # =============================================================================
-# Tests: Language enum
+# Tests: OperationCode enum
 # =============================================================================
 
 
-def test_language_bash_value() -> None:
-    """
-    Given: Language.BASH
-    When: .value is accessed
-    Then: Returns "bash"
-    """
+def test_operation_code_exec_file_value() -> None:
+    """``OperationCode.EXEC_FILE`` must have value ``"EXECUTE_FILE"``."""
 
 
-def test_language_sh_value() -> None:
-    """
-    Given: Language.SH
-    When: .value is accessed
-    Then: Returns "sh"
-    """
+def test_operation_code_store_file_value() -> None:
+    """``OperationCode.STORE_FILE`` must have value ``"STORE_FILE"``."""
 
 
-def test_language_is_str_enum() -> None:
-    """
-    Given: Language enum member
-    When: Used as string
-    Then: Behaves as string value
-    """
+def test_operation_code_is_str_enum() -> None:
+    """``OperationCode`` members must be usable directly as ``str`` values."""
 
 
-def test_language_str_conversion() -> None:
-    """
-    Given: Language.BASH
-    When: str() is called
-    Then: Returns "bash"
-    """
+def test_operation_code_str_conversion() -> None:
+    """``str(OperationCode.EXEC_FILE)`` must return the underlying value."""
 
 
-def test_language_equality_with_string() -> None:
-    """
-    Given: Language.SH
-    When: Compared to "sh"
-    Then: Returns True (StrEnum behavior)
-    """
+def test_operation_code_equality_with_string() -> None:
+    """``OperationCode.EXEC_FILE == "EXECUTE_FILE"`` must be ``True``."""
 
 
-def test_language_all_members() -> None:
-    """
-    Given: Language enum
-    When: All members are listed
-    Then: Contains BASH and SH
-    """
+def test_operation_code_all_members() -> None:
+    """``OperationCode`` must contain exactly ``EXEC_FILE`` and ``STORE_FILE``."""
 
 
-def test_language_bash_and_sh_are_different() -> None:
-    """
-    Given: Language.BASH and Language.SH
-    When: Compared
-    Then: Are not equal
-    """
+def test_operation_code_members_are_distinct() -> None:
+    """``OperationCode.EXEC_FILE`` must not equal ``OperationCode.STORE_FILE``."""
+
+
+def test_operation_code_hashable() -> None:
+    """``OperationCode`` members must be usable as ``dict`` keys."""
 
 
 # =============================================================================
-# Tests: Enum usage patterns
+# Tests: Pattern-matching support
 # =============================================================================
 
 
-def test_file_func_usable_in_match() -> None:
-    """
-    Given: match statement with FileFunc
-    When: Case FileFunc.EXEC_FILE is matched
-    Then: Correct branch is executed
-    """
+def test_client_file_usable_in_match_statement() -> None:
+    """A ``match`` / ``case ClientFile.SHELL_SOCKET`` branch must execute correctly."""
 
 
-def test_language_usable_in_match() -> None:
-    """
-    Given: match statement with Language
-    When: Case Language.BASH is matched
-    Then: Correct branch is executed
-    """
-
-
-def test_file_func_hashable() -> None:
-    """
-    Given: FileFunc members
-    When: Used as dict keys
-    Then: Works correctly (hashable)
-    """
-
-
-def test_language_hashable() -> None:
-    """
-    Given: Language members
-    When: Used in set
-    Then: Works correctly (hashable)
-    """
+def test_operation_code_usable_in_match_statement() -> None:
+    """A ``match`` / ``case OperationCode.EXEC_FILE`` branch must execute correctly."""

@@ -1,13 +1,12 @@
-"""Tests for declusor.command.file module (ExecuteFile, UploadFile, _BaseFileCommand).
+"""Tests for ``declusor.command.file`` (``_BaseFileCommand``, ``ExecuteFile``, ``UploadFile``).
 
-This module tests:
-- _BaseFileCommand: Base class for file operations
-- ExecuteFile: Execute a local file on target
-- UploadFile: Upload a local file to target
+Covers initialization (path validation, opcode guard), the base64-encoding
+pipeline in ``_format_command``, the two concrete subclasses, and edge cases
+(binary content, empty files, large files).
 """
 
 from pathlib import Path
-from unittest.mock import AsyncMock
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -17,100 +16,69 @@ import pytest
 
 
 @pytest.fixture
-def mock_session() -> AsyncMock:
-    """Create a mock IConnection with write method."""
+def mock_session() -> MagicMock:
+    """Return a ``MagicMock`` satisfying the ``IConnection`` interface."""
+
+
+@pytest.fixture
+def mock_console() -> MagicMock:
+    """Return a ``MagicMock`` satisfying the ``IConsole`` interface."""
 
 
 @pytest.fixture
 def temp_script(tmp_path: Path) -> Path:
-    """Create a temporary shell script file with known content."""
+    """Create a temporary shell script with known content."""
 
 
 @pytest.fixture
 def temp_binary_file(tmp_path: Path) -> Path:
-    """Create a temporary binary file."""
+    """Create a temporary file containing non-UTF-8 binary bytes."""
 
 
 # =============================================================================
-# Tests: _BaseFileCommand (shared behavior)
+# Tests: _BaseFileCommand initialization
 # =============================================================================
 
 
-def test_base_file_command_accepts_string_path(temp_script: Path) -> None:
-    """
-    Given: ExecuteFile(str(path)) with string path
-    When: __init__ is called
-    Then: Converts to Path and validates
-    """
+def test_init_accepts_string_path(temp_script: Path) -> None:
+    """A plain ``str`` path must be coerced to ``Path`` and validated."""
 
 
-def test_base_file_command_accepts_path_object(temp_script: Path) -> None:
-    """
-    Given: ExecuteFile(Path) with Path object
-    When: __init__ is called
-    Then: Accepts Path directly
-    """
+def test_init_accepts_path_object(temp_script: Path) -> None:
+    """A ``pathlib.Path`` object must be stored without conversion errors."""
 
 
-def test_base_file_command_validates_file_exists(temp_script: Path) -> None:
-    """
-    Given: Valid file path
-    When: __init__ is called
-    Then: ensure_file_exists validates the file
-    """
+def test_init_validates_file_existence(temp_script: Path) -> None:
+    """``ensure_file_exists`` must be invoked during construction."""
 
 
-def test_base_file_command_raises_on_nonexistent() -> None:
-    """
-    Given: Nonexistent file path
-    When: __init__ is called
-    Then: Raises InvalidOperation
-    """
+def test_init_raises_on_nonexistent_file() -> None:
+    """Constructing with a path that does not exist must raise ``InvalidOperation``."""
 
 
-def test_base_file_command_default_language_bash(temp_script: Path) -> None:
-    """
-    Given: ExecuteFile without language argument
-    When: __init__ is called
-    Then: _language defaults to Language.BASH
-    """
-
-
-def test_base_file_command_custom_language_sh(temp_script: Path) -> None:
-    """
-    Given: ExecuteFile(path, language=Language.SH)
-    When: __init__ is called
-    Then: _language is set to Language.SH
-    """
+def test_init_raises_when_opcode_is_not_implemented() -> None:
+    """Direct instantiation of ``_BaseFileCommand`` (opcode = NotImplemented) must raise ``NotImplementedError``."""
 
 
 # =============================================================================
-# Tests: _BaseFileCommand._command property
+# Tests: _BaseFileCommand._format_command
 # =============================================================================
 
 
-def test_base_file_command_property_returns_bytes(temp_script: Path) -> None:
-    """
-    Given: ExecuteFile with valid script
-    When: _command property is accessed
-    Then: Returns bytes
-    """
+def test_format_command_returns_bytes(temp_script: Path) -> None:
+    """The formatted command must be returned as ``bytes``, not ``str``."""
 
 
-def test_base_file_command_property_encodes_base64(temp_script: Path) -> None:
-    """
-    Given: Script with known content
-    When: _command property is accessed
-    Then: File content is base64-encoded in the result
-    """
+def test_format_command_base64_encodes_file_content(temp_script: Path) -> None:
+    """The file content must appear base64-encoded inside the returned bytes."""
 
 
-def test_base_file_command_property_includes_function_name(temp_script: Path) -> None:
-    """
-    Given: ExecuteFile (uses EXEC_FILE function)
-    When: _command property is accessed
-    Then: Function name is included in command string
-    """
+def test_format_command_includes_function_name(temp_script: Path) -> None:
+    """The shell function name mapped from ``_OPCODE`` must prefix the output."""
+
+
+def test_format_command_raises_when_opcode_unsupported(temp_script: Path) -> None:
+    """If the profile has no mapping for the opcode, ``InvalidOperation`` must be raised."""
 
 
 # =============================================================================
@@ -118,29 +86,16 @@ def test_base_file_command_property_includes_function_name(temp_script: Path) ->
 # =============================================================================
 
 
-def test_execute_file_func_name_is_exec_file() -> None:
-    """
-    Given: ExecuteFile class
-    When: FUNC_NAME is checked
-    Then: Equals FileFunc.EXEC_FILE
-    """
+def test_execute_file_opcode_is_exec_file() -> None:
+    """``ExecuteFile._OPCODE`` must equal ``OperationCode.EXEC_FILE``."""
 
 
-@pytest.mark.asyncio
-def test_execute_file_execute_sends_command(mock_session: AsyncMock, temp_script: Path) -> None:
-    """
-    Given: ExecuteFile with valid script
-    When: execute(session) is called
-    Then: Sends _command bytes to session
-    """
+def test_execute_file_writes_command_to_session(mock_session: MagicMock, mock_console: MagicMock, temp_script: Path) -> None:
+    """``execute`` must transmit the base64-encoded command bytes via ``session.write``."""
 
 
 def test_execute_file_command_format(temp_script: Path) -> None:
-    """
-    Given: Script with content "echo hello"
-    When: _command property is accessed
-    Then: Returns "execute_base64_encoded_value '<base64>'"
-    """
+    """The command string must follow the pattern ``<function_name> '<base64>'``."""
 
 
 # =============================================================================
@@ -148,37 +103,20 @@ def test_execute_file_command_format(temp_script: Path) -> None:
 # =============================================================================
 
 
-def test_upload_file_func_name_is_store_file() -> None:
-    """
-    Given: UploadFile class
-    When: FUNC_NAME is checked
-    Then: Equals FileFunc.STORE_FILE
-    """
+def test_upload_file_opcode_is_store_file() -> None:
+    """``UploadFile._OPCODE`` must equal ``OperationCode.STORE_FILE``."""
 
 
-@pytest.mark.asyncio
-def test_upload_file_execute_sends_command(mock_session: AsyncMock, temp_script: Path) -> None:
-    """
-    Given: UploadFile with valid file
-    When: execute(session) is called
-    Then: Sends _command bytes to session
-    """
+def test_upload_file_writes_command_to_session(mock_session: MagicMock, mock_console: MagicMock, temp_script: Path) -> None:
+    """``execute`` must transmit the base64-encoded store command via ``session.write``."""
 
 
 def test_upload_file_command_format(temp_script: Path) -> None:
-    """
-    Given: File with known content
-    When: _command property is accessed
-    Then: Returns "store_base64_encoded_value '<base64>'"
-    """
+    """The command string must follow the pattern ``<store_function> '<base64>'``."""
 
 
 def test_upload_file_inherits_base_file_command() -> None:
-    """
-    Given: UploadFile class
-    When: Checking inheritance
-    Then: Inherits from _BaseFileCommand
-    """
+    """``UploadFile`` must be a subclass of ``_BaseFileCommand``."""
 
 
 # =============================================================================
@@ -186,25 +124,13 @@ def test_upload_file_inherits_base_file_command() -> None:
 # =============================================================================
 
 
-def test_file_command_handles_binary_content(temp_binary_file: Path) -> None:
-    """
-    Given: Binary file (non-text content)
-    When: _command is generated
-    Then: Binary content is correctly base64-encoded
-    """
+def test_handles_binary_content(temp_binary_file: Path) -> None:
+    """Non-UTF-8 binary data must be correctly base64-encoded."""
 
 
-def test_file_command_handles_empty_file(tmp_path: Path) -> None:
-    """
-    Given: Empty file (0 bytes)
-    When: _command is generated
-    Then: Empty base64 is encoded
-    """
+def test_handles_empty_file(tmp_path: Path) -> None:
+    """A zero-byte file must produce the base64 encoding of an empty payload."""
 
 
-def test_file_command_handles_large_file(tmp_path: Path) -> None:
-    """
-    Given: Large file (e.g., 1MB)
-    When: _command is generated
-    Then: Full content is base64-encoded
-    """
+def test_handles_large_file(tmp_path: Path) -> None:
+    """A file of at least 1 MiB must be fully base64-encoded without truncation."""

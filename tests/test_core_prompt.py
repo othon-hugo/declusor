@@ -1,13 +1,11 @@
-"""Tests for declusor.core.prompt module (PromptCLI class).
+"""Tests for ``declusor.core.prompt.PromptCLI``.
 
-This module tests the CLI prompt loop including:
-- PromptCLI: Main CLI prompt implementation
-- read_command: Reading user commands
-- handle_route: Dispatching commands to controllers
-- run: Main event loop with exception handling
+Covers initialization, ``read_command`` (looping until non-empty input),
+``handle_route`` (command lookup and dispatch), and the ``run`` loop
+(exit conditions and exception handling).
 """
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -18,22 +16,22 @@ import pytest
 
 @pytest.fixture
 def mock_router() -> MagicMock:
-    """Create a mock IRouter with routes and locate method."""
+    """Return a ``MagicMock`` satisfying the ``IRouter`` interface."""
 
 
 @pytest.fixture
-def mock_session() -> AsyncMock:
-    """Create a mock IConnection."""
+def mock_session() -> MagicMock:
+    """Return a ``MagicMock`` satisfying the ``IConnection`` interface."""
 
 
 @pytest.fixture
-def mock_console(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
-    """Mock core.console for input/output control."""
+def mock_console() -> MagicMock:
+    """Return a ``MagicMock`` satisfying the ``IConsole`` interface."""
 
 
 @pytest.fixture
-def prompt_cli(mock_router: MagicMock, mock_session: AsyncMock):
-    """Create a PromptCLI instance with mocked dependencies."""
+def prompt_cli(mock_router: MagicMock, mock_session: MagicMock, mock_console: MagicMock):
+    """Return a ``PromptCLI`` instance with mocked dependencies."""
 
 
 # =============================================================================
@@ -41,28 +39,20 @@ def prompt_cli(mock_router: MagicMock, mock_session: AsyncMock):
 # =============================================================================
 
 
-def test_prompt_cli_init_sets_prompt_format() -> None:
-    """
-    Given: PromptCLI is created with name="myapp"
-    When: __init__ is called
-    Then: _prompt is set to "[myapp] "
-    """
+def test_init_sets_prompt_format() -> None:
+    """``_prompt`` must follow the pattern ``"[<name>] "``."""
 
 
-def test_prompt_cli_init_stores_router() -> None:
-    """
-    Given: PromptCLI is created with a router
-    When: __init__ is called
-    Then: _router attribute references the router
-    """
+def test_init_stores_router() -> None:
+    """``_router`` must reference the injected router."""
 
 
-def test_prompt_cli_init_stores_session() -> None:
-    """
-    Given: PromptCLI is created with a session
-    When: __init__ is called
-    Then: _session attribute references the session
-    """
+def test_init_stores_session() -> None:
+    """``_session`` must reference the injected session."""
+
+
+def test_init_stores_console() -> None:
+    """``_console`` must reference the injected console."""
 
 
 # =============================================================================
@@ -70,174 +60,76 @@ def test_prompt_cli_init_stores_session() -> None:
 # =============================================================================
 
 
-@pytest.mark.asyncio
-def test_prompt_cli_read_command_returns_input(mock_console: MagicMock) -> None:
-    """
-    Given: User enters "load file.sh"
-    When: read_command() is called
-    Then: Returns "load file.sh"
-    """
+def test_read_command_returns_non_empty_input(mock_console: MagicMock) -> None:
+    """The first non-empty stripped input must be returned."""
 
 
-@pytest.mark.asyncio
-def test_prompt_cli_read_command_skips_empty(mock_console: MagicMock) -> None:
-    """
-    Given: User enters empty lines then "exit"
-    When: read_command() is called
-    Then: Continues prompting until non-empty input received
-    """
+def test_read_command_skips_empty_lines(mock_console: MagicMock) -> None:
+    """Empty or whitespace-only lines must be skipped until a real command arrives."""
 
 
-@pytest.mark.asyncio
-def test_prompt_cli_read_command_uses_prompt(mock_console: MagicMock) -> None:
-    """
-    Given: PromptCLI with name="declusor"
-    When: read_command() is called
-    Then: Displays "[declusor] " as prompt
-    """
+def test_read_command_displays_prompt(mock_console: MagicMock) -> None:
+    """``console.read_stripped_line`` must be called with the ``_prompt`` string."""
 
 
 # =============================================================================
-# Tests: PromptCLI.handle_route - Command parsing
+# Tests: PromptCLI.handle_route — command dispatch
 # =============================================================================
 
 
-@pytest.mark.asyncio
-def test_prompt_cli_handle_route_with_argument(mock_router: MagicMock) -> None:
-    """
-    Given: command="load myfile.sh"
-    When: handle_route() is called
-    Then: Locates "load" route and calls controller with "myfile.sh"
-    """
+def test_handle_route_parses_command_and_argument(mock_router: MagicMock) -> None:
+    """``"load myfile.sh"`` must dispatch to the ``"load"`` controller with ``"myfile.sh"``."""
 
 
-@pytest.mark.asyncio
-def test_prompt_cli_handle_route_without_argument(mock_router: MagicMock) -> None:
-    """
-    Given: command="exit" (no argument)
-    When: handle_route() is called
-    Then: Locates "exit" route and calls controller with empty string
-    """
+def test_handle_route_empty_argument_when_no_space(mock_router: MagicMock) -> None:
+    """``"exit"`` must dispatch to the ``"exit"`` controller with ``""``."""
 
 
-@pytest.mark.asyncio
-def test_prompt_cli_handle_route_strips_argument(mock_router: MagicMock) -> None:
-    """
-    Given: command="load   file.sh  " (extra spaces)
-    When: handle_route() is called
-    Then: Argument is stripped to "file.sh"
-    """
+def test_handle_route_strips_argument_whitespace(mock_router: MagicMock) -> None:
+    """Trailing spaces in the argument must be stripped."""
 
 
-@pytest.mark.asyncio
-def test_prompt_cli_handle_route_passes_session_and_router(mock_router: MagicMock) -> None:
-    """
-    Given: Valid command
-    When: handle_route() calls controller
-    Then: Controller receives (session, router, argument)
-    """
+def test_handle_route_passes_session_and_console(mock_router: MagicMock) -> None:
+    """The controller must receive ``(session, console, argument)``."""
 
 
 # =============================================================================
-# Tests: PromptCLI.run - Main loop
+# Tests: PromptCLI.handle_route — error handling
 # =============================================================================
 
 
-@pytest.mark.asyncio
-def test_prompt_cli_run_loops_until_exit() -> None:
-    """
-    Given: PromptCLI.run() is started
-    When: Multiple commands are entered
-    Then: Continues prompting until exit condition
-    """
-
-
-@pytest.mark.asyncio
-def test_prompt_cli_run_exits_on_exit_request() -> None:
-    """
-    Given: Controller raises ExitRequest
-    When: run() is executing
-    Then: Loop breaks and run() returns normally
-    """
-
-
-@pytest.mark.asyncio
-def test_prompt_cli_run_exits_on_keyboard_interrupt() -> None:
-    """
-    Given: User presses Ctrl+C (KeyboardInterrupt)
-    When: run() is executing
-    Then: Loop breaks and run() returns normally
-    """
-
-
-@pytest.mark.asyncio
-def test_prompt_cli_run_catches_declusor_exception(mock_console: MagicMock) -> None:
-    """
-    Given: Controller raises DeclusorException (e.g., RouterError)
-    When: run() is executing
-    Then: Error is written to console, loop continues
-    """
-
-
-@pytest.mark.asyncio
-def test_prompt_cli_run_displays_error_message(mock_console: MagicMock) -> None:
-    """
-    Given: DeclusorException with message "invalid route"
-    When: Exception is caught in run()
-    Then: console.write_error_message("invalid route") is called
-    """
+def test_handle_route_unknown_command_raises_router_error(mock_router: MagicMock) -> None:
+    """An unregistered command must raise ``RouterError``."""
 
 
 # =============================================================================
-# Tests: PromptCLI.handle_route - Error handling
+# Tests: PromptCLI.run — main loop
 # =============================================================================
 
 
-@pytest.mark.asyncio
-def test_prompt_cli_handle_route_invalid_route(mock_router: MagicMock) -> None:
-    """
-    Given: command="unknown_command"
-    When: handle_route() locates route
-    Then: RouterError is raised (route not found)
-    """
+def test_run_loops_until_exit() -> None:
+    """Multiple commands must be processed sequentially until exit."""
 
 
-@pytest.mark.asyncio
-def test_prompt_cli_handle_route_empty_command(mock_console: MagicMock) -> None:
-    """
-    Given: Somehow empty command reaches handle_route
-    When: Pattern matching occurs
-    Then: Handles gracefully (should not happen in practice)
-    """
+def test_run_exits_on_exit_request() -> None:
+    """``ExitRequest`` raised by a controller must break the loop."""
 
 
-# =============================================================================
-# Tests: PromptCLI.run - Exit behavior (Ctrl+C scenarios)
-# =============================================================================
+def test_run_exits_on_keyboard_interrupt_at_prompt() -> None:
+    """``KeyboardInterrupt`` during ``read_command`` must break the loop."""
 
 
-@pytest.mark.asyncio
-def test_prompt_cli_run_exits_on_keyboard_interrupt_at_prompt() -> None:
-    """
-    Given: PromptCLI.run() is executing
-    When: KeyboardInterrupt is raised during read_command() (Ctrl+C at prompt)
-    Then: Loop breaks and run() returns normally (exits program)
-    """
+def test_run_catches_declusor_exception(mock_console: MagicMock) -> None:
+    """A ``DeclusorException`` from a controller must be caught and printed, not propagated."""
 
 
-@pytest.mark.asyncio
-def test_prompt_cli_run_continues_on_keyboard_interrupt_in_command() -> None:
-    """
-    Given: PromptCLI.run() is executing a command
-    When: KeyboardInterrupt is raised during handle_route() (Ctrl+C in command like shell)
-    Then: Loop continues to next prompt (does not exit program)
-    """
+def test_run_displays_error_message_on_declusor_exception(mock_console: MagicMock) -> None:
+    """``console.write_error_message`` must be called with the exception."""
 
 
-@pytest.mark.asyncio
-def test_prompt_cli_read_command_propagates_keyboard_interrupt() -> None:
-    """
-    Given: User presses Ctrl+C while read_command() is waiting for input
-    When: console.read_stripped_line() raises KeyboardInterrupt
-    Then: KeyboardInterrupt is re-raised to caller
-    """
+def test_run_continues_on_keyboard_interrupt_in_command() -> None:
+    """``KeyboardInterrupt`` during ``handle_route`` must *not* exit the loop."""
+
+
+def test_read_command_propagates_keyboard_interrupt() -> None:
+    """``KeyboardInterrupt`` during input must be re-raised to the caller."""

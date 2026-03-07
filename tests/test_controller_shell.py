@@ -1,10 +1,11 @@
-"""Tests for declusor.controller.shell module (call_shell function).
+"""Tests for ``declusor.controller.shell.call_shell``.
 
-This module tests:
-- call_shell: Start interactive shell session on remote
+Covers argument parsing (no arguments accepted), ``LaunchShell`` creation,
+execution delegation, and verification that the controller does not directly
+handle session I/O.
 """
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -14,97 +15,53 @@ import pytest
 
 
 @pytest.fixture
-def mock_session() -> AsyncMock:
-    """Create a mock IConnection with read/write methods."""
+def mock_session() -> MagicMock:
+    """Return a ``MagicMock`` satisfying the ``IConnection`` interface."""
 
 
 @pytest.fixture
-def mock_router() -> MagicMock:
-    """Create a mock IRouter."""
+def mock_console() -> MagicMock:
+    """Return a ``MagicMock`` satisfying the ``IConsole`` interface."""
 
 
 # =============================================================================
-# Tests: call_shell - Argument parsing
+# Tests: Argument parsing
 # =============================================================================
 
 
-@pytest.mark.asyncio
-def test_call_shell_accepts_empty_line(mock_session: AsyncMock, mock_router: MagicMock) -> None:
-    """
-    Given: call_shell with empty line ""
-    When: Controller parses arguments
-    Then: No error (shell takes no arguments)
-    """
+def test_accepts_empty_line(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """``line=""`` must be accepted without error (``shell`` takes no arguments)."""
 
 
-@pytest.mark.asyncio
-def test_call_shell_rejects_extra_arguments(mock_session: AsyncMock, mock_router: MagicMock) -> None:
-    """
-    Given: call_shell with line="unexpected args"
-    When: Controller parses arguments
-    Then: Raises ParserError (unrecognized arguments)
-    """
+def test_rejects_extra_arguments(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """``line="unexpected args"`` must raise ``ParserError``."""
 
 
-@pytest.mark.asyncio
-def test_call_shell_uses_empty_definitions(mock_session: AsyncMock, mock_router: MagicMock) -> None:
-    """
-    Given: call_shell function
-    When: parse_command_arguments is called
-    Then: Uses empty definitions {}
-    """
+def test_uses_empty_argument_definitions(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """``parse_command_arguments`` must be called with an empty definition dict ``{}``."""
 
 
 # =============================================================================
-# Tests: call_shell - Execution
+# Tests: Execution
 # =============================================================================
 
 
-@pytest.mark.asyncio
-def test_call_shell_creates_launch_shell(mock_session: AsyncMock, mock_router: MagicMock) -> None:
-    """
-    Given: call_shell with valid invocation
-    When: Controller executes
-    Then: LaunchShell() is instantiated
-    """
+def test_creates_launch_shell_instance(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """``call_shell`` must instantiate ``LaunchShell()``."""
 
 
-@pytest.mark.asyncio
-def test_call_shell_executes_on_session(mock_session: AsyncMock, mock_router: MagicMock) -> None:
-    """
-    Given: call_shell is invoked
-    When: Controller executes
-    Then: LaunchShell.execute(session) is called
-    """
-
-
-@pytest.mark.asyncio
-def test_call_shell_awaits_shell_completion(mock_session: AsyncMock, mock_router: MagicMock) -> None:
-    """
-    Given: call_shell is invoked
-    When: Shell is running
-    Then: Awaits until shell completes (user exits)
-    """
+def test_calls_execute_on_session(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """``LaunchShell.execute(session, console)`` must be called."""
 
 
 # =============================================================================
-# Tests: call_shell - Does NOT handle response
+# Tests: I/O delegation
 # =============================================================================
 
 
-@pytest.mark.asyncio
-def test_call_shell_does_not_read_session_directly(mock_session: AsyncMock, mock_router: MagicMock) -> None:
-    """
-    Given: call_shell is invoked
-    When: Controller executes
-    Then: Does NOT iterate session.read() (LaunchShell handles I/O)
-    """
+def test_does_not_read_session_directly(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """``session.read()`` must *not* be called by the controller (``LaunchShell`` owns I/O)."""
 
 
-@pytest.mark.asyncio
-def test_call_shell_does_not_write_to_console(mock_session: AsyncMock, mock_router: MagicMock) -> None:
-    """
-    Given: call_shell is invoked
-    When: Controller executes
-    Then: Does NOT call console.write_* (LaunchShell handles output)
-    """
+def test_does_not_write_to_console_directly(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """``console.write_*`` must *not* be called by the controller."""

@@ -1,12 +1,11 @@
-"""Tests for declusor.command.shell module (LaunchShell command).
+"""Tests for ``declusor.command.shell.LaunchShell``.
 
-This module tests the interactive shell command including:
-- LaunchShell: Command to launch an interactive shell session
-- Async task management for input/output handling
-- Stop event coordination between tasks
+Covers initialization (stop event creation), task management (request/response
+handler threads), ``KeyboardInterrupt`` handling, and cooperative cancellation
+via ``TaskPool``.
 """
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -16,188 +15,92 @@ import pytest
 
 
 @pytest.fixture
-def mock_session() -> AsyncMock:
-    """Create a mock IConnection with read/write async methods."""
+def mock_session() -> MagicMock:
+    """Return a ``MagicMock`` satisfying the ``IConnection`` interface with ``read``/``write``."""
 
 
 @pytest.fixture
-def mock_console(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
-    """Mock core.console for controlling input/output during tests."""
+def mock_console() -> MagicMock:
+    """Return a ``MagicMock`` satisfying the ``IConsole`` interface."""
 
 
 @pytest.fixture
 def launch_shell():
-    """Create a LaunchShell instance for testing."""
+    """Return a fresh ``LaunchShell`` instance."""
 
 
 # =============================================================================
-# Tests: LaunchShell initialization
+# Tests: LaunchShell.__init__
 # =============================================================================
 
 
-def test_launch_shell_init_creates_stop_event() -> None:
-    """
-    Given: LaunchShell is instantiated
-    When: __init__ is called
-    Then: _stop_event is created as asyncio.Event (initially not set)
-    """
+def test_init_creates_unset_stop_event() -> None:
+    """``_stop_event`` must be a ``TaskEvent`` that is initially *not* set."""
 
 
 # =============================================================================
-# Tests: LaunchShell.execute - Task management
+# Tests: LaunchShell.execute — task management
 # =============================================================================
 
 
-@pytest.mark.asyncio
-def test_launch_shell_execute_creates_both_tasks(mock_session: AsyncMock) -> None:
-    """
-    Given: LaunchShell.execute is called
-    When: Execution starts
-    Then: Creates asyncio tasks for input and output handlers
-    """
+def test_execute_registers_response_handler_as_background_task(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """A response-reading ``TaskHandler`` must be added to the ``TaskPool``."""
 
 
-@pytest.mark.asyncio
-def test_launch_shell_execute_cancels_tasks_on_exit(mock_session: AsyncMock) -> None:
-    """
-    Given: LaunchShell.execute is running both tasks
-    When: Execution ends (for any reason)
-    Then: Both tasks are cancelled and awaited for cleanup
-    """
+def test_execute_stops_task_pool_on_exit(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """``TaskPool.stop()`` must be called when ``execute`` returns, regardless of how."""
 
 
-@pytest.mark.asyncio
-def test_launch_shell_execute_sets_stop_event(mock_session: AsyncMock) -> None:
-    """
-    Given: LaunchShell.execute is running
-    When: Execution ends
-    Then: _stop_event.set() is called to signal other tasks
-    """
+def test_execute_sets_stop_event_on_exit(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """The shared ``_stop_event`` must be set so background threads can exit."""
 
 
 # =============================================================================
-# Tests: LaunchShell.execute - Exception handling
+# Tests: LaunchShell.execute — exception handling
 # =============================================================================
 
 
-@pytest.mark.asyncio
-def test_launch_shell_execute_handles_keyboard_interrupt(mock_session: AsyncMock) -> None:
-    """
-    Given: LaunchShell.execute is running
-    When: KeyboardInterrupt (Ctrl+C) is raised
-    Then: Exception is caught, stop_event is set, graceful exit
-    """
+def test_execute_catches_keyboard_interrupt(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """A ``KeyboardInterrupt`` during execution must be caught, not propagated."""
 
 
-@pytest.mark.asyncio
-def test_launch_shell_execute_handles_cancelled_error(mock_session: AsyncMock) -> None:
-    """
-    Given: LaunchShell.execute is running
-    When: asyncio.CancelledError is raised
-    Then: Exception is caught, cleanup occurs gracefully
-    """
+def test_execute_does_not_propagate_keyboard_interrupt() -> None:
+    """After catching ``KeyboardInterrupt``, ``execute`` must return normally."""
 
 
 # =============================================================================
-# Tests: LaunchShell._handle_command_request
+# Tests: _create_request_handler
 # =============================================================================
 
 
-@pytest.mark.asyncio
-def test_handle_command_request_writes_to_session(mock_session: AsyncMock) -> None:
-    """
-    Given: User enters a non-empty command
-    When: _handle_command_request processes input
-    Then: Calls session.write() with encoded command bytes
-    """
+def test_request_handler_writes_nonempty_input_to_session(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """Non-empty lines from ``console.read_line`` must be written to ``session``."""
 
 
-@pytest.mark.asyncio
-def test_handle_command_request_skips_empty_input(mock_session: AsyncMock) -> None:
-    """
-    Given: User enters empty/whitespace-only input
-    When: _handle_command_request processes input
-    Then: Does NOT call session.write()
-    """
+def test_request_handler_skips_empty_input(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """Empty or whitespace-only input must *not* result in a ``session.write`` call."""
 
 
-@pytest.mark.asyncio
-def test_handle_command_request_breaks_on_eof_error(mock_session: AsyncMock) -> None:
-    """
-    Given: console.read_stripped_line() raises EOFError
-    When: _handle_command_request processes input
-    Then: Loop breaks (graceful exit on Ctrl+D)
-    """
+def test_request_handler_exits_on_stop_event(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """The handler loop must break once ``stop_event.is_set()`` returns ``True``."""
 
 
 # =============================================================================
-# Tests: LaunchShell._handle_command_response
+# Tests: _create_response_handler
 # =============================================================================
 
 
-@pytest.mark.asyncio
-def test_handle_command_response_writes_to_console(mock_session: AsyncMock) -> None:
-    """
-    Given: session.read() yields data
-    When: _handle_command_response receives data
-    Then: Calls console.write_binary_data() with received bytes
-    """
+def test_response_handler_streams_output_to_console(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """Bytes yielded by ``session.read`` must be forwarded via ``console.write_binary_data``."""
 
 
-@pytest.mark.asyncio
-def test_handle_command_response_skips_empty_data(mock_session: AsyncMock) -> None:
-    """
-    Given: session.read() yields empty bytes b''
-    When: _handle_command_response processes data
-    Then: Does NOT call console.write_binary_data()
-    """
+def test_response_handler_skips_empty_chunks(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """Empty ``bytes`` chunks from ``session.read`` must be silently dropped."""
 
 
-@pytest.mark.asyncio
-def test_handle_command_response_respects_stop_event(mock_session: AsyncMock) -> None:
-    """
-    Given: _stop_event is set during iteration
-    When: _handle_command_response checks condition
-    Then: Breaks out of loops and exits
-    """
+def test_response_handler_removes_timeout_for_blocking_reads(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """``session.timeout`` must be set to ``None`` for the duration of the shell."""
 
 
-# =============================================================================
-# Tests: LaunchShell - Exit behavior (Ctrl+C scenarios)
-# =============================================================================
-
-
-@pytest.mark.asyncio
-def test_launch_shell_execute_does_not_propagate_keyboard_interrupt() -> None:
-    """
-    Given: LaunchShell.execute is running
-    When: KeyboardInterrupt is raised (Ctrl+C in shell)
-    Then: Exception is caught and NOT re-raised (returns to PromptCLI)
-    """
-
-
-@pytest.mark.asyncio
-def test_launch_shell_execute_cancels_tasks_with_timeout() -> None:
-    """
-    Given: LaunchShell.execute is cleaning up tasks
-    When: Tasks are cancelled but blocked on input()
-    Then: Uses asyncio.wait_for with 0.1s timeout to avoid hanging
-    """
-
-
-@pytest.mark.asyncio
-def test_handle_command_request_breaks_on_keyboard_interrupt() -> None:
-    """
-    Given: _handle_command_request is waiting for input
-    When: console.read_stripped_line() raises KeyboardInterrupt
-    Then: Loop breaks immediately (exits input handler)
-    """
-
-
-@pytest.mark.asyncio
-def test_handle_command_request_breaks_on_cancelled_error() -> None:
-    """
-    Given: _handle_command_request is waiting for input
-    When: Task is cancelled (asyncio.CancelledError)
-    Then: Loop breaks immediately (exits input handler)
-    """
+def test_response_handler_restores_timeout_on_exit(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """The original ``session.timeout`` must be restored when the handler exits."""

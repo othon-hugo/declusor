@@ -1,8 +1,8 @@
-"""Tests for declusor.util.parsing module.
+"""Tests for ``declusor.util.parsing``.
 
-This module tests command argument parsing including:
-- Parser: Custom ArgumentParser subclass with ParserError handling
-- parse_command_arguments: Type-aware argument parsing with optional support
+Covers the ``Parser`` subclass (``ParserError`` instead of ``SystemExit``),
+``parse_command_arguments`` (basic usage, optional arguments, error handling,
+unknown-argument control, and edge cases).
 """
 
 from typing import Optional
@@ -16,12 +16,12 @@ import pytest
 
 @pytest.fixture
 def simple_definitions() -> dict:
-    """Return simple argument definitions: {"name": str, "count": int}."""
+    """Return ``{"name": str, "count": int}``."""
 
 
 @pytest.fixture
 def optional_definitions() -> dict:
-    """Return definitions with optional args: {"command": Optional[str]}."""
+    """Return ``{"command": Optional[str]}``."""
 
 
 # =============================================================================
@@ -30,217 +30,121 @@ def optional_definitions() -> dict:
 
 
 def test_parser_error_raises_parser_error() -> None:
-    """
-    Given: A Parser instance
-    When: error() method is called with a message
-    Then: Raises ParserError (not SystemExit like default argparse)
-    """
+    """``error()`` must raise ``ParserError``, not ``SystemExit``."""
 
 
 def test_parser_get_formatter_class_returns_callable() -> None:
-    """
-    Given: A Parser instance
-    When: get_formatter_class() is called
-    Then: Returns a callable that produces HelpFormatter
-    """
+    """``get_formatter_class()`` must return a callable."""
 
 
 def test_parser_custom_prog_name() -> None:
-    """
-    Given: A Parser with custom prog name
-    When: Parser is initialized with prog="mycommand"
-    Then: The prog attribute is set correctly
-    """
+    """``Parser(prog="cmd")`` must set ``self.prog``."""
 
 
 def test_parser_without_help_flag() -> None:
-    """
-    Given: A Parser with add_help=False
-    When: --help is passed to parse
-    Then: Does not recognize -h/--help as valid options
-    """
+    """``Parser(add_help=False)`` must not recognise ``-h`` / ``--help``."""
 
 
 # =============================================================================
-# Tests: parse_command_arguments - Basic usage
+# Tests: parse_command_arguments — basic usage
 # =============================================================================
 
 
-def test_parse_command_arguments_single_string_arg() -> None:
-    """
-    Given: definitions={"filepath": str} and line="test.txt"
-    When: parse_command_arguments is called
-    Then: Returns ({"filepath": "test.txt"}, [])
-    """
+def test_single_string_arg() -> None:
+    """``{"filepath": str}`` with ``"test.txt"`` must yield ``{"filepath": "test.txt"}``."""
 
 
-def test_parse_command_arguments_single_int_arg() -> None:
-    """
-    Given: definitions={"count": int} and line="42"
-    When: parse_command_arguments is called
-    Then: Returns ({"count": 42}, [])
-    """
+def test_single_int_arg() -> None:
+    """``{"count": int}`` with ``"42"`` must yield ``{"count": 42}``."""
 
 
-def test_parse_command_arguments_multiple_args() -> None:
-    """
-    Given: definitions={"name": str, "age": int} and line='"John Doe" 30'
-    When: parse_command_arguments is called
-    Then: Returns ({"name": "John Doe", "age": 30}, [])
-    """
+def test_multiple_args() -> None:
+    """Multiple definitions must be matched positionally."""
 
 
-def test_parse_command_arguments_empty_with_no_definitions() -> None:
-    """
-    Given: definitions={} and line=""
-    When: parse_command_arguments is called
-    Then: Returns ({}, []) without error
-    """
+def test_empty_with_no_definitions() -> None:
+    """``{}`` with ``""`` must yield ``({}, [])``."""
 
 
-def test_parse_command_arguments_empty_with_whitespace_only() -> None:
-    """
-    Given: definitions={} and line="   "
-    When: parse_command_arguments is called
-    Then: Returns ({}, []) (whitespace-only treated as empty)
-    """
+def test_whitespace_only_treated_as_empty() -> None:
+    """``"   "`` must behave the same as ``""``."""
 
 
 # =============================================================================
-# Tests: parse_command_arguments - Optional arguments
+# Tests: parse_command_arguments — optional arguments
 # =============================================================================
 
 
-def test_parse_command_arguments_optional_provided() -> None:
-    """
-    Given: definitions={"cmd": Optional[str]} and line="hello"
-    When: parse_command_arguments is called
-    Then: Returns ({"cmd": "hello"}, [])
-    """
+def test_optional_provided() -> None:
+    """``{"cmd": Optional[str]}`` with ``"hello"`` must yield ``{"cmd": "hello"}``."""
 
 
-def test_parse_command_arguments_optional_omitted() -> None:
-    """
-    Given: definitions={"cmd": Optional[str]} and line=""
-    When: parse_command_arguments is called
-    Then: Returns ({"cmd": None}, [])
-    """
+def test_optional_omitted() -> None:
+    """``{"cmd": Optional[str]}`` with ``""`` must yield ``{"cmd": None}``."""
 
 
-def test_parse_command_arguments_mixed_required_and_optional() -> None:
-    """
-    Given: definitions={"required": str, "optional": Optional[int]}
-    When: line="value" is parsed (no optional value)
-    Then: Returns ({"required": "value", "optional": None}, [])
-    """
+def test_mixed_required_and_optional() -> None:
+    """A required arg followed by an omitted optional must set optional to ``None``."""
 
 
-def test_parse_command_arguments_mixed_all_provided() -> None:
-    """
-    Given: definitions={"required": str, "optional": Optional[int]}
-    When: line="value 42" is parsed (both values)
-    Then: Returns ({"required": "value", "optional": 42}, [])
-    """
+def test_mixed_all_provided() -> None:
+    """Both required and optional arguments provided must be parsed."""
 
 
 # =============================================================================
-# Tests: parse_command_arguments - Error handling
+# Tests: parse_command_arguments — error handling
 # =============================================================================
 
 
-def test_parse_command_arguments_unsupported_type_raises() -> None:
-    """
-    Given: definitions={"data": list} (unsupported type)
-    When: parse_command_arguments is called
-    Then: Raises InvalidOperation about unsupported type
-    """
+def test_unsupported_type_raises_invalid_operation() -> None:
+    """A ``list`` type in definitions must raise ``InvalidOperation``."""
 
 
-def test_parse_command_arguments_unclosed_quote_raises() -> None:
-    """
-    Given: line='unclosed "quote'
-    When: parse_command_arguments is called
-    Then: Raises InvalidOperation with parsing error details
-    """
+def test_unclosed_quote_raises_invalid_operation() -> None:
+    """An unclosed quote (``'"incomplete'``) must raise ``InvalidOperation``."""
 
 
-def test_parse_command_arguments_missing_required_arg_raises() -> None:
-    """
-    Given: definitions={"filepath": str} and line="" (empty)
-    When: parse_command_arguments is called with required arg missing
-    Then: Raises ParserError (from custom Parser.error)
-    """
+def test_missing_required_raises_parser_error() -> None:
+    """Omitting a required argument must raise ``ParserError``."""
 
 
-def test_parse_command_arguments_wrong_type_raises() -> None:
-    """
-    Given: definitions={"count": int} and line="not_a_number"
-    When: parse_command_arguments is called
-    Then: Raises ParserError about invalid int value
-    """
+def test_wrong_type_raises_parser_error() -> None:
+    """``"not_a_number"`` for an ``int`` definition must raise ``ParserError``."""
 
 
 # =============================================================================
-# Tests: parse_command_arguments - Unknown arguments
+# Tests: parse_command_arguments — unknown arguments
 # =============================================================================
 
 
-def test_parse_command_arguments_allow_unknown_true() -> None:
-    """
-    Given: definitions={"name": str}, line="hello extra args", allow_unknown=True
-    When: parse_command_arguments is called
-    Then: Returns ({"name": "hello"}, ["extra", "args"])
-    """
+def test_allow_unknown_true_returns_extras() -> None:
+    """Extra tokens must be returned in the second tuple element."""
 
 
-def test_parse_command_arguments_allow_unknown_false_raises() -> None:
-    """
-    Given: definitions={"name": str}, line="hello extra", allow_unknown=False
-    When: parse_command_arguments is called
-    Then: Raises ParserError about unrecognized arguments
-    """
+def test_allow_unknown_false_raises() -> None:
+    """Extra tokens with ``allow_unknown=False`` must raise ``ParserError``."""
 
 
-def test_parse_command_arguments_unknown_with_empty_definitions() -> None:
-    """
-    Given: definitions={}, line="some args", allow_unknown=True
-    When: parse_command_arguments is called
-    Then: Returns ({}, ["some", "args"])
-    """
+def test_unknown_with_empty_definitions() -> None:
+    """``{}`` with ``allow_unknown=True`` must place all tokens in the extras list."""
 
 
 # =============================================================================
-# Tests: parse_command_arguments - Edge cases
+# Tests: parse_command_arguments — edge cases
 # =============================================================================
 
 
-def test_parse_command_arguments_quoted_string_with_spaces() -> None:
-    """
-    Given: definitions={"path": str} and line='"path with spaces"'
-    When: parse_command_arguments is called
-    Then: Returns ({"path": "path with spaces"}, [])
-    """
+def test_quoted_string_with_spaces() -> None:
+    """``'"path with spaces"'`` must yield a single string including the spaces."""
 
 
-def test_parse_command_arguments_escaped_quotes() -> None:
-    """
-    Given: definitions={"text": str} and line='he said \\"hello\\"'
-    When: parse_command_arguments is called
-    Then: Returns the properly unescaped string
-    """
+def test_escaped_quotes() -> None:
+    """Escaped quote characters must survive the parse."""
 
 
-def test_parse_command_arguments_preserves_argument_order() -> None:
-    """
-    Given: definitions={"first": str, "second": str, "third": int}
-    When: line="a b 3" is parsed
-    Then: Arguments are matched positionally in definition order
-    """
+def test_preserves_argument_order() -> None:
+    """Arguments must be matched in definition-insertion order."""
 
 
-def test_parse_command_arguments_negative_integer() -> None:
-    """
-    Given: definitions={"num": int} and line="-42"
-    When: parse_command_arguments is called
-    Then: Returns ({"num": -42}, []) - handles negative numbers
-    """
+def test_negative_integer() -> None:
+    """``"-42"`` must parse as ``-42``."""

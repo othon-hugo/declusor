@@ -1,10 +1,10 @@
-"""Tests for declusor.controller.command module (call_command function).
+"""Tests for ``declusor.controller.command.call_command``.
 
-This module tests:
-- call_command: Execute single command on remote system
+Covers argument parsing, ``ExecuteCommand`` creation and execution, and the
+``_execute_and_read`` helper (response reading and console output).
 """
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -14,111 +14,61 @@ import pytest
 
 
 @pytest.fixture
-def mock_session() -> AsyncMock:
-    """Create a mock IConnection with read/write methods."""
+def mock_session() -> MagicMock:
+    """Return a ``MagicMock`` satisfying the ``IConnection`` interface."""
 
 
 @pytest.fixture
-def mock_router() -> MagicMock:
-    """Create a mock IRouter."""
-
-
-@pytest.fixture
-def mock_console(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
-    """Mock core.console for output capture."""
+def mock_console() -> MagicMock:
+    """Return a ``MagicMock`` satisfying the ``IConsole`` interface."""
 
 
 # =============================================================================
-# Tests: call_command - Argument parsing
+# Tests: Argument parsing
 # =============================================================================
 
 
-@pytest.mark.asyncio
-def test_call_command_parses_command_argument(mock_session: AsyncMock, mock_router: MagicMock) -> None:
-    """
-    Given: call_command with line="ls -la"
-    When: Controller parses arguments
-    Then: arguments["command"] is "ls -la"
-    """
+def test_parses_unquoted_command_argument(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """``line="ls -la"`` must be parsed as ``arguments["command"] == "ls -la"``."""
 
 
-@pytest.mark.asyncio
-def test_call_command_parses_quoted_command(mock_session: AsyncMock, mock_router: MagicMock) -> None:
-    """
-    Given: call_command with line='"echo hello world"'
-    When: Controller parses arguments
-    Then: arguments["command"] is "echo hello world"
-    """
+def test_parses_quoted_command_argument(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """A quoted argument like ``'"echo hello"'`` must preserve inner spaces."""
 
 
-@pytest.mark.asyncio
-def test_call_command_missing_argument_raises(mock_session: AsyncMock, mock_router: MagicMock) -> None:
-    """
-    Given: call_command with empty line ""
-    When: Controller parses arguments
-    Then: Raises ParserError (command is required)
-    """
+def test_empty_line_raises_parser_error(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """An empty ``line`` must raise ``ParserError`` because ``command`` is required."""
 
 
 # =============================================================================
-# Tests: call_command - Execution
+# Tests: Execution
 # =============================================================================
 
 
-@pytest.mark.asyncio
-def test_call_command_creates_execute_command(mock_session: AsyncMock, mock_router: MagicMock) -> None:
-    """
-    Given: call_command with valid command
-    When: Controller executes
-    Then: ExecuteCommand is instantiated with the command
-    """
+def test_creates_execute_command_instance(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """``call_command`` must instantiate ``ExecuteCommand`` with the parsed command."""
 
 
-@pytest.mark.asyncio
-def test_call_command_executes_on_session(mock_session: AsyncMock, mock_router: MagicMock) -> None:
-    """
-    Given: call_command with command "whoami"
-    When: Controller executes
-    Then: session.write is called with encoded command
-    """
+def test_writes_encoded_command_to_session(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """``session.write`` must be called with the UTF-8 encoded command bytes."""
 
 
 # =============================================================================
-# Tests: call_command - Response handling
+# Tests: Response handling (via _execute_and_read)
 # =============================================================================
 
 
-@pytest.mark.asyncio
-def test_call_command_reads_response(mock_session: AsyncMock, mock_router: MagicMock) -> None:
-    """
-    Given: Session returns response data
-    When: call_command completes execution
-    Then: Iterates over session.read()
-    """
+def test_reads_response_from_session(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """``session.read()`` must be iterated after writing the command."""
 
 
-@pytest.mark.asyncio
-def test_call_command_writes_response_to_console(mock_session: AsyncMock, mock_router: MagicMock, mock_console: MagicMock) -> None:
-    """
-    Given: Session read yields b"response data"
-    When: call_command processes response
-    Then: console.write_binary_data(b"response data") is called
-    """
+def test_writes_response_chunks_to_console(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """Each non-empty chunk yielded by ``session.read()`` must be forwarded to ``console.write_binary_data``."""
 
 
-@pytest.mark.asyncio
-def test_call_command_handles_empty_response(mock_session: AsyncMock, mock_router: MagicMock, mock_console: MagicMock) -> None:
-    """
-    Given: Session read yields no data
-    When: call_command processes response
-    Then: No output written to console
-    """
+def test_handles_empty_response(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """If ``session.read()`` yields nothing, no output must be written to console."""
 
 
-@pytest.mark.asyncio
-def test_call_command_handles_multipart_response(mock_session: AsyncMock, mock_router: MagicMock, mock_console: MagicMock) -> None:
-    """
-    Given: Session read yields multiple chunks
-    When: call_command processes response
-    Then: Each chunk is written to console
-    """
+def test_handles_multipart_response(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """Multiple chunks from ``session.read()`` must each be written to console."""
