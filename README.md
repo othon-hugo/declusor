@@ -23,12 +23,18 @@ Its intelligent command-line interface boosts productivity with smart command an
 
 ## Technical Architecture
 
-Declusor is built with a modular design focusing on reliability and maintainability, structured around key components:
+Declusor follows a layered, dependency-inverted architecture with eight packages:
 
-- **Connection Management**: Handles the underlying network communication and data transfer between the client and target, ensuring robust session stability.
-- **Command Processing**: Interprets user commands and dispatches them to specialized modules for execution, enabling diverse remote operations.
-- **Module System**: Provides a flexible and extensible framework for integrating new functionalities and commands, enhancing Declusor's adaptability.
-- **User Interface**: Manages the interactive command-line experience, including intelligent command and file path completion for improved usability.
+| Package      | Layer          | Responsibility                                                                                |
+| ------------ | -------------- | --------------------------------------------------------------------------------------------- |
+| `interface`  | Domain         | Abstract contracts (`ICommand`, `IConnection`, `IConsole`, `IRouter`, …)                      |
+| `config`     | Domain         | Settings, enums (`ClientFile`, `OperationCode`), and exception hierarchy                      |
+| `command`    | Application    | Command objects — `ExecuteCommand`, `ExecuteFile`, `UploadFile`, `LoadPayload`, `LaunchShell` |
+| `controller` | Application    | Thin request handlers that parse input and delegate to commands                               |
+| `core`       | Infrastructure | Concrete `Console`, `Router`, `Parser`, and `PromptCLI`                                       |
+| `connection` | Infrastructure | `ShellSocketProfile` + `ShellSocketConnection` (TCP socket, ACK framing)                      |
+| `util`       | Cross-cutting  | Encoding, file I/O, network, parsing, security, and concurrency helpers                       |
+| `main`       | Entry point    | `DeclusorService` — bootstrap, wiring, and lifecycle orchestration                            |
 
 ## Getting Started
 

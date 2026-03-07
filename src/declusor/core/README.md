@@ -1,22 +1,22 @@
 # Core Package
 
-The **core** package contains the concrete implementations of the domain interfaces defined in the `interface` package. It provides the fundamental runtime components that power the application's execution.
+The **core** package provides the concrete runtime implementations of the domain interfaces defined in the `interface` package.
 
-## Purpose
+## Modules
 
-This package forms the operational backbone of the application:
+| Module       | Class       | Implements                                                                                             |
+| ------------ | ----------- | ------------------------------------------------------------------------------------------------------ |
+| `console.py` | `Console`   | `IConsole` — readline-backed terminal I/O with tab-completion and history                              |
+| `parser.py`  | `Parser`    | `IParser` — `argparse.ArgumentParser` subclass that raises `ParserError` instead of calling `sys.exit` |
+| `prompt.py`  | `PromptCLI` | `IPrompt` — the main read-eval-dispatch loop                                                           |
+| `router.py`  | `Router`    | `IRouter` — route-table management, controller lookup, and help-text generation                        |
 
-- **Interface Implementation**: Concrete implementations of all domain abstractions.
-- **User Interface**: Console handling for input/output operations with readline integration.
-- **Command Routing**: Dynamic dispatch of user commands to appropriate controller handlers.
-- **Session Management**: Communication channels with remote targets using socket-based I/O.
-- **Argument Parsing**: Custom parser implementations for processing command arguments.
-- **Interactive Prompt**: The main event loop that drives user interaction.
+> [!NOTE]
+> Session management (socket I/O, ACK framing) lives in the `connection` package, not here.
 
 ## Design Principles
 
-1. **Depends on Interface**: Core implementations depend on abstractions defined in the `interface` package.
-2. **Interface Compliance**: All implementations adhere to contracts defined in the domain layer.
-3. **Synchronous Architecture**: All I/O-bound operations use blocking sockets with configurable timeouts.
-4. **Separation of Concerns**: Each component handles a distinct aspect of the runtime.
-5. **Extensibility**: The router and session abstractions support future protocol extensions.
+1. **Interface Compliance** — every class in this package implements an `interface` contract.
+2. **Synchronous Architecture** — all I/O is blocking; no async primitives.
+3. **Separation of Concerns** — console, routing, parsing, and prompting are independent.
+4. **Extensibility** — new console backends or router strategies can be added via the interface layer.

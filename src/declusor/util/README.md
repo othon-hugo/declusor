@@ -1,32 +1,25 @@
 # Utility Package
 
-The **util** package provides a collection of stateless helper functions and utilities used throughout the application. These utilities perform common operations that are not specific to any single component.
+The **util** package provides stateless helper functions consumed across every layer of the application.
 
 > [!NOTE]
-> This package provides cross-cutting concerns and is used throughout the application without creating circular dependencies.
+> Depends only on `config` (for exceptions and constants) — no circular dependencies.
 
-## Purpose
+## Modules
 
-This package offers reusable functionality across all layers of the application:
-
-- **Data Encoding**: Functions for encoding and decoding data in various formats.
-- **File Operations**: Utilities for loading, validating, and managing filesystem resources.
-- **Network Helpers**: Functions for establishing and managing network connections.
-- **Input Parsing**: Command argument parsing with type coercion and validation.
-- **Security Validation**: Functions for validating file paths and extensions.
-- **Client Formatting**: Utilities for preparing client scripts with variable substitution.
+| Module           | Key Exports                                                                                                  | Responsibility                                                   |
+| ---------------- | ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
+| `command.py`     | `handle_command`                                                                                             | Execute a command and stream the response to the console         |
+| `concurrency.py` | `Task`, `TaskEvent`, `TaskHandler`, `TaskPool`                                                               | Thread-based cooperative concurrency for the interactive shell   |
+| `encoding.py`    | `convert_bytes_to_hex`, `convert_to_base64`, `convert_base64_to_bytes`, `hash_*`, `quote`, `format_template` | Data encoding, hashing, shell quoting, and template formatting   |
+| `network.py`     | `await_connection`                                                                                           | Context-manager socket listener with user-friendly error mapping |
+| `parsing.py`     | `Parser`, `parse_command_arguments`                                                                          | Custom `argparse` subclass and type-aware argument parsing       |
+| `security.py`    | `validate_file_extension`, `validate_file_relative`                                                          | Path-traversal and file-extension guards                         |
+| `storage.py`     | `load_file`, `try_load_file`, `ensure_file_exists`, `ensure_directory_exists`                                | File loading and existence validation                            |
 
 ## Design Principles
 
-1. **Statelessness**: All utility functions are pure and do not maintain state.
-2. **Single Purpose**: Each function performs exactly one well-defined operation.
-3. **Defensive Programming**: Functions validate inputs and provide clear error messages.
-4. **Type Safety**: Functions use type hints and handle type conversions explicitly.
-5. **Minimal Dependencies**: Depends only on `config` for exceptions and constants.
-
-## Usage Guidelines
-
-- Import utilities directly where needed rather than creating wrapper layers.
-- Prefer composition of utilities over modification.
-- Report errors through exceptions defined in the `config` package.
-- Maintain backward compatibility when modifying utility signatures.
+1. **Statelessness** — all functions are pure or only depend on `config` constants.
+2. **Single Purpose** — each function performs exactly one well-defined operation.
+3. **Defensive Programming** — inputs are validated; errors raise `InvalidOperation` or `ConnectionFailure`.
+4. **Type Safety** — all functions carry full type annotations.
