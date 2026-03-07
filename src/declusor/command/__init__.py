@@ -1,4 +1,4 @@
-from .command import ExecuteCommand
+from .execute import ExecuteCommand
 from .file import ExecuteFile, UploadFile
 from .load import LoadPayload
 from .shell import LaunchShell

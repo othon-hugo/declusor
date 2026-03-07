@@ -2,10 +2,16 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from declusor import config
+    from declusor.config import OperationCode
 
 
 class IProfile(ABC):
+    """Client configuration profile.
+
+    Holds connection parameters and protocol configuration.
+    Does NOT perform I/O — that's the responsibility of the connection.
+    """
+
     @property
     @abstractmethod
     def bufsize(self) -> int:
@@ -17,15 +23,12 @@ class IProfile(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def load_payload(self, payload_name: str, /) -> bytes:
-        raise NotImplementedError
+    def format_operation_script(self, opcode: "OperationCode", /, *args: str) -> str | None:
+        """Format an operation into a shell command string.
 
-    @abstractmethod
-    def load_library(self) -> bytes:
-        raise NotImplementedError
+        This is pure string formatting — no I/O.
+        """
 
-    @abstractmethod
-    def format_operation_script(self, opcode: "config.OperationCode", /, *args: str) -> str | None:
         raise NotImplementedError
 
     @abstractmethod

@@ -7,7 +7,4 @@ def call_load(session: interface.IConnection, console: interface.IConsole, line:
     arguments, _ = util.parse_command_arguments(line, {"filepath": str})
     filepath = util.ensure_file_exists(arguments["filepath"])
 
-    command.LoadPayload(filepath).execute(session, console)
-
-    for data in session.read():
-        console.write_binary_data(data)
+    util.handle_command(command.LoadPayload(filepath), session, console)

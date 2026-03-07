@@ -50,7 +50,7 @@ class _BaseFileCommand(interface.ICommand):
 
 
 class ExecuteFile(_BaseFileCommand):
-    """Command to execute a file on the target machine."""
+    """Command to upload and execute a file on the target machine."""
 
     _OPCODE = config.OperationCode.EXEC_FILE
 

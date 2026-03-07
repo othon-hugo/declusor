@@ -1,5 +1,4 @@
 from declusor import config, core
-
 from declusor.main import exception, service
 
 __all__ = ["main"]

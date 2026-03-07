@@ -7,7 +7,4 @@ def call_upload(session: interface.IConnection, console: interface.IConsole, lin
     arguments, _ = util.parse_command_arguments(line, {"filepath": str})
     filepath = util.ensure_file_exists(arguments["filepath"])
 
-    command.UploadFile(filepath).execute(session, console)
-
-    for data in session.read():
-        console.write_binary_data(data)
+    util.handle_command(command.UploadFile(filepath), session, console)

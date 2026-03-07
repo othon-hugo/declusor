@@ -1,7 +1,6 @@
 from pathlib import Path
 
 from declusor import config
-from declusor.util import security
 
 
 def load_file(filepath: str | Path, /) -> bytes:

@@ -15,15 +15,11 @@ def run_service(router: interface.IRouter, console: interface.IConsole, options:
     console.write_message(profile.format_client_script(options["host"], options["port"]))
 
     with util.await_connection(options["host"], options["port"]) as socket_connection:
-        profile_connection = connection.ShellSocketConnection(socket_connection, profile)
+        with connection.ShellSocketConnection(socket_connection, profile) as conn:
+            prompt = core.PromptCLI(config.Settings.PROJECT_NAME, router, conn, console)
 
-        try:
-            prompt = core.PromptCLI(config.Settings.PROJECT_NAME, router, profile_connection, console)
-
-            profile_connection.initialize()
+            conn.initialize()
             prompt.run()
-        finally:
-            profile_connection.close()
 
 
 def _validate_directories() -> None:

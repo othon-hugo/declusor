@@ -8,6 +8,8 @@ from declusor import config, interface, util
 
 @dataclass(frozen=True)
 class ShellSocketProfile(interface.IProfile):
+    """Configuration data for a shell socket client."""
+
     name: str
     """Name of the profile, used for display purposes."""
 
@@ -27,7 +29,10 @@ class ShellSocketProfile(interface.IProfile):
     """Allowed file extensions for library scripts."""
 
     connection_timeout: float | None = 1.0
+    """Timeout in seconds for socket operations. Set to None for no timeout."""
+
     buffer_size: int = 2**8
+    """Size of the buffer to use when reading from the socket. Must be > 0."""
 
     supported_functions: dict[config.OperationCode, str] = field(
         default_factory=lambda: {
@@ -35,9 +40,13 @@ class ShellSocketProfile(interface.IProfile):
             config.OperationCode.EXEC_FILE: "execute_base64_encoded_value",
         }
     )
+    """Mapping of supported operation codes to their corresponding function names in the client script."""
 
     library_root_directory: Path = config.BasePath.LIBRARY_DIR
+    """Root directory for library scripts."""
+
     payload_root_directory: Path = config.BasePath.MODULES_DIR
+    """Root directory for payload scripts."""
 
     def __post_init__(self) -> None:
         if self.buffer_size <= 0:
@@ -53,37 +62,6 @@ class ShellSocketProfile(interface.IProfile):
     @property
     def timeout(self) -> float | None:
         return self.connection_timeout
-
-    def load_payload(self, target_module: str, /) -> bytes:
-        payload_filepath = self.payload_root_directory / target_module
-
-        if not util.validate_file_relative(payload_filepath, self.payload_root_directory):
-            raise config.ConnectionFailure(f"payload path {payload_filepath} is not relative to the payload root directory")
-
-        try:
-            with payload_filepath.open("rb") as f:
-                payload_data = f.read()
-        except OSError as e:
-            raise config.ConnectionFailure(f"Failed to read payload script: {e}") from e
-
-        return payload_data
-
-    def load_library(self) -> bytes:
-        """Load all library scripts from the default library directory."""
-
-        all_modules: list[bytes] = []
-
-        for file in self.library_root_directory.iterdir():
-            if not file.is_file():
-                continue
-
-            if not util.validate_file_extension(file, self.allowed_library_extensions):
-                continue
-
-            if module_content := util.try_load_file(file):
-                all_modules.append(module_content)
-
-        return b"\n".join(all_modules)
 
     def format_operation_script(self, opcode: "config.OperationCode", /, *args: str) -> str | None:
         function_name = self.supported_functions.get(opcode)
@@ -106,7 +84,7 @@ class ShellSocketProfile(interface.IProfile):
             "ACKNOWLEDGE": util.convert_bytes_to_hex(self.ack_client_raw),
         }
 
-        return util.format_client_script(client_script_template, **script_kwargs)
+        return util.format_template(client_script_template, **script_kwargs)
 
 
 class ShellSocketConnection(interface.IConnection):
@@ -127,10 +105,13 @@ class ShellSocketConnection(interface.IConnection):
         if self._timeout is not None:
             self._connection.settimeout(self._timeout)
 
+        remote_host, remote_port = self._connection.getpeername()
+        self._client_script = self._format_client_script(remote_host, remote_port)
+
     def initialize(self) -> None:
         """Perform initial handshake/setup."""
 
-        self.write(self._profile.load_library())
+        self.write(self._load_library())
 
         try:
             initial_data = self._connection.recv(self._profile.buffer_size)
@@ -143,6 +124,12 @@ class ShellSocketConnection(interface.IConnection):
     @property
     def client(self) -> interface.IProfile:
         return self._profile
+
+    @property
+    def client_script(self) -> str:
+        """Read the client script content."""
+
+        return self._client_script
 
     @property
     def timeout(self) -> float | None:
@@ -172,6 +159,9 @@ class ShellSocketConnection(interface.IConnection):
                 chunk = self._connection.recv(self._profile.buffer_size)
 
                 if not chunk:
+                    # ConnectionResetError inherits from OSError, so it is
+                    # caught by the except OSError handler below and wrapped
+                    # into ConnectionFailure.
                     raise ConnectionResetError("Connection closed by peer")
 
                 combined = buffer + chunk
@@ -217,6 +207,56 @@ class ShellSocketConnection(interface.IConnection):
 
         self._connection.close()
 
+    def _load_library(self) -> bytes:
+        """Load all library scripts from the configured library directory."""
+
+        all_modules: list[bytes] = []
+
+        for file in self._profile.library_root_directory.iterdir():
+            if not file.is_file():
+                continue
+
+            if not util.validate_file_extension(file, self._profile.allowed_library_extensions):
+                continue
+
+            if module_content := util.try_load_file(file):
+                all_modules.append(module_content)
+
+        return b"\n".join(all_modules)
+
+    def _load_payload(self, target_module: str, /) -> bytes:
+        """Load a payload script from the configured payload directory."""
+
+        payload_filepath = self._profile.payload_root_directory / target_module
+
+        if not util.validate_file_relative(payload_filepath, self._profile.payload_root_directory):
+            raise config.ConnectionFailure(f"payload path {payload_filepath} is not relative to the payload root directory")
+
+        try:
+            with payload_filepath.open("rb") as f:
+                payload_data = f.read()
+        except OSError as e:
+            raise config.ConnectionFailure(f"Failed to read payload script: {e}") from e
+
+        return payload_data
+
+    def _format_client_script(self, host: str, port: int, /) -> str:
+        """Load and format the client script template with connection details."""
+
+        try:
+            with self._profile.client_path.open("r") as f:
+                client_script_template = f.read()
+        except OSError as e:
+            raise config.ConnectionFailure(f"Failed to read client script: {e}") from e
+
+        script_kwargs: dict[str, str] = {
+            "HOST": host,
+            "PORT": str(port),
+            "ACKNOWLEDGE": util.convert_bytes_to_hex(self._profile.ack_client_raw),
+        }
+
+        return util.format_template(client_script_template, **script_kwargs)
+
 
 DEFAULT_SHELL_SOCKET = ShellSocketProfile(
     name="Shell Socket",
@@ -226,3 +266,4 @@ DEFAULT_SHELL_SOCKET = ShellSocketProfile(
     allowed_payload_extensions=(".sh",),
     allowed_library_extensions=(".sh",),
 )
+"""Default ShellSocketProfile instance with typical configuration for a shell socket client."""

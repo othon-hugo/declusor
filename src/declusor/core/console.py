@@ -2,6 +2,7 @@ import atexit
 import glob
 import os
 import readline
+import sys
 from pathlib import Path
 from typing import Optional, Sequence
 
@@ -9,7 +10,7 @@ from declusor import interface
 
 
 class Console(interface.IConsole):
-    """A modular console handler for input reading."""
+    """Console implementation using readline for input and output."""
 
     def __init__(self) -> None:
         self._history_file: Optional[Path] = None
@@ -106,6 +107,45 @@ class Console(interface.IConsole):
                 pass
 
         atexit.register(self._save_history)
+
+    def read_line(self, prompt: str = "", /) -> str:
+        """Read a line from standard input with readline support.
+
+        Note:
+            Uses input() to preserve readline functionality (autocomplete, history).
+            This is a blocking call.
+        """
+
+        return input(prompt)
+
+    def read_stripped_line(self, prompt: str = "", /) -> str:
+        """Read a line from standard input and strip whitespace."""
+
+        return self.read_line(prompt).strip()
+
+    def write_message(self, message: str, /) -> None:
+        """Write a message to standard output."""
+
+        sys.stdout.write(message + "\n")
+        sys.stdout.flush()
+
+    def write_binary_data(self, message: bytes, /) -> None:
+        """Write binary data to standard output."""
+
+        sys.stdout.buffer.write(message)
+        sys.stdout.buffer.flush()
+
+    def write_error_message(self, message: str | BaseException, /) -> None:
+        """Write an error message to standard error."""
+
+        sys.stderr.write(f"error: {message}\n")
+        sys.stderr.flush()
+
+    def write_warning_message(self, message: str | BaseException, /) -> None:
+        """Write a warning message to standard error."""
+
+        sys.stderr.write(f"warning: {message}\n")
+        sys.stderr.flush()
 
     def _save_history(self) -> None:
         """Save history to file."""

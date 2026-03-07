@@ -7,7 +7,4 @@ def call_execute(session: interface.IConnection, console: interface.IConsole, li
     arguments, _ = util.parse_command_arguments(line, {"filepath": str})
     filepath = util.ensure_file_exists(arguments["filepath"])
 
-    command.ExecuteFile(filepath).execute(session, console)
-
-    for data in session.read():
-        console.write_binary_data(data)
+    util.handle_command(command.ExecuteFile(filepath), session, console)

@@ -1,10 +1,15 @@
 from base64 import b64decode, b64encode
 from hashlib import md5, sha256, sha384, sha512
 from shlex import quote as shlex_quote
+from string import Template
 
 
 def quote(s: str) -> str:
     return shlex_quote(s)
+
+
+def format_template(template_str: str, /, **kwargs: str | int) -> str:
+    return Template(template_str).safe_substitute(**kwargs)
 
 
 def convert_to_bytes(data: bytes | str, /) -> bytes:

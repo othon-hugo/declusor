@@ -1,4 +1,4 @@
-from typing import Callable, Type, NoReturn
+from typing import Callable, NoReturn, Type
 
 from declusor import config
 

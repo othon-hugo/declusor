@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Generator
+from typing import TYPE_CHECKING, Generator, Self
 
 if TYPE_CHECKING:
     from declusor.interface import profile
@@ -47,11 +47,7 @@ class IConnection(ABC):
 
     @abstractmethod
     def initialize(self) -> None:
-        """Perform initial handshake/setup.
-
-        Args:
-            library: Binary data representing the library to load.
-        """
+        """Perform initial handshake/setup."""
 
         raise NotImplementedError
 
@@ -80,3 +76,9 @@ class IConnection(ABC):
         """Close the session stream."""
 
         raise NotImplementedError
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: object) -> None:
+        self.close()
