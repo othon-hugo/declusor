@@ -4,7 +4,18 @@ from declusor import config
 
 
 def handle_exception(exc: BaseException) -> NoReturn:
-    """Handle exceptions and exit the program with an appropriate message."""
+    """Convert a known exception into a ``SystemExit`` with a user-friendly message.
+
+    Walks a priority-ordered handler table; the first matching type wins.
+    Unrecognised exceptions are re-raised as-is (preserving stack trace).
+
+    Args:
+        exc: The exception to handle.
+
+    Raises:
+        SystemExit: With exit code 1 and a descriptive message for known types.
+        BaseException: Re-raises *exc* unchanged if no handler matches.
+    """
 
     handler_table: dict[Type[BaseException], Callable[[BaseException], str]] = {
         config.ConnectionFailure: lambda e: str(e),

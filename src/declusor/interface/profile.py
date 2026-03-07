@@ -6,27 +6,41 @@ if TYPE_CHECKING:
 
 
 class IProfile(ABC):
-    """Client configuration profile.
+    """Immutable configuration profile for a remote client.
 
-    Holds connection parameters and protocol configuration.
-    Does NOT perform I/O — that's the responsibility of the connection.
+    Holds protocol parameters (buffer sizes, timeouts, ACK values, supported
+    operations) and performs only pure string formatting. All I/O is
+    delegated to the ``IConnection`` implementation.
     """
 
     @property
     @abstractmethod
     def bufsize(self) -> int:
+        """Receive buffer size in bytes used for socket reads."""
+
         raise NotImplementedError
 
     @property
     @abstractmethod
     def timeout(self) -> float | None:
+        """Default socket operation timeout in seconds, or ``None`` for no timeout."""
+
         raise NotImplementedError
 
     @abstractmethod
     def format_operation_script(self, opcode: "OperationCode", /, *args: str) -> str | None:
-        """Format an operation into a shell command string.
+        """Build the shell command string for a given operation code.
 
-        This is pure string formatting — no I/O.
+        Maps an ``OperationCode`` to its client-side function name and appends
+        each argument as a shell-quoted token. Returns ``None`` if the opcode
+        is not supported by this profile.
+
+        Args:
+            opcode: The operation to invoke on the client.
+            *args: Positional string arguments forwarded to the client function.
+
+        Returns:
+            A ready-to-send command string, or ``None`` if the opcode is unsupported.
         """
 
         raise NotImplementedError

@@ -7,18 +7,21 @@ if TYPE_CHECKING:
 
 
 class ICommand(ABC):
-    """Abstract base class defining the command interface.
+    """An executable operation that runs within an active session context.
 
-    Commands encapsulate executable actions that can be performed
-    within a session context.
+    Follows the Command design pattern: each subclass encapsulates a single
+    remote operation (execute a file, upload a payload, run a shell command,
+    etc.) along with the data it needs. Commands are stateless with respect
+    to the session — they receive it as a parameter rather than storing it.
     """
 
     @abstractmethod
     def execute(self, session: "IConnection", console: "IConsole", /) -> None:
-        """Execute the command in the given session.
+        """Run the command over the given connection.
 
         Args:
-            session: The session context in which to execute the command.
+            session: The active connection through which the operation is sent.
+            console: Console used for displaying output or prompting the user.
         """
 
         raise NotImplementedError

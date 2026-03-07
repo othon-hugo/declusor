@@ -9,19 +9,19 @@ Controller = Callable[["IConnection", "IConsole", str], None]
 
 
 class IRouter(ABC):
-    """Abstract base class defining the router interface.
+    """Maps command names to their controller functions.
 
-    Routers map command routes to their corresponding controller functions,
-    managing command registration and dispatch.
+    Manages route registration (``connect``) and dispatch (``locate``),
+    and provides human-readable documentation for all registered routes.
     """
 
     @property
     @abstractmethod
     def routes(self) -> tuple[str, ...]:
-        """Returns all registered routes.
+        """All currently registered route names.
 
         Returns:
-            Tuple of all registered route names.
+            A tuple of route name strings in registration order.
         """
 
         raise NotImplementedError
@@ -29,47 +29,56 @@ class IRouter(ABC):
     @property
     @abstractmethod
     def documentation(self) -> str:
-        """Returns the documentation of all registered routes.
+        """Formatted help text listing every route and its description.
 
         Returns:
-            Formatted documentation string for all routes.
+            A multi-line string with one ``route: description`` entry per line,
+            or an empty string if no routes are registered.
         """
 
         raise NotImplementedError
 
     @abstractmethod
     def get_route_usage(self, route: str, /) -> str:
-        """Returns the documentation of the controller associated with the given route.
+        """Return the one-line usage description for a registered route.
 
         Args:
-            route: The route name to get usage documentation for.
+            route: The route name to look up.
 
         Returns:
-            Usage documentation string for the specified route.
+            The first line of the controller's docstring, or an empty string
+            if no documentation is available.
         """
 
         raise NotImplementedError
 
     @abstractmethod
     def connect(self, route: str, controller: Controller, /) -> None:
-        """Connects a route to a controller.
+        """Register a controller under a route name.
 
         Args:
-            route: The route name to register.
-            controller: The controller function to associate with the route.
+            route: The command name to register (leading/trailing whitespace
+                is stripped automatically).
+            controller: The ``Controller`` callable to associate with *route*.
+
+        Raises:
+            ValueError: If *route* is already registered.
         """
 
         raise NotImplementedError
 
     @abstractmethod
     def locate(self, route: str, /) -> Controller:
-        """Locates the controller associated with the given route.
+        """Return the controller registered under *route*.
 
         Args:
-            route: The route name to locate.
+            route: The command name to look up.
 
         Returns:
-            The controller function associated with the route.
+            The ``Controller`` callable bound to *route*.
+
+        Raises:
+            RouterError: If *route* is not registered.
         """
 
         raise NotImplementedError

@@ -2,19 +2,29 @@ from declusor import config, interface
 
 
 class Router(interface.IRouter):
-    """Router implementation."""
+    """Default ``IRouter`` implementation backed by an in-memory dictionary.
+
+    Routes are registered via ``connect`` and dispatched via ``locate``.
+    The route name is stripped of surrounding whitespace before storage.
+    Duplicate registration raises ``ValueError``; unknown lookup raises
+    ``RouterError``.
+    """
 
     def __init__(self) -> None:
         self._route_table: dict[str, interface.Controller] = {}
 
     @property
     def routes(self) -> tuple[str, ...]:
-        """Returns all registered routes."""
+        """All currently registered route names, in insertion order."""
 
         return tuple(self._route_table.keys())
 
     def get_route_usage(self, route: str, /) -> str:
-        """Returns the documentation of the controller associated with the given route."""
+        """Return the one-line description of the controller for *route*.
+
+        Collapses the controller's ``__doc__`` into a single space-separated
+        string. Returns an empty string if no docstring is present.
+        """
 
         controller_doc = self.locate(route).__doc__
 
@@ -26,7 +36,11 @@ class Router(interface.IRouter):
         return documentation
 
     def connect(self, route: str, controller: interface.Controller, /) -> None:
-        """Connects a route to a controller."""
+        """Register *controller* under *route*.
+
+        Raises:
+            ValueError: If *route* is already registered.
+        """
 
         route = route.strip()
 
@@ -36,7 +50,11 @@ class Router(interface.IRouter):
         self._route_table[route] = controller
 
     def locate(self, route: str, /) -> interface.Controller:
-        """Locates the controller associated with the given route."""
+        """Return the controller bound to *route*.
+
+        Raises:
+            RouterError: If *route* is not registered.
+        """
 
         if controller := self._route_table.get(route.strip()):
             return controller
@@ -45,7 +63,11 @@ class Router(interface.IRouter):
 
     @property
     def documentation(self) -> str:
-        """Returns the documentation of all registered routes."""
+        """Formatted help string for all routes, aligned by the longest route name.
+
+        Each line has the form ``route: description``. Returns an empty string
+        if no routes are registered.
+        """
 
         if not self._route_table:
             return ""

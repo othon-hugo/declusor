@@ -6,19 +6,21 @@ if TYPE_CHECKING:
 
 
 class IConnection(ABC):
-    """Abstract base class defining the session interface.
+    """Manages an active network session with a remote client.
 
-    Sessions manage network connections with clients, handling data
-    transmission and timeout configuration.
+    Handles the full lifecycle of a connection: initialization (handshake),
+    framed read/write over the transport layer, and graceful shutdown.
+    Supports the context manager protocol — ``close()`` is called automatically
+    on exit.
     """
 
     @property
     @abstractmethod
     def client(self) -> "profile.IProfile":
-        """Returns the client associated with this session.
+        """The configuration profile for the connected client.
 
         Returns:
-            An instance of IClient representing the connected client.
+            The ``IProfile`` instance that was used to open this connection.
         """
 
         raise NotImplementedError
@@ -26,10 +28,11 @@ class IConnection(ABC):
     @property
     @abstractmethod
     def timeout(self) -> float | None:
-        """Timeout for socket operations.
+        """Socket operation timeout, in seconds.
 
         Returns:
-            Float value representing the timeout in seconds, or None if no timeout is set.
+            Seconds to wait before a socket call times out, or ``None`` for
+            no timeout (blocking indefinitely).
         """
 
         raise NotImplementedError
@@ -37,43 +40,60 @@ class IConnection(ABC):
     @timeout.setter
     @abstractmethod
     def timeout(self, value: float | None, /) -> None:
-        """Set the session timeout.
+        """Set the socket operation timeout.
 
         Args:
-            value: Timeout duration in seconds.
+            value: Timeout in seconds, or ``None`` to block indefinitely.
         """
 
         raise NotImplementedError
 
     @abstractmethod
     def initialize(self) -> None:
-        """Perform initial handshake/setup."""
+        """Perform the initial protocol handshake.
+
+        Typically sends the library payload to the client and verifies the
+        client's acknowledgment before the session is considered ready.
+
+        Raises:
+            ConnectionFailure: If the handshake times out or the client ACK
+                is invalid.
+        """
 
         raise NotImplementedError
 
     @abstractmethod
     def read(self) -> Generator[bytes, None, None]:
-        """Read data from the session.
+        """Read a framed message from the remote client.
 
-        Returns:
-            Generator yielding bytes received from the session.
+        Yields chunks of data until the client's ACK sentinel is received.
+        The sentinel itself is excluded from the yielded data.
+
+        Yields:
+            Successive ``bytes`` chunks of the incoming message payload.
+
+        Raises:
+            ConnectionFailure: On timeout, connection reset, or other I/O error.
         """
 
         raise NotImplementedError
 
     @abstractmethod
     def write(self, content: bytes, /) -> None:
-        """Write data to the session.
+        """Send data to the remote client, followed by the server ACK sentinel.
 
         Args:
-            content: Binary data to send to the session.
+            content: The raw bytes payload to transmit.
+
+        Raises:
+            ConnectionFailure: On timeout or I/O error during transmission.
         """
 
         raise NotImplementedError
 
     @abstractmethod
     def close(self) -> None:
-        """Close the session stream."""
+        """Close the underlying transport and release all associated resources."""
 
         raise NotImplementedError
 

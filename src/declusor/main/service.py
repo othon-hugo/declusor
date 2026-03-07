@@ -4,7 +4,25 @@ from declusor import config, connection, controller, core, interface, util
 
 
 def run_service(router: interface.IRouter, console: interface.IConsole, options: core.DeclusorOptions) -> None:
-    """Run the main service loop."""
+    """Orchestrate the full server lifecycle for one client session.
+
+    1. Validates required data directories.
+    2. Registers all command routes on *router*.
+    3. Prints the formatted client bootstrap script.
+    4. Listens for a single incoming TCP connection.
+    5. Opens a ``ShellSocketConnection``, runs the handshake, then starts
+       the interactive prompt loop.
+
+    Args:
+        router: Pre-constructed router to register routes on.
+        console: Console used for operator I/O throughout the session.
+        options: Parsed CLI options (host, port, client profile).
+
+    Raises:
+        FileNotFoundError: If a required data directory is missing.
+        NotADirectoryError: If a required path exists but is not a directory.
+        ConnectionFailure: If the socket cannot be bound or the handshake fails.
+    """
 
     _validate_directories()
     _set_routes(router)
@@ -23,7 +41,15 @@ def run_service(router: interface.IRouter, console: interface.IConsole, options:
 
 
 def _validate_directories() -> None:
-    """Validate that all required data directories exist."""
+    """Confirm that all required data directories exist and are directories.
+
+    Also changes the working directory to ``MODULES_DIR`` so that relative
+    payload paths work correctly inside the session.
+
+    Raises:
+        FileNotFoundError: If any required directory is absent.
+        NotADirectoryError: If a required path is not a directory.
+    """
 
     directories = [config.BasePath.CLIENTS_DIR, config.BasePath.MODULES_DIR, config.BasePath.LIBRARY_DIR]
 
@@ -38,7 +64,7 @@ def _validate_directories() -> None:
 
 
 def _set_routes(router: interface.IRouter) -> None:
-    """Set up the routes for the router."""
+    """Register all built-in command routes on *router*."""
 
     call_help = controller.create_help_controller(lambda: router.documentation, router.get_route_usage)
 

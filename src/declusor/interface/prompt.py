@@ -2,18 +2,15 @@ from abc import ABC, abstractmethod
 
 
 class IPrompt(ABC):
-    """Abstract base class defining the prompt interface.
-
-    Prompts handle the interactive command-line interface loop,
-    reading user input and dispatching commands.
-    """
+    """Interactive command-line loop that reads, routes, and dispatches user input."""
 
     @abstractmethod
     def run(self) -> None:
-        """Run the prompt loop.
+        """Start the interactive prompt loop.
 
-        Starts the interactive prompt, continuously reading and processing
-        user commands until termination.
+        Blocks until the user exits (via the ``exit`` command or ``KeyboardInterrupt``).
+        On each iteration, reads a command, routes it through the ``IRouter``,
+        and dispatches it to the appropriate controller.
         """
 
         raise NotImplementedError

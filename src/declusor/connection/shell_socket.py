@@ -8,7 +8,12 @@ from declusor import config, interface, util
 
 @dataclass(frozen=True)
 class ShellSocketProfile(interface.IProfile):
-    """Configuration data for a shell socket client."""
+    """Immutable configuration profile for a shell-over-socket client.
+
+    All fields are set at construction time; the dataclass is frozen to prevent
+    accidental mutation. This class is pure data — it never performs I/O.
+    File loading and script formatting are handled by ``ShellSocketConnection``.
+    """
 
     name: str
     """Name of the profile, used for display purposes."""
@@ -57,13 +62,33 @@ class ShellSocketProfile(interface.IProfile):
 
     @property
     def bufsize(self) -> int:
+        """Receive buffer size in bytes. Alias for ``buffer_size``."""
+
         return self.buffer_size
 
     @property
     def timeout(self) -> float | None:
+        """Socket operation timeout in seconds. Alias for ``connection_timeout``."""
+
         return self.connection_timeout
 
     def format_operation_script(self, opcode: "config.OperationCode", /, *args: str) -> str | None:
+        """Build the shell command string for a given operation code.
+
+        Looks up the function name that corresponds to *opcode* in
+        ``supported_functions`` and appends each argument as a shell-quoted
+        token. If no args are provided, returns the bare function name.
+
+        Args:
+            opcode: The operation to invoke on the client.
+            *args: Positional arguments appended to the function call, each
+                shell-quoted via ``shlex.quote``.
+
+        Returns:
+            A ready-to-send shell command string, or ``None`` if *opcode*
+            is not in ``supported_functions``.
+        """
+
         function_name = self.supported_functions.get(opcode)
 
         if not function_name:
@@ -72,6 +97,19 @@ class ShellSocketProfile(interface.IProfile):
         return function_name + (" " + " ".join(util.quote(a) for a in args) if args else "")
 
     def format_client_script(self, host: str, port: int, /) -> str:
+        """Read the client script template and substitute connection parameters.
+
+        Args:
+            host: The server hostname or IP address to embed in the script.
+            port: The port number to embed in the script.
+
+        Returns:
+            The fully substituted client script as a string.
+
+        Raises:
+            ConnectionFailure: If the template file cannot be read.
+        """
+
         try:
             with self.client_path.open("r") as f:
                 client_script_template = f.read()
@@ -88,14 +126,23 @@ class ShellSocketProfile(interface.IProfile):
 
 
 class ShellSocketConnection(interface.IConnection):
-    """Manages a session over a socket connection, handling reading and writing of data."""
+    """``IConnection`` implementation over a raw TCP socket.
+
+    Wraps a connected ``socket.socket``, applies ACK-based framing for all
+    read/write operations, and manages the library-upload handshake on startup.
+    Implements the context manager protocol — the underlying socket is closed
+    automatically when the ``with`` block exits.
+    """
 
     def __init__(self, connection: socket, profile: ShellSocketProfile, /) -> None:
-        """Initialize the Session using the provided socket connection and configuration.
+        """Bind a live socket to a profile and prepare the session for use.
+
+        Sets the socket timeout from the profile, then pre-render the client
+        script by querying the peer address.
 
         Args:
-            connection: The socket connection.
-            profile: The ShellSocketProfile containing configuration for the session.
+            connection: An accepted, connected ``socket.socket`` instance.
+            profile: The ``ShellSocketProfile`` providing protocol parameters.
         """
 
         self._profile = profile
@@ -109,7 +156,15 @@ class ShellSocketConnection(interface.IConnection):
         self._client_script = self._format_client_script(remote_host, remote_port)
 
     def initialize(self) -> None:
-        """Perform initial handshake/setup."""
+        """Perform the initial protocol handshake.
+
+        Sends the concatenated library scripts to the client, then waits for
+        the client's ACK sentinel. Raises ``ConnectionFailure`` if the ACK
+        is not received within the configured timeout, or if the value is wrong.
+
+        Raises:
+            ConnectionFailure: On timeout or invalid client ACK.
+        """
 
         self.write(self._load_library())
 
@@ -123,32 +178,48 @@ class ShellSocketConnection(interface.IConnection):
 
     @property
     def client(self) -> interface.IProfile:
+        """The ``ShellSocketProfile`` used to configure this connection."""
+
         return self._profile
 
     @property
     def client_script(self) -> str:
-        """Read the client script content."""
+        """The formatted client bootstrap script, ready to be delivered to the operator.
+
+        Populated during ``__init__`` by substituting the peer address and
+        the ACK value into the client script template.
+        """
 
         return self._client_script
 
     @property
     def timeout(self) -> float | None:
-        """Timeout for socket operations."""
+        """Current socket operation timeout in seconds, or ``None`` for no timeout."""
 
         return self._timeout
 
     @timeout.setter
     def timeout(self, value: float | None, /) -> None:
-        """Set the timeout for socket operations."""
+        """Update the socket timeout and apply it immediately to the underlying socket.
 
-        self._timeout = value
-        self._connection.settimeout(self._timeout)
+        Args:
+            value: New timeout in seconds, or ``None`` to block indefinitely.
+        """
 
     def read(self) -> Generator[bytes, None, None]:
-        """Read data from the connection until the client ACK is received.
+        """Yield the payload of one framed message from the client.
 
-        Yields chunks of data as they arrive, excluding the ACK. Only keeps a small
-        buffer (size of ACK) to detect when transmission is complete.
+        Reads from the socket in chunks, accumulating data until the client
+        ACK sentinel is found. Yields all data preceding the sentinel; the
+        sentinel itself is discarded. A rolling tail buffer (size equal to
+        ACK length minus one) prevents the sentinel from being split across
+        two ``recv`` calls.
+
+        Yields:
+            Successive ``bytes`` chunks of the incoming payload.
+
+        Raises:
+            ConnectionFailure: On timeout, connection reset, or OS-level I/O error.
         """
 
         ack, ack_len = self._profile.ack_client_raw, len(self._profile.ack_client_raw)
@@ -188,10 +259,15 @@ class ShellSocketConnection(interface.IConnection):
                 raise config.ConnectionFailure(f"Failed to read from connection: {exc}") from exc
 
     def write(self, content: bytes, /) -> None:
-        """Write data to the connection followed by the client ACK.
+        """Send *content* to the client, followed by the server ACK sentinel.
+
+        Both the payload and the sentinel are sent as separate ``send`` calls.
 
         Args:
-            content: The bytes to send.
+            content: The raw bytes payload to transmit.
+
+        Raises:
+            ConnectionFailure: On timeout or OS-level I/O error.
         """
 
         try:
@@ -203,12 +279,19 @@ class ShellSocketConnection(interface.IConnection):
             raise config.ConnectionFailure(f"Failed to write to connection: {exc}") from exc
 
     def close(self) -> None:
-        """Close the session socket."""
+        """Close the underlying socket, releasing the OS file descriptor."""
 
         self._connection.close()
 
     def _load_library(self) -> bytes:
-        """Load all library scripts from the configured library directory."""
+        """Concatenate all valid library scripts from the configured library directory.
+
+        Files are filtered by ``allowed_library_extensions``. Unreadable files
+        are silently skipped. Scripts are joined with newline separators.
+
+        Returns:
+            All library file contents joined with ``b'\\n'``.
+        """
 
         all_modules: list[bytes] = []
 
@@ -225,7 +308,21 @@ class ShellSocketConnection(interface.IConnection):
         return b"\n".join(all_modules)
 
     def _load_payload(self, target_module: str, /) -> bytes:
-        """Load a payload script from the configured payload directory."""
+        """Read a payload script from the configured payload directory.
+
+        Validates that *target_module* resolves to a path inside
+        ``payload_root_directory`` (path-traversal guard) before reading.
+
+        Args:
+            target_module: Filename of the payload relative to the payload root.
+
+        Returns:
+            The raw bytes content of the payload file.
+
+        Raises:
+            ConnectionFailure: If the resolved path escapes the payload root,
+                or if the file cannot be read.
+        """
 
         payload_filepath = self._profile.payload_root_directory / target_module
 
@@ -241,7 +338,18 @@ class ShellSocketConnection(interface.IConnection):
         return payload_data
 
     def _format_client_script(self, host: str, port: int, /) -> str:
-        """Load and format the client script template with connection details."""
+        """Read the client script template and substitute connection parameters.
+
+        Args:
+            host: The peer hostname or IP address.
+            port: The port the operator's listener is bound to.
+
+        Returns:
+            The fully substituted client script string.
+
+        Raises:
+            ConnectionFailure: If the template file cannot be read.
+        """
 
         try:
             with self._profile.client_path.open("r") as f:
