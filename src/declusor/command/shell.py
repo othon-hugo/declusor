@@ -35,10 +35,11 @@ class LaunchShell(interface.ICommand):
 
         try:
             output_handler(self._stop_event)
+
+            self._task_pool.wait_all()
         except KeyboardInterrupt:
             console.write_message("[keyboard interrupt received]")
         finally:
-            self._task_pool.wait_all()
             self._task_pool.stop()
 
     def _create_shell_input_handler(self, session: interface.IConnection, console: interface.IConsole, /) -> util.TaskHandler:

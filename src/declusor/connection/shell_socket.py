@@ -206,6 +206,9 @@ class ShellSocketConnection(interface.IConnection):
             value: New timeout in seconds, or ``None`` to block indefinitely.
         """
 
+        self._timeout = value
+        self._connection.settimeout(value)
+
     def read(self) -> Generator[bytes, None, None]:
         """Yield the payload of one framed message from the client.
 
