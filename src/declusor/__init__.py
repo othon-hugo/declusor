@@ -1,10 +1,12 @@
-from . import command, config, controller, core, interface, util
+from . import command, config, connection, controller, core, interface, main, util
 
 __all__ = [
     "command",
     "config",
+    "connection",
     "controller",
     "core",
     "interface",
+    "main",
     "util",
 ]

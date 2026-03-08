@@ -1,41 +1,37 @@
 # Controller Package
 
-The **controller** package contains the request handlers that process user commands and orchestrate the appropriate responses. Controllers act as the intermediary layer between user input and command execution.
+The **controller** package is the application layer — thin functions that parse user input, delegate to command objects, and present output.
 
-## Purpose
+## Modules
 
-This package implements the Application Layer of the system, providing:
+| Module       | Function                 | Command                                                       |
+| ------------ | ------------------------ | ------------------------------------------------------------- |
+| `command.py` | `call_command`           | Execute a single shell command on the remote system           |
+| `execute.py` | `call_execute`           | Execute a local script on the remote system                   |
+| `exit.py`    | `call_exit`              | Raise `ExitRequest` to terminate the session                  |
+| `help.py`    | `create_help_controller` | Factory returning a closure that displays route documentation |
+| `load.py`    | `call_load`              | Load and run a local payload on the remote system             |
+| `shell.py`   | `call_shell`             | Open an interactive shell session                             |
+| `upload.py`  | `call_upload`            | Upload a local file to the remote system                      |
 
-- **Request Handling**: Each controller function responds to a specific user command.
-- **Input Processing**: Controllers parse and validate command arguments before execution.
-- **Command Orchestration**: Controllers instantiate and execute the appropriate commands.
-- **Response Management**: Controllers handle output from remote sessions and present it to the user.
-- **Dependency Injection**: Controllers receive all dependencies (session, console) as parameters.
+## Controller Signature
+
+All controllers follow the `MetaController` type alias:
+
+```python
+def call_*(session: IConnection, console: IConsole, line: str) -> None
+```
+
+## Lifecycle
+
+1. Receive `(session, console, line)` from the router.
+2. Parse and validate `line` via `parse_command_arguments`.
+3. Perform pre-execution checks (e.g. `ensure_file_exists`).
+4. Instantiate and execute the appropriate `ICommand`.
+5. Forward response output to `console`.
 
 ## Design Principles
 
-1. **Thin Controllers**: Controllers delegate business logic to command objects and utilities.
-2. **Dependency Injection**: Controllers depend on abstractions (interfaces), not concrete implementations.
-3. **Consistent Signatures**: Controller functions follow the `MetaController` type signature.
-4. **Error Propagation**: Controllers allow domain exceptions to propagate for centralized handling.
-
-## Expected Behavior
-
-Controller functions within this package should:
-
-- Accept session, console, and command line arguments (no router dependency unless needed)
-- Depend on `interface` types, not concrete implementations
-- Parse command arguments using standard parsing utilities
-- Validate inputs before proceeding with execution
-- Instantiate and execute the appropriate command objects
-- Process and display output received from sessions
-- Propagate exceptions for centralized error handling
-
-## Controller Lifecycle
-
-1. Receive invocation from the router with session context, console, and user input
-2. Parse and validate command arguments
-3. Perform any necessary pre-execution validation (e.g., file existence)
-4. Create and execute the appropriate command
-5. Process session responses and present output via the console interface
-6. Return control to the prompt for the next command
+1. **Thin Controllers** — business logic lives in `command` objects and `util` functions.
+2. **Dependency Injection** — controllers depend on `IConnection` / `IConsole`, not concrete types.
+3. **Error Propagation** — domain exceptions propagate to the prompt loop for centralised handling.

@@ -1,11 +1,11 @@
-"""Tests for declusor.controller.help module.
+"""Tests for ``declusor.controller.help.create_help_controller``.
 
-This module tests the help controller factory:
-- create_help_controller: Factory that creates help controllers with injected documentation providers
+Covers the factory function, global help (no argument), per-command help,
+argument parsing, and closure behaviour with injected providers.
 """
 
 from typing import Callable
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -15,156 +15,99 @@ import pytest
 
 
 @pytest.fixture
-def mock_session() -> AsyncMock:
-    """Create a mock ISession."""
+def mock_session() -> MagicMock:
+    """Return a ``MagicMock`` satisfying the ``IConnection`` interface."""
 
 
 @pytest.fixture
 def mock_console() -> MagicMock:
-    """Create a mock IConsole for output verification."""
+    """Return a ``MagicMock`` satisfying the ``IConsole`` interface."""
 
 
 @pytest.fixture
 def mock_get_documentation() -> Callable[[], str]:
-    """Create a mock documentation provider."""
+    """Return a mock callable that produces a full help string."""
 
 
 @pytest.fixture
 def mock_get_route_usage() -> Callable[[str], str]:
-    """Create a mock route usage provider."""
+    """Return a mock callable that produces per-route usage text."""
 
 
 # =============================================================================
-# Tests: create_help_controller - Factory function
+# Tests: Factory function
 # =============================================================================
 
 
-def test_create_help_controller_returns_callable(mock_get_documentation: Callable[[], str], mock_get_route_usage: Callable[[str], str]) -> None:
-    """
-    Given: Documentation providers are provided
-    When: create_help_controller is called
-    Then: Returns a callable controller function
-    """
-
-
-def test_create_help_controller_returns_async_function(mock_get_documentation: Callable[[], str], mock_get_route_usage: Callable[[str], str]) -> None:
-    """
-    Given: Documentation providers are provided
-    When: create_help_controller is called
-    Then: Returns an async function
-    """
+def test_returns_callable(mock_get_documentation: Callable, mock_get_route_usage: Callable) -> None:
+    """``create_help_controller`` must return a callable controller function."""
 
 
 # =============================================================================
-# Tests: call_help - No arguments (global help)
+# Tests: Global help (empty line)
 # =============================================================================
 
 
-@pytest.mark.asyncio
-def test_call_help_no_args_displays_all_commands(
-    mock_session: AsyncMock, mock_console: MagicMock, mock_get_documentation: Callable[[], str], mock_get_route_usage: Callable[[str], str]
+def test_empty_line_displays_all_commands(
+    mock_session: MagicMock, mock_console: MagicMock, mock_get_documentation: Callable, mock_get_route_usage: Callable
 ) -> None:
-    """
-    Given: call_help is called with empty line ""
-    When: Controller executes
-    Then: Displays full documentation (all commands)
-    """
+    """With ``line=""``, the full documentation string must be printed."""
 
 
-@pytest.mark.asyncio
-def test_call_help_no_args_writes_to_console(
-    mock_session: AsyncMock, mock_console: MagicMock, mock_get_documentation: Callable[[], str], mock_get_route_usage: Callable[[str], str]
+def test_empty_line_writes_to_console(
+    mock_session: MagicMock, mock_console: MagicMock, mock_get_documentation: Callable, mock_get_route_usage: Callable
 ) -> None:
-    """
-    Given: call_help is called with empty line
-    When: Documentation is retrieved
-    Then: console.write_message is called with documentation
-    """
+    """``console.write_message`` must receive the ``get_documentation()`` result."""
 
 
 # =============================================================================
-# Tests: call_help - With command argument
+# Tests: Per-command help
 # =============================================================================
 
 
-@pytest.mark.asyncio
-def test_call_help_with_command_displays_specific_help(
-    mock_session: AsyncMock, mock_console: MagicMock, mock_get_documentation: Callable[[], str], mock_get_route_usage: Callable[[str], str]
+def test_command_arg_displays_specific_help(
+    mock_session: MagicMock, mock_console: MagicMock, mock_get_documentation: Callable, mock_get_route_usage: Callable
 ) -> None:
-    """
-    Given: call_help is called with line="load"
-    When: Controller executes
-    Then: Displays help for "load" command only
-    """
+    """``line="load"`` must display just the ``load`` route's usage."""
 
 
-@pytest.mark.asyncio
-def test_call_help_with_command_uses_get_route_usage(
-    mock_session: AsyncMock, mock_console: MagicMock, mock_get_documentation: Callable[[], str], mock_get_route_usage: Callable[[str], str]
+def test_command_arg_calls_get_route_usage(
+    mock_session: MagicMock, mock_console: MagicMock, mock_get_documentation: Callable, mock_get_route_usage: Callable
 ) -> None:
-    """
-    Given: call_help is called with line="shell"
-    When: Controller executes
-    Then: Calls get_route_usage("shell")
-    """
+    """``get_route_usage`` must be called with the provided route name."""
 
 
-@pytest.mark.asyncio
-def test_call_help_with_command_writes_usage_to_console(
-    mock_session: AsyncMock, mock_console: MagicMock, mock_get_documentation: Callable[[], str], mock_get_route_usage: Callable[[str], str]
+def test_command_arg_writes_usage_to_console(
+    mock_session: MagicMock, mock_console: MagicMock, mock_get_documentation: Callable, mock_get_route_usage: Callable
 ) -> None:
-    """
-    Given: call_help is called with line="load"
-    When: Route usage is retrieved
-    Then: console.write_message is called with the usage text
-    """
+    """``console.write_message`` must receive the per-route usage string."""
 
 
 # =============================================================================
-# Tests: call_help - Argument parsing
+# Tests: Argument parsing
 # =============================================================================
 
 
-@pytest.mark.asyncio
-def test_call_help_parses_optional_command_arg(
-    mock_session: AsyncMock, mock_console: MagicMock, mock_get_documentation: Callable[[], str], mock_get_route_usage: Callable[[str], str]
+def test_optional_command_defaults_to_none(
+    mock_session: MagicMock, mock_console: MagicMock, mock_get_documentation: Callable, mock_get_route_usage: Callable
 ) -> None:
-    """
-    Given: call_help uses parse_command_arguments with Optional[str]
-    When: No argument provided
-    Then: Uses get_documentation (command is None)
-    """
+    """When no argument is given, ``command`` must be ``None`` (uses global help)."""
 
 
-@pytest.mark.asyncio
-def test_call_help_parses_provided_command_arg(
-    mock_session: AsyncMock, mock_console: MagicMock, mock_get_documentation: Callable[[], str], mock_get_route_usage: Callable[[str], str]
+def test_provided_command_arg_parsed_correctly(
+    mock_session: MagicMock, mock_console: MagicMock, mock_get_documentation: Callable, mock_get_route_usage: Callable
 ) -> None:
-    """
-    Given: call_help is called with line="upload"
-    When: Arguments are parsed
-    Then: Uses get_route_usage with "upload"
-    """
+    """``line="upload"`` must parse ``command`` as ``"upload"``."""
 
 
 # =============================================================================
-# Tests: call_help - Closure behavior
+# Tests: Closure behaviour
 # =============================================================================
 
 
-@pytest.mark.asyncio
-def test_call_help_uses_injected_documentation_provider(mock_session: AsyncMock, mock_console: MagicMock) -> None:
-    """
-    Given: create_help_controller is called with specific providers
-    When: The returned controller is executed
-    Then: Uses the injected documentation provider
-    """
+def test_uses_injected_documentation_provider(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """The controller returned by the factory must call the injected ``get_documentation``."""
 
 
-@pytest.mark.asyncio
-def test_call_help_uses_injected_route_usage_provider(mock_session: AsyncMock, mock_console: MagicMock) -> None:
-    """
-    Given: create_help_controller is called with specific providers
-    When: The returned controller is executed with a command
-    Then: Uses the injected route usage provider
-    """
+def test_uses_injected_route_usage_provider(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """The controller returned by the factory must call the injected ``get_route_usage``."""

@@ -2,6 +2,8 @@ import socket
 from contextlib import contextmanager
 from typing import Generator, Type
 
+from declusor import config
+
 
 @contextmanager
 def await_connection(host: str, port: int) -> Generator[socket.socket, None, None]:
@@ -15,7 +17,7 @@ def await_connection(host: str, port: int) -> Generator[socket.socket, None, Non
         The connected socket object.
 
     Raises:
-        SystemExit: If a socket error occurs (e.g., invalid address, port out of range, permission denied).
+        ConnectionFailure: If a socket error occurs (e.g., invalid address, port out of range, permission denied).
     """
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
@@ -34,10 +36,10 @@ def _handle_socket_exception(e: Exception) -> None:
     """Handle socket-related exceptions and provide user-friendly error messages.
 
     Args:
-        err: The exception that was raised.
+        e: The exception that was raised.
 
     Raises:
-        SystemExit: With a user-friendly error message if the exception is known.
+        ConnectionFailure: With a user-friendly error message if the exception is known.
         Exception: Re-raises the original exception if it is not handled.
     """
 
@@ -49,6 +51,6 @@ def _handle_socket_exception(e: Exception) -> None:
 
     for exception_type, exception_message in exception_message_table.items():
         if isinstance(e, exception_type):
-            raise SystemExit(exception_message)
+            raise config.ConnectionFailure(exception_message) from e
 
     raise e from e

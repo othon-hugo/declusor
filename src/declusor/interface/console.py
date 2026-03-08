@@ -1,100 +1,98 @@
-import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Sequence
 
 
 class IConsole(ABC):
-    """Abstract base class defining the console interface for input reading."""
+    """Contract for all console I/O in Declusor.
+
+    Implementations supply the concrete I/O backend (e.g. ``sys.stdout`` /
+    ``input()``). Test doubles implement this interface to capture output
+    without writing to real file descriptors.
+    """
 
     @abstractmethod
     def setup_completer(self, commands: Sequence[str], /) -> None:
-        """Set up the readline completer for command line input.
+        """Configure tab-completion for the readline interface.
 
         Args:
-            commands: Sequence of available commands.
+            commands: The set of top-level command names to offer as completions.
         """
 
         raise NotImplementedError
 
     @abstractmethod
     def enable_history(self, history_file: Path, /) -> None:
-        """Enable history saving and loading.
+        """Load history from *history_file* and persist it on exit.
 
         Args:
-            history_file: Path to the history file.
+            history_file: Path to the readline history file. Created if absent.
         """
 
         raise NotImplementedError
 
+    @abstractmethod
     def read_line(self, prompt: str = "", /) -> str:
-        """Read a line from standard input with readline support.
+        """Read a single line of input from the user.
 
         Args:
-            prompt: The prompt to display to the user.
+            prompt: Text displayed before the cursor. Defaults to no prompt.
 
         Returns:
-            The input string.
-
-        Note:
-            Uses input() to preserve readline functionality (autocomplete, history).
-            This is a blocking call.
+            The raw input string, including any surrounding whitespace.
         """
 
-        return input(prompt)
+        raise NotImplementedError
 
+    @abstractmethod
     def read_stripped_line(self, prompt: str = "", /) -> str:
-        """Read a line from standard input and strip whitespace.
+        """Read a line of input from the user with leading/trailing whitespace removed.
 
         Args:
-            prompt: The prompt to display to the user.
+            prompt: Text displayed before the cursor. Defaults to no prompt.
 
         Returns:
-            The stripped input string.
+            The input string with leading and trailing whitespace stripped.
         """
 
-        return self.read_line(prompt).strip()
+        raise NotImplementedError
 
+    @abstractmethod
     def write_message(self, message: str, /) -> None:
-        """
-        Write a message to standard output.
+        """Write a plain-text message to the standard output stream.
 
         Args:
-            message: The message string to write.
+            message: The string to display.
         """
 
-        sys.stdout.write(message + "\n")
-        sys.stdout.flush()
+        raise NotImplementedError
 
+    @abstractmethod
     def write_binary_data(self, message: bytes, /) -> None:
-        """
-        Write a binary message to standard output.
+        """Write raw bytes to the standard output buffer.
 
         Args:
-            message: The binary data to write.
+            message: Binary data to write verbatim (no encoding applied).
         """
 
-        sys.stdout.buffer.write(message)
-        sys.stdout.buffer.flush()
+        raise NotImplementedError
 
+    @abstractmethod
     def write_error_message(self, message: str | BaseException, /) -> None:
-        """
-        Write an error message to standard error.
+        """Write an error-prefixed message to standard error.
 
         Args:
-            message: The error message or exception to write.
+            message: Error description or exception to display.
         """
 
-        sys.stderr.write(f"error: {message}\n")
-        sys.stderr.flush()
+        raise NotImplementedError
 
+    @abstractmethod
     def write_warning_message(self, message: str | BaseException, /) -> None:
-        """
-        Write a warning message to standard error.
+        """Write a warning-prefixed message to standard error.
 
         Args:
-            message: The warning message or exception to write.
+            message: Warning description or exception to display.
         """
 
-        sys.stderr.write(f"warning: {message}\n")
-        sys.stderr.flush()
+        raise NotImplementedError

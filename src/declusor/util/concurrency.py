@@ -6,19 +6,28 @@ TaskHandler = Callable[["TaskEvent"], Any]
 
 
 class TaskEvent(Event):
-    """A threading event specialized for task management."""
+    """A ``threading.Event`` used as a cooperative stop-flag for ``TaskPool`` tasks."""
 
 
 @dataclass
 class Task:
-    """A structure representing the result of a task execution."""
+    """Holds the outcome of a single task execution (result or exception)."""
 
     result: Any | None = None
     exception: Exception | None = None
 
 
 class TaskPool:
-    """A cooperative thread manager that."""
+    """Manages a bounded pool of daemon threads with cooperative cancellation.
+
+    Tasks are registered via ``add_task``, started with ``start_all``, and
+    cancelled by setting the shared ``TaskEvent`` (via ``stop``). Results and
+    exceptions are collected in ``Task`` objects accessible through ``errors``
+    and ``return_all``.
+
+    Supports the context manager protocol: starts all tasks on enter, drains
+    and raises any exceptions on exit.
+    """
 
     def __init__(self, stop_event: TaskEvent | None = None, max_size: int = 10, daemon_mode: bool = True):
         self._daemon_mode = daemon_mode
@@ -35,7 +44,15 @@ class TaskPool:
         return [r.exception for r in self._results if r.exception is not None]
 
     def add_task(self, handle_task: TaskHandler, /, name: str | None = None) -> None:
-        """Register a task without starting it."""
+        """Register a task without starting it.
+
+        Args:
+            handle_task: Callable that accepts a ``TaskEvent`` stop-flag.
+            name: Optional name for the underlying thread (aids debugging).
+
+        Raises:
+            RuntimeError: If the pool is already at ``max_size`` threads.
+        """
 
         if len(self._threads) >= self._max_size:
             raise RuntimeError("Maximum number of threads reached")
@@ -66,7 +83,17 @@ class TaskPool:
         self._stop_event.set()
 
     def return_all(self, timeout: float = 5.0, /) -> Generator[Task, None, None]:
-        """Stop all threads, join them, and return their results. Produces results one-by-one without losing them."""
+        """Stop all threads, join them, and yield their ``Task`` results one by one.
+
+        Sets the stop-event, waits up to *timeout* seconds per thread, and
+        records a ``TimeoutError`` for any thread that does not exit in time.
+
+        Args:
+            timeout: Seconds to wait for each thread to finish. Defaults to 5.
+
+        Yields:
+            One ``Task`` per registered thread, in registration order.
+        """
 
         self._stop_event.set()
 

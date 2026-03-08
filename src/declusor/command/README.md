@@ -1,29 +1,19 @@
 # Command Package
 
-The **command** package contains the executable command implementations that define discrete operations performed on remote targets. Each command encapsulates a specific action and its associated logic, adhering to the Command design pattern.
+The **command** package implements the Command design pattern — each class encapsulates a single remote operation and its data-formatting logic.
 
-## Purpose
+## Modules
 
-This package serves as the operational layer of the application, providing:
-
-- **Action Encapsulation**: Each command represents a single, well-defined operation that can be executed on a remote session.
-- **Session Interaction**: Commands are responsible for formatting and transmitting data to remote targets through the session abstraction.
-- **Reusability**: Command objects are independent of the controllers that invoke them, enabling reuse across different contexts.
-- **Interface Implementation**: All commands implement the `ICommand` interface from the domain layer.
+| Module       | Class                       | Responsibility                                                    |
+| ------------ | --------------------------- | ----------------------------------------------------------------- |
+| `execute.py` | `ExecuteCommand`            | UTF-8 encode a shell command and transmit it                      |
+| `file.py`    | `ExecuteFile`, `UploadFile` | Base64-encode a local file and transmit it with an operation code |
+| `load.py`    | `LoadPayload`               | Read a local payload script and transmit the raw bytes            |
+| `shell.py`   | `LaunchShell`               | Spawn request/response threads for an interactive shell session   |
 
 ## Design Principles
 
-1. **Single Responsibility**: Each command performs exactly one operation.
-2. **Interface Compliance**: All commands implement the `ICommand` interface, ensuring consistent execution patterns.
-3. **Dependency on Abstractions**: Commands depend on `ISession` and `IConsole` interfaces, not concrete implementations.
-4. **Stateless Execution**: Commands receive all necessary state through their constructors and execution parameters.
-
-## Expected Behavior
-
-Commands within this package should:
-
-- Accept configuration through constructor parameters
-- Execute their operation via a synchronous `execute` method
-- Interact with sessions solely through the `ISession` interface
-- Handle data encoding and formatting as required by the target protocol
-- Remain agnostic to the origin of their invocation
+1. **Single Responsibility** — each command performs exactly one operation.
+2. **Interface Compliance** — all commands implement `ICommand` and depend on `IConnection` / `IConsole`.
+3. **Stateless Execution** — commands receive all state through constructors and `execute` parameters.
+4. **Synchronous I/O** — no async; `LaunchShell` uses `TaskPool` threads for concurrency.

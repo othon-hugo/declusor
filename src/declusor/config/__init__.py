@@ -1,4 +1,6 @@
+from .enums import ClientFile, OperationCode
 from .exceptions import (
+    ConnectionFailure,
     ControllerError,
     DeclusorException,
     DeclusorWarning,
@@ -7,22 +9,19 @@ from .exceptions import (
     ParserError,
     PromptError,
     RouterError,
-    SessionError,
 )
-from .namespace import DeclusorOptions, FileFunc, Language
 from .settings import BasePath, Settings
 
 __all__ = [
     "BasePath",
+    "ClientFile",
+    "ConnectionFailure",
     "ControllerError",
-    "SessionError",
     "DeclusorException",
-    "DeclusorOptions",
     "DeclusorWarning",
     "ExitRequest",
-    "FileFunc",
     "InvalidOperation",
-    "Language",
+    "OperationCode",
     "ParserError",
     "PromptError",
     "RouterError",

@@ -1,21 +1,27 @@
 # Main Package
 
-The **main** package contains the application entry points and service orchestration logic. It is responsible for bootstrapping the application and managing the high-level execution flow.
+The **main** package is the application entry point. It bootstraps all components, wires dependencies, and manages the service lifecycle.
 
-## Purpose
+## Modules
 
-This package serves as the application's entry point and orchestrator:
+| Module         | Contents                                                                                                                                                                 |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `service.py`   | `DeclusorService` — top-level orchestrator that creates the profile, opens a connection, initialises the library handshake, registers routes, and starts the prompt loop |
+| `exception.py` | `handle_unrecoverable_error` — catches fatal errors and prints user-friendly messages                                                                                    |
 
-- **Application Bootstrap**: Initializes all required components and establishes connections.
-- **Service Lifecycle**: Manages the startup, execution, and shutdown sequences.
-- **Dependency Injection**: Wires together core implementations and injects them where needed.
-- **Component Wiring**: Connects controllers to the router and prepares the runtime environment.
-- **Error Handling**: Provides top-level exception handling for unrecoverable errors.
+## Lifecycle
+
+1. Parse CLI arguments (`host`, `port`).
+2. Create `ShellSocketProfile` and display the client one-liner.
+3. Listen for an incoming connection via `await_connection`.
+4. Initialise the session (library upload + ACK handshake).
+5. Wire controllers into the `Router`.
+6. Start the `PromptCLI` run loop.
+7. On exit (`ExitRequest` or `Ctrl-C`), clean up the connection context manager.
 
 ## Design Principles
 
-1. **Single Entry Point**: The application has one clearly defined starting point.
-2. **Dependency on Core**: Main depends on core implementations, not the other way around.
-3. **Graceful Degradation**: Errors during startup result in meaningful messages rather than stack traces.
-4. **Clean Shutdown**: Resources are properly released during application termination.
-5. **Minimal Logic**: Business logic resides in other packages; main handles only orchestration.
+1. **Single Entry Point** — `DeclusorService.run()` is the only public API.
+2. **Dependency on Core** — main depends on core/connection implementations, never the reverse.
+3. **Graceful Degradation** — fatal errors produce human-readable messages, not stack traces.
+4. **Minimal Logic** — business logic lives in other packages; main handles only orchestration.

@@ -4,27 +4,6 @@ from pathlib import Path
 class Settings:
     """Configuration settings for Declusor."""
 
-    __allowed_payload_extensions = [".sh"]
-    __allowed_library_extensions = [".sh"]
-
-    ALLOWED_PAYLOAD_EXTENSIONS = tuple(map(str.casefold, __allowed_payload_extensions))
-    """Allowed file extensions for payload scripts."""
-
-    ALLOWED_LIBRARY_EXTENSIONS = tuple(map(str.casefold, __allowed_library_extensions))
-    """Allowed file extensions for library scripts."""
-
-    DEFAULT_CLIENT = "reverse_bash.sh"
-    """Default client script filename."""
-
-    ACK_CLIENT_PLACEHOLDER = "ACKNOWLEDGE"
-    """Placeholder string for acknowledgment in client scripts."""
-
-    ACK_CLIENT_VALUE = b"\xba\xdc\x00\xff\xee"
-    """Acknowledgment byte sequence sent by the client."""
-
-    ACK_SERVER_VALUE = b"\x00"
-    """Acknowledgment byte sequence sent by the server."""
-
     PROJECT_NAME = "declusor"
     """Name of the project."""
 

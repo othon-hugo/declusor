@@ -1,11 +1,11 @@
-"""Tests for declusor.command.load module (LoadPayload class).
+"""Tests for ``declusor.command.load.LoadPayload``.
 
-This module tests:
-- LoadPayload: Load and execute payload script on target
+Covers initialization (path validation), the ``execute`` path (raw-bytes write),
+error handling when the file becomes unreadable, and edge cases.
 """
 
 from pathlib import Path
-from unittest.mock import AsyncMock
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -15,8 +15,13 @@ import pytest
 
 
 @pytest.fixture
-def mock_session() -> AsyncMock:
-    """Create a mock ISession with write method."""
+def mock_session() -> MagicMock:
+    """Return a ``MagicMock`` satisfying the ``IConnection`` interface."""
+
+
+@pytest.fixture
+def mock_console() -> MagicMock:
+    """Return a ``MagicMock`` satisfying the ``IConsole`` interface."""
 
 
 @pytest.fixture
@@ -25,48 +30,28 @@ def temp_payload(tmp_path: Path) -> Path:
 
 
 # =============================================================================
-# Tests: LoadPayload initialization
+# Tests: LoadPayload.__init__
 # =============================================================================
 
 
-def test_load_payload_init_validates_file_exists(temp_payload: Path) -> None:
-    """
-    Given: LoadPayload(valid_path) is created
-    When: __init__ is called
-    Then: File existence is validated via ensure_file_exists
-    """
+def test_init_validates_file_exists(temp_payload: Path) -> None:
+    """``ensure_file_exists`` must be invoked during construction."""
 
 
-def test_load_payload_init_accepts_string_path(temp_payload: Path) -> None:
-    """
-    Given: LoadPayload(str(path)) with string path
-    When: __init__ is called
-    Then: Converts to Path and validates
-    """
+def test_init_accepts_string_path(temp_payload: Path) -> None:
+    """A plain ``str`` path must be coerced to ``Path`` and validated."""
 
 
-def test_load_payload_init_accepts_path_object(temp_payload: Path) -> None:
-    """
-    Given: LoadPayload(Path) with Path object
-    When: __init__ is called
-    Then: Accepts Path directly
-    """
+def test_init_accepts_path_object(temp_payload: Path) -> None:
+    """A ``pathlib.Path`` object must be stored without conversion errors."""
 
 
-def test_load_payload_init_raises_on_nonexistent() -> None:
-    """
-    Given: LoadPayload("/nonexistent/payload.sh")
-    When: __init__ is called
-    Then: Raises InvalidOperation (file not found)
-    """
+def test_init_raises_on_nonexistent_file() -> None:
+    """Constructing with a nonexistent path must raise ``InvalidOperation``."""
 
 
-def test_load_payload_init_stores_filepath(temp_payload: Path) -> None:
-    """
-    Given: LoadPayload(valid_path)
-    When: __init__ is called
-    Then: _filepath attribute stores resolved path
-    """
+def test_init_stores_resolved_filepath(temp_payload: Path) -> None:
+    """``_filepath`` must hold the resolved (absolute) ``Path``."""
 
 
 # =============================================================================
@@ -74,70 +59,37 @@ def test_load_payload_init_stores_filepath(temp_payload: Path) -> None:
 # =============================================================================
 
 
-@pytest.mark.asyncio
-def test_load_payload_execute_writes_file_content(mock_session: AsyncMock, temp_payload: Path) -> None:
-    """
-    Given: LoadPayload with payload containing "echo test"
-    When: execute(session) is called
-    Then: Writes raw script content to session
-    """
+def test_execute_writes_raw_file_content(mock_session: MagicMock, mock_console: MagicMock, temp_payload: Path) -> None:
+    """``session.write`` must receive the file's raw bytes (no base64 encoding)."""
 
 
-@pytest.mark.asyncio
-def test_load_payload_execute_writes_bytes(mock_session: AsyncMock, temp_payload: Path) -> None:
-    """
-    Given: LoadPayload with valid payload
-    When: execute(session) is called
-    Then: session.write receives bytes (not string)
-    """
+def test_execute_writes_bytes_not_str(mock_session: MagicMock, mock_console: MagicMock, temp_payload: Path) -> None:
+    """The value passed to ``session.write`` must be ``bytes``, not ``str``."""
 
 
-@pytest.mark.asyncio
-def test_load_payload_execute_reads_file_at_execution_time(mock_session: AsyncMock, temp_payload: Path) -> None:
-    """
-    Given: LoadPayload initialized with valid file
-    When: File is modified before execute()
-    Then: Reads current file content (not cached)
-    """
+def test_execute_reads_file_at_call_time(mock_session: MagicMock, mock_console: MagicMock, temp_payload: Path) -> None:
+    """File content must be read during ``execute``, not cached at init time."""
 
 
-@pytest.mark.asyncio
-def test_load_payload_execute_raises_on_load_failure(mock_session: AsyncMock, temp_payload: Path) -> None:
-    """
-    Given: File becomes unreadable between init and execute
-    When: execute() calls try_load_file and gets None
-    Then: Raises InvalidOperation about load failure
-    """
+def test_execute_raises_when_file_unreadable(mock_session: MagicMock, mock_console: MagicMock, temp_payload: Path) -> None:
+    """If ``try_load_file`` returns ``None``, ``InvalidOperation`` must be raised."""
 
 
-@pytest.mark.asyncio
-def test_load_payload_execute_raises_with_filepath_in_message(mock_session: AsyncMock, temp_payload: Path) -> None:
-    """
-    Given: File load fails
-    When: InvalidOperation is raised
-    Then: Exception message includes filepath
-    """
+def test_execute_error_message_includes_filepath(mock_session: MagicMock, mock_console: MagicMock, temp_payload: Path) -> None:
+    """The ``InvalidOperation`` message must contain the file path."""
 
 
 # =============================================================================
-# Tests: LoadPayload vs ExecuteFile comparison
+# Tests: LoadPayload vs ExecuteFile
 # =============================================================================
 
 
-def test_load_payload_sends_raw_content() -> None:
-    """
-    Given: LoadPayload with script content
-    When: Comparing to ExecuteFile
-    Then: LoadPayload sends raw bytes, ExecuteFile sends base64
-    """
+def test_sends_raw_content_not_base64() -> None:
+    """Unlike ``ExecuteFile``, ``LoadPayload`` sends unencoded bytes."""
 
 
-def test_load_payload_does_not_use_file_func() -> None:
-    """
-    Given: LoadPayload class
-    When: Checking for FUNC_NAME attribute
-    Then: Does not have FUNC_NAME (unlike ExecuteFile/UploadFile)
-    """
+def test_does_not_have_opcode_attribute() -> None:
+    """``LoadPayload`` must not define ``_OPCODE`` (unlike ``_BaseFileCommand`` subclasses)."""
 
 
 # =============================================================================
@@ -145,28 +97,13 @@ def test_load_payload_does_not_use_file_func() -> None:
 # =============================================================================
 
 
-@pytest.mark.asyncio
-def test_load_payload_handles_empty_file(mock_session: AsyncMock, tmp_path: Path) -> None:
-    """
-    Given: Empty payload file
-    When: execute() is called
-    Then: Writes empty bytes to session
-    """
+def test_handles_empty_file(mock_session: MagicMock, mock_console: MagicMock, tmp_path: Path) -> None:
+    """A zero-byte payload file must result in ``session.write(b"")``."""
 
 
-@pytest.mark.asyncio
-def test_load_payload_handles_binary_content(mock_session: AsyncMock, tmp_path: Path) -> None:
-    """
-    Given: Payload with binary content
-    When: execute() is called
-    Then: Binary content is written unchanged
-    """
+def test_handles_binary_content(mock_session: MagicMock, mock_console: MagicMock, tmp_path: Path) -> None:
+    """Non-UTF-8 binary payload must be written verbatim."""
 
 
-@pytest.mark.asyncio
-def test_load_payload_handles_multiline_script(mock_session: AsyncMock, temp_payload: Path) -> None:
-    """
-    Given: Multi-line bash script
-    When: execute() is called
-    Then: All lines are preserved in output
-    """
+def test_handles_multiline_script(mock_session: MagicMock, mock_console: MagicMock, temp_payload: Path) -> None:
+    """A multi-line script must preserve all newlines in the transmitted bytes."""

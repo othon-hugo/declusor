@@ -1,10 +1,8 @@
-"""Tests for declusor.core.router module (Router class).
+"""Tests for ``declusor.core.router.Router``.
 
-This module tests the command router including:
-- Router: Route table management and controller dispatch
-- connect: Register routes to controllers
-- locate: Find controller for a given route
-- documentation: Generate help text for all routes
+Covers initialization, the ``routes`` property, ``connect`` (registration),
+``locate`` (lookup), ``get_route_usage`` (docstring extraction), and
+``documentation`` (help-text generation).
 """
 
 from unittest.mock import MagicMock
@@ -18,12 +16,12 @@ import pytest
 
 @pytest.fixture
 def router():
-    """Create a fresh Router instance for testing."""
+    """Return a fresh ``Router`` instance."""
 
 
 @pytest.fixture
 def sample_controller() -> MagicMock:
-    """Create a sample controller function with docstring."""
+    """Return a mock controller callable with a docstring."""
 
 
 # =============================================================================
@@ -31,12 +29,8 @@ def sample_controller() -> MagicMock:
 # =============================================================================
 
 
-def test_router_init_empty_route_table() -> None:
-    """
-    Given: Router is instantiated
-    When: __init__ is called
-    Then: route_table is empty dict
-    """
+def test_init_creates_empty_route_table() -> None:
+    """A new ``Router`` must have an empty ``route_table``."""
 
 
 # =============================================================================
@@ -44,28 +38,16 @@ def test_router_init_empty_route_table() -> None:
 # =============================================================================
 
 
-def test_router_routes_returns_tuple() -> None:
-    """
-    Given: Router with registered routes
-    When: routes property is accessed
-    Then: Returns tuple of route names
-    """
+def test_routes_returns_tuple() -> None:
+    """``routes`` must return a ``tuple`` of registered route names."""
 
 
-def test_router_routes_empty_router() -> None:
-    """
-    Given: Router with no registered routes
-    When: routes property is accessed
-    Then: Returns empty tuple ()
-    """
+def test_routes_empty_router_returns_empty_tuple() -> None:
+    """An empty router must return ``()``."""
 
 
-def test_router_routes_preserves_order() -> None:
-    """
-    Given: Routes registered in order ["a", "b", "c"]
-    When: routes property is accessed
-    Then: Returns tuple in same order
-    """
+def test_routes_preserves_insertion_order() -> None:
+    """Routes must appear in the order they were registered."""
 
 
 # =============================================================================
@@ -73,36 +55,20 @@ def test_router_routes_preserves_order() -> None:
 # =============================================================================
 
 
-def test_router_connect_registers_route(sample_controller: MagicMock) -> None:
-    """
-    Given: Router with no routes
-    When: connect("load", controller) is called
-    Then: "load" route is registered in route_table
-    """
+def test_connect_registers_route(sample_controller: MagicMock) -> None:
+    """``connect("load", ctrl)`` must add ``"load"`` to the route table."""
 
 
-def test_router_connect_strips_route_name(sample_controller: MagicMock) -> None:
-    """
-    Given: connect(" load ", controller) with spaces
-    When: Route is registered
-    Then: Route name is stripped to "load"
-    """
+def test_connect_strips_route_name(sample_controller: MagicMock) -> None:
+    """Leading/trailing whitespace in the route name must be stripped."""
 
 
-def test_router_connect_duplicate_raises(sample_controller: MagicMock) -> None:
-    """
-    Given: Route "exit" already registered
-    When: connect("exit", another_controller) is called
-    Then: Raises ValueError "route already exists"
-    """
+def test_connect_duplicate_raises_value_error(sample_controller: MagicMock) -> None:
+    """Registering the same route twice must raise ``ValueError``."""
 
 
-def test_router_connect_multiple_routes(sample_controller: MagicMock) -> None:
-    """
-    Given: Empty router
-    When: Multiple routes are connected
-    Then: All routes are registered correctly
-    """
+def test_connect_multiple_routes(sample_controller: MagicMock) -> None:
+    """Multiple distinct routes must all be registered successfully."""
 
 
 # =============================================================================
@@ -110,28 +76,16 @@ def test_router_connect_multiple_routes(sample_controller: MagicMock) -> None:
 # =============================================================================
 
 
-def test_router_locate_returns_controller(sample_controller: MagicMock) -> None:
-    """
-    Given: Route "shell" registered with controller
-    When: locate("shell") is called
-    Then: Returns the registered controller
-    """
+def test_locate_returns_registered_controller(sample_controller: MagicMock) -> None:
+    """``locate("shell")`` must return the controller registered under ``"shell"``."""
 
 
-def test_router_locate_strips_route_name(sample_controller: MagicMock) -> None:
-    """
-    Given: Route "shell" registered
-    When: locate(" shell ") is called with spaces
-    Then: Returns controller (route name stripped)
-    """
+def test_locate_strips_route_name(sample_controller: MagicMock) -> None:
+    """``locate(" shell ")`` must find the ``"shell"`` controller."""
 
 
-def test_router_locate_not_found_raises() -> None:
-    """
-    Given: Route "unknown" not registered
-    When: locate("unknown") is called
-    Then: Raises RouterError with route name
-    """
+def test_locate_unknown_raises_router_error() -> None:
+    """``locate("unknown")`` must raise ``RouterError``."""
 
 
 # =============================================================================
@@ -139,36 +93,20 @@ def test_router_locate_not_found_raises() -> None:
 # =============================================================================
 
 
-def test_router_get_route_usage_returns_docstring(sample_controller: MagicMock) -> None:
-    """
-    Given: Controller with docstring "Execute a command."
-    When: get_route_usage("command") is called
-    Then: Returns "Execute a command."
-    """
+def test_get_route_usage_returns_docstring(sample_controller: MagicMock) -> None:
+    """The controller's docstring must be returned."""
 
 
-def test_router_get_route_usage_joins_multiline(sample_controller: MagicMock) -> None:
-    """
-    Given: Controller with multi-line docstring
-    When: get_route_usage is called
-    Then: Lines are joined with single space
-    """
+def test_get_route_usage_joins_multiline_docstring(sample_controller: MagicMock) -> None:
+    """A multi-line docstring must be joined into a single line."""
 
 
-def test_router_get_route_usage_no_docstring() -> None:
-    """
-    Given: Controller with no docstring (None)
-    When: get_route_usage is called
-    Then: Returns empty string ""
-    """
+def test_get_route_usage_no_docstring_returns_empty() -> None:
+    """A controller with ``__doc__ = None`` must produce an empty string."""
 
 
-def test_router_get_route_usage_invalid_route() -> None:
-    """
-    Given: Route not registered
-    When: get_route_usage("invalid") is called
-    Then: Raises RouterError (calls locate internally)
-    """
+def test_get_route_usage_unknown_route_raises_router_error() -> None:
+    """An unregistered route must raise ``RouterError``."""
 
 
 # =============================================================================
@@ -176,41 +114,21 @@ def test_router_get_route_usage_invalid_route() -> None:
 # =============================================================================
 
 
-def test_router_documentation_lists_all_routes(sample_controller: MagicMock) -> None:
-    """
-    Given: Routes ["load", "shell", "exit"] registered
-    When: documentation property is accessed
-    Then: Returns formatted string with all routes
-    """
+def test_documentation_lists_all_routes(sample_controller: MagicMock) -> None:
+    """All registered route names must appear in the output."""
 
 
-def test_router_documentation_aligns_columns() -> None:
-    """
-    Given: Routes with different name lengths
-    When: documentation is generated
-    Then: Route names are left-padded for alignment
-    """
+def test_documentation_aligns_columns() -> None:
+    """Route names of different lengths must be left-padded for alignment."""
 
 
-def test_router_documentation_includes_descriptions(sample_controller: MagicMock) -> None:
-    """
-    Given: Controllers with docstrings
-    When: documentation is generated
-    Then: Each route line includes its description
-    """
+def test_documentation_includes_descriptions(sample_controller: MagicMock) -> None:
+    """Each route line must include its controller's description."""
 
 
-def test_router_documentation_empty_router() -> None:
-    """
-    Given: Router with no routes
-    When: documentation is accessed
-    Then: Returns empty string or handles gracefully
-    """
+def test_documentation_empty_router() -> None:
+    """An empty router must produce an empty/blank documentation string."""
 
 
-def test_router_documentation_strips_trailing_newline() -> None:
-    """
-    Given: Multiple routes registered
-    When: documentation is generated
-    Then: Result has no trailing newline (rstrip applied)
-    """
+def test_documentation_strips_trailing_newline() -> None:
+    """The documentation string must not end with a trailing newline."""

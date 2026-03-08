@@ -1,13 +1,9 @@
-"""Tests for declusor.config.exceptions module.
+"""Tests for ``declusor.config.exceptions``.
 
-This module tests the custom exception hierarchy:
-- DeclusorException: Base exception class
-- InvalidOperation: Invalid operation description
-- ParserError: Argument parsing errors
-- RouterError: Route not found errors
-- PromptError: Invalid prompt argument errors
-- ControllerError: Controller execution errors
-- ExitRequest: Graceful exit signal
+Verifies the custom exception hierarchy: ``DeclusorException`` as the root,
+domain-specific subclasses (``InvalidOperation``, ``ParserError``, ``RouterError``,
+``PromptError``, ``ControllerError``, ``ConnectionFailure``), and the ``ExitRequest``
+control-flow exception.
 """
 
 import pytest
@@ -17,20 +13,12 @@ import pytest
 # =============================================================================
 
 
-def test_declusor_exception_is_exception() -> None:
-    """
-    Given: DeclusorException class
-    When: Checking inheritance
-    Then: Inherits from Exception
-    """
+def test_declusor_exception_inherits_from_exception() -> None:
+    """``DeclusorException`` must be a subclass of the built-in ``Exception``."""
 
 
-def test_declusor_exception_can_be_raised() -> None:
-    """
-    Given: DeclusorException("message")
-    When: Raised
-    Then: Can be caught as Exception
-    """
+def test_declusor_exception_is_catchable_as_exception() -> None:
+    """Raising ``DeclusorException`` must be catchable in an ``except Exception`` block."""
 
 
 # =============================================================================
@@ -39,35 +27,32 @@ def test_declusor_exception_can_be_raised() -> None:
 
 
 def test_invalid_operation_stores_description() -> None:
-    """
-    Given: InvalidOperation("file not found") is created
-    When: description attribute is accessed
-    Then: Returns "file not found"
-    """
+    """The ``description`` attribute must hold the string passed to the constructor."""
 
 
-def test_invalid_operation_str_format() -> None:
-    """
-    Given: InvalidOperation("permission denied")
-    When: str(exception) is called
-    Then: Returns "invalid operation: permission denied"
-    """
+def test_invalid_operation_str_contains_prefix_and_description() -> None:
+    """``str(exc)`` must produce ``"invalid operation: <description>"``."""
 
 
-def test_invalid_operation_inherits_declusor_exception() -> None:
-    """
-    Given: InvalidOperation class
-    When: Checking inheritance
-    Then: Inherits from DeclusorException
-    """
+def test_invalid_operation_inherits_from_declusor_exception() -> None:
+    """``InvalidOperation`` must be a subclass of ``DeclusorException``."""
 
 
-def test_invalid_operation_with_empty_description() -> None:
-    """
-    Given: InvalidOperation("")
-    When: str(exception) is called
-    Then: Returns "invalid operation: "
-    """
+def test_invalid_operation_accepts_empty_description() -> None:
+    """An empty description must not raise; ``str(exc)`` yields ``"invalid operation: "``."""
+
+
+# =============================================================================
+# Tests: ConnectionFailure
+# =============================================================================
+
+
+def test_connection_failure_inherits_from_declusor_exception() -> None:
+    """``ConnectionFailure`` must be a subclass of ``DeclusorException``."""
+
+
+def test_connection_failure_does_not_shadow_builtin_connection_error() -> None:
+    """``ConnectionFailure`` must *not* be an instance of the built-in ``ConnectionError``."""
 
 
 # =============================================================================
@@ -75,28 +60,12 @@ def test_invalid_operation_with_empty_description() -> None:
 # =============================================================================
 
 
-def test_parser_error_stores_message() -> None:
-    """
-    Given: ParserError("unclosed quote") is created
-    When: message attribute is accessed
-    Then: Returns "unclosed quote"
-    """
+def test_parser_error_inherits_from_declusor_exception() -> None:
+    """``ParserError`` must be a subclass of ``DeclusorException``."""
 
 
-def test_parser_error_str_format() -> None:
-    """
-    Given: ParserError("invalid syntax")
-    When: str(exception) is called
-    Then: Returns descriptive error message
-    """
-
-
-def test_parser_error_inherits_declusor_exception() -> None:
-    """
-    Given: ParserError class
-    When: Checking inheritance
-    Then: Inherits from DeclusorException
-    """
+def test_parser_error_message_is_preserved() -> None:
+    """The message passed to the constructor must be accessible via ``str(exc)``."""
 
 
 # =============================================================================
@@ -105,43 +74,23 @@ def test_parser_error_inherits_declusor_exception() -> None:
 
 
 def test_router_error_stores_route() -> None:
-    """
-    Given: RouterError("unknown") is created
-    When: route attribute is accessed
-    Then: Returns "unknown"
-    """
+    """The ``route`` attribute must hold the route name passed to the constructor."""
 
 
-def test_router_error_str_format() -> None:
-    """
-    Given: RouterError("foobar")
-    When: str(exception) is called
-    Then: Returns "invalid route: 'foobar'"
-    """
+def test_router_error_str_includes_route() -> None:
+    """``str(exc)`` must contain ``"invalid route: '<route>'"``."""
 
 
-def test_router_error_optional_description() -> None:
-    """
-    Given: RouterError("cmd", description="not implemented")
-    When: description attribute is accessed
-    Then: Returns "not implemented"
-    """
+def test_router_error_optional_description_default_none() -> None:
+    """When no ``description`` keyword is passed, ``exc.description`` must be ``None``."""
 
 
-def test_router_error_str_with_description() -> None:
-    """
-    Given: RouterError("cmd", description="deprecated")
-    When: str(exception) is called
-    Then: Includes description in message
-    """
+def test_router_error_optional_description_stored() -> None:
+    """A provided ``description`` keyword must be stored on the exception."""
 
 
-def test_router_error_inherits_declusor_exception() -> None:
-    """
-    Given: RouterError class
-    When: Checking inheritance
-    Then: Inherits from DeclusorException
-    """
+def test_router_error_inherits_from_declusor_exception() -> None:
+    """``RouterError`` must be a subclass of ``DeclusorException``."""
 
 
 # =============================================================================
@@ -150,27 +99,15 @@ def test_router_error_inherits_declusor_exception() -> None:
 
 
 def test_prompt_error_stores_argument() -> None:
-    """
-    Given: PromptError("badarg") is created
-    When: argument attribute is accessed
-    Then: Returns "badarg"
-    """
+    """The ``argument`` attribute must hold the argument string."""
 
 
-def test_prompt_error_str_format() -> None:
-    """
-    Given: PromptError("invalid")
-    When: str(exception) is called
-    Then: Returns "invalid argument: 'invalid'"
-    """
+def test_prompt_error_str_includes_argument() -> None:
+    """``str(exc)`` must contain ``"invalid argument: '<argument>'"``."""
 
 
-def test_prompt_error_inherits_declusor_exception() -> None:
-    """
-    Given: PromptError class
-    When: Checking inheritance
-    Then: Inherits from DeclusorException
-    """
+def test_prompt_error_inherits_from_declusor_exception() -> None:
+    """``PromptError`` must be a subclass of ``DeclusorException``."""
 
 
 # =============================================================================
@@ -179,27 +116,15 @@ def test_prompt_error_inherits_declusor_exception() -> None:
 
 
 def test_controller_error_stores_description() -> None:
-    """
-    Given: ControllerError("execution failed") is created
-    When: description attribute is accessed
-    Then: Returns "execution failed"
-    """
+    """The ``description`` attribute must hold the error description."""
 
 
-def test_controller_error_str_format() -> None:
-    """
-    Given: ControllerError("timeout")
-    When: str(exception) is called
-    Then: Returns "controller error: timeout"
-    """
+def test_controller_error_str_contains_prefix_and_description() -> None:
+    """``str(exc)`` must produce ``"controller error: <description>"``."""
 
 
-def test_controller_error_inherits_declusor_exception() -> None:
-    """
-    Given: ControllerError class
-    When: Checking inheritance
-    Then: Inherits from DeclusorException
-    """
+def test_controller_error_inherits_from_declusor_exception() -> None:
+    """``ControllerError`` must be a subclass of ``DeclusorException``."""
 
 
 # =============================================================================
@@ -207,33 +132,17 @@ def test_controller_error_inherits_declusor_exception() -> None:
 # =============================================================================
 
 
-def test_exit_request_inherits_declusor_exception() -> None:
-    """
-    Given: ExitRequest class
-    When: Checking inheritance
-    Then: Inherits from DeclusorException
-    """
+def test_exit_request_inherits_from_declusor_exception() -> None:
+    """``ExitRequest`` must be a subclass of ``DeclusorException``."""
 
 
-def test_exit_request_can_be_raised() -> None:
-    """
-    Given: ExitRequest exception
-    When: Raised and caught
-    Then: Can be caught as DeclusorException
-    """
+def test_exit_request_is_catchable_as_declusor_exception() -> None:
+    """Raising ``ExitRequest`` must be catchable in an ``except DeclusorException`` block."""
 
 
-def test_exit_request_is_distinct_from_other_exceptions() -> None:
-    """
-    Given: ExitRequest, InvalidOperation, ParserError
-    When: isinstance checks are done
-    Then: ExitRequest is not InvalidOperation or ParserError
-    """
+def test_exit_request_is_distinct_from_other_exception_types() -> None:
+    """``isinstance`` checks must distinguish ``ExitRequest`` from ``InvalidOperation`` and ``ParserError``."""
 
 
-def test_exit_request_default_message() -> None:
-    """
-    Given: ExitRequest() with no arguments
-    When: str(exception) is called
-    Then: Returns default message or empty string
-    """
+def test_exit_request_no_args_produces_empty_message() -> None:
+    """``ExitRequest()`` with no arguments must have ``str(exc) == ""`` or similar."""

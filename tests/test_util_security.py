@@ -1,8 +1,8 @@
-"""Tests for declusor.util.security module.
+"""Tests for ``declusor.util.security``.
 
-This module tests security validation utilities including:
-- validate_file_extension: Check if file extension is in allowed list
-- validate_file_relative: Check if file path is within a base directory
+Covers ``validate_file_extension`` (basic matching, case sensitivity, complex
+filenames, input types) and ``validate_file_relative`` (directory containment,
+path-traversal defence, input handling, edge cases).
 """
 
 from pathlib import Path
@@ -16,297 +16,173 @@ import pytest
 
 @pytest.fixture
 def temp_directory(tmp_path: Path) -> Path:
-    """Create a temporary directory structure for path validation testing."""
+    """Create a temporary directory structure for path-validation tests."""
 
 
 @pytest.fixture
 def temp_file_in_directory(temp_directory: Path) -> Path:
-    """Create a temporary file inside the temp directory."""
+    """Create a temporary file inside ``temp_directory``."""
 
 
 # =============================================================================
-# Tests: validate_file_extension - Basic functionality
+# Tests: validate_file_extension — basic
 # =============================================================================
 
 
-def test_validate_file_extension_allowed_extension() -> None:
-    """
-    Given: filename="script.sh" and allowed=[".sh"]
-    When: validate_file_extension is called
-    Then: Returns True (extension is allowed)
-    """
+def test_extension_allowed() -> None:
+    """``"script.sh"`` with ``[".sh"]`` must return ``True``."""
 
 
-def test_validate_file_extension_disallowed_extension() -> None:
-    """
-    Given: filename="script.py" and allowed=[".sh"]
-    When: validate_file_extension is called
-    Then: Returns False (extension not in allowed list)
-    """
+def test_extension_disallowed() -> None:
+    """``"script.py"`` with ``[".sh"]`` must return ``False``."""
 
 
-def test_validate_file_extension_empty_allowed_list() -> None:
-    """
-    Given: filename="script.sh" and allowed=[]
-    When: validate_file_extension is called
-    Then: Returns False (no extensions are allowed)
-    """
+def test_extension_empty_allowed_list() -> None:
+    """An empty allowed list must always return ``False``."""
 
 
-def test_validate_file_extension_no_extension() -> None:
-    """
-    Given: filename="Makefile" (no extension) and allowed=[".sh"]
-    When: validate_file_extension is called
-    Then: Returns False (empty suffix doesn't match)
-    """
+def test_extension_no_extension() -> None:
+    """``"Makefile"`` must return ``False`` when only ``.sh`` is allowed."""
 
 
 # =============================================================================
-# Tests: validate_file_extension - Case sensitivity
+# Tests: validate_file_extension — case sensitivity
 # =============================================================================
 
 
-def test_validate_file_extension_case_insensitive_file() -> None:
-    """
-    Given: filename="SCRIPT.SH" (uppercase) and allowed=[".sh"]
-    When: validate_file_extension is called
-    Then: Returns True (case insensitive matching)
-    """
+def test_extension_case_insensitive_file() -> None:
+    """``"SCRIPT.SH"`` must match ``[".sh"]`` (case-insensitive)."""
 
 
-def test_validate_file_extension_case_insensitive_allowed() -> None:
-    """
-    Given: filename="script.sh" and allowed=[".SH"] (uppercase in allowed)
-    When: validate_file_extension is called
-    Then: Returns True (allowed list is also case insensitive)
-    """
+def test_extension_case_insensitive_allowed() -> None:
+    """``"script.sh"`` must match ``[".SH"]`` (case-insensitive)."""
 
 
-def test_validate_file_extension_mixed_case() -> None:
-    """
-    Given: filename="Script.Sh" and allowed=[".sh"]
-    When: validate_file_extension is called
-    Then: Returns True (mixed case handled)
-    """
+def test_extension_mixed_case() -> None:
+    """``"Script.Sh"`` must match ``[".sh"]``."""
 
 
 # =============================================================================
-# Tests: validate_file_extension - Complex filenames
+# Tests: validate_file_extension — complex filenames
 # =============================================================================
 
 
-def test_validate_file_extension_multiple_dots() -> None:
-    """
-    Given: filename="archive.tar.gz" and allowed=[".gz"]
-    When: validate_file_extension is called
-    Then: Returns True (only last suffix checked)
-    """
+def test_extension_multiple_dots() -> None:
+    """``"archive.tar.gz"`` must match against the *last* suffix (``".gz"``)."""
 
 
-def test_validate_file_extension_hidden_file_with_extension() -> None:
-    """
-    Given: filename=".bashrc.sh" (hidden with extension) and allowed=[".sh"]
-    When: validate_file_extension is called
-    Then: Returns True (extension is .sh)
-    """
+def test_extension_hidden_file_with_ext() -> None:
+    """``".bashrc.sh"`` must match ``[".sh"]``."""
 
 
-def test_validate_file_extension_hidden_file_no_extension() -> None:
-    """
-    Given: filename=".bashrc" (hidden, no additional extension) and allowed=[".sh"]
-    When: validate_file_extension is called
-    Then: Returns False (.bashrc suffix is empty string)
-    """
+def test_extension_hidden_file_without_ext() -> None:
+    """``".bashrc"`` must return ``False`` (empty suffix)."""
 
 
-def test_validate_file_extension_dot_only_filename() -> None:
-    """
-    Given: filename="." and allowed=["."]
-    When: validate_file_extension is called
-    Then: Document expected behavior (edge case)
-    """
+def test_extension_dot_only() -> None:
+    """``"."`` edge case must be handled gracefully."""
 
 
 # =============================================================================
-# Tests: validate_file_extension - Input types
+# Tests: validate_file_extension — input types
 # =============================================================================
 
 
-def test_validate_file_extension_path_object_input() -> None:
-    """
-    Given: file=Path("script.sh") and allowed=[".sh"]
-    When: validate_file_extension is called with Path object
-    Then: Returns True (accepts Path input)
-    """
+def test_extension_path_object_input() -> None:
+    """``Path("script.sh")`` must be accepted."""
 
 
-def test_validate_file_extension_string_input() -> None:
-    """
-    Given: file="script.sh" (string) and allowed=[".sh"]
-    When: validate_file_extension is called
-    Then: Returns True (accepts string input)
-    """
+def test_extension_string_input() -> None:
+    """A plain ``str`` must be accepted."""
 
 
-def test_validate_file_extension_allowed_as_set() -> None:
-    """
-    Given: allowed={".sh", ".bash"} (set instead of list)
-    When: validate_file_extension is called
-    Then: Works correctly (accepts any iterable)
-    """
+def test_extension_allowed_as_set() -> None:
+    """A ``set`` of allowed extensions must work."""
 
 
-def test_validate_file_extension_allowed_as_tuple() -> None:
-    """
-    Given: allowed=(".sh", ".bash") (tuple instead of list)
-    When: validate_file_extension is called
-    Then: Works correctly (accepts any iterable)
-    """
+def test_extension_allowed_as_tuple() -> None:
+    """A ``tuple`` of allowed extensions must work."""
 
 
-def test_validate_file_extension_full_path() -> None:
-    """
-    Given: file="/path/to/script.sh" (full path) and allowed=[".sh"]
-    When: validate_file_extension is called
-    Then: Returns True (extracts extension from full path)
-    """
+def test_extension_full_path() -> None:
+    """``"/path/to/script.sh"`` must extract and match the extension."""
 
 
 # =============================================================================
-# Tests: validate_file_relative - Basic functionality
+# Tests: validate_file_relative — basic
 # =============================================================================
 
 
-def test_validate_file_relative_inside_base_dir(temp_directory: Path) -> None:
-    """
-    Given: filepath inside base_dir (e.g., /base/sub/file.txt)
-    When: validate_file_relative is called
-    Then: Returns True (file is within base directory)
-    """
+def test_relative_inside_base_dir(temp_directory: Path) -> None:
+    """A file inside ``base_dir`` must return ``True``."""
 
 
-def test_validate_file_relative_outside_base_dir(temp_directory: Path) -> None:
-    """
-    Given: filepath outside base_dir (e.g., /other/file.txt vs /base/)
-    When: validate_file_relative is called
-    Then: Returns False (file is not within base directory)
-    """
+def test_relative_outside_base_dir(temp_directory: Path) -> None:
+    """A file outside ``base_dir`` must return ``False``."""
 
 
-def test_validate_file_relative_same_as_base_dir(temp_directory: Path) -> None:
-    """
-    Given: filepath equals base_dir exactly
-    When: validate_file_relative is called
-    Then: Returns True (directory is relative to itself)
-    """
+def test_relative_same_as_base_dir(temp_directory: Path) -> None:
+    """A path equal to ``base_dir`` must return ``True``."""
 
 
 # =============================================================================
-# Tests: validate_file_relative - Path traversal attacks
+# Tests: validate_file_relative — path-traversal defence
 # =============================================================================
 
 
-def test_validate_file_relative_dotdot_traversal(temp_directory: Path) -> None:
-    """
-    Given: filepath="/base/sub/../../etc/passwd" and base_dir="/base/"
-    When: validate_file_relative is called (after resolve)
-    Then: Returns False (resolved path is outside base)
-    """
+def test_relative_dotdot_traversal(temp_directory: Path) -> None:
+    """``"../../../etc/passwd"`` must resolve outside and return ``False``."""
 
 
-def test_validate_file_relative_absolute_path_mismatch() -> None:
-    """
-    Given: filepath="/etc/passwd" and base_dir="/home/user"
-    When: validate_file_relative is called
-    Then: Returns False (completely different directories)
-    """
+def test_relative_absolute_path_mismatch() -> None:
+    """Completely disjoint paths must return ``False``."""
 
 
-def test_validate_file_relative_symlink_attack(temp_directory: Path) -> None:
-    """
-    Given: filepath is a symlink pointing outside base_dir
-    When: validate_file_relative is called (path is resolved)
-    Then: Returns False (resolved target is outside base)
-    """
+def test_relative_symlink_attack(temp_directory: Path) -> None:
+    """A symlink pointing outside ``base_dir`` must return ``False`` after resolution."""
 
 
 # =============================================================================
-# Tests: validate_file_relative - Input handling
+# Tests: validate_file_relative — input handling
 # =============================================================================
 
 
-def test_validate_file_relative_string_inputs() -> None:
-    """
-    Given: filepath and base_dir as strings (not Path objects)
-    When: validate_file_relative is called
-    Then: Works correctly (converts to Path internally)
-    """
+def test_relative_string_inputs() -> None:
+    """Both arguments as ``str`` must be accepted."""
 
 
-def test_validate_file_relative_mixed_inputs(temp_directory: Path) -> None:
-    """
-    Given: filepath as string, base_dir as Path
-    When: validate_file_relative is called
-    Then: Works correctly (handles mixed types)
-    """
+def test_relative_mixed_inputs(temp_directory: Path) -> None:
+    """One ``str`` and one ``Path`` must be accepted."""
 
 
-def test_validate_file_relative_relative_paths(temp_directory: Path) -> None:
-    """
-    Given: Both filepath and base_dir as relative paths
-    When: validate_file_relative is called
-    Then: Resolves both to absolute paths before comparison
-    """
+def test_relative_resolves_relative_paths(temp_directory: Path) -> None:
+    """Relative paths must be resolved to absolute before comparison."""
 
 
 # =============================================================================
-# Tests: validate_file_relative - Edge cases
+# Tests: validate_file_relative — edge cases
 # =============================================================================
 
 
-def test_validate_file_relative_unicode_paths(temp_directory: Path) -> None:
-    """
-    Given: Paths containing unicode characters (e.g., "文件.sh")
-    When: validate_file_relative is called
-    Then: Handles unicode correctly
-    """
+def test_relative_unicode_paths(temp_directory: Path) -> None:
+    """Unicode characters in paths must be handled correctly."""
 
 
-def test_validate_file_relative_paths_with_spaces(temp_directory: Path) -> None:
-    """
-    Given: Paths containing spaces (e.g., "my file.sh")
-    When: validate_file_relative is called
-    Then: Handles spaces correctly
-    """
+def test_relative_paths_with_spaces(temp_directory: Path) -> None:
+    """Spaces in paths must be handled correctly."""
 
 
-def test_validate_file_relative_nonexistent_paths() -> None:
-    """
-    Given: filepath and base_dir that don't exist on filesystem
-    When: validate_file_relative is called
-    Then: Still computes relationship based on resolved paths
-    """
+def test_relative_nonexistent_paths() -> None:
+    """Non-existent paths must still compute the relationship correctly."""
 
 
-def test_validate_file_relative_root_as_base() -> None:
-    """
-    Given: base_dir="/" (filesystem root)
-    When: validate_file_relative is called with any filepath
-    Then: Returns True for all absolute paths (everything is under /)
-    """
+def test_relative_root_as_base() -> None:
+    """``base_dir="/"`` must make all absolute paths relative."""
 
 
-def test_validate_file_relative_nested_subdirectory(temp_directory: Path) -> None:
-    """
-    Given: filepath deeply nested (e.g., /base/a/b/c/d/file.txt)
-    When: validate_file_relative is called with base_dir="/base"
-    Then: Returns True (deeply nested is still relative)
-    """
+def test_relative_nested_subdirectory(temp_directory: Path) -> None:
+    """A deeply nested path must still return ``True``."""
 
 
-def test_validate_file_relative_similar_prefix_names(temp_directory: Path) -> None:
-    """
-    Given: base_dir="/home/user" and filepath="/home/user2/file.txt"
-    When: validate_file_relative is called
-    Then: Returns False (user2 is not inside user, just similar prefix)
-    """
+def test_relative_similar_prefix_names(temp_directory: Path) -> None:
+    """``/home/user2/file`` must *not* match ``base_dir=/home/user``."""

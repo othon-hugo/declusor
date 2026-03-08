@@ -1,10 +1,10 @@
-"""Tests for declusor.command.command module (ExecuteCommand class).
+"""Tests for ``declusor.command.execute.ExecuteCommand``.
 
-This module tests:
-- ExecuteCommand: Execute raw command line on target
+Verifies initialization encoding, execute-time transmission, and
+edge-case handling (empty strings, unicode, special characters).
 """
 
-from unittest.mock import AsyncMock
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -14,45 +14,34 @@ import pytest
 
 
 @pytest.fixture
-def mock_session() -> AsyncMock:
-    """Create a mock ISession with write method."""
+def mock_session() -> MagicMock:
+    """Return a ``MagicMock`` satisfying the ``IConnection`` interface."""
+
+
+@pytest.fixture
+def mock_console() -> MagicMock:
+    """Return a ``MagicMock`` satisfying the ``IConsole`` interface."""
 
 
 # =============================================================================
-# Tests: ExecuteCommand initialization
+# Tests: ExecuteCommand.__init__
 # =============================================================================
 
 
-def test_execute_command_init_encodes_command_to_bytes() -> None:
-    """
-    Given: ExecuteCommand("ls -la") is created
-    When: __init__ is called
-    Then: _command_line is set to b"ls -la"
-    """
+def test_init_encodes_command_as_utf8_bytes() -> None:
+    """UTF-8 encode the command string and store it as ``_command_line``."""
 
 
-def test_execute_command_init_handles_empty_string() -> None:
-    """
-    Given: ExecuteCommand("") is created
-    When: __init__ is called
-    Then: _command_line is set to b""
-    """
+def test_init_stores_empty_bytes_for_empty_string() -> None:
+    """An empty command string should produce ``b""``."""
 
 
-def test_execute_command_init_handles_unicode() -> None:
-    """
-    Given: ExecuteCommand("echo 你好") is created
-    When: __init__ encodes command
-    Then: UTF-8 bytes are stored correctly
-    """
+def test_init_encodes_unicode_characters() -> None:
+    """Non-ASCII characters (e.g. CJK) must survive the UTF-8 round-trip."""
 
 
-def test_execute_command_init_handles_special_characters() -> None:
-    """
-    Given: ExecuteCommand("echo $PATH && ls") is created
-    When: __init__ encodes command
-    Then: Special chars are preserved in bytes
-    """
+def test_init_preserves_shell_special_characters() -> None:
+    """Shell metacharacters (``$``, ``&&``, ``|``) must not be altered."""
 
 
 # =============================================================================
@@ -60,28 +49,9 @@ def test_execute_command_init_handles_special_characters() -> None:
 # =============================================================================
 
 
-@pytest.mark.asyncio
-def test_execute_command_execute_writes_to_session(mock_session: AsyncMock) -> None:
-    """
-    Given: ExecuteCommand with command "whoami"
-    When: execute(session) is called
-    Then: session.write(b"whoami") is called
-    """
+def test_execute_writes_encoded_command_to_session(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """``session.write`` must be called once with the pre-encoded bytes."""
 
 
-@pytest.mark.asyncio
-def test_execute_command_execute_awaits_write(mock_session: AsyncMock) -> None:
-    """
-    Given: ExecuteCommand instance
-    When: execute(session) is called
-    Then: Awaits session.write() (async call)
-    """
-
-
-@pytest.mark.asyncio
-def test_execute_command_execute_does_not_read_response(mock_session: AsyncMock) -> None:
-    """
-    Given: ExecuteCommand instance
-    When: execute(session) is called
-    Then: session.read() is NOT called (response handled by caller)
-    """
+def test_execute_does_not_read_from_session(mock_session: MagicMock, mock_console: MagicMock) -> None:
+    """``execute`` only writes; reading is the caller's responsibility."""

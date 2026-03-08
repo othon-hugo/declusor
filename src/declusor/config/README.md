@@ -1,23 +1,36 @@
 # Configuration Package
 
-The **config** package provides the centralized configuration, constants, enumeration types, and exception definitions used throughout the application. It serves as the foundation for consistent behavior and error handling across all components.
+The **config** package sits at the base of the dependency hierarchy. It provides shared constants, enumerations, and exceptions consumed by every other package.
 
 > [!NOTE]
-> This package sits at the foundation of the dependency hierarchy, providing shared types and configuration.
+> This package has **zero dependencies** on other application packages.
 
-## Purpose
+## Modules
 
-This package establishes the core parameters and types that govern application behavior:
+| Module          | Contents                                                                          |
+| --------------- | --------------------------------------------------------------------------------- |
+| `settings.py`   | `Settings` (project name/description) and `BasePath` (directory constants)        |
+| `enums.py`      | `ClientFile` (client script filenames) and `OperationCode` (file operation codes) |
+| `exceptions.py` | Full exception hierarchy rooted at `DeclusorException`                            |
 
-- **Application Settings**: Centralized configuration values including paths, timeouts, and protocol constants.
-- **Path Management**: Base directory definitions for locating data files, scripts, and resources.
-- **Exception Hierarchy**: A structured set of domain-specific exceptions enabling granular error handling.
-- **Enumeration Types**: Type-safe enumerations for categorical values used across the application.
+## Exception Hierarchy
+
+```
+DeclusorException
+├── InvalidOperation
+├── ConnectionFailure
+├── ParserError
+├── RouterError
+├── PromptError
+├── ControllerError
+└── ExitRequest
+
+DeclusorWarning (Warning)
+```
 
 ## Design Principles
 
-1. **Centralization**: All configuration values are defined in a single location for maintainability.
-2. **Immutability**: Configuration values are treated as constants and should not be modified at runtime.
-3. **Type Safety**: Enumerations and typed exceptions prevent invalid states and improve code clarity.
-4. **Semantic Exceptions**: Each exception type conveys specific meaning about the error condition.
-5. **Zero Dependencies**: This package has no dependencies on other application packages.
+1. **Centralisation** — all settings and constants live here.
+2. **Immutability** — values are class-level constants, not mutated at runtime.
+3. **Type Safety** — `StrEnum` members and typed exceptions prevent invalid states.
+4. **Semantic Exceptions** — each exception type conveys specific error context.

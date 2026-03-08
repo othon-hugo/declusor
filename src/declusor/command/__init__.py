@@ -1,12 +1,12 @@
-from .command import ExecuteCommand
+from .execute import ExecuteCommand
 from .file import ExecuteFile, UploadFile
 from .load import LoadPayload
 from .shell import LaunchShell
 
 __all__ = [
-    "UploadFile",
+    "ExecuteCommand",
+    "ExecuteFile",
     "LaunchShell",
     "LoadPayload",
-    "ExecuteFile",
-    "ExecuteCommand",
+    "UploadFile",
 ]

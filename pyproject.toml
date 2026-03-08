@@ -1,18 +1,43 @@
 [tool.poetry]
 name = "declusor"
-description = "Provides a unified, interactive CLI for remotely executing scripts, managing payloads, establishing interactive command sessions, and handling file transfers across remote environments."
-version = "0.2.0"
+description = "A unified, interactive CLI for remotely executing scripts, managing payloads, establishing interactive command sessions, and handling file transfers across remote environments."
+version = "0.3.1"
 readme = "README.md"
 license = "LICENSE"
 authors = ["Othon Hugo <othonhugo@users.noreply.github.com>"]
-keywords = ["security", "infosec", "cybersecurity", "pentesting", "ctf", "linux", "scripting", "framework", "post-exploitation", "payload-delivery"]
-classifiers = ["Development Status :: 4 - Beta", "Programming Language :: Python :: 3.10"]
+keywords = [
+    "security",
+    "infosec",
+    "cybersecurity",
+    "pentesting",
+    "ctf",
+    "linux",
+    "scripting",
+    "framework",
+    "post-exploitation",
+    "payload-delivery",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+    "Typing :: Typed",
+]
 packages = [{ include = "declusor", from = "src" }]
 
 [tool.poetry.urls]
 Homepage = "https://github.com/othonhugo/declusor/"
 Repository = "https://github.com/othonhugo/declusor.git"
 Issues = "https://github.com/othonhugo/declusor/issues"
+
+[tool.poetry.scripts]
+declusor = "declusor.main:main"
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -32,21 +57,26 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.pylint.main]
 source-roots = ["src"]
-max-line-length = 150
 recursive = true
+ignore-paths = [".venv/", "build/", "tests/"]
+
+[tool.pylint.format]
+max-line-length = 150
+
+[tool.pylint."messages_control"]
 disable = [
     "broad-exception-caught",
+    "duplicate-code",
     "missing-module-docstring",
     "too-few-public-methods",
     "too-many-arguments",
+    "too-many-instance-attributes",
     "too-many-locals",
     "unused-argument",
-    "duplicate-code"
 ]
-ignore-paths = [".venv/", "build/", "tests/"]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 mypy_path = "src"
 exclude = ["tests/*"]
 pretty = true
@@ -57,15 +87,13 @@ disallow_subclassing_any = false
 
 [tool.black]
 line-length = 150
-target-version = ["py311"]
+target-version = ["py312"]
 exclude = '''
 /(
     \.git
 | \.venv
 | build
 | dist
-| migrations
-| .venv
 )/
 '''
 
@@ -74,10 +102,8 @@ profile = "black"
 line_length = 150
 
 [tool.pytest.ini_options]
-addopts = "-raqsv --strict-markers --tb=no"
+addopts = "-ra --strict-markers --tb=short -v"
 pythonpath = ["src"]
 testpaths = ["tests"]
 norecursedirs = [".vscode", "__pycache__"]
-markers = [
-    "asyncio: mark test as an asyncio test",
-]
+markers = ["asyncio: mark test as an asyncio test"]
