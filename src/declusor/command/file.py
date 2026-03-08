@@ -44,7 +44,7 @@ class _BaseFileCommand(interface.ICommand):
 
         session.write(self._format_command(session.client))
 
-    def _format_command(self, profile: interface.IProfile) -> bytes:
+    def _format_command(self, profile: interface.IConnectionProfile) -> bytes:
         """Build the encoded command bytes using *profile*'s operation mapping.
 
         Base64-encodes the file content, then passes it to
@@ -63,7 +63,7 @@ class _BaseFileCommand(interface.ICommand):
         file_content = util.load_file(self._filepath)
         file_base64 = util.convert_to_base64(file_content)
 
-        script_data = profile.format_operation_script(self._OPCODE, file_base64)
+        script_data = profile.render_operation_command(self._OPCODE, file_base64)
 
         if not script_data:
             raise config.InvalidOperation("Failed to generate script data for the file operation.")

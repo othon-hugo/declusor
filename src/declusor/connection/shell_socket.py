@@ -7,7 +7,7 @@ from declusor import config, interface, util
 
 
 @dataclass(frozen=True)
-class ShellSocketProfile(interface.IProfile):
+class ShellSocketProfile(interface.IConnectionProfile):
     """Immutable configuration profile for a shell-over-socket client.
 
     All fields are set at construction time; the dataclass is frozen to prevent
@@ -33,13 +33,13 @@ class ShellSocketProfile(interface.IProfile):
     allowed_library_extensions: tuple[str, ...]
     """Allowed file extensions for library scripts."""
 
-    connection_timeout: float | None = 1.0
+    _default_timeout: float | None = 1.0
     """Timeout in seconds for socket operations. Set to None for no timeout."""
 
-    buffer_size: int = 2**8
+    _default_buffer_size: int = 2**8
     """Size of the buffer to use when reading from the socket. Must be > 0."""
 
-    supported_functions: dict[config.OperationCode, str] = field(
+    _supported_functions: dict[config.OperationCode, str] = field(
         default_factory=lambda: {
             config.OperationCode.STORE_FILE: "store_base64_encoded_value",
             config.OperationCode.EXEC_FILE: "execute_base64_encoded_value",
@@ -47,32 +47,32 @@ class ShellSocketProfile(interface.IProfile):
     )
     """Mapping of supported operation codes to their corresponding function names in the client script."""
 
-    library_root_directory: Path = config.BasePath.LIBRARY_DIR
+    _library_root_directory: Path = config.BasePath.LIBRARY_DIR
     """Root directory for library scripts."""
 
-    payload_root_directory: Path = config.BasePath.MODULES_DIR
+    _module_root_directory: Path = config.BasePath.MODULES_DIR
     """Root directory for payload scripts."""
 
     def __post_init__(self) -> None:
-        if self.buffer_size <= 0:
+        if self._default_buffer_size <= 0:
             raise config.ConnectionFailure("buffer_size must be > 0")
 
-        if self.connection_timeout and self.connection_timeout < 0:
+        if self.default_timeout and self.default_timeout < 0:
             raise config.ConnectionFailure("connection_timeout must be >= 0 or None")
 
     @property
-    def bufsize(self) -> int:
-        """Receive buffer size in bytes. Alias for ``buffer_size``."""
+    def default_buffer_size(self) -> int:
+        """Default buffer size for socket reads. Must be a positive integer."""
 
-        return self.buffer_size
+        return self._default_buffer_size
 
     @property
-    def timeout(self) -> float | None:
-        """Socket operation timeout in seconds. Alias for ``connection_timeout``."""
+    def default_timeout(self) -> float | None:
+        """Default timeout for socket operations in seconds."""
 
-        return self.connection_timeout
+        return self._default_timeout
 
-    def format_operation_script(self, opcode: "config.OperationCode", /, *args: str) -> str | None:
+    def render_operation_command(self, opcode: "config.OperationCode", /, *args: str) -> str | None:
         """Build the shell command string for a given operation code.
 
         Looks up the function name that corresponds to *opcode* in
@@ -89,14 +89,32 @@ class ShellSocketProfile(interface.IProfile):
             is not in ``supported_functions``.
         """
 
-        function_name = self.supported_functions.get(opcode)
+        function_name = self._supported_functions.get(opcode)
 
         if not function_name:
             return None
 
         return function_name + (" " + " ".join(util.quote(a) for a in args) if args else "")
 
-    def format_client_script(self, host: str, port: int, /) -> str:
+    def iter_library_paths(self) -> Generator[Path, None, None]:
+        for file in self._library_root_directory.iterdir():
+            if not file.is_file():
+                continue
+
+            if not util.validate_file_extension(file, self.allowed_library_extensions):
+                continue
+
+            yield file
+
+    def resolve_module_path(self, module_filename: str, /) -> Path:
+        module_filepath = (self._module_root_directory / module_filename).resolve()
+
+        if not util.validate_file_relative(module_filepath, self._module_root_directory):
+            raise config.InvalidOperation(f"module path {module_filepath} is not relative to the module root directory")
+
+        return module_filepath
+
+    def render_client_script(self, host: str, port: int, /) -> str:
         """Read the client script template and substitute connection parameters.
 
         Args:
@@ -147,13 +165,13 @@ class ShellSocketConnection(interface.IConnection):
 
         self._profile = profile
         self._connection = connection
-        self._timeout = profile.connection_timeout
+        self._timeout = profile.default_timeout
 
         if self._timeout is not None:
             self._connection.settimeout(self._timeout)
 
         remote_host, remote_port = self._connection.getpeername()
-        self._client_script = self._profile.format_client_script(remote_host, remote_port)
+        self._client_script = self._profile.render_client_script(remote_host, remote_port)
 
     def initialize(self) -> None:
         """Perform the initial protocol handshake.
@@ -169,7 +187,7 @@ class ShellSocketConnection(interface.IConnection):
         self.write(self._load_library())
 
         try:
-            initial_data = self._connection.recv(self._profile.bufsize)
+            initial_data = self._connection.recv(self._profile.default_buffer_size)
 
             if initial_data != self._profile.ack_client_raw:
                 raise config.ConnectionFailure("invalid client ACK during session initialization.")
@@ -177,7 +195,7 @@ class ShellSocketConnection(interface.IConnection):
             raise config.ConnectionFailure("timeout waiting for client ACK during session initialization.") from e
 
     @property
-    def client(self) -> interface.IProfile:
+    def client(self) -> interface.IConnectionProfile:
         """The ``ShellSocketProfile`` used to configure this connection."""
 
         return self._profile
@@ -230,7 +248,7 @@ class ShellSocketConnection(interface.IConnection):
 
         while True:
             try:
-                chunk = self._connection.recv(self._profile.bufsize)
+                chunk = self._connection.recv(self._profile.default_buffer_size)
 
                 if not chunk:
                     raise ConnectionResetError("Connection closed by peer")
@@ -295,13 +313,7 @@ class ShellSocketConnection(interface.IConnection):
 
         all_modules: list[bytes] = []
 
-        for file in self._profile.library_root_directory.iterdir():
-            if not file.is_file():
-                continue
-
-            if not util.validate_file_extension(file, self._profile.allowed_library_extensions):
-                continue
-
+        for file in self._profile.iter_library_paths():
             if module_content := util.try_load_file(file):
                 all_modules.append(module_content)
 
@@ -324,9 +336,9 @@ class ShellSocketConnection(interface.IConnection):
                 or if the file cannot be read.
         """
 
-        payload_filepath = self._profile.payload_root_directory / target_module
+        payload_filepath = self._profile._module_root_directory / target_module
 
-        if not util.validate_file_relative(payload_filepath, self._profile.payload_root_directory):
+        if not util.validate_file_relative(payload_filepath, self._profile._module_root_directory):
             raise config.ConnectionFailure(f"payload path {payload_filepath} is not relative to the payload root directory")
 
         try:

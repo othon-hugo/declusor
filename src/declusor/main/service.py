@@ -30,7 +30,7 @@ def run_service(router: interface.IRouter, console: interface.IConsole, options:
     profile = connection.DEFAULT_SHELL_SOCKET
 
     console.setup_completer(router.routes)
-    console.write_message(profile.format_client_script(options["host"], options["port"]))
+    console.write_message(profile.render_client_script(options["host"], options["port"]))
 
     with util.await_connection(options["host"], options["port"]) as socket_connection:
         with connection.ShellSocketConnection(socket_connection, profile) as conn:

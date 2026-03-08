@@ -37,6 +37,7 @@ class InvalidOperation(DeclusorException):
         Args:
             description: Detailed explanation of why the operation is invalid.
         """
+
         self.description = description
 
         super().__init__(f"invalid operation: {self.description}")
@@ -93,6 +94,7 @@ class PromptError(DeclusorException):
             argument: The invalid argument that was provided.
             description: Optional detailed explanation of why the argument is invalid.
         """
+
         self.argument = argument
         self.description = description
 
