@@ -19,12 +19,12 @@ The **controller** package is the application layer — thin functions that pars
 All controllers follow the `MetaController` type alias:
 
 ```python
-def call_*(session: IConnection, console: IConsole, line: str) -> None
+def call_*(connection: IConnection, console: IConsole, line: str) -> None
 ```
 
 ## Lifecycle
 
-1. Receive `(session, console, line)` from the router.
+1. Receive `(connection, console, line)` from the router.
 2. Parse and validate `line` via `parse_command_arguments`.
 3. Perform pre-execution checks (e.g. `ensure_file_exists`).
 4. Instantiate and execute the appropriate `ICommand`.

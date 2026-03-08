@@ -23,11 +23,11 @@ class LoadPayload(interface.ICommand):
 
         self._filepath = util.ensure_file_exists(filepath)
 
-    def execute(self, session: interface.IConnection, console: interface.IConsole, /) -> None:
+    def execute(self, connection: interface.IConnection, console: interface.IConsole, /) -> None:
         """Read and transmit the payload file to the remote client.
 
         Args:
-            session: The active connection to write the payload to.
+            connection: The active connection to write the payload to.
             console: Unused; present to satisfy the ``ICommand`` interface.
 
         Raises:
@@ -37,4 +37,4 @@ class LoadPayload(interface.ICommand):
         if (file_content := util.try_load_file(self._filepath)) is None:
             raise config.InvalidOperation(f"failed to load file content: {self._filepath!r}")
 
-        session.write(file_content)
+        connection.write(file_content)

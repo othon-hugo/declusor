@@ -28,21 +28,21 @@ class _BaseFileCommand(interface.ICommand):
 
         self._filepath = util.ensure_file_exists(filepath)
 
-    def execute(self, session: interface.IConnection, console: interface.IConsole, /) -> None:
+    def execute(self, connection: interface.IConnection, console: interface.IConsole, /) -> None:
         """Serialize and transmit the file to the remote client.
 
         Reads the file, base64-encodes it, wraps it in the appropriate
         client shell command, and writes the result to *session*.
 
         Args:
-            session: The active connection to write the command to.
+            connection: The active connection to write the command to.
             console: Unused; present to satisfy the ``ICommand`` interface.
 
         Raises:
             InvalidOperation: If the profile does not support the opcode.
         """
 
-        session.write(self._format_command(session.client))
+        connection.write(self._format_command(connection.client))
 
     def _format_command(self, profile: interface.IConnectionProfile) -> bytes:
         """Build the encoded command bytes using *profile*'s operation mapping.

@@ -17,7 +17,7 @@ def create_help_controller(get_documentation: DocumentationProvider, get_route_u
         Help controller function.
     """
 
-    def call_help(session: interface.IConnection, console: interface.IConsole, line: str) -> None:
+    def call_help(connection: interface.IConnection, console: interface.IConsole, line: str) -> None:
         """Display detailed information about available commands or a specific command."""
 
         arguments, _ = util.parse_command_arguments(line, {"command": Optional[str]})

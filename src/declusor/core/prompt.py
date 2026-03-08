@@ -10,11 +10,11 @@ class PromptCLI(interface.IPrompt):
     terminating the session.
     """
 
-    def __init__(self, name: str, router: interface.IRouter, session: interface.IConnection, console: interface.IConsole) -> None:
+    def __init__(self, name: str, router: interface.IRouter, connection: interface.IConnection, console: interface.IConsole) -> None:
         self._prompt = f"[{name}] "
 
         self._router = router
-        self._session = session
+        self._connection = connection
         self._console = console
 
     def run(self) -> None:
@@ -62,8 +62,8 @@ class PromptCLI(interface.IPrompt):
 
         match command_line.split(" ", 1):
             case [route, argument]:
-                self._router.locate(route)(self._session, self._console, argument.strip())
+                self._router.locate(route)(self._connection, self._console, argument.strip())
             case [route]:
-                self._router.locate(route)(self._session, self._console, "")
+                self._router.locate(route)(self._connection, self._console, "")
             case _:
                 raise config.PromptError(f"Invalid command: {command_line}")

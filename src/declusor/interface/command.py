@@ -16,11 +16,11 @@ class ICommand(ABC):
     """
 
     @abstractmethod
-    def execute(self, session: "IConnection", console: "IConsole", /) -> None:
+    def execute(self, connection: "IConnection", console: "IConsole", /) -> None:
         """Run the command over the given connection.
 
         Args:
-            session: The active connection through which the operation is sent.
+            connection: The active connection through which the operation is sent.
             console: Console used for displaying output or prompting the user.
         """
 

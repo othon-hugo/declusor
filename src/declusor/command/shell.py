@@ -15,7 +15,7 @@ class LaunchShell(interface.ICommand):
         self._stop_event = util.TaskEvent()
         self._task_pool = util.TaskPool(self._stop_event)
 
-    def execute(self, session: interface.IConnection, console: interface.IConsole, /) -> None:
+    def execute(self, connection: interface.IConnection, console: interface.IConsole, /) -> None:
         """Start the shell session and block until the operator exits.
 
         Registers the response-reader as a background task, starts it, then
@@ -23,12 +23,12 @@ class LaunchShell(interface.ICommand):
         ``KeyboardInterrupt`` or normal completion.
 
         Args:
-            session: The active connection used for bidirectional I/O.
+            connection: The active connection used for bidirectional I/O.
             console: Console for reading operator input and writing output.
         """
 
-        input_handler = self._create_shell_output_handler(session, console)
-        output_handler = self._create_shell_input_handler(session, console)
+        input_handler = self._create_shell_output_handler(connection, console)
+        output_handler = self._create_shell_input_handler(connection, console)
 
         self._task_pool.add_task(input_handler)
         self._task_pool.start_all()
@@ -42,7 +42,7 @@ class LaunchShell(interface.ICommand):
         finally:
             self._task_pool.stop()
 
-    def _create_shell_input_handler(self, session: interface.IConnection, console: interface.IConsole, /) -> util.TaskHandler:
+    def _create_shell_input_handler(self, connection: interface.IConnection, console: interface.IConsole, /) -> util.TaskHandler:
         """Return a ``TaskHandler`` that forwards operator input to the remote client.
 
         Reads lines from *console* and writes non-empty ones to *session*.
@@ -54,11 +54,11 @@ class LaunchShell(interface.ICommand):
                 command_request = console.read_line()
 
                 if command_request:
-                    session.write(command_request.encode())
+                    connection.write(command_request.encode())
 
         return _handle_request
 
-    def _create_shell_output_handler(self, session: interface.IConnection, console: interface.IConsole, /) -> util.TaskHandler:
+    def _create_shell_output_handler(self, connection: interface.IConnection, console: interface.IConsole, /) -> util.TaskHandler:
         """Return a ``TaskHandler`` that streams remote output to the console.
 
         Removes the session timeout for the duration of the shell (blocking
@@ -67,15 +67,15 @@ class LaunchShell(interface.ICommand):
         """
 
         def _handle_response(stop_event: util.TaskEvent) -> None:
-            previous_timeout = session.timeout
+            previous_timeout = connection.timeout
 
             try:
-                session.timeout = None
+                connection.timeout = None
 
                 while not stop_event.is_set():
-                    for chunk in session.read():
+                    for chunk in connection.read():
                         console.write_binary_data(chunk)
             finally:
-                session.timeout = previous_timeout
+                connection.timeout = previous_timeout
 
         return _handle_response

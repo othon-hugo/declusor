@@ -13,12 +13,12 @@ class ExecuteCommand(interface.ICommand):
 
         self._command_line = command_line.encode()
 
-    def execute(self, session: interface.IConnection, console: interface.IConsole, /) -> None:
+    def execute(self, connection: interface.IConnection, console: interface.IConsole, /) -> None:
         """Transmit the command to the remote client.
 
         Args:
-            session: The active connection to write the command to.
+            connection: The active connection to write the command to.
             console: Unused; present to satisfy the ``ICommand`` interface.
         """
 
-        session.write(self._command_line)
+        connection.write(self._command_line)
