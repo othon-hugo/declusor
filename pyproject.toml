@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "declusor"
 description = "A unified, interactive CLI for remotely executing scripts, managing payloads, establishing interactive command sessions, and handling file transfers across remote environments."
-version = "0.3.0"
+version = "0.3.1"
 readme = "README.md"
 license = "LICENSE"
 authors = ["Othon Hugo <othonhugo@users.noreply.github.com>"]
