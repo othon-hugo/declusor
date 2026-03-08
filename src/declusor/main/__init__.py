@@ -12,7 +12,7 @@ def main() -> None:
     try:
         options = core.DeclusorParser(config.Settings.PROJECT_NAME, description=config.Settings.PROJECT_DESCRIPTION).parse()
     except config.ParserError as e:
-        raise SystemExit(f"parser error: {e}")
+        raise SystemExit(f"parser error: {e}") from e
 
     console = core.Console()
 

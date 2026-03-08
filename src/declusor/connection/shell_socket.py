@@ -129,7 +129,7 @@ class ShellSocketProfile(interface.IConnectionProfile):
         """
 
         try:
-            with self.client_path.open("r") as f:
+            with self.client_path.open("r", encoding="utf-8") as f:
                 client_script_template = f.read()
         except OSError as e:
             raise config.ConnectionFailure(f"Failed to read client script: {e}") from e
@@ -336,10 +336,7 @@ class ShellSocketConnection(interface.IConnection):
                 or if the file cannot be read.
         """
 
-        payload_filepath = self._profile._module_root_directory / target_module
-
-        if not util.validate_file_relative(payload_filepath, self._profile._module_root_directory):
-            raise config.ConnectionFailure(f"payload path {payload_filepath} is not relative to the payload root directory")
+        payload_filepath = self._profile.resolve_module_path(target_module)
 
         try:
             with payload_filepath.open("rb") as f:

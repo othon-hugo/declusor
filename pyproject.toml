@@ -53,12 +53,13 @@ max-line-length = 150
 recursive = true
 disable = [
     "broad-exception-caught",
+    "duplicate-code",
     "missing-module-docstring",
     "too-few-public-methods",
     "too-many-arguments",
+    "too-many-instance-attributes",
     "too-many-locals",
     "unused-argument",
-    "duplicate-code",
 ]
 ignore-paths = [".venv/", "build/", "tests/"]
 

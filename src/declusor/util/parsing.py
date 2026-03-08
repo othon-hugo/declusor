@@ -80,7 +80,7 @@ def parse_command_arguments(line: str, definitions: ArgumentDefinitions, allow_u
             if type(None) in origin_types:
                 is_optional = True
 
-                actual_types: list[Type[Any]] = [a for a in origin_types if a is not type(None)]
+                actual_types: list[Type[Any]] = [a for a in origin_types if not isinstance(a, type(None))]
 
                 if actual_types:
                     arg_type = actual_types[0]

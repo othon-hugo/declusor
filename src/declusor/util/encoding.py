@@ -5,10 +5,35 @@ from string import Template
 
 
 def quote(s: str) -> str:
+    """Shell-escape a string so it can be safely embedded in a shell command.
+
+    Wraps ``shlex.quote`` to produce a single shell-safe token, preventing
+    injection through special characters.
+
+    Args:
+        s: The string to escape.
+
+    Returns:
+        A shell-quoted version of the input string.
+    """
+
     return shlex_quote(s)
 
 
 def format_template(template_str: str, /, **kwargs: str | int) -> str:
+    """Substitute placeholders in a ``$``-based template string.
+
+    Uses ``string.Template.safe_substitute``, so placeholders without a
+    matching keyword argument are left unchanged rather than raising an error.
+
+    Args:
+        template_str: The template containing ``$KEY`` or ``${KEY}`` placeholders.
+        **kwargs: Key-value pairs to substitute into the template.
+
+    Returns:
+        The template string with all matched placeholders replaced.
+    """
+
     return Template(template_str).safe_substitute(**kwargs)
 
 

@@ -18,10 +18,10 @@ def handle_exception(exc: BaseException) -> NoReturn:
     """
 
     handler_table: dict[Type[BaseException], Callable[[BaseException], str]] = {
-        config.ConnectionFailure: lambda e: str(e),
+        config.ConnectionFailure: lambda e: f"failed to connect to database: {e}",
         FileNotFoundError: lambda e: f"file or directory not found: {e}",
         NotADirectoryError: lambda e: f"not a directory: {e}",
-        OSError: lambda e: str(e),
+        OSError: lambda e: f"operating system error: {e}",
     }
 
     for exception_type, get_message in handler_table.items():
