@@ -1,13 +1,14 @@
-from . import command, config, connection, controller, core, interface, main, mock, util
+from . import cli, command, config, connection, controller, interface, main, mock, routing, util
 
 __all__ = [
+    "cli",
     "command",
     "config",
     "connection",
     "controller",
-    "core",
     "interface",
     "main",
     "mock",
+    "routing",
     "util",
 ]

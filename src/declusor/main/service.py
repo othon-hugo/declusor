@@ -1,9 +1,9 @@
 from os import chdir
 
-from declusor import config, connection, controller, core, interface, util
+from declusor import config, connection, controller, interface, cli, util
 
 
-def run_service(router: interface.IRouter, console: interface.IConsole, options: core.DeclusorOptions) -> None:
+def run_service(router: interface.IRouter, console: interface.IConsole, options: cli.DeclusorOptions) -> None:
     """Orchestrate the full server lifecycle for one client session.
 
     1. Validates required data directories.
@@ -33,10 +33,10 @@ def run_service(router: interface.IRouter, console: interface.IConsole, options:
     console.write_message(profile.render_client_script(options["host"], options["port"]))
 
     with util.await_connection(options["host"], options["port"]) as socket_connection:
-        with connection.ShellSocketConnection(socket_connection, profile) as conn:
-            prompt = core.PromptCLI(config.Settings.PROJECT_NAME, router, conn, console)
+        with connection.ShellSocketConnection(socket_connection, profile) as shell_connection:
+            prompt = cli.PromptCLI(config.Settings.PROJECT_NAME, router, shell_connection, console)
 
-            conn.initialize()
+            shell_connection.initialize()
             prompt.run()
 
 

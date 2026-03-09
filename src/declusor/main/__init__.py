@@ -1,4 +1,4 @@
-from declusor import config, core
+from declusor import config, cli, routing
 from declusor.main import exception, service
 
 __all__ = ["main"]
@@ -7,14 +7,14 @@ __all__ = ["main"]
 def main() -> None:
     """Main entry point for the Declusor application."""
 
-    router = core.Router()
+    router = routing.Router()
 
     try:
-        options = core.DeclusorParser(config.Settings.PROJECT_NAME, description=config.Settings.PROJECT_DESCRIPTION).parse()
+        options = cli.DeclusorParser(config.Settings.PROJECT_NAME, description=config.Settings.PROJECT_DESCRIPTION).parse()
     except config.ParserError as e:
         raise SystemExit(f"parser error: {e}") from e
 
-    console = core.Console()
+    console = cli.Console()
 
     try:
         service.run_service(router, console, options)
