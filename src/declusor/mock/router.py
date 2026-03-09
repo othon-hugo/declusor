@@ -1,4 +1,4 @@
-from declusor import interface
+from declusor import interface, config
 
 
 class MockRouter(interface.IRouter):
@@ -24,4 +24,7 @@ class MockRouter(interface.IRouter):
         self._routes[route] = controller
 
     def locate(self, route: str, /) -> "interface.Controller":
-        return self._routes[route]
+        try:
+            return self._routes[route]
+        except KeyError:
+            raise config.RouterError(route)
