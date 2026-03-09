@@ -74,7 +74,8 @@ def parse_command_arguments(line: str, definitions: ArgumentDefinitions, allow_u
     for arg_name, arg_type in definitions.items():
         origin, is_optional = get_origin(arg_type), False
 
-        if origin is Union:
+        import types
+        if origin is Union or origin is types.UnionType:
             origin_types = get_args(arg_type)
 
             if type(None) in origin_types:
