@@ -84,3 +84,20 @@ def test_await_connection_raises_connection_failure_on_permission_denied(mock_so
                 pass
     finally:
         network.socket.socket = original_socket
+
+def test_await_connection_raises_original_exception_if_unhandled(mock_socket: mock.MockSocket) -> None:
+    """Awaiting a connection that breaks due to an unhandled internal exception must re-raise the original problem."""
+
+    # ARRANGE: Inject the mock configured to raise an unrecognized internal exception
+    original_socket = network.socket.socket
+    network.socket.socket = lambda *args, **kwargs: mock_socket  # type: ignore
+
+    mock_socket.bind_exception = RuntimeError("some generic unknown error")
+
+    try:
+        # ACT & ASSERT: Generic exceptions should skip transformation and float straight back to caller
+        with pytest.raises(RuntimeError, match="some generic unknown error"):
+            with network.await_connection("127.0.0.1", 8080):
+                pass
+    finally:
+        network.socket.socket = original_socket

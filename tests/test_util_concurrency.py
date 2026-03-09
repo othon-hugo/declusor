@@ -255,3 +255,23 @@ def test_context_manager_raises_exception_group_on_exit_errors() -> None:
     assert len(exc_info.value.exceptions) == 1
     assert isinstance(exc_info.value.exceptions[0], KeyError)
     assert str(exc_info.value.exceptions[0]) == "'err'"
+
+def test_taskpool_iterator_yields_tasks() -> None:
+    """Iterating over a ``concurrency.TaskPool`` must yield the remaining tasks."""
+
+    # ARRANGE: Add a few tasks to the pool
+    pool = concurrency.TaskPool()
+
+    def task1(evt: concurrency.TaskEvent) -> None: pass
+    def task2(evt: concurrency.TaskEvent) -> None: pass
+
+    pool.add_task(task1)
+    pool.add_task(task2)
+
+    # ACT: Evaluate iteration over the object
+    items = list(pool)
+
+    # ASSERT: Should directly yield tasks remaining in the underlying mapping
+    assert len(items) == 2
+    for item in items:
+        assert isinstance(item, concurrency.Task)
