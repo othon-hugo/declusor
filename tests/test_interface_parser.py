@@ -12,8 +12,8 @@ from declusor.interface import parser
 class DummyParser(parser.IParser[dict[str, str]]):
     """Null-implementation subclass delegating attributes to the interface."""
 
-    def parse(self) -> dict[str, str]:
-        return super().parse()
+    def parse(self, args: list[str] | None = None) -> dict[str, str]:
+        return super().parse(args)
 
 
 # =============================================================================

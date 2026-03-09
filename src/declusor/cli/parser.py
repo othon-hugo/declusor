@@ -20,7 +20,7 @@ class DeclusorParser(util.Parser, interface.IParser[DeclusorOptions]):
         "client": "agent responsible for handling requests",
     }
 
-    def parse(self) -> DeclusorOptions:
+    def parse(self, args: list[str] | None = None) -> DeclusorOptions:
         """Parse command-line arguments."""
 
         self.add_argument(
@@ -43,8 +43,8 @@ class DeclusorParser(util.Parser, interface.IParser[DeclusorOptions]):
             default=config.ClientFile.SHELL_SOCKET,
         )
 
-        args = self.parse_args()
-        declusor_opts = DeclusorOptions(host=args.host, port=args.port, client=args.client)
+        parsed_args = self.parse_args(args)
+        declusor_opts = DeclusorOptions(host=parsed_args.host, port=parsed_args.port, client=parsed_args.client)
 
         self._validate_all_arguments(declusor_opts)
 

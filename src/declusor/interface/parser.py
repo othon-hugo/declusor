@@ -12,7 +12,7 @@ class IParser(ABC, Generic[T]):
     """
 
     @abstractmethod
-    def parse(self) -> T:
+    def parse(self, args: list[str] | None = None) -> T:
         """Parse command-line arguments and return a typed result.
 
         Returns:
