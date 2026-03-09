@@ -2,8 +2,32 @@
 
 import pytest
 
-from declusor import config, mock
+from declusor import config, interface, mock
 from declusor.cli import prompt
+
+
+# =============================================================================
+# Dummies/Mocks
+# =============================================================================
+
+def dummy_controller(conn: interface.IConnection, term: interface.IConsole, arg: str) -> None:
+    """Null-implementation controller for testing command dispatch mappings."""
+
+class DummyThrowingRouter(mock.MockRouter):
+    """Null-implementation router returning functions strictly throwing specific configured exception cascades."""
+    def __init__(self, exception_type: type[Exception] | Exception, target_route: str | None = None) -> None:
+        super().__init__()
+        self.exception_type = exception_type
+        self_target = target_route
+        self.target_route = self_target
+
+    def locate(self, route: str) -> getattr:
+        def raise_exception(*args, **kwargs) -> None:
+            if self.target_route is None or route == self.target_route:
+                if isinstance(self.exception_type, Exception):
+                    raise self.exception_type
+                raise self.exception_type()
+        return raise_exception
 
 
 # =============================================================================
@@ -18,10 +42,7 @@ def test_promptcli_run_executes_registered_command() -> None:
     console = mock.MockConsole()
     router = mock.MockRouter()
 
-    def dummy_ct(conn, term, arg):
-        pass
-
-    router.connect("test_command", dummy_ct)
+    router.connect("test_command", dummy_controller)
 
     # Inject input commands and handle system completion signal to escape loop
     console.lines_to_read = ["test_command my_args", KeyboardInterrupt]
@@ -41,10 +62,7 @@ def test_promptcli_run_handles_argumentless_commands() -> None:
     console = mock.MockConsole()
     router = mock.MockRouter()
 
-    def dummy_ct(conn, term, arg):
-        pass
-
-    router.connect("test_command", dummy_ct)
+    router.connect("test_command", dummy_controller)
 
     console.lines_to_read = ["test_command", KeyboardInterrupt]
     cli = prompt.PromptCLI("test", router, conn, console)
@@ -63,10 +81,7 @@ def test_promptcli_run_skips_empty_lines() -> None:
     console = mock.MockConsole()
     router = mock.MockRouter()
 
-    def dummy_ct(conn, term, arg):
-        pass
-
-    router.connect("test_command", dummy_ct)
+    router.connect("test_command", dummy_controller)
 
     # Feed an empty line, a valid command, then interrupt
     console.lines_to_read = ["   ", "", "test_command", KeyboardInterrupt]
@@ -98,14 +113,7 @@ def test_promptcli_run_handles_exit_request() -> None:
     conn = mock.MockConnection(mock.MockConnectionProfile())
     console = mock.MockConsole()
 
-    class ThrowingRouter(mock.MockRouter):
-        def locate(self, route: str):
-            def raise_exit(*args, **kwargs) -> None:
-                raise config.ExitRequest()
-
-            return raise_exit
-
-    router = ThrowingRouter()
+    router = DummyThrowingRouter(config.ExitRequest)
     console.lines_to_read = ["test_command", "never_read_cmd"]
     cli = prompt.PromptCLI("test", router, conn, console)
 
@@ -122,15 +130,7 @@ def test_promptcli_run_handles_keyboard_interrupt_during_execution() -> None:
     conn = mock.MockConnection(mock.MockConnectionProfile())
     console = mock.MockConsole()
 
-    class ThrowingRouter(mock.MockRouter):
-        def locate(self, route: str):
-            def raise_int(*args, **kwargs) -> None:
-                if route == "throw":
-                    raise KeyboardInterrupt()
-
-            return raise_int
-
-    router = ThrowingRouter()
+    router = DummyThrowingRouter(KeyboardInterrupt, target_route="throw")
     console.lines_to_read = ["throw", "next", KeyboardInterrupt]
     cli = prompt.PromptCLI("test", router, conn, console)
 
@@ -146,14 +146,7 @@ def test_promptcli_run_logs_declusor_exceptions() -> None:
     conn = mock.MockConnection(mock.MockConnectionProfile())
     console = mock.MockConsole()
 
-    class ThrowingRouter(mock.MockRouter):
-        def locate(self, route: str):
-            def raise_declusor(*args, **kwargs) -> None:
-                raise config.PromptError("invalid route data")
-
-            return raise_declusor
-
-    router = ThrowingRouter()
+    router = DummyThrowingRouter(config.PromptError("invalid route data"))
     console.lines_to_read = ["bad", KeyboardInterrupt]
     cli = prompt.PromptCLI("test", router, conn, console)
 

@@ -11,6 +11,24 @@ from declusor import mock
 from declusor.cli import console
 
 # =============================================================================
+# Dummies/Mocks
+# =============================================================================
+
+class DummyPath:
+    """Null-implementation path structure exposing state parameters safely."""
+    def __init__(self, target_str: str, exists: bool = True) -> None:
+        self._target_str = target_str
+        self._exists = exists
+
+    def exists(self) -> bool: return self._exists
+    def __str__(self) -> str: return self._target_str
+
+class DummyStdout:
+    """Null-implementation stdout structure capturing buffer content streams safely."""
+    def __init__(self) -> None:
+        self.buffer = BytesIO()
+
+# =============================================================================
 # Tests: Console.setup_completer (Tab Completion)
 # =============================================================================
 
@@ -48,14 +66,9 @@ def test_console_enable_history_reads_existing_file() -> None:
     original_readline = console.readline
     console.readline = mock_rl  # type: ignore
 
-    # Provide an existing history target tracking object
-    class FakePath:
-        def exists(self): return True
-        def __str__(self): return "existing_hist"
-
     try:
         # ACT & ASSERT: Target path requested natively from RL wrapper API
-        term.enable_history(FakePath())  # type: ignore
+        term.enable_history(DummyPath("existing_hist"))  # type: ignore
         assert "existing_hist" in mock_rl.history_read
     finally:
         console.readline = original_readline
@@ -70,13 +83,9 @@ def test_console_enable_history_safely_ignores_missing_file() -> None:
     original_readline = console.readline
     console.readline = mock_rl  # type: ignore
 
-    class FakePath:
-        def exists(self): return True
-        def __str__(self): return "missing_hist"
-
     try:
         # ACT & ASSERT: Should transparently silence missing file execution contexts
-        term.enable_history(FakePath())  # type: ignore
+        term.enable_history(DummyPath("missing_hist"))  # type: ignore
         assert len(mock_rl.history_read) == 0
     finally:
         console.readline = original_readline
@@ -129,11 +138,7 @@ def test_console_write_binary_data_outputs_to_stdout_buffer() -> None:
     # ARRANGE: Construct mock structure encompassing binary stream requirements
     term = console.Console()
 
-    class FakeStdout:
-        def __init__(self):
-            self.buffer = BytesIO()
-
-    fake_stdout = FakeStdout()
+    fake_stdout = DummyStdout()
 
     original_stdout = sys.stdout
     sys.stdout = fake_stdout  # type: ignore
