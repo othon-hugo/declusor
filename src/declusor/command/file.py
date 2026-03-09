@@ -3,7 +3,7 @@ from pathlib import Path
 from declusor import config, interface, util
 
 
-class _BaseFileCommand(interface.ICommand):
+class BaseFileCommandABC(interface.ICommand):
     """Shared logic for commands that base64-encode a local file and invoke a client function.
 
     Subclasses set ``_OPCODE`` to select the appropriate client-side function
@@ -71,13 +71,13 @@ class _BaseFileCommand(interface.ICommand):
         return script_data.encode()
 
 
-class ExecuteFile(_BaseFileCommand):
+class ExecuteFile(BaseFileCommandABC):
     """Upload and execute a local script on the remote client."""
 
     _OPCODE = config.OperationCode.EXEC_FILE
 
 
-class UploadFile(_BaseFileCommand):
+class UploadFile(BaseFileCommandABC):
     """Upload a local file to the remote client without executing it."""
 
     _OPCODE = config.OperationCode.STORE_FILE
