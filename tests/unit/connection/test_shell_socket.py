@@ -31,6 +31,15 @@ def test_write_uses_sendall_for_payload_and_ack(tmp_path: Path) -> None:
     assert socket_connection.sendall.call_args_list == [((b"command",),), ((b"\x00",),)]
 
 
+def test_profile_supported_functions_are_immutable() -> None:
+    """A frozen profile must not expose a mutable function mapping."""
+
+    profile = connection.ShellSocketProfile(name="test", ack_server_raw=b"\x00", ack_client_raw=b"ack")
+
+    with pytest.raises(TypeError):
+        profile._supported_functions[config.OperationCode.EXEC_FILE] = "changed"  # type: ignore[index]
+
+
 @pytest.mark.parametrize("error", [OSError("broken pipe"), TimeoutError("timed out")])
 def test_write_translates_transport_errors(tmp_path: Path, error: BaseException) -> None:
     """Transport errors during writing must become ConnectionFailure."""

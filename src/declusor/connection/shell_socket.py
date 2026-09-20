@@ -1,7 +1,8 @@
-from collections.abc import Generator
+from collections.abc import Generator, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from socket import socket
+from types import MappingProxyType
 
 from declusor import config, interface, util
 
@@ -30,15 +31,19 @@ class ShellSocketProfile(interface.IConnectionProfile):
     _default_buffer_size: int = 2**8
     """Size of the buffer to use when reading from the socket. Must be > 0."""
 
-    _supported_functions: dict[config.OperationCode, str] = field(
-        default_factory=lambda: {
-            config.OperationCode.STORE_FILE: "store_base64_encoded_value",
-            config.OperationCode.EXEC_FILE: "execute_base64_encoded_value",
-        }
+    _supported_functions: Mapping[config.OperationCode, str] = field(
+        default_factory=lambda: MappingProxyType(
+            {
+                config.OperationCode.STORE_FILE: "store_base64_encoded_value",
+                config.OperationCode.EXEC_FILE: "execute_base64_encoded_value",
+            }
+        )
     )
     """Mapping of supported operation codes to their corresponding function names in the client script."""
 
     def __post_init__(self) -> None:
+        object.__setattr__(self, "_supported_functions", MappingProxyType(dict(self._supported_functions)))
+
         if self._default_buffer_size <= 0:
             raise config.ConnectionFailure("buffer_size must be > 0")
 
