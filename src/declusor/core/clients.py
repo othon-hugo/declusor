@@ -12,10 +12,12 @@ class ClientRegistry:
     It prevents the application parser from depending on concrete clients.
     """
 
-    _plugins: dict[str, ClientPlugin] = {}
+    def __init__(self) -> None:
+        """Create an empty client registry."""
 
-    @classmethod
-    def register(cls, plugin: ClientPlugin, /) -> None:
+        self._plugins: dict[str, ClientPlugin] = {}
+
+    def register(self, plugin: ClientPlugin, /) -> None:
         """Register a client plugin.
 
         Args:
@@ -25,13 +27,12 @@ class ClientRegistry:
             ValueError: If another plugin already uses the same name.
         """
 
-        if plugin.name in cls._plugins:
+        if plugin.name in self._plugins:
             raise ValueError(f"Client already registered: {plugin.name}")
 
-        cls._plugins[plugin.name] = plugin
+        self._plugins[plugin.name] = plugin
 
-    @classmethod
-    def get(cls, name: str, /) -> ClientPlugin:
+    def get(self, name: str, /) -> ClientPlugin:
         """Retrieve a registered client plugin.
 
         Args:
@@ -45,17 +46,16 @@ class ClientRegistry:
         """
 
         try:
-            return cls._plugins[name]
+            return self._plugins[name]
         except KeyError as e:
-            available = ", ".join(cls.names())
+            available = ", ".join(self.names())
             raise config.ParserError(f"Unknown client {name!r}. Available clients: {available}") from e
 
-    @classmethod
-    def names(cls) -> tuple[str, ...]:
+    def names(self) -> tuple[str, ...]:
         """Return the registered client identifiers.
 
         Returns:
             Sorted tuple containing the available client names.
         """
 
-        return tuple(sorted(cls._plugins))
+        return tuple(sorted(self._plugins))
