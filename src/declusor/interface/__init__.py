@@ -1,4 +1,4 @@
-from .client import ClientConfig, IClientPlugin, IClientRuntime
+from .client import ClientConfig, IClientFileStore, IClientPlugin, IClientRuntime
 from .command import ICommand
 from .connection import IConnection, IConnectionProfile
 from .console import IConsole
@@ -10,6 +10,7 @@ from .types import Controller
 __all__ = [
     "ClientConfig",
     "Controller",
+    "IClientFileStore",
     "IClientPlugin",
     "IClientRuntime",
     "ICommand",

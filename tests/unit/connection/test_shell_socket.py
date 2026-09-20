@@ -15,7 +15,12 @@ def _create_connection(tmp_path: Path, socket_connection: MagicMock) -> connecti
     socket_connection.getpeername.return_value = ("127.0.0.1", 9000)
 
     profile = connection.ShellSocketProfile(name="test", ack_server_raw=b"\x00", ack_client_raw=b"ack")
-    files = connection.ShellSocketFileStore(client_path, config.DataPaths.from_root(tmp_path), (".sh",))
+    files = connection.ShellSocketFileStore(
+        client_path,
+        config.DataPaths.from_root(tmp_path),
+        (".sh",),
+        (".sh",),
+    )
 
     return connection.ShellSocketConnection(socket_connection, profile, files)
 

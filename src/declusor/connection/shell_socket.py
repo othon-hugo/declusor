@@ -87,13 +87,21 @@ class ShellSocketProfile(interface.IConnectionProfile):
         return function_name + (" " + " ".join(util.quote(a) for a in args) if args else "")
 
 
-class ShellSocketFileStore:
+class ShellSocketFileStore(interface.IClientFileStore):
     """Filesystem adapter for shell client templates, libraries and payloads."""
 
-    def __init__(self, client_path: Path, data_paths: config.DataPaths, allowed_extensions: tuple[str, ...], /) -> None:
+    def __init__(
+        self,
+        client_path: Path,
+        data_paths: config.DataPaths,
+        library_extensions: tuple[str, ...],
+        module_extensions: tuple[str, ...],
+        /,
+    ) -> None:
         self._client_path = client_path
         self._data_paths = data_paths
-        self._allowed_extensions = allowed_extensions
+        self._library_extensions = library_extensions
+        self._module_extensions = module_extensions
 
     def render_client_script(self, host: str, port: int, acknowledge: bytes, /) -> str:
         """Read and render the shell client bootstrap template."""
@@ -114,8 +122,9 @@ class ShellSocketFileStore:
         """Load and concatenate valid shell libraries."""
 
         modules: list[bytes] = []
+
         for file in self._data_paths.library.iterdir():
-            if not file.is_file() or not util.validate_file_extension(file, self._allowed_extensions):
+            if not file.is_file() or not util.validate_file_extension(file, self._library_extensions):
                 continue
 
             try:
@@ -128,6 +137,30 @@ class ShellSocketFileStore:
 
         return b"\n".join(modules)
 
+    def load_module(self, module_name: str, /) -> bytes:
+        """Load one operator-selected module from the modules directory.
+
+        Args:
+            module_name: Module filename relative to ``data/modules``.
+
+        Returns:
+            Raw module contents.
+
+        Raises:
+            InvalidOperation: If the module escapes the modules directory, has
+                an unsupported extension, or is not a readable file.
+        """
+
+        module_path = (self._data_paths.modules / module_name).resolve()
+
+        if not util.validate_file_relative(module_path, self._data_paths.modules):
+            raise config.InvalidOperation(f"module path {module_path} is not relative to the module root directory")
+
+        if not util.validate_file_extension(module_path, self._module_extensions):
+            raise config.InvalidOperation(f"module has unsupported extension: {module_path}")
+
+        return util.load_file(module_path)
+
 
 class ShellSocketConnection(interface.IConnection):
     """``IConnection`` implementation over a raw TCP socket.
@@ -138,7 +171,7 @@ class ShellSocketConnection(interface.IConnection):
     automatically when the ``with`` block exits.
     """
 
-    def __init__(self, connection: socket, profile: ShellSocketProfile, files: ShellSocketFileStore, /) -> None:
+    def __init__(self, connection: socket, profile: ShellSocketProfile, files: interface.IClientFileStore, /) -> None:
         """Bind a live socket to a profile and prepare the session for use.
 
         Sets the socket timeout from the profile, then pre-render the client
