@@ -23,17 +23,17 @@ class ShellSocketPlugin(interface.IClientPlugin):
         return None
 
     @classmethod
-    def build_config(cls, args: util.Namespace, /) -> interface.ClientConfig:
+    def build_config(cls, args: util.Namespace, data_paths: config.DataPaths, /) -> interface.ClientConfig:
         """Build the shell-socket client configuration.
 
         Args:
             args: Parsed common and client-specific arguments.
+            data_paths: Resolved filesystem paths for the application.
 
         Returns:
             Configuration containing the shell-socket client template path.
         """
 
-        data_paths = config.DataPaths.from_root(args.data_root)
         client_path = data_paths.clients / cls.name
 
         return interface.ClientConfig(
@@ -47,11 +47,7 @@ class ShellSocketPlugin(interface.IClientPlugin):
         )
 
     @classmethod
-    def validate(
-        cls,
-        client_config: interface.ClientConfig,
-        /,
-    ) -> None:
+    def validate(cls, client_config: interface.ClientConfig, /) -> None:
         """Validate the shell-socket client configuration.
 
         Args:
@@ -77,11 +73,7 @@ class ShellSocketPlugin(interface.IClientPlugin):
             raise config.ParserError(f"Client file does not exist: {client_path}")
 
     @classmethod
-    def build_runtime(
-        cls,
-        client_config: interface.ClientConfig,
-        /,
-    ) -> interface.IClientRuntime:
+    def build_runtime(cls, client_config: interface.ClientConfig, /) -> interface.IClientRuntime:
         """Build the shell-socket runtime from client configuration.
 
         Args:

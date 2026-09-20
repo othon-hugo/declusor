@@ -1,6 +1,6 @@
 from socket import socket
 
-from declusor import interface, util
+from declusor import config, interface, util
 from declusor.core.clients import ClientRegistry
 from declusor.core.parser import DeclusorParser
 
@@ -30,10 +30,10 @@ class FakePlugin(interface.IClientPlugin):
         """Register no client-specific arguments."""
 
     @classmethod
-    def build_config(cls, args: util.Namespace, /) -> interface.ClientConfig:
+    def build_config(cls, args: util.Namespace, data_paths: config.DataPaths, /) -> interface.ClientConfig:
         """Build a configuration identifying the fake client."""
 
-        return interface.ClientConfig(cls.name, args.host, args.port)
+        return interface.ClientConfig(cls.name, args.host, args.port, data_paths=data_paths)
 
     @classmethod
     def validate(cls, client_config: interface.ClientConfig, /) -> None:
