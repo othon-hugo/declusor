@@ -11,17 +11,11 @@ def _create_connection(tmp_path: Path, socket_connection: MagicMock) -> connecti
 
     client_path = tmp_path / "client.sh"
     client_path.write_text("$HOST:$PORT", encoding="utf-8")
+
     socket_connection.getpeername.return_value = ("127.0.0.1", 9000)
-    profile = connection.ShellSocketProfile(
-        name="test",
-        ack_server_raw=b"\x00",
-        ack_client_raw=b"ack",
-    )
-    files = connection.ShellSocketFileStore(
-        client_path,
-        config.DataPaths.from_root(tmp_path),
-        (".sh",),
-    )
+
+    profile = connection.ShellSocketProfile(name="test", ack_server_raw=b"\x00", ack_client_raw=b"ack")
+    files = connection.ShellSocketFileStore(client_path, config.DataPaths.from_root(tmp_path), (".sh",))
 
     return connection.ShellSocketConnection(socket_connection, profile, files)
 
@@ -34,10 +28,7 @@ def test_write_uses_sendall_for_payload_and_ack(tmp_path: Path) -> None:
 
     session.write(b"command")
 
-    assert socket_connection.sendall.call_args_list == [
-        ((b"command",),),
-        ((b"\x00",),),
-    ]
+    assert socket_connection.sendall.call_args_list == [((b"command",),), ((b"\x00",),)]
 
 
 @pytest.mark.parametrize("error", [OSError("broken pipe"), TimeoutError("timed out")])
@@ -46,6 +37,7 @@ def test_write_translates_transport_errors(tmp_path: Path, error: BaseException)
 
     socket_connection = MagicMock()
     socket_connection.sendall.side_effect = error
+
     session = _create_connection(tmp_path, socket_connection)
 
     with pytest.raises(config.ConnectionFailure) as raised:

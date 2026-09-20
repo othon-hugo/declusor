@@ -110,7 +110,15 @@ class ShellSocketFileStore:
 
         modules: list[bytes] = []
         for file in self._data_paths.library.iterdir():
-            if file.is_file() and util.validate_file_extension(file, self._allowed_extensions) and (module_content := util.try_load_file(file)):
+            if not file.is_file() or not util.validate_file_extension(file, self._allowed_extensions):
+                continue
+
+            try:
+                module_content = util.load_file(file)
+            except config.InvalidOperation as error:
+                raise config.ConnectionFailure(f"Failed to read library file: {file}: {error}") from error
+
+            if module_content:
                 modules.append(module_content)
 
         return b"\n".join(modules)
@@ -119,6 +127,7 @@ class ShellSocketFileStore:
         """Read a payload module after validating it stays under the data root."""
 
         payload_path = (self._data_paths.modules / target_module).resolve()
+
         if not util.validate_file_relative(payload_path, self._data_paths.modules):
             raise config.InvalidOperation(f"module path {payload_path} is not relative to the module root directory")
 
@@ -174,8 +183,8 @@ class ShellSocketConnection(interface.IConnection):
 
             if initial_data != self._profile.ack_client_raw:
                 raise config.ConnectionFailure("invalid client ACK during session initialization.")
-        except TimeoutError as e:
-            raise config.ConnectionFailure("timeout waiting for client ACK during session initialization.") from e
+        except (OSError, TimeoutError) as error:
+            raise config.ConnectionFailure("failed waiting for client ACK during session initialization.") from error
 
     @property
     def client(self) -> interface.IConnectionProfile:
