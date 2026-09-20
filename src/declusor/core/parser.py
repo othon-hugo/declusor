@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from pathlib import Path
 from typing import Final, TypedDict
 
 from declusor import config, interface, util
@@ -46,6 +47,13 @@ class DeclusorParser(util.Parser, interface.IParser[DeclusorOptions]):
             "port",
             help=self.flags["port"],
             type=int,
+        )
+
+        self.add_argument(
+            "--data-root",
+            help="root directory containing clients, modules and libraries",
+            type=Path,
+            default=config.BasePath.DATA_DIR,
         )
 
         self.add_argument(

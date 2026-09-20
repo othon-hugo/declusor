@@ -33,7 +33,8 @@ class ShellSocketPlugin(interface.IClientPlugin):
             Configuration containing the shell-socket client template path.
         """
 
-        client_path = config.BasePath.CLIENTS_DIR / cls.name
+        data_paths = config.DataPaths.from_root(args.data_root)
+        client_path = data_paths.clients / cls.name
 
         return interface.ClientConfig(
             kind=cls.name,
@@ -42,6 +43,7 @@ class ShellSocketPlugin(interface.IClientPlugin):
             options={
                 "client_path": client_path,
             },
+            data_paths=data_paths,
         )
 
     @classmethod
@@ -66,7 +68,7 @@ class ShellSocketPlugin(interface.IClientPlugin):
             raise config.ParserError("Invalid shell-socket client path.")
 
         client_path = client_path.resolve()
-        clients_directory = config.BasePath.CLIENTS_DIR.resolve()
+        clients_directory = client_config.data_paths.clients
 
         if not util.validate_file_relative(client_path, clients_directory):
             raise config.ParserError(f"Invalid client file: {client_path}")
@@ -104,6 +106,8 @@ class ShellSocketRuntime(interface.IClientRuntime):
             ack_client_raw=util.hash_sha256(b"\xba\xdc\x00\xff\xee"),
             allowed_payload_extensions=(".sh",),
             allowed_library_extensions=(".sh",),
+            _library_root_directory=client_config.data_paths.library,
+            _module_root_directory=client_config.data_paths.modules,
         )
 
     @property
