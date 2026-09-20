@@ -6,7 +6,6 @@ domain-specific subclasses (``InvalidOperation``, ``ParserError``, ``RouterError
 control-flow exception.
 """
 
-import pytest
 
 # =============================================================================
 # Tests: DeclusorException (base class)

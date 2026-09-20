@@ -1,6 +1,6 @@
 import socket
+from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Generator, Type
 
 from declusor import config
 
@@ -43,7 +43,7 @@ def _handle_socket_exception(e: Exception) -> None:
         Exception: Re-raises the original exception if it is not handled.
     """
 
-    exception_message_table: dict[Type[BaseException], str] = {
+    exception_message_table: dict[type[BaseException], str] = {
         socket.gaierror: "invalid address/hostname.",
         OverflowError: "port must be 0-65535.",
         PermissionError: "permission denied.",

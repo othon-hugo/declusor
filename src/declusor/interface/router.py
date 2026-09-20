@@ -2,8 +2,6 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from declusor.interface.connection import IConnection
-    from declusor.interface.console import IConsole
     from declusor.interface.types import Controller
 
 

@@ -4,7 +4,7 @@ Covers the factory function, global help (no argument), per-command help,
 argument parsing, and closure behaviour with injected providers.
 """
 
-from typing import Callable
+from collections.abc import Callable
 from unittest.mock import MagicMock
 
 import pytest

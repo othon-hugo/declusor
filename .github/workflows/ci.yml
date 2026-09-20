@@ -1,70 +1,36 @@
 name: CI Pipeline
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - main
+  pull_request:
 
 jobs:
   quality-assurance:
     name: Code Quality & Tests
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.11"]
 
     steps:
-      # Checkout the repo
-      - uses: actions/checkout@v5
+      - name: Checkout repository
+        uses: actions/checkout@v5
 
-      # Set up Python with pip caching
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v6
         with:
-          python-version: ${{ matrix.python-version }}
-          cache: 'pip'
+          python-version: "3.11"
 
-      # Cache Poetry dependencies
-      - name: Cache Poetry and pip
-        uses: actions/cache@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
         with:
-          path: |
-            ~/.cache/pypoetry
-            ~/.cache/pip
-          key: ${{ runner.os }}-poetry-${{ hashFiles('poetry.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-poetry-
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
 
-      # Install Poetry
-      - name: Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-          export PATH="$HOME/.local/bin:$PATH"
-
-      # Install project dependencies
       - name: Install dependencies
-        run: |
-          poetry install --with dev
-          pip install -e .
+        run: make install
 
-      # Set PYTHONPATH
-      - name: Set PYTHONPATH
-        run: echo "PYTHONPATH=$PYTHONPATH:src" >> $GITHUB_ENV
+      - name: Run checks
+        run: make check
 
-      # Code formatting check
-      - name: Check formatting (Black)
-        run: poetry run black --check $(git ls-files '*.py') -v
-
-      # Import sorting check
-      - name: Check imports (Isort)
-        run: poetry run isort --check-only $(git ls-files '*.py') -v
-
-      # Type checking
-      - name: Type checking (Mypy)
-        run: poetry run mypy .
-
-      # Linting
-      - name: Code linting (Pylint)
-        run: poetry run pylint $(git ls-files '*.py') -v
-
-      # Run tests
-      - name: Run tests (pytest)
-        run: poetry run python3 -m pytest
+      - name: Build package
+        run: make build

@@ -1,4 +1,5 @@
-from typing import Callable, NoReturn, Type
+from collections.abc import Callable
+from typing import NoReturn
 
 from declusor import config
 
@@ -17,7 +18,7 @@ def handle_exception(exc: BaseException) -> NoReturn:
         BaseException: Re-raises *exc* unchanged if no handler matches.
     """
 
-    handler_table: dict[Type[BaseException], Callable[[BaseException], str]] = {
+    handler_table: dict[type[BaseException], Callable[[BaseException], str]] = {
         config.ConnectionFailure: lambda e: f"failed to connect to database: {e}",
         FileNotFoundError: lambda e: f"file or directory not found: {e}",
         NotADirectoryError: lambda e: f"not a directory: {e}",

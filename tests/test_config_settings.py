@@ -4,9 +4,6 @@ Verifies that configuration constants are well-typed and that ``BasePath``
 directory entries resolve correctly under the project root.
 """
 
-from pathlib import Path
-
-import pytest
 
 # =============================================================================
 # Tests: Settings — project metadata

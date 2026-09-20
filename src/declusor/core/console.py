@@ -3,8 +3,9 @@ import glob
 import os
 import readline
 import sys
+from collections.abc import Sequence
+from contextlib import suppress
 from pathlib import Path
-from typing import Optional, Sequence
 
 from declusor import interface
 
@@ -13,7 +14,7 @@ class Console(interface.IConsole):
     """Console implementation using readline for input and output."""
 
     def __init__(self) -> None:
-        self._history_file: Optional[Path] = None
+        self._history_file: Path | None = None
 
     def setup_completer(self, command_routes: Sequence[str], /) -> None:
         """Set up the readline completer for command line input.
@@ -101,10 +102,8 @@ class Console(interface.IConsole):
         self._history_file = history_file
 
         if self._history_file.exists():
-            try:
+            with suppress(FileNotFoundError, PermissionError):
                 readline.read_history_file(str(self._history_file))
-            except (FileNotFoundError, PermissionError):
-                pass
 
         atexit.register(self._save_history)
 
@@ -151,7 +150,5 @@ class Console(interface.IConsole):
         """Save history to file."""
 
         if readline and self._history_file:
-            try:
+            with suppress(FileNotFoundError, PermissionError):
                 readline.write_history_file(str(self._history_file))
-            except (FileNotFoundError, PermissionError):
-                pass

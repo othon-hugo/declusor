@@ -1,6 +1,7 @@
+from collections.abc import Callable, Generator, Iterator
 from dataclasses import dataclass
 from threading import Event, Thread
-from typing import Any, Callable, Generator, Iterator, Literal, Self
+from typing import Any, Literal, Self
 
 TaskHandler = Callable[["TaskEvent"], Any]
 

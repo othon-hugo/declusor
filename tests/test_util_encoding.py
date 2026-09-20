@@ -4,7 +4,6 @@ Covers ``convert_bytes_to_hex``, ``convert_to_base64``,
 ``convert_base64_to_bytes``, and round-trip integrity.
 """
 
-import pytest
 
 # =============================================================================
 # Tests: convert_bytes_to_hex
