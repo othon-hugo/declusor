@@ -279,7 +279,8 @@ class ShellSocketConnection(interface.IConnection):
     def write(self, content: bytes, /) -> None:
         """Send *content* to the client, followed by the server ACK sentinel.
 
-        Both the payload and the sentinel are sent as separate ``send`` calls.
+        Both the payload and the sentinel are sent as separate ``sendall``
+        calls so every byte is handed to the operating system.
 
         Args:
             content: The raw bytes payload to transmit.
@@ -289,8 +290,8 @@ class ShellSocketConnection(interface.IConnection):
         """
 
         try:
-            self._connection.send(content)
-            self._connection.send(self._profile.ack_server_raw)
+            self._connection.sendall(content)
+            self._connection.sendall(self._profile.ack_server_raw)
         except TimeoutError as e:
             raise config.ConnectionFailure("Timeout while writing to connection") from e
         except OSError as e:
