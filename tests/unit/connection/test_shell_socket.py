@@ -14,14 +14,16 @@ def _create_connection(tmp_path: Path, socket_connection: MagicMock) -> connecti
     socket_connection.getpeername.return_value = ("127.0.0.1", 9000)
     profile = connection.ShellSocketProfile(
         name="test",
-        client_path=client_path,
         ack_server_raw=b"\x00",
         ack_client_raw=b"ack",
-        allowed_payload_extensions=(".sh",),
-        allowed_library_extensions=(".sh",),
+    )
+    files = connection.ShellSocketFileStore(
+        client_path,
+        config.DataPaths.from_root(tmp_path),
+        (".sh",),
     )
 
-    return connection.ShellSocketConnection(socket_connection, profile)
+    return connection.ShellSocketConnection(socket_connection, profile, files)
 
 
 def test_write_uses_sendall_for_payload_and_ack(tmp_path: Path) -> None:
