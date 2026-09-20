@@ -128,19 +128,6 @@ class ShellSocketFileStore:
 
         return b"\n".join(modules)
 
-    def load_payload(self, target_module: str, /) -> bytes:
-        """Read a payload module after validating it stays under the data root."""
-
-        payload_path = (self._data_paths.modules / target_module).resolve()
-
-        if not util.validate_file_relative(payload_path, self._data_paths.modules):
-            raise config.InvalidOperation(f"module path {payload_path} is not relative to the module root directory")
-
-        try:
-            return payload_path.read_bytes()
-        except OSError as error:
-            raise config.ConnectionFailure(f"Failed to read payload script: {error}") from error
-
 
 class ShellSocketConnection(interface.IConnection):
     """``IConnection`` implementation over a raw TCP socket.
