@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import Final, TypedDict
 
 from declusor import config, interface, util
@@ -56,14 +57,14 @@ class DeclusorParser(util.Parser, interface.IParser[DeclusorOptions]):
             default=str(config.ClientFile.SHELL_SOCKET),
         )
 
-    def parse(self) -> DeclusorOptions:
+    def parse(self, argv: Sequence[str] | None = None, /) -> DeclusorOptions:
         self._configure_common_arguments()
 
-        preliminary_args, _ = self.parse_known_args()
+        preliminary_args, _ = self.parse_known_args(argv)
         plugin = self._registry.get(preliminary_args.client)
         plugin.configure_parser(self)
 
-        args = self.parse_args()
+        args = self.parse_args(argv)
 
         client_config = plugin.build_config(args)
         plugin.validate(client_config)
