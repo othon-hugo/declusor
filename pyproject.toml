@@ -36,7 +36,7 @@ Repository = "https://github.com/othonhugo/declusor.git"
 Issues = "https://github.com/othonhugo/declusor/issues"
 
 [project.scripts]
-declusor = "declusor.cli:main"
+declusor = "declusor.main:main"
 
 [dependency-groups]
 dev = [
