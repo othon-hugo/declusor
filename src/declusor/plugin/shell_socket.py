@@ -93,22 +93,23 @@ class ShellSocketRuntime(interface.IClientRuntime):
         self._client_config = client_config
         self._profile = connection_module.ShellSocketProfile(
             name=client_config.kind,
-            client_path=client_config.options["client_path"],
             ack_server_raw=b"\x00",
             ack_client_raw=util.hash_sha256(b"\xba\xdc\x00\xff\xee"),
-            allowed_payload_extensions=(".sh",),
-            allowed_library_extensions=(".sh",),
-            _library_root_directory=client_config.data_paths.library,
-            _module_root_directory=client_config.data_paths.modules,
+        )
+        self._files = connection_module.ShellSocketFileStore(
+            client_config.options["client_path"],
+            client_config.data_paths,
+            (".sh",),
         )
 
     @property
     def client_script(self) -> str:
         """Return the rendered shell client bootstrap script."""
 
-        return self._profile.render_client_script(
+        return self._files.render_client_script(
             self._client_config.host,
             self._client_config.port,
+            self._profile.ack_client_raw,
         )
 
     def create_connection(self, connection: socket, /) -> interface.IConnection:
@@ -121,4 +122,4 @@ class ShellSocketRuntime(interface.IClientRuntime):
             Shell-socket connection configured with the selected profile.
         """
 
-        return connection_module.ShellSocketConnection(connection, self._profile)
+        return connection_module.ShellSocketConnection(connection, self._profile, self._files)

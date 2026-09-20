@@ -3,8 +3,6 @@ from collections.abc import Generator
 from typing import TYPE_CHECKING, Self
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from declusor.config import OperationCode
 
 
@@ -31,38 +29,6 @@ class IConnectionProfile(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def iter_library_paths(self) -> Generator["Path", None, None]:
-        """Yield the resolved paths of all valid library scripts.
-
-        Implementations should iterate over the configured library directory,
-        filtering by allowed extensions, and yield each qualifying file path.
-
-        Yields:
-            ``Path`` objects pointing to individual library script files.
-        """
-
-        raise NotImplementedError
-
-    @abstractmethod
-    def resolve_module_path(self, module_filename: str, /) -> "Path":
-        """Resolve and validate a module filename into a safe filesystem path.
-
-        Ensures that the resulting path stays within the configured module root
-        directory (path-traversal guard).
-
-        Args:
-            module_filename: Filename of the module relative to the module root.
-
-        Returns:
-            The fully resolved ``Path`` to the module file.
-
-        Raises:
-            InvalidOperation: If the resolved path escapes the module root.
-        """
-
-        raise NotImplementedError
-
-    @abstractmethod
     def render_operation_command(self, opcode: "OperationCode", /, *args: str) -> str | None:
         """Build the shell command string for a given operation code.
 
@@ -76,26 +42,6 @@ class IConnectionProfile(ABC):
 
         Returns:
             A ready-to-send command string, or ``None`` if the opcode is unsupported.
-        """
-
-        raise NotImplementedError
-
-    @abstractmethod
-    def render_client_script(self, host: str, port: int, /) -> str:
-        """Load the client script template and substitute connection parameters.
-
-        Reads the script template from disk and replaces placeholders with the
-        provided *host* and *port* values.
-
-        Args:
-            host: The server hostname or IP address to embed in the script.
-            port: The port number to embed in the script.
-
-        Returns:
-            The fully rendered client script as a string.
-
-        Raises:
-            ConnectionFailure: If the template file cannot be read.
         """
 
         raise NotImplementedError

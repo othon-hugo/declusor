@@ -18,20 +18,11 @@ class ShellSocketProfile(interface.IConnectionProfile):
     name: str
     """Name of the profile, used for display purposes."""
 
-    client_path: Path
-    """Path to the client script template. This script will be formatted with connection details."""
-
     ack_server_raw: bytes
     """Acknowledgment byte sequence sent by the server."""
 
     ack_client_raw: bytes
     """Acknowledgment byte sequence sent by the client."""
-
-    allowed_payload_extensions: tuple[str, ...]
-    """Allowed file extensions for payload scripts."""
-
-    allowed_library_extensions: tuple[str, ...]
-    """Allowed file extensions for library scripts."""
 
     _default_timeout: float | None = 1.0
     """Timeout in seconds for socket operations. Set to None for no timeout."""
@@ -46,12 +37,6 @@ class ShellSocketProfile(interface.IConnectionProfile):
         }
     )
     """Mapping of supported operation codes to their corresponding function names in the client script."""
-
-    _library_root_directory: Path = config.BasePath.LIBRARY_DIR
-    """Root directory for library scripts."""
-
-    _module_root_directory: Path = config.BasePath.MODULES_DIR
-    """Root directory for payload scripts."""
 
     def __post_init__(self) -> None:
         if self._default_buffer_size <= 0:
@@ -96,51 +81,51 @@ class ShellSocketProfile(interface.IConnectionProfile):
 
         return function_name + (" " + " ".join(util.quote(a) for a in args) if args else "")
 
-    def iter_library_paths(self) -> Generator[Path, None, None]:
-        for file in self._library_root_directory.iterdir():
-            if not file.is_file():
-                continue
 
-            if not util.validate_file_extension(file, self.allowed_library_extensions):
-                continue
+class ShellSocketFileStore:
+    """Filesystem adapter for shell client templates, libraries and payloads."""
 
-            yield file
+    def __init__(self, client_path: Path, data_paths: config.DataPaths, allowed_extensions: tuple[str, ...], /) -> None:
+        self._client_path = client_path
+        self._data_paths = data_paths
+        self._allowed_extensions = allowed_extensions
 
-    def resolve_module_path(self, module_filename: str, /) -> Path:
-        module_filepath = (self._module_root_directory / module_filename).resolve()
-
-        if not util.validate_file_relative(module_filepath, self._module_root_directory):
-            raise config.InvalidOperation(f"module path {module_filepath} is not relative to the module root directory")
-
-        return module_filepath
-
-    def render_client_script(self, host: str, port: int, /) -> str:
-        """Read the client script template and substitute connection parameters.
-
-        Args:
-            host: The server hostname or IP address to embed in the script.
-            port: The port number to embed in the script.
-
-        Returns:
-            The fully substituted client script as a string.
-
-        Raises:
-            ConnectionFailure: If the template file cannot be read.
-        """
+    def render_client_script(self, host: str, port: int, acknowledge: bytes, /) -> str:
+        """Read and render the shell client bootstrap template."""
 
         try:
-            with self.client_path.open("r", encoding="utf-8") as f:
-                client_script_template = f.read()
-        except OSError as e:
-            raise config.ConnectionFailure(f"Failed to read client script: {e}") from e
+            client_script_template = self._client_path.read_text(encoding="utf-8")
+        except OSError as error:
+            raise config.ConnectionFailure(f"Failed to read client script: {error}") from error
 
-        script_kwargs: dict[str, str] = {
-            "HOST": host,
-            "PORT": str(port),
-            "ACKNOWLEDGE": util.convert_bytes_to_hex(self.ack_client_raw),
-        }
+        return util.format_template(
+            client_script_template,
+            HOST=host,
+            PORT=str(port),
+            ACKNOWLEDGE=util.convert_bytes_to_hex(acknowledge),
+        )
 
-        return util.format_template(client_script_template, **script_kwargs)
+    def load_library(self) -> bytes:
+        """Load and concatenate valid shell libraries."""
+
+        modules: list[bytes] = []
+        for file in self._data_paths.library.iterdir():
+            if file.is_file() and util.validate_file_extension(file, self._allowed_extensions) and (module_content := util.try_load_file(file)):
+                modules.append(module_content)
+
+        return b"\n".join(modules)
+
+    def load_payload(self, target_module: str, /) -> bytes:
+        """Read a payload module after validating it stays under the data root."""
+
+        payload_path = (self._data_paths.modules / target_module).resolve()
+        if not util.validate_file_relative(payload_path, self._data_paths.modules):
+            raise config.InvalidOperation(f"module path {payload_path} is not relative to the module root directory")
+
+        try:
+            return payload_path.read_bytes()
+        except OSError as error:
+            raise config.ConnectionFailure(f"Failed to read payload script: {error}") from error
 
 
 class ShellSocketConnection(interface.IConnection):
@@ -152,7 +137,7 @@ class ShellSocketConnection(interface.IConnection):
     automatically when the ``with`` block exits.
     """
 
-    def __init__(self, connection: socket, profile: ShellSocketProfile, /) -> None:
+    def __init__(self, connection: socket, profile: ShellSocketProfile, files: ShellSocketFileStore, /) -> None:
         """Bind a live socket to a profile and prepare the session for use.
 
         Sets the socket timeout from the profile, then pre-render the client
@@ -164,14 +149,12 @@ class ShellSocketConnection(interface.IConnection):
         """
 
         self._profile = profile
+        self._files = files
         self._connection = connection
         self._timeout = profile.default_timeout
 
         if self._timeout is not None:
             self._connection.settimeout(self._timeout)
-
-        remote_host, remote_port = self._connection.getpeername()
-        self._client_script = self._profile.render_client_script(remote_host, remote_port)
 
     def initialize(self) -> None:
         """Perform the initial protocol handshake.
@@ -184,7 +167,7 @@ class ShellSocketConnection(interface.IConnection):
             ConnectionFailure: On timeout or invalid client ACK.
         """
 
-        self.write(self._load_library())
+        self.write(self._files.load_library())
 
         try:
             initial_data = self._connection.recv(self._profile.default_buffer_size)
@@ -199,16 +182,6 @@ class ShellSocketConnection(interface.IConnection):
         """The ``ShellSocketProfile`` used to configure this connection."""
 
         return self._profile
-
-    @property
-    def client_script(self) -> str:
-        """The formatted client bootstrap script, ready to be delivered to the operator.
-
-        Populated during ``__init__`` by substituting the peer address and
-        the ACK value into the client script template.
-        """
-
-        return self._client_script
 
     @property
     def timeout(self) -> float | None:
@@ -302,58 +275,10 @@ class ShellSocketConnection(interface.IConnection):
 
         self._connection.close()
 
-    def _load_library(self) -> bytes:
-        """Concatenate all valid library scripts from the configured library directory.
-
-        Files are filtered by ``allowed_library_extensions``. Unreadable files
-        are silently skipped. Scripts are joined with newline separators.
-
-        Returns:
-            All library file contents joined with ``b'\\n'``.
-        """
-
-        all_modules: list[bytes] = []
-
-        for file in self._profile.iter_library_paths():
-            if module_content := util.try_load_file(file):
-                all_modules.append(module_content)
-
-        return b"\n".join(all_modules)
-
-    def _load_payload(self, target_module: str, /) -> bytes:
-        """Read a payload script from the configured payload directory.
-
-        Validates that *target_module* resolves to a path inside
-        ``payload_root_directory`` (path-traversal guard) before reading.
-
-        Args:
-            target_module: Filename of the payload relative to the payload root.
-
-        Returns:
-            The raw bytes content of the payload file.
-
-        Raises:
-            ConnectionFailure: If the resolved path escapes the payload root,
-                or if the file cannot be read.
-        """
-
-        payload_filepath = self._profile.resolve_module_path(target_module)
-
-        try:
-            with payload_filepath.open("rb") as f:
-                payload_data = f.read()
-        except OSError as e:
-            raise config.ConnectionFailure(f"Failed to read payload script: {e}") from e
-
-        return payload_data
-
 
 DEFAULT_SHELL_SOCKET = ShellSocketProfile(
     name="Shell Socket",
-    client_path=config.BasePath.CLIENTS_DIR / "shell_socket.sh",
     ack_server_raw=b"\x00",
     ack_client_raw=util.hash_sha256(b"\xba\xdc\x00\xff\xee"),
-    allowed_payload_extensions=(".sh",),
-    allowed_library_extensions=(".sh",),
 )
 """Default ShellSocketProfile instance with typical configuration for a shell socket client."""
