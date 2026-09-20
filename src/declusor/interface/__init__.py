@@ -1,4 +1,4 @@
-from .client import ClientConfig, IClientPlugin
+from .client import ClientConfig, IClientPlugin, IClientRuntime
 from .command import ICommand
 from .connection import IConnection, IConnectionProfile
 from .console import IConsole
@@ -11,6 +11,7 @@ __all__ = [
     "ClientConfig",
     "Controller",
     "IClientPlugin",
+    "IClientRuntime",
     "ICommand",
     "IConnection",
     "IConnectionProfile",
