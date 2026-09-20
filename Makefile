@@ -1,9 +1,11 @@
 .PHONY: all
 .PHONY: install
+.PHONY: reinstall
+.PHONY: lock
 .PHONY: format
 .PHONY: format-check
 .PHONY: lint
-.PHONY: typecheck
+.PHONY: type-check
 .PHONY: test
 .PHONY: check
 .PHONY: ci
@@ -11,11 +13,19 @@
 .PHONY: clean
 
 UV ?= uv
+UV_LINK_MODE ?= copy
 
 all: check
 
 install:
-	$(UV) sync
+	$(UV) sync --link-mode=$(UV_LINK_MODE)
+
+reinstall:
+	if [ -d ".venv" ]; then rm -rf ".venv"; fi
+	$(MAKE) install
+
+lock:
+	$(UV) lock
 
 format:
 	$(UV) run ruff format .
@@ -28,7 +38,7 @@ format-check:
 lint:
 	$(UV) run ruff check .
 
-typecheck:
+type-check:
 	$(UV) run mypy .
 
 test:

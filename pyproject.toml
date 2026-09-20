@@ -3,7 +3,7 @@ name = "declusor"
 version = "0.3.1"
 description = "A unified, interactive CLI for remotely executing scripts, managing payloads, establishing interactive command sessions, and handling file transfers across remote environments."
 readme = "README.md"
-requires-python = ">=3.10,<4.0"
+requires-python = ">=3.11,<4.0"
 license = { file = "LICENSE" }
 authors = [{ name = "Othon Hugo", email = "othonhugo@users.noreply.github.com" }]
 keywords = [
@@ -24,7 +24,6 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Security",
@@ -52,10 +51,11 @@ build-backend = "uv_build"
 
 [tool.uv]
 default-groups = ["dev"]
+link-mode = "copy"
 
 [tool.ruff]
 line-length = 150
-target-version = "py310"
+target-version = "py311"
 
 [tool.ruff.lint]
 select = [
