@@ -85,11 +85,12 @@ class IClientPlugin(ABC):
 
     @classmethod
     @abstractmethod
-    def build_config(cls, args: util.Namespace, /) -> ClientConfig:
-        """Build a client configuration from parsed arguments.
+    def build_config(cls, args: util.Namespace, data_paths: DataPaths, /) -> ClientConfig:
+        """Build a client configuration from parsed arguments and data paths.
 
         Args:
             args: Namespace containing common and client-specific arguments.
+            data_paths: Resolved filesystem paths for the application.
 
         Returns:
             Configuration object for the selected client.

@@ -74,7 +74,8 @@ class DeclusorParser(util.Parser, interface.IParser[DeclusorOptions]):
 
         args = self.parse_args(argv)
 
-        client_config = plugin.build_config(args)
+        data_paths = config.DataPaths.from_root(args.data_root)
+        client_config = plugin.build_config(args, data_paths)
         plugin.validate(client_config)
 
         return DeclusorOptions(

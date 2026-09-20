@@ -1,6 +1,7 @@
 .PHONY: all
 .PHONY: install
 .PHONY: reinstall
+.PHONY: compile
 .PHONY: lock
 .PHONY: format
 .PHONY: format-check
@@ -23,6 +24,9 @@ install:
 reinstall:
 	if [ -d ".venv" ]; then rm -rf ".venv"; fi
 	$(MAKE) install
+
+compile:
+	$(UV) run python -m compileall -q src tests
 
 lock:
 	$(UV) lock
