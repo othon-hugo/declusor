@@ -1,3 +1,5 @@
+from argparse import Namespace
+
 from .concurrency import Task, TaskEvent, TaskHandler, TaskPool
 from .encoding import (
     convert_base64_to_bytes,
@@ -31,6 +33,7 @@ __all__ = [
     "hash_sha384",
     "hash_sha512",
     "load_file",
+    "Namespace",
     "parse_command_arguments",
     "Parser",
     "quote",

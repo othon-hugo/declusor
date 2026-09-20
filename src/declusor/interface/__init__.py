@@ -1,3 +1,4 @@
+from .client import ClientConfig, IClientPlugin
 from .command import ICommand
 from .connection import IConnection, IConnectionProfile
 from .console import IConsole
@@ -7,7 +8,9 @@ from .router import IRouter
 from .types import Controller
 
 __all__ = [
+    "ClientConfig",
     "Controller",
+    "IClientPlugin",
     "ICommand",
     "IConnection",
     "IConnectionProfile",

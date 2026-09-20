@@ -1,6 +1,6 @@
 from os import chdir
 
-from declusor import config, connection, controller, core, interface, util
+from declusor import config, connection, controller, core, interface, plugin, util
 
 
 def run_service(router: interface.IRouter, console: interface.IConsole, options: core.DeclusorOptions) -> None:
@@ -24,8 +24,8 @@ def run_service(router: interface.IRouter, console: interface.IConsole, options:
         ConnectionFailure: If the socket cannot be bound or the handshake fails.
     """
 
-    _validate_directories()
-    _set_routes(router)
+    validate_directories()
+    connect_routes(router)
 
     profile = connection.DEFAULT_SHELL_SOCKET
 
@@ -42,7 +42,7 @@ def run_service(router: interface.IRouter, console: interface.IConsole, options:
         prompt.run()
 
 
-def _validate_directories() -> None:
+def validate_directories() -> None:
     """Confirm that all required data directories exist and are directories.
 
     Also changes the working directory to ``MODULES_DIR`` so that relative
@@ -65,7 +65,14 @@ def _validate_directories() -> None:
     chdir(config.BasePath.MODULES_DIR)
 
 
-def _set_routes(router: interface.IRouter) -> None:
+def register_plugins(registry: type[core.ClientRegistry]) -> None:
+    """Register the built-in client plugins before command-line parsing."""
+
+    if plugin.ShellSocketPlugin.name not in registry.names():
+        registry.register(plugin.ShellSocketPlugin)
+
+
+def connect_routes(router: interface.IRouter) -> None:
     """Register all built-in command routes on *router*."""
 
     call_help = controller.create_help_controller(lambda: router.documentation, router.get_route_usage)
