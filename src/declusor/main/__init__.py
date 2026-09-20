@@ -13,7 +13,8 @@ __all__ = [
 def main() -> None:
     """Main entry point for the Declusor application."""
 
-    register_plugins(core.ClientRegistry)
+    registry = core.ClientRegistry()
+    register_plugins(registry)
 
     router = core.Router()
 
@@ -25,7 +26,7 @@ def main() -> None:
     console = core.Console()
 
     try:
-        run_service(router, console, options)
+        run_service(router, console, registry, options)
     except KeyboardInterrupt:
         print()
     except config.DeclusorException as e:

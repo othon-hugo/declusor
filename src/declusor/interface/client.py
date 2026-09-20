@@ -1,8 +1,12 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any
+from socket import socket
+from typing import TYPE_CHECKING, Any
 
 from declusor import util
+
+if TYPE_CHECKING:
+    from declusor.interface.connection import IConnection
 
 
 @dataclass(frozen=True)
@@ -24,6 +28,34 @@ class ClientConfig:
 
     options: dict[str, Any] = field(default_factory=dict)
     """Client-specific configuration options."""
+
+
+class IClientRuntime(ABC):
+    """Runtime used by the service to operate a configured client.
+
+    A runtime hides client-specific bootstrap and connection construction from
+    the application service.
+    """
+
+    @property
+    @abstractmethod
+    def client_script(self) -> str:
+        """Return the rendered client bootstrap script."""
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def create_connection(self, connection: socket, /) -> "IConnection":
+        """Create a connection for an accepted socket.
+
+        Args:
+            connection: Accepted socket connected to the remote client.
+
+        Returns:
+            Connection implementation for the configured client.
+        """
+
+        raise NotImplementedError
 
 
 class IClientPlugin(ABC):
@@ -71,6 +103,20 @@ class IClientPlugin(ABC):
 
         Raises:
             config.ParserError: If the configuration is invalid.
+        """
+
+        raise NotImplementedError
+
+    @classmethod
+    @abstractmethod
+    def build_runtime(cls, client_config: ClientConfig, /) -> IClientRuntime:
+        """Build the runtime for a validated client configuration.
+
+        Args:
+            client_config: Configuration produced by ``build_config``.
+
+        Returns:
+            Runtime that can render the bootstrap and create connections.
         """
 
         raise NotImplementedError

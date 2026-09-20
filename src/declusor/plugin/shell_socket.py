@@ -1,6 +1,7 @@
 from pathlib import Path
+from socket import socket
 
-from declusor import config, interface, util
+from declusor import config, connection as connection_module, interface, util
 
 
 class ShellSocketPlugin(interface.IClientPlugin):
@@ -71,3 +72,56 @@ class ShellSocketPlugin(interface.IClientPlugin):
 
         if not client_path.is_file():
             raise config.ParserError(f"Client file does not exist: {client_path}")
+
+    @classmethod
+    def build_runtime(
+        cls,
+        client_config: interface.ClientConfig,
+        /,
+    ) -> interface.IClientRuntime:
+        """Build the shell-socket runtime from client configuration.
+
+        Args:
+            client_config: Validated shell-socket configuration.
+
+        Returns:
+            Runtime responsible for rendering and connecting the shell client.
+        """
+
+        return ShellSocketRuntime(client_config)
+
+
+class ShellSocketRuntime(interface.IClientRuntime):
+    """Runtime adapter between shell client configuration and its transport."""
+
+    def __init__(self, client_config: interface.ClientConfig, /) -> None:
+        self._client_config = client_config
+        self._profile = connection_module.ShellSocketProfile(
+            name=client_config.kind,
+            client_path=client_config.options["client_path"],
+            ack_server_raw=b"\x00",
+            ack_client_raw=util.hash_sha256(b"\xba\xdc\x00\xff\xee"),
+            allowed_payload_extensions=(".sh",),
+            allowed_library_extensions=(".sh",),
+        )
+
+    @property
+    def client_script(self) -> str:
+        """Return the rendered shell client bootstrap script."""
+
+        return self._profile.render_client_script(
+            self._client_config.host,
+            self._client_config.port,
+        )
+
+    def create_connection(self, connection: socket, /) -> interface.IConnection:
+        """Create a shell-socket connection for an accepted socket.
+
+        Args:
+            connection: Accepted socket connected to the shell client.
+
+        Returns:
+            Shell-socket connection configured with the selected profile.
+        """
+
+        return connection_module.ShellSocketConnection(connection, self._profile)

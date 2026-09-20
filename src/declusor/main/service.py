@@ -1,21 +1,22 @@
 from os import chdir
 
-from declusor import config, connection, controller, core, interface, plugin, util
+from declusor import config, controller, core, interface, plugin, util
 
 
-def run_service(router: interface.IRouter, console: interface.IConsole, options: core.DeclusorOptions) -> None:
+def run_service(router: interface.IRouter, console: interface.IConsole, registry: core.ClientRegistry, options: core.DeclusorOptions) -> None:
     """Orchestrate the full server lifecycle for one client session.
 
     1. Validates required data directories.
     2. Registers all command routes on *router*.
     3. Prints the formatted client bootstrap script.
     4. Listens for a single incoming TCP connection.
-    5. Opens a ``ShellSocketConnection``, runs the handshake, then starts
-       the interactive prompt loop.
+     5. Opens the selected client connection, runs the handshake, then starts
+         the interactive prompt loop.
 
     Args:
         router: Pre-constructed router to register routes on.
         console: Console used for operator I/O throughout the session.
+        registry: Registry containing the available client plugins.
         options: Parsed CLI options (host, port, client profile).
 
     Raises:
@@ -27,14 +28,16 @@ def run_service(router: interface.IRouter, console: interface.IConsole, options:
     validate_directories()
     connect_routes(router)
 
-    profile = connection.DEFAULT_SHELL_SOCKET
+    client_config = options["client"]
+    client_plugin = registry.get(client_config.kind)
+    client_runtime = client_plugin.build_runtime(client_config)
 
     console.setup_completer(router.routes)
-    console.write_message(profile.render_client_script(options["host"], options["port"]))
+    console.write_message(client_runtime.client_script)
 
     with (
-        util.await_connection(options["host"], options["port"]) as socket_connection,
-        connection.ShellSocketConnection(socket_connection, profile) as conn,
+        util.await_connection(client_config.host, client_config.port) as socket_connection,
+        client_runtime.create_connection(socket_connection) as conn,
     ):
         prompt = core.PromptCLI(config.Settings.PROJECT_NAME, router, conn, console)
 
@@ -65,7 +68,7 @@ def validate_directories() -> None:
     chdir(config.BasePath.MODULES_DIR)
 
 
-def register_plugins(registry: type[core.ClientRegistry]) -> None:
+def register_plugins(registry: core.ClientRegistry) -> None:
     """Register the built-in client plugins before command-line parsing."""
 
     if plugin.ShellSocketPlugin.name not in registry.names():
