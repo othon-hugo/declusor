@@ -5,8 +5,6 @@ Covers the ``Parser`` subclass (``ParserError`` instead of ``SystemExit``),
 unknown-argument control, and edge cases).
 """
 
-from typing import Optional
-
 import pytest
 
 # =============================================================================
@@ -21,7 +19,7 @@ def simple_definitions() -> dict:
 
 @pytest.fixture
 def optional_definitions() -> dict:
-    """Return ``{"command": Optional[str]}``."""
+    """Return ``{"command": str | None}``."""
 
 
 # =============================================================================
@@ -76,11 +74,11 @@ def test_whitespace_only_treated_as_empty() -> None:
 
 
 def test_optional_provided() -> None:
-    """``{"cmd": Optional[str]}`` with ``"hello"`` must yield ``{"cmd": "hello"}``."""
+    """``{"cmd": str | None}`` with ``"hello"`` must yield ``{"cmd": "hello"}``."""
 
 
 def test_optional_omitted() -> None:
-    """``{"cmd": Optional[str]}`` with ``""`` must yield ``{"cmd": None}``."""
+    """``{"cmd": str | None}`` with ``""`` must yield ``{"cmd": None}``."""
 
 
 def test_mixed_required_and_optional() -> None:

@@ -1,5 +1,5 @@
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 
 def validate_file_extension(file: str | Path, allowed_extensions: Iterable[str]) -> bool:

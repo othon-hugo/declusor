@@ -27,11 +27,7 @@ class Router(interface.IRouter):
         """
 
         controller_doc = self.locate(route).__doc__
-
-        if controller_doc:
-            documentation = " ".join(map(str.strip, controller_doc.split("\n")))
-        else:
-            documentation = ""
+        documentation = " ".join(map(str.strip, controller_doc.split("\n"))) if controller_doc else ""
 
         return documentation
 

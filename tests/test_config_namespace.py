@@ -4,7 +4,6 @@ Verifies enum membership, ``StrEnum`` behaviour, string equality semantics,
 hashability, and pattern-matching compatibility.
 """
 
-import pytest
 
 # =============================================================================
 # Tests: ClientFile enum

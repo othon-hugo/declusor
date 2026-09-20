@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Generator, Self
+from collections.abc import Generator
+from typing import TYPE_CHECKING, Self
 
 if TYPE_CHECKING:
     from pathlib import Path

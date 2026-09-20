@@ -23,7 +23,7 @@ class _BaseFileCommand(interface.ICommand):
             InvalidOperation: If the file does not exist or is not a regular file.
         """
 
-        if self._OPCODE == NotImplemented:
+        if NotImplemented == self._OPCODE:
             raise NotImplementedError("FUNC_NAME must be defined in subclasses.")
 
         self._filepath = util.ensure_file_exists(filepath)

@@ -5,8 +5,6 @@ internal ``_handle_socket_exception`` helper (exception → ``ConnectionFailure`
 mapping).
 """
 
-import socket
-
 import pytest
 
 # =============================================================================

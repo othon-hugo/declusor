@@ -1,10 +1,11 @@
 import shlex
 from argparse import ArgumentParser, HelpFormatter
-from typing import Any, Callable, Mapping, NoReturn, Type, Union, get_args, get_origin
+from collections.abc import Callable, Mapping
+from typing import Any, NoReturn, Union, get_args, get_origin
 
 from declusor import config
 
-ArgumentDefinitions = Mapping[str, Type[Any] | Union[Any]]
+ArgumentDefinitions = Mapping[str, type[Any] | Any]
 """The definitions: `argument name` -> `expected type`"""
 
 ParsedArguments = dict[str, Any]
@@ -64,7 +65,7 @@ def parse_command_arguments(line: str, definitions: ArgumentDefinitions, allow_u
         InvalidOperation: If an argument type is not supported or if there is a parsing error.
     """
 
-    supported_types: set[Type[Any]] = {str, int}
+    supported_types: set[type[Any]] = {str, int}
 
     if not definitions and not line.strip():
         return {}, []
@@ -80,7 +81,7 @@ def parse_command_arguments(line: str, definitions: ArgumentDefinitions, allow_u
             if type(None) in origin_types:
                 is_optional = True
 
-                actual_types: list[Type[Any]] = [a for a in origin_types if not isinstance(a, type(None))]
+                actual_types: list[type[Any]] = [a for a in origin_types if not isinstance(a, type(None))]
 
                 if actual_types:
                     arg_type = actual_types[0]

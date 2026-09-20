@@ -1,7 +1,7 @@
+from collections.abc import Generator
 from dataclasses import dataclass, field
 from pathlib import Path
 from socket import socket
-from typing import Generator
 
 from declusor import config, interface, util
 

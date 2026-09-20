@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from declusor import interface, util
 
@@ -20,7 +20,7 @@ def create_help_controller(get_documentation: DocumentationProvider, get_route_u
     def call_help(session: interface.IConnection, console: interface.IConsole, line: str) -> None:
         """Display detailed information about available commands or a specific command."""
 
-        arguments, _ = util.parse_command_arguments(line, {"command": Optional[str]})
+        arguments, _ = util.parse_command_arguments(line, {"command": str | None})
 
         if help_command := arguments["command"]:
             console.write_message(f"{help_command}: {get_route_usage(help_command)}")

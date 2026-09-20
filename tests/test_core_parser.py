@@ -5,7 +5,6 @@ instead of calling ``sys.exit``), ``get_formatter_class``, argument parsing,
 and the contrast with ``argparse.ArgumentParser``.
 """
 
-import pytest
 
 # =============================================================================
 # Tests: Parser initialization
