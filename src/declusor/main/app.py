@@ -1,5 +1,4 @@
 from collections.abc import Sequence
-from os import chdir
 
 from declusor import config, controller, core, plugin, util
 
@@ -51,7 +50,7 @@ class Application:
             ConnectionFailure: If the socket session cannot be established.
         """
 
-        self._validate_directories()
+        self._validate_directories(options["client"].data_paths)
         self._connect_routes()
 
         client_config = options["client"]
@@ -70,13 +69,13 @@ class Application:
             prompt.run()
 
     @staticmethod
-    def _validate_directories() -> None:
-        """Validate the data directories required by the built-in client."""
+    def _validate_directories(data_paths: config.DataPaths, /) -> None:
+        """Validate the data directories required by the selected client."""
 
         directories = (
-            config.BasePath.CLIENTS_DIR,
-            config.BasePath.MODULES_DIR,
-            config.BasePath.LIBRARY_DIR,
+            data_paths.clients,
+            data_paths.modules,
+            data_paths.library,
         )
 
         for directory in directories:
@@ -85,8 +84,6 @@ class Application:
 
             if not directory.is_dir():
                 raise NotADirectoryError(directory)
-
-        chdir(config.BasePath.MODULES_DIR)
 
     def _connect_routes(self) -> None:
         """Register built-in command routes on the application router."""
