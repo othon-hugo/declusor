@@ -1,11 +1,19 @@
 from declusor import config, core
-from declusor.main import exception, service
+from declusor.main.exception import handle_exception
+from declusor.main.service import register_plugins, run_service, validate_directories
 
-__all__ = ["main"]
+__all__ = [
+    "main",
+    "register_plugins",
+    "run_service",
+    "validate_directories",
+]
 
 
 def main() -> None:
     """Main entry point for the Declusor application."""
+
+    register_plugins(core.ClientRegistry)
 
     router = core.Router()
 
@@ -17,8 +25,8 @@ def main() -> None:
     console = core.Console()
 
     try:
-        service.run_service(router, console, options)
+        run_service(router, console, options)
     except KeyboardInterrupt:
         print()
     except config.DeclusorException as e:
-        exception.handle_exception(e)
+        handle_exception(e)
