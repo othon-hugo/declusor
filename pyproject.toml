@@ -1,10 +1,11 @@
-[tool.poetry]
+[project]
 name = "declusor"
-description = "A unified, interactive CLI for remotely executing scripts, managing payloads, establishing interactive command sessions, and handling file transfers across remote environments."
 version = "0.3.1"
+description = "A unified, interactive CLI for remotely executing scripts, managing payloads, establishing interactive command sessions, and handling file transfers across remote environments."
 readme = "README.md"
-license = "LICENSE"
-authors = ["Othon Hugo <othonhugo@users.noreply.github.com>"]
+requires-python = ">=3.10,<4.0"
+license = { file = "LICENSE" }
+authors = [{ name = "Othon Hugo", email = "othonhugo@users.noreply.github.com" }]
 keywords = [
     "security",
     "infosec",
@@ -29,51 +30,47 @@ classifiers = [
     "Topic :: Security",
     "Typing :: Typed",
 ]
-packages = [{ include = "declusor", from = "src" }]
 
-[tool.poetry.urls]
+[project.urls]
 Homepage = "https://github.com/othonhugo/declusor/"
 Repository = "https://github.com/othonhugo/declusor.git"
 Issues = "https://github.com/othonhugo/declusor/issues"
 
-[tool.poetry.scripts]
+[project.scripts]
 declusor = "declusor.main:main"
 
-[tool.poetry.dependencies]
-python = "^3.10"
-
-[tool.poetry.dev-dependencies]
-pylint = "^3.3.8"
-mypy = "^1.18.2"
-black = "^25.9.0"
-isort = "^6.1.0"
-hypothesis = "^6.0.0"
-pytest = "^8.3.4"
-pytest-asyncio = "^0.24.0"
+[dependency-groups]
+dev = [
+    "mypy>=1.18.2,<2",
+    "pytest>=8.3.4,<9",
+    "ruff>=0.8,<1",
+]
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build>=0.12.17,<0.13"]
+build-backend = "uv_build"
 
-[tool.pylint.main]
-source-roots = ["src"]
-recursive = true
-ignore-paths = [".venv/", "build/", "tests/"]
+[tool.uv]
+default-groups = ["dev"]
 
-[tool.pylint.format]
-max-line-length = 150
+[tool.ruff]
+line-length = 150
+target-version = "py310"
 
-[tool.pylint."messages_control"]
-disable = [
-    "broad-exception-caught",
-    "duplicate-code",
-    "missing-module-docstring",
-    "too-few-public-methods",
-    "too-many-arguments",
-    "too-many-instance-attributes",
-    "too-many-locals",
-    "unused-argument",
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "W",
+    "I",
+    "B",
+    "UP",
+    "SIM",
 ]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
 
 [tool.mypy]
 python_version = "3.12"
@@ -85,25 +82,11 @@ disallow_any_expr = false
 disallow_any_unimported = false
 disallow_subclassing_any = false
 
-[tool.black]
-line-length = 150
-target-version = ["py312"]
-exclude = '''
-/(
-    \.git
-| \.venv
-| build
-| dist
-)/
-'''
-
-[tool.isort]
-profile = "black"
-line_length = 150
-
 [tool.pytest.ini_options]
 addopts = "-ra --strict-markers --tb=short -v"
 pythonpath = ["src"]
 testpaths = ["tests"]
-norecursedirs = [".vscode", "__pycache__"]
-markers = ["asyncio: mark test as an asyncio test"]
+norecursedirs = [
+    ".vscode",
+    "__pycache__",
+]
