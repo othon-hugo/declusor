@@ -1,7 +1,8 @@
 from pathlib import Path
 from socket import socket
 
-from declusor import config, connection as connection_module, interface, util
+from declusor import config, interface, util
+from declusor import connection as connection_module
 
 
 class ShellSocketPlugin(interface.IClientPlugin):
