@@ -91,14 +91,17 @@ class ShellSocketRuntime(interface.IClientRuntime):
 
     def __init__(self, client_config: interface.ClientConfig, /) -> None:
         self._client_config = client_config
+
         self._profile = connection_module.ShellSocketProfile(
             name=client_config.kind,
             ack_server_raw=b"\x00",
             ack_client_raw=util.hash_sha256(b"\xba\xdc\x00\xff\xee"),
         )
+
         self._files = connection_module.ShellSocketFileStore(
             client_config.options["client_path"],
             client_config.data_paths,
+            (".sh",),
             (".sh",),
         )
 

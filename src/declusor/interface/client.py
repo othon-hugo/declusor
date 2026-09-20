@@ -125,3 +125,49 @@ class IClientPlugin(ABC):
         """
 
         raise NotImplementedError
+
+
+class IClientFileStore(ABC):
+    """Provides client bootstrap, library and module file operations.
+
+    Libraries are loaded automatically during session initialization, while
+    modules are loaded only when explicitly requested by the operator.
+    """
+
+    @abstractmethod
+    def render_client_script(self, host: str, port: int, acknowledge: bytes, /) -> str:
+        """Read and render the client bootstrap script.
+
+        Args:
+            host: Host address embedded in the client script.
+            port: Port embedded in the client script.
+            acknowledge: Client acknowledgment bytes embedded in the script.
+
+        Returns:
+            The rendered client bootstrap script.
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def load_library(self) -> bytes:
+        """Load libraries uploaded automatically during initialization.
+
+        Returns:
+            Concatenated library contents.
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def load_module(self, module_name: str, /) -> bytes:
+        """Load one operator-selected module.
+
+        Args:
+            module_name: Module filename relative to the modules directory.
+
+        Returns:
+            Raw module contents.
+        """
+
+        raise NotImplementedError
