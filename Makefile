@@ -44,7 +44,7 @@ type-check:
 test:
 	$(UV) run pytest
 
-check: format-check lint typecheck test
+check: format-check lint type-check test
 
 ci: check build
 
