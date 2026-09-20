@@ -1,28 +1,50 @@
-from .enums import ClientFile, OperationCode
+from .enums import (
+    ExecutionMode,
+    OperationCode,
+)
 from .exceptions import (
-    ConnectionFailure,
+    CommandError,
+    CommandValidationError,
+    ConnectionClosed,
+    ConnectionError,
+    ConnectionHandshakeError,
+    ConnectionTimeoutError,
     ControllerError,
     DeclusorException,
     DeclusorWarning,
-    ExitRequest,
     InvalidOperation,
     ParserError,
+    PluginError,
+    PluginValidationError,
     PromptError,
     RouterError,
 )
-from .settings import BasePath, Settings
+from .settings import (
+    BasePath,
+    ClientDataPaths,
+    DataPaths,
+    Settings,
+)
 
 __all__ = [
     "BasePath",
-    "ClientFile",
-    "ConnectionFailure",
+    "ClientDataPaths",
+    "CommandError",
+    "CommandValidationError",
+    "ConnectionClosed",
+    "ConnectionError",
+    "ConnectionHandshakeError",
+    "ConnectionTimeoutError",
     "ControllerError",
+    "DataPaths",
     "DeclusorException",
     "DeclusorWarning",
-    "ExitRequest",
+    "ExecutionMode",
     "InvalidOperation",
     "OperationCode",
     "ParserError",
+    "PluginError",
+    "PluginValidationError",
     "PromptError",
     "RouterError",
     "Settings",

@@ -1,68 +1,48 @@
-# Tests Directory
+# Test Suite
 
-The **tests** directory contains the complete test suite for Declusor. Test files mirror the source-code package structure using the naming convention `test_<package>_<module>.py`.
+Declusor maintains an automated test suite organized by architectural layer and test scope, supported by a first-class, published public testing SDK (`declusor.testing`).
 
-## Running Tests
+## Test Principles and Conventions
+
+1. **Typed Test Doubles over Fragile Mocks**: Contract boundaries (`IView`, `IInputSource`, `IConnection`, `IClientFileStore`, `IPluginRuntime`, `IPlugin`, `IRouter`) are fulfilled by deterministic in-memory test doubles in `declusor.testing`. Unconstrained `MagicMock` setups and monkeypatching are eliminated.
+2. **Autonomous Plugin Colocation**: Native plugin tests live directly inside `plugins/<plugin>/tests/`, ensuring that plugins remain autonomous and cleanly extractable into independent repositories.
+3. **Contract Conformance Verification**: Every plugin (native or third-party) verifies adherence to framework invariants by subclassing `declusor.testing.PluginConformanceTestSuite`.
+4. **Defensive Testing & Invariant Validation**: Invariant violations (empty commands, path traversal, unsupported opcodes, invalid arguments) must explicitly assert raised domain exceptions (`config.InvalidOperation`, `config.ParserError`, `config.RouterError`, `config.ConnectionError`).
+5. **Strict Static Type Checking**: Test suites are type-checked with `mypy --strict` alongside production code (`mypy src plugins tests`). All test fixtures, test doubles, and helper functions declare complete, non-`Any` type signatures.
+6. **No Cross-Layer Contamination**: Test doubles decouple unit tests from real operating system resources (network sockets, standard I/O, filesystem changes outside `tmp_path`).
+
+## Running the Tests and Quality Checks
+
+Run the complete test suite (both host tests and colocated plugin tests):
 
 ```bash
-.venv/bin/python -m pytest tests/         # full suite
-.venv/bin/python -m pytest tests/ -q      # quiet output
-.venv/bin/python -m pytest tests/ -k core  # run only core tests
+pytest
 ```
 
-Tests must not depend on external resources or network access — all I/O is mocked.
+Run tests for a specific plugin:
 
-## Test File Map
-
-| Package        | Test file                    | Module under test                                    |
-| -------------- | ---------------------------- | ---------------------------------------------------- |
-| **command**    | `test_command_command.py`    | `command.execute` (`ExecuteCommand`)                 |
-|                | `test_command_file.py`       | `command.file` (`ExecuteFile`, `UploadFile`)         |
-|                | `test_command_load.py`       | `command.load` (`LoadPayload`)                       |
-|                | `test_command_shell.py`      | `command.shell` (`LaunchShell`)                      |
-| **config**     | `test_config_exceptions.py`  | `config.exceptions`                                  |
-|                | `test_config_namespace.py`   | `config.enums` (`ClientFile`, `OperationCode`)       |
-|                | `test_config_settings.py`    | `config.settings` (`Settings`, `BasePath`)           |
-| **controller** | `test_controller_command.py` | `controller.command` (`call_command`)                |
-|                | `test_controller_execute.py` | `controller.execute` (`call_execute`)                |
-|                | `test_controller_exit.py`    | `controller.exit` (`call_exit`)                      |
-|                | `test_controller_help.py`    | `controller.help` (`create_help_controller`)         |
-|                | `test_controller_load.py`    | `controller.load` (`call_load`)                      |
-|                | `test_controller_shell.py`   | `controller.shell` (`call_shell`)                    |
-|                | `test_controller_upload.py`  | `controller.upload` (`call_upload`)                  |
-| **core**       | `test_core_console.py`       | `core.console` (`Console`)                           |
-|                | `test_core_parser.py`        | `core.parser` (`Parser`)                             |
-|                | `test_core_prompt.py`        | `core.prompt` (`PromptCLI`)                          |
-|                | `test_core_router.py`        | `core.router` (`Router`)                             |
-|                | `test_core_session.py`       | `connection.shell_socket` (`ShellSocketConnection`)  |
-| **util**       | `test_util_client.py`        | Client-script formatting utilities                   |
-|                | `test_util_encoding.py`      | `util.encoding` (hex, base64)                        |
-|                | `test_util_network.py`       | `util.network` (`await_connection`)                  |
-|                | `test_util_parsing.py`       | `util.parsing` (`Parser`, `parse_command_arguments`) |
-|                | `test_util_security.py`      | `util.security` (extension & path validation)        |
-|                | `test_util_storage.py`       | `util.storage` (file loading & existence checks)     |
-
-## Test File Structure
-
-Each test file follows a consistent layout:
-
-1. **Module docstring** — describes the module under test and scope of coverage.
-2. **Fixtures** — `pytest` fixtures providing mocked dependencies.
-3. **Test functions** — grouped by feature area with section headers.
-
-## Docstring Convention
-
-Test docstrings are **concise, single-sentence descriptions** of the expected behaviour:
-
-```python
-def test_connect_duplicate_raises_value_error(sample_controller: MagicMock) -> None:
-    """Registering the same route twice must raise ``ValueError``."""
+```bash
+pytest plugins/shell_socket/tests/ -v
+pytest plugins/py_socket/tests/ -v
 ```
 
-## Guidelines for Adding Tests
+Run tests for a specific host layer:
 
-1. Follow the `test_<package>_<module>.py` naming convention.
-2. Use `MagicMock` fixtures for all external dependencies (the codebase is synchronous — do **not** use `AsyncMock` or `@pytest.mark.asyncio`).
-3. Write a single-sentence docstring per test describing the expected outcome.
-4. Tests must be independent and runnable in any order.
-5. Group related tests under section-header comments (`# === Tests: ... ===`).
+```bash
+pytest tests/unit/command/ -v
+pytest tests/unit/controller/ -v
+pytest tests/unit/presentation/ -v
+pytest tests/integration/ -v
+```
+
+Run static type checking across source, plugins, and tests:
+
+```bash
+mypy src plugins tests
+```
+
+Run linter checks:
+
+```bash
+ruff check src plugins tests
+```

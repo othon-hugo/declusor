@@ -1,30 +1,43 @@
-from collections.abc import Callable
-
-from declusor import interface, util
-
-DocumentationProvider = Callable[[], str]
-RouteUsageProvider = Callable[[str], str]
+from declusor import contract
 
 
-def create_help_controller(get_documentation: DocumentationProvider, get_route_usage: RouteUsageProvider) -> interface.Controller:
-    """Create a help controller with documentation providers.
+def create_help_controller(router: contract.IRouter) -> contract.Controller:
+    """Create a help controller that queries *router* for routes and usage descriptions.
 
     Args:
-        get_documentation: Function that returns full documentation.
-        get_route_usage: Function that returns usage for a specific route.
+        router: The application router providing registered routes and route usage.
 
     Returns:
         Help controller function.
     """
 
-    def call_help(session: interface.IConnection, console: interface.IConsole, line: str) -> None:
+    def call_help(session: contract.SessionContext, req: contract.ControllerRequest) -> contract.ControllerResult:
         """Display detailed information about available commands or a specific command."""
 
-        arguments, _ = util.parse_command_arguments(line, {"command": str | None})
+        arguments, _ = req.parse_arguments({"command": str | None})
 
-        if help_command := arguments["command"]:
-            console.write_message(f"{help_command}: {get_route_usage(help_command)}")
+        if help_command := arguments.get("command"):
+            target_route = help_command.strip()
+
+            if target_route not in router.routes:
+                session.view.write_error(f"Unknown command: '{target_route}'. Type 'help' to list available commands.")
+                return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
+
+            usage = router.get_route_usage(target_route)
+            session.view.write_message(f"{target_route}: {usage}" if usage else target_route)
         else:
-            console.write_message(get_documentation())
+            routes = router.routes
+
+            if not routes:
+                session.view.write_message("No commands available.")
+                return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
+
+            key_length = max(map(len, routes)) + 1
+
+            for route in routes:
+                usage = router.get_route_usage(route)
+                session.view.write_message(f"{route:<{key_length}}: {usage}" if usage else route)
+
+        return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
 
     return call_help

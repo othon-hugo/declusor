@@ -1,81 +1,145 @@
-from declusor import interface, util
+from dataclasses import dataclass
+
+from declusor import config, contract, util
 
 
-class LaunchShell(interface.ICommand):
-    """Open an interactive bidirectional shell session with the remote client.
+@dataclass(frozen=True)
+class LaunchShellDTO:
+    """Data transfer object configuring an interactive shell session.
 
-    Spawns a background thread to stream responses from the client while the
-    main thread forwards the operator's keystrokes. Both threads share a
-    ``TaskEvent`` stop-flag for cooperative cancellation.
-    A ``KeyboardInterrupt`` (Ctrl-C) tears down both threads and returns
-    control to the prompt loop.
+    Attributes:
+        banner: Optional informational banner message displayed upon entering shell mode.
     """
 
-    def __init__(self) -> None:
+    banner: str | None = None
+
+
+class LaunchShell(contract.ICommand):
+    """Open an interactive bidirectional shell session with the remote client.
+
+    Spawns a background thread to stream output from the client while the main
+    thread reads and forwards the operator's keystrokes. Both threads share a
+    cooperative ``TaskEvent`` stop-flag. A ``KeyboardInterrupt`` (Ctrl-C) cleanly
+    shuts down the streaming task and returns control to the REPL prompt loop.
+
+    Attributes:
+        dto: Configuration options for the shell session.
+    """
+
+    def __init__(self, dto: LaunchShellDTO | None = None) -> None:
+        """Initialize the interactive shell command.
+
+        Args:
+            dto: Optional configuration DTO for the shell session.
+        """
+
+        super().__init__()
+
+        self._dto = dto or LaunchShellDTO()
         self._stop_event = util.TaskEvent()
         self._task_pool = util.TaskPool(self._stop_event)
 
-    def execute(self, session: interface.IConnection, console: interface.IConsole, /) -> None:
-        """Start the shell session and block until the operator exits.
+    @property
+    def dto(self) -> LaunchShellDTO:
+        """The command parameters."""
 
-        Registers the response-reader as a background task, starts it, then
-        runs the request-sender in the foreground. Stops all tasks on
-        ``KeyboardInterrupt`` or normal completion.
+        return self._dto
+
+    def send_request(self, session: contract.SessionContext, /) -> None:
+        """Start the background task that streams remote client output to the view.
 
         Args:
-            session: The active connection used for bidirectional I/O.
-            console: Console for reading operator input and writing output.
+            session: Active session context providing connection and view.
         """
 
-        input_handler = self._create_shell_output_handler(session, console)
-        output_handler = self._create_shell_input_handler(session, console)
+        output_streamer = self._create_shell_output_handler(
+            session.connection,
+            session.view,
+        )
 
-        self._task_pool.add_task(input_handler)
+        self._task_pool.add_task(output_streamer, name="shell_output_streamer")
         self._task_pool.start_all()
 
-        try:
-            output_handler(self._stop_event)
+    def read_response(self, session: contract.SessionContext, /) -> None:
+        """Forward operator input from the input source to the remote client until interrupted.
 
+        Args:
+            session: Active session context providing connection, view, and input source.
+        """
+
+        if session.input is None:
+            raise config.InvalidOperation("Interactive shell requires an active input source.")
+
+        input_forwarder = self._create_shell_input_handler(
+            session.connection,
+            session.input,
+        )
+
+        try:
+            if self._dto.banner:
+                session.view.write_message(self._dto.banner)
+
+            input_forwarder(self._stop_event)
             self._task_pool.wait_all()
         except KeyboardInterrupt:
-            console.write_message("[keyboard interrupt received]")
+            session.view.write_message("[keyboard interrupt received]")
         finally:
             self._task_pool.stop()
 
-    def _create_shell_input_handler(self, session: interface.IConnection, console: interface.IConsole, /) -> util.TaskHandler:
-        """Return a ``TaskHandler`` that forwards operator input to the remote client.
+    def _create_shell_input_handler(
+        self,
+        connection: contract.IConnection,
+        input_source: contract.IInputSource,
+        /,
+    ) -> util.TaskHandler:
+        """Return a TaskHandler that reads lines from input source and sends them over the connection.
 
-        Reads lines from *console* and writes non-empty ones to *session*.
-        Loops until the shared stop-event is set.
+        Args:
+            connection: Active client connection.
+            input_source: Operator input source interface.
+
+        Returns:
+            A callable task handler for execution in the thread pool or loop.
         """
 
         def _handle_request(stop_event: util.TaskEvent) -> None:
             while not stop_event.is_set():
-                command_request = console.read_line()
+                command_request = input_source.read_raw()
 
                 if command_request:
-                    session.write(command_request.encode())
+                    connection.write(command_request.encode())
 
         return _handle_request
 
-    def _create_shell_output_handler(self, session: interface.IConnection, console: interface.IConsole, /) -> util.TaskHandler:
-        """Return a ``TaskHandler`` that streams remote output to the console.
+    def _create_shell_output_handler(
+        self,
+        connection: contract.IConnection,
+        view: contract.IView,
+        /,
+    ) -> util.TaskHandler:
+        """Return a TaskHandler that streams client output to the view.
 
-        Removes the session timeout for the duration of the shell (blocking
-        reads), and restores it when the stop-event fires or an exception
-        propagates.
+        Temporarily clears the connection timeout for blocking reads and restores
+        it on completion.
+
+        Args:
+            connection: Active client connection.
+            view: Operator view interface.
+
+        Returns:
+            A callable task handler for execution in the background task pool.
         """
 
         def _handle_response(stop_event: util.TaskEvent) -> None:
-            previous_timeout = session.timeout
+            previous_timeout = connection.timeout
 
             try:
-                session.timeout = None
+                connection.timeout = None
 
                 while not stop_event.is_set():
-                    for chunk in session.read():
-                        console.write_binary_data(chunk)
+                    for chunk in connection.read():
+                        view.write_binary_data(chunk)
             finally:
-                session.timeout = previous_timeout
+                connection.timeout = previous_timeout
 
         return _handle_response

@@ -1,13 +1,12 @@
-from declusor import command, interface, util
+from declusor import command, contract
 
 
-def call_upload(session: interface.IConnection, console: interface.IConsole, line: str) -> None:
+def call_upload(session: contract.SessionContext, req: contract.ControllerRequest) -> contract.ControllerResult:
     """Upload a file from the local system to the remote system."""
 
-    arguments, _ = util.parse_command_arguments(line, {"filepath": str})
-    filepath = arguments["filepath"]
+    arguments, _ = req.parse_arguments({"filepath": str})
 
-    command.UploadFile(filepath).execute(session, console)
+    dto = command.UploadFileDTO(filepath=arguments["filepath"])
+    session.execute(command.UploadFile(dto))
 
-    for data in session.read():
-        console.write_binary_data(data)
+    return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)

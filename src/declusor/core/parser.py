@@ -1,63 +1,141 @@
-from typing import TypedDict
+from collections.abc import Sequence
+from dataclasses import replace
+from pathlib import Path
+from typing import TYPE_CHECKING, Final
 
-from declusor import config, interface, util
+from declusor import config, contract, util
 
-
-class DeclusorOptions(TypedDict):
-    """Arguments for the application."""
-
-    host: str
-    port: int
-    client: config.ClientFile
+if TYPE_CHECKING:
+    from declusor.core.plugin import PluginManager
 
 
-class DeclusorParser(util.Parser, interface.IParser[DeclusorOptions]):
+class DeclusorParser(util.Parser, contract.IParser[contract.PluginConfig]):
     """Parser for command-line arguments."""
 
-    info = {
+    flags: Final[dict[str, str]] = {
         "host": "IP address or hostname where the service should run",
         "port": "port number to listen on for incoming connections",
-        "client": "agent responsible for handling requests",
+        "plugin": "agent responsible for handling requests",
+        "assets-dir": "root directory containing client launchers, helpers, and modules",
+        "plugin-dir": "additional directory to discover custom drop-in plugins",
+        "mode": "application execution mode (choices: %(choices)s)",
     }
 
-    def parse(self) -> DeclusorOptions:
-        """Parse command-line arguments."""
+    def __init__(self, name: str, description: str = "") -> None:
+        """Create a parser for command-line arguments.
+
+        Args:
+            name: Program name.
+            description: Short description of the application.
+        """
+
+        super().__init__(prog=name, description=description or None)
+
+        self._is_configured = False
+        self._configure_common_arguments()
+
+    def _configure_common_arguments(self) -> None:
+        if self._is_configured:
+            return
 
         self.add_argument(
             "host",
-            help=self.info["host"],
+            help=self.flags["host"],
             type=str,
         )
 
         self.add_argument(
             "port",
-            help=self.info["port"],
+            help=self.flags["port"],
             type=int,
         )
 
         self.add_argument(
-            "-c",
-            "--client",
-            help=self.info["client"],
-            type=config.ClientFile,
-            default=config.ClientFile.SHELL_SOCKET,
+            "--assets-dir",
+            help=self.flags["assets-dir"],
+            type=Path,
+            default=None,
         )
 
-        args = self.parse_args()
-        declusor_opts = DeclusorOptions(host=args.host, port=args.port, client=args.client)
+        self.add_argument(
+            "--plugin-dir",
+            help=self.flags["plugin-dir"],
+            type=Path,
+            default=None,
+        )
 
-        self._validate_all_arguments(declusor_opts)
+        self.add_argument(
+            "-p",
+            "--plugin",
+            help=self.flags["plugin"],
+            type=str,
+            default=None,
+        )
 
-        try:
-            return declusor_opts
-        except AttributeError as e:
-            raise config.ParserError(f"Missing argument: {e.name}") from e
+        self.add_argument(
+            "-m",
+            "--mode",
+            help=self.flags["mode"],
+            type=config.ExecutionMode.from_string,
+            choices=list(config.ExecutionMode),
+            default=config.Settings.DEFAULT_EXECUTION_MODE,
+        )
 
-    def _validate_all_arguments(self, declusor_opts: DeclusorOptions) -> None:
-        self._validate_client_argument(declusor_opts["client"])
+        self._is_configured = True
 
-    def _validate_client_argument(self, client_filename: str) -> None:
-        client_filepath = (config.BasePath.CLIENTS_DIR / client_filename).resolve()
+    def parse(
+        self,
+        manager: "PluginManager",
+        argv: Sequence[str] | None = None,
+        /,
+    ) -> contract.PluginConfig:
+        """Parse arguments and build a validated PluginConfig using the provided manager.
 
-        if not util.validate_file_relative(client_filepath, config.BasePath.CLIENTS_DIR):
-            raise config.ParserError(f"Invalid client file: {client_filepath}")
+        Args:
+            manager: Plugin manager containing the client plugins available to the application.
+            argv: Sequence of arguments to parse, excluding the program name.
+
+        Returns:
+            Validated PluginConfig populated from command-line arguments.
+
+        Raises:
+            ParserError: If required arguments are missing, values are invalid, or no plugin matches.
+        """
+
+        preliminary_args, _ = self.parse_known_args(argv)
+
+        plugin_dir = getattr(preliminary_args, "plugin_dir", None)
+
+        if plugin_dir:
+            manager.load_from_directory(plugin_dir, source_label="cli-plugin-dir", allow_override=True)
+
+        available_clients = manager.names()
+        default_client = "shell_socket" if "shell_socket" in available_clients else (available_clients[0] if available_clients else None)
+        plugin_name = preliminary_args.plugin or default_client
+
+        if not plugin_name:
+            raise config.ParserError("No client plugin available.")
+
+        if plugin_name not in available_clients:
+            raise config.ParserError(
+                f"argument -p/--plugin: invalid choice: '{plugin_name}' (choose from {', '.join(repr(c) for c in available_clients)})"
+            )
+
+        Plugin = manager.get(plugin_name)
+        Plugin.configure_parser(self)
+
+        raw_args = self.parse_args(argv)
+        args = contract.PluginNamespace.from_namespace(raw_args)
+
+        if not args.plugin:
+            args.plugin = Plugin.name
+
+        data_paths = config.DataPaths.from_root(args.assets_dir) if args.assets_dir is not None else None
+        plugin_config = Plugin.build_config(args, data_paths)
+
+        if getattr(plugin_config, "mode", None) != args.mode:
+            plugin_config = replace(plugin_config, mode=args.mode)
+
+        Plugin.validate(plugin_config)
+
+        return plugin_config

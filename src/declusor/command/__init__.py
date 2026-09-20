@@ -1,12 +1,40 @@
-from .execute import ExecuteCommand
-from .file import ExecuteFile, UploadFile
-from .load import LoadPayload
-from .shell import LaunchShell
+from declusor.config import (
+    CommandError,
+    CommandValidationError,
+    InvalidOperation,
+)
+
+from .execute import (
+    ExecuteCommand,
+    ExecuteCommandDTO,
+)
+from .file import (
+    ExecuteFile,
+    ExecuteFileDTO,
+    UploadFile,
+    UploadFileDTO,
+)
+from .load import (
+    LoadModule,
+    LoadModuleDTO,
+)
+from .shell import (
+    LaunchShell,
+    LaunchShellDTO,
+)
 
 __all__ = [
+    "CommandError",
+    "CommandValidationError",
     "ExecuteCommand",
+    "ExecuteCommandDTO",
     "ExecuteFile",
+    "ExecuteFileDTO",
+    "InvalidOperation",
     "LaunchShell",
-    "LoadPayload",
+    "LaunchShellDTO",
+    "LoadModule",
+    "LoadModuleDTO",
     "UploadFile",
+    "UploadFileDTO",
 ]

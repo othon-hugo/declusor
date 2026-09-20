@@ -1,0 +1,288 @@
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from pathlib import Path
+from socket import socket
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+
+from declusor import config
+
+if TYPE_CHECKING:
+    from declusor.contract.connection import IConnection
+    from declusor.contract.parser import IArgumentParser
+
+
+@dataclass(frozen=True)
+class PluginConfig:
+    """Configuration produced by a client plugin.
+
+    Stores the common server connection parameters and the client-specific
+    options produced during command-line parsing.
+    """
+
+    kind: str
+    """Registered identifier of the client implementation."""
+
+    host: str
+    """Host address used by the server."""
+
+    port: int
+    """Port used by the server."""
+
+    data_paths: config.DataPaths | None = None
+    """Optional filesystem paths used by the selected client runtime."""
+
+    options: dict[str, Any] = field(default_factory=dict)
+    """Client-specific configuration options."""
+
+    mode: config.ExecutionMode = config.Settings.DEFAULT_EXECUTION_MODE
+    """Application execution mode (e.g. CLI, API, MCP, HTTP)."""
+
+
+@runtime_checkable
+class PluginArguments(Protocol):
+    """Protocol for command-line arguments consumed by client plugins.
+
+    Guarantees typed access to standard server network parameters (host, port)
+    configured at the application level.
+    """
+
+    host: str
+    port: int
+
+
+class PluginNamespace:
+    """Pre-configured argument namespace satisfying PluginArguments.
+
+    Provides explicit typed attributes for standard options (host, port)
+    and dynamic attribute access for plugin-specific options.
+    """
+
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        data_root: Path | None = None,
+        plugin: str = "",
+        plugin_dir: Path | None = None,
+        mode: config.ExecutionMode = config.Settings.DEFAULT_EXECUTION_MODE,
+        **extra: Any,
+    ) -> None:
+        self.host = host
+        self.port = port
+        self.data_root = data_root
+        self.plugin = plugin
+        self.plugin_dir = plugin_dir
+        self.mode = mode
+
+        for key, value in extra.items():
+            setattr(self, key, value)
+
+    def get(self, key: str, default: Any = None) -> Any:
+        """Return the value for key if present, otherwise default."""
+
+        return getattr(self, key, default)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert the argument namespace to a dictionary."""
+
+        return dict(vars(self))
+
+    def __contains__(self, item: str) -> bool:
+        """Return True if the option exists in the namespace."""
+
+        return hasattr(self, item)
+
+    def __repr__(self) -> str:
+        attrs = ", ".join(f"{k}={v!r}" for k, v in vars(self).items())
+
+        return f"{type(self).__name__}({attrs})"
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, PluginNamespace):
+            return vars(self) == vars(other)
+
+        if isinstance(other, PluginArguments):
+            return self.host == other.host and self.port == other.port
+
+        return False
+
+    def __getattr__(self, name: str) -> Any:
+        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+
+    @classmethod
+    def from_namespace(cls, namespace: Any) -> "PluginNamespace":
+        """Construct a pre-configured PluginNamespace from an argparse.Namespace or mapping."""
+
+        mapping = vars(namespace) if hasattr(namespace, "__dict__") else dict(namespace)
+        known_keys = {"host", "port", "data_root", "plugin", "plugin_dir", "mode"}
+        extra = {k: v for k, v in mapping.items() if k not in known_keys}
+
+        return cls(
+            host=str(mapping.get("host", "")),
+            port=int(mapping.get("port", 0)),
+            data_root=mapping.get("data_root"),
+            plugin=str(mapping.get("plugin", "")),
+            plugin_dir=mapping.get("plugin_dir"),
+            mode=mapping.get("mode", config.Settings.DEFAULT_EXECUTION_MODE),
+            **extra,
+        )
+
+
+class IPluginRuntime(ABC):
+    """Runtime used by the service to operate a configured client.
+
+    A runtime hides client-specific bootstrap and connection construction from
+    the application service.
+    """
+
+    @property
+    @abstractmethod
+    def client_files(self) -> "IClientFileStore":
+        """Client file store for module and library loading."""
+
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def client_script(self) -> str:
+        """Return the rendered client bootstrap script."""
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def create_connection(self, connection: socket, /) -> "IConnection":
+        """Create a connection for an accepted socket.
+
+        Args:
+            connection: Accepted socket connected to the remote client.
+
+        Returns:
+            Connection implementation for the configured client.
+        """
+
+        raise NotImplementedError
+
+
+class IPlugin(ABC):
+    """Extension point for registering configurable client implementations.
+
+    Implementations define how their command-line arguments are registered,
+    converted into a ``PluginConfig``, and validated.
+    """
+
+    name: str
+    """Unique identifier used to select the client from the command line."""
+
+    description: str = ""
+    """Brief human-readable description shown in CLI help."""
+
+    version: str = "1.0.0"
+    """Semantic version of the client plugin."""
+
+    author: str = ""
+    """Author or maintainer of the client plugin."""
+
+    @classmethod
+    @abstractmethod
+    def configure_parser(cls, parser: "IArgumentParser", /) -> None:
+        """Register client-specific command-line arguments.
+
+        Args:
+            parser: Argument parser that receives the client-specific options.
+        """
+
+        raise NotImplementedError
+
+    @classmethod
+    @abstractmethod
+    def build_config(
+        cls,
+        args: PluginArguments,
+        data_paths: config.DataPaths | None = None,
+        /,
+    ) -> PluginConfig:
+        """Build a client configuration from parsed arguments and data paths.
+
+        Args:
+            args: Pre-configured namespace or protocol containing common and client-specific arguments.
+            data_paths: Resolved filesystem paths for the application, or None to use bundled assets.
+
+        Returns:
+            Configuration object for the selected client.
+        """
+
+        raise NotImplementedError
+
+    @classmethod
+    @abstractmethod
+    def validate(cls, plugin_config: PluginConfig, /) -> None:
+        """Validate a client configuration.
+
+        Args:
+            plugin_config: Configuration produced by ``build_config``.
+
+        Raises:
+            config.ParserError: If the configuration is invalid.
+        """
+
+        raise NotImplementedError
+
+    @classmethod
+    @abstractmethod
+    def build_runtime(cls, plugin_config: PluginConfig, /) -> IPluginRuntime:
+        """Build the runtime for a validated client configuration.
+
+        Args:
+            plugin_config: Configuration produced by ``build_config``.
+
+        Returns:
+            Runtime that can render the bootstrap and create connections.
+        """
+
+        raise NotImplementedError
+
+
+class IClientFileStore(ABC):
+    """Provides client bootstrap, library and module file operations.
+
+    Libraries are loaded automatically during session initialization, while
+    modules are loaded only when explicitly requested by the operator.
+    """
+
+    @abstractmethod
+    def render_client_script(self, host: str, port: int, acknowledge: bytes, /) -> str:
+        """Read and render the client bootstrap script.
+
+        Args:
+            host: Host address embedded in the client script.
+            port: Port embedded in the client script.
+            acknowledge: Client acknowledgment bytes embedded in the script.
+
+        Returns:
+            The rendered client bootstrap script.
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def load_library(self) -> bytes:
+        """Load libraries uploaded automatically during initialization.
+
+        Returns:
+            Concatenated library contents.
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def load_module(self, module_name: str, /) -> bytes:
+        """Load one operator-selected module.
+
+        Args:
+            module_name: Module filename relative to the modules directory.
+
+        Returns:
+            Raw module contents.
+        """
+
+        raise NotImplementedError

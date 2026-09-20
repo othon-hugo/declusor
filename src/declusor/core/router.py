@@ -1,7 +1,8 @@
-from declusor import config, interface
+from declusor import contract
+from declusor.config import RouterError
 
 
-class Router(interface.IRouter):
+class Router(contract.IRouter):
     """Default ``IRouter`` implementation backed by an in-memory dictionary.
 
     Routes are registered via ``connect`` and dispatched via ``locate``.
@@ -11,7 +12,7 @@ class Router(interface.IRouter):
     """
 
     def __init__(self) -> None:
-        self._route_table: dict[str, interface.Controller] = {}
+        self._route_table: dict[str, contract.Controller] = {}
 
     @property
     def routes(self) -> tuple[str, ...]:
@@ -27,11 +28,11 @@ class Router(interface.IRouter):
         """
 
         controller_doc = self.locate(route).__doc__
-        documentation = " ".join(map(str.strip, controller_doc.split("\n"))) if controller_doc else ""
+        usage = " ".join(line.strip() for line in controller_doc.splitlines() if line.strip()) if controller_doc else ""
 
-        return documentation
+        return usage
 
-    def connect(self, route: str, controller: interface.Controller, /) -> None:
+    def connect(self, route: str, controller: contract.Controller, /) -> None:
         """Register *controller* under *route*.
 
         Raises:
@@ -45,7 +46,7 @@ class Router(interface.IRouter):
 
         self._route_table[route] = controller
 
-    def locate(self, route: str, /) -> interface.Controller:
+    def locate(self, route: str, /) -> contract.Controller:
         """Return the controller bound to *route*.
 
         Raises:
@@ -55,25 +56,4 @@ class Router(interface.IRouter):
         if controller := self._route_table.get(route.strip()):
             return controller
 
-        raise config.RouterError(route)
-
-    @property
-    def documentation(self) -> str:
-        """Formatted help string for all routes, aligned by the longest route name.
-
-        Each line has the form ``route: description``. Returns an empty string
-        if no routes are registered.
-        """
-
-        if not self._route_table:
-            return ""
-
-        key_length = max(map(len, self._route_table.keys())) + 1
-
-        documentation = ""
-
-        for route in self._route_table:
-            documentation += f"{route:<{key_length}}: "
-            documentation += f"{self.get_route_usage(route)}\n"
-
-        return documentation.rstrip()
+        raise RouterError(route)

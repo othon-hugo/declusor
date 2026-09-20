@@ -7,11 +7,11 @@ The **config** package sits at the base of the dependency hierarchy. It provides
 
 ## Modules
 
-| Module          | Contents                                                                          |
-| --------------- | --------------------------------------------------------------------------------- |
-| `settings.py`   | `Settings` (project name/description) and `BasePath` (directory constants)        |
-| `enums.py`      | `ClientFile` (client script filenames) and `OperationCode` (file operation codes) |
-| `exceptions.py` | Full exception hierarchy rooted at `DeclusorException`                            |
+| Module       | Responsibility                                                                               |
+| ------------ | -------------------------------------------------------------------------------------------- |
+| `enums`      | Enumerations for execution modes, connection states, operation codes, and controller actions |
+| `exceptions` | Canonical domain exception hierarchy and custom warnings                                     |
+| `settings`   | Configuration paths, runtime directories, and client configuration options                   |
 
 ## Exception Hierarchy
 

@@ -1,22 +1,22 @@
 # Core Package
 
-The **core** package provides the concrete runtime implementations of the domain interfaces defined in the `interface` package.
+The **core** package provides infrastructure services implementing domain contracts defined in the `contract` package.
+
+> [!NOTE]
+> Interactive terminal components (console I/O and prompt loops) live in `presentation`. Concrete client plugins live in the external `plugins/` directory and third-party packages.
 
 ## Modules
 
-| Module       | Class       | Implements                                                                                             |
-| ------------ | ----------- | ------------------------------------------------------------------------------------------------------ |
-| `console.py` | `Console`   | `IConsole` — readline-backed terminal I/O with tab-completion and history                              |
-| `parser.py`  | `Parser`    | `IParser` — `argparse.ArgumentParser` subclass that raises `ParserError` instead of calling `sys.exit` |
-| `prompt.py`  | `PromptCLI` | `IPrompt` — the main read-eval-dispatch loop                                                           |
-| `router.py`  | `Router`    | `IRouter` — route-table management, controller lookup, and help-text generation                        |
-
-> [!NOTE]
-> Session management (socket I/O, ACK framing) lives in the `connection` package, not here.
+| Module        | Responsibility                                                                    |
+| ------------- | --------------------------------------------------------------------------------- |
+| `application` | Base application composition root, route wiring, and session runner delegation    |
+| `parser`      | CLI argument parsing, client registry binding, and PluginConfig resolution        |
+| `plugin`      | Dynamic plugin discovery across tiers, contract validation, and client registries |
+| `router`      | Command routing, controller dispatching, and route usage mapping                  |
 
 ## Design Principles
 
-1. **Interface Compliance** — every class in this package implements an `interface` contract.
-2. **Synchronous Architecture** — all I/O is blocking; no async primitives.
-3. **Separation of Concerns** — console, routing, parsing, and prompting are independent.
-4. **Extensibility** — new console backends or router strategies can be added via the interface layer.
+1. **Contract Compliance** — classes implement abstractions defined in `contract`.
+2. **Infrastructure Decoupling** — routing and parsing are completely decoupled from concrete client implementations.
+3. **Multi-Tier Discovery & Precedence** — `PluginManager` discovers plugins dynamically at runtime across built-ins, PEP 621 entry points, and drop-in folders.
+4. **Validation Barrier** — `PluginManager` validates plugin classes prior to registration, preventing faulty third-party code from compromising runtime stability.

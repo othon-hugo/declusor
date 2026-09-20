@@ -38,6 +38,14 @@ Issues = "https://github.com/othonhugo/declusor/issues"
 [project.scripts]
 declusor = "declusor.main:main"
 
+[project.entry-points.pytest11]
+declusor_testing = "declusor.testing.pytest_plugin"
+
+[project.optional-dependencies]
+testing = [
+    "pytest>=8.3.4,<9",
+]
+
 [dependency-groups]
 dev = [
     "mypy>=1.18.2,<2",
@@ -56,8 +64,13 @@ link-mode = "copy"
 [tool.ruff]
 line-length = 150
 target-version = "py311"
+exclude = [
+    "plugins/*/assets/*",
+    "data/*",
+]
 
 [tool.ruff.lint]
+ignore = ["SIM117"]
 select = [
     "E",
     "F",
@@ -74,8 +87,9 @@ indent-style = "space"
 
 [tool.mypy]
 python_version = "3.12"
-mypy_path = "src"
-exclude = ["tests/*"]
+mypy_path = "src:.:plugins/shell_socket/src:plugins/py_socket/src"
+explicit_package_bases = true
+exclude = ["plugins/.*/assets/.*"]
 pretty = true
 strict = true
 disallow_any_expr = false
@@ -83,9 +97,9 @@ disallow_any_unimported = false
 disallow_subclassing_any = false
 
 [tool.pytest.ini_options]
-addopts = "-ra --strict-markers --tb=short -v"
-pythonpath = ["src"]
-testpaths = ["tests"]
+addopts = "-ra --strict-markers --tb=short -v --import-mode=importlib"
+pythonpath = ["src", ".", "plugins/shell_socket/src", "plugins/py_socket/src"]
+testpaths = ["tests", "plugins"]
 norecursedirs = [
     ".vscode",
     "__pycache__",
