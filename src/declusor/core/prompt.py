@@ -7,15 +7,25 @@ class PromptCLI(contract.IPrompt):
     Displays a ``[name] `` prefix on each input line. Handles ``KeyboardInterrupt``
     during input (stops the loop) and during command execution (skips to next
     iteration). ``DeclusorException`` errors are printed to the console without
-    terminating the session.
+    terminating the connection.
     """
 
-    def __init__(self, name: str, router: contract.IRouter, session: contract.IConnection, console: contract.IConsole) -> None:
+    def __init__(
+        self,
+        name: str,
+        /,
+        *,
+        router: contract.IRouter,
+        connection: contract.IConnection,
+        console: contract.IConsole,
+        files: contract.IClientFileStore,
+    ) -> None:
         self._prompt = f"[{name}] "
 
         self._router = router
-        self._session = session
+        self._connection = connection
         self._console = console
+        self._files = files
 
     def run(self) -> None:
         """Start the interactive prompt loop.
@@ -60,10 +70,12 @@ class PromptCLI(contract.IPrompt):
             RouterError: If the route is not registered.
         """
 
+        deps = contract.ControllerDependencies(self._connection, self._console, self._files)
+
         match command_line.split(" ", 1):
             case [route, argument]:
-                self._router.locate(route)(self._session, self._console, argument.strip())
+                self._router.locate(route)(deps, contract.ControllerRequest(argument.strip()))
             case [route]:
-                self._router.locate(route)(self._session, self._console, "")
+                self._router.locate(route)(deps, contract.ControllerRequest())
             case _:
                 raise config.PromptError(f"Invalid command: {command_line}")

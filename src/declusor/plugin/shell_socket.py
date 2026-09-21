@@ -106,6 +106,12 @@ class ShellSocketRuntime(contract.IClientRuntime):
         )
 
     @property
+    def client_files(self) -> contract.IClientFileStore:
+        """[...]"""
+
+        return self._files
+
+    @property
     def client_script(self) -> str:
         """Return the rendered shell client bootstrap script."""
 

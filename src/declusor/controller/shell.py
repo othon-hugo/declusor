@@ -1,10 +1,12 @@
-from declusor import command, contract, util
+from declusor import command, contract
 
 
-def call_shell(session: contract.IConnection, console: contract.IConsole, line: str) -> None:
+def call_shell(deps: contract.ControllerDependencies, req: contract.ControllerRequest) -> None:
     """Initiate an interactive shell session on the remote system."""
 
-    util.parse_command_arguments(line, {})
+    req.parse_arguments({})
 
-    command.LaunchShell().execute(session, console)
-    # Output processing is performed by LaunchShell.
+    command.LaunchShell(
+        deps.connection,
+        deps.console,
+    ).send_request()

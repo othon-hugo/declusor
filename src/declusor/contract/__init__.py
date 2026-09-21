@@ -2,14 +2,16 @@ from .client import ClientConfig, IClientFileStore, IClientPlugin, IClientRuntim
 from .command import ICommand
 from .connection import IConnection, IConnectionProfile
 from .console import IConsole
+from .controller import Controller, ControllerDependencies, ControllerRequest
 from .parser import IParser
 from .prompt import IPrompt
 from .router import IRouter
-from .types import Controller
 
 __all__ = [
     "ClientConfig",
     "Controller",
+    "ControllerDependencies",
+    "ControllerRequest",
     "IClientFileStore",
     "IClientPlugin",
     "IClientRuntime",

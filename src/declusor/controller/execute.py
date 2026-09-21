@@ -1,13 +1,14 @@
-from declusor import command, contract, util
+from declusor import command, contract
 
 
-def call_execute(session: contract.IConnection, console: contract.IConsole, line: str) -> None:
+def call_execute(deps: contract.ControllerDependencies, req: contract.ControllerRequest) -> None:
     """Execute a program or script from the local system on the remote system."""
 
-    arguments, _ = util.parse_command_arguments(line, {"filepath": str})
+    arguments, _ = req.parse_arguments({"filepath": str})
     filepath = arguments["filepath"]
 
-    command.ExecuteFile(filepath).execute(session, console)
-
-    for data in session.read():
-        console.write_binary_data(data)
+    command.ExecuteFile(
+        deps.connection,
+        deps.console,
+        filepath=filepath,
+    ).execute()

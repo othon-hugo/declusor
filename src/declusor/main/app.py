@@ -4,7 +4,7 @@ from declusor import config, controller, core, plugin, util
 
 
 class Application:
-    """Compose and execute one Declusor server session.
+    """Compose and execute one Declusor server connection.
 
     The application owns concrete dependencies and keeps protocol-specific
     details behind the selected client plugin runtime.
@@ -39,7 +39,7 @@ class Application:
         ).parse(argv)
 
     def run(self, options: core.DeclusorOptions, /) -> None:
-        """Run the configured server session.
+        """Run the configured server connection.
 
         Args:
             options: Parsed application and client configuration.
@@ -60,13 +60,17 @@ class Application:
         self._console.setup_completer(self._router.routes)
         self._console.write_message(client_runtime.client_script)
 
-        with (
-            util.await_connection(client_config.host, client_config.port) as socket_connection,
-            client_runtime.create_connection(socket_connection) as connection,
-        ):
-            connection.initialize()
-            prompt = core.PromptCLI(config.Settings.PROJECT_NAME, self._router, connection, self._console)
-            prompt.run()
+        with util.await_connection(client_config.host, client_config.port) as socket_connection:
+            with client_runtime.create_connection(socket_connection) as connection:
+                connection.initialize()
+
+                core.PromptCLI(
+                    config.Settings.PROJECT_NAME,
+                    router=self._router,
+                    connection=connection,
+                    console=self._console,
+                    files=client_runtime.client_files,
+                ).run()
 
     @staticmethod
     def _validate_directories(data_paths: config.DataPaths, /) -> None:

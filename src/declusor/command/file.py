@@ -12,46 +12,57 @@ class _BaseFileCommand(contract.ICommand):
 
     _OPCODE: config.OperationCode = NotImplemented
 
-    def __init__(self, filepath: str | Path) -> None:
-        """Resolve and validate *filepath* before storing it.
+    def __init__(
+        self,
+        connection: contract.IConnection,
+        console: contract.IConsole,
+        /,
+        *,
+        filepath: str | Path,
+    ) -> None:
+        """[...]
 
         Args:
-            filepath: Path to the local file to operate on.
+            connection: [...]
+            console: [...]
+            filepath: [...]
 
         Raises:
             NotImplementedError: If ``_OPCODE`` was not overridden by a subclass.
             InvalidOperation: If the file does not exist or is not a regular file.
         """
 
+        super().__init__(connection, console)
+
         if NotImplemented == self._OPCODE:
             raise NotImplementedError("FUNC_NAME must be defined in subclasses.")
 
         self._filepath = util.ensure_file_exists(filepath)
 
-    def execute(self, session: contract.IConnection, console: contract.IConsole, /) -> None:
-        """Serialize and transmit the file to the remote client.
-
-        Reads the file, base64-encodes it, wraps it in the appropriate
-        client shell command, and writes the result to *session*.
-
-        Args:
-            session: The active connection to write the command to.
-            console: Unused; present to satisfy the ``ICommand`` interface.
+    def send_request(self) -> None:
+        """[...]
 
         Raises:
             InvalidOperation: If the profile does not support the opcode.
         """
 
-        session.write(self._format_command(session.client))
+        self._connection.write(self._format_command())
 
-    def _format_command(self, profile: contract.IConnectionProfile) -> bytes:
+    def read_response(self) -> None:
+        """[...]
+
+        Raises:
+            InvalidOperation: If the profile does not support the opcode.
+        """
+
+        for data in self._connection.read():
+            self._console.write_binary_data(data)
+
+    def _format_command(self) -> bytes:
         """Build the encoded command bytes using *profile*'s operation mapping.
 
         Base64-encodes the file content, then passes it to
         ``profile.format_operation_script`` to produce the shell invocation.
-
-        Args:
-            profile: The client profile providing the operation-to-function mapping.
 
         Returns:
             UTF-8-encoded shell command string ready for transmission.
@@ -63,7 +74,7 @@ class _BaseFileCommand(contract.ICommand):
         file_content = util.load_file(self._filepath)
         file_base64 = util.convert_to_base64(file_content)
 
-        script_data = profile.render_operation_command(self._OPCODE, file_base64)
+        script_data = self._connection.client.render_operation_command(self._OPCODE, file_base64)
 
         if not script_data:
             raise config.InvalidOperation("Failed to generate script data for the file operation.")

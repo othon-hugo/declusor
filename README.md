@@ -141,7 +141,7 @@ Declusor can be extended by creating or modifying payloads in the `data` directo
 
 This directory contains scripts that are automatically transmitted to the target after a connection is established.
 
-These scripts remain loaded in memory on the target system and provide reusable subroutines that other payloads can call during the session.
+These scripts remain loaded in memory on the target system and provide reusable subroutines that other payloads can call during the connection.
 
 ### `./data/modules/`
 

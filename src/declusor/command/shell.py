@@ -11,38 +11,47 @@ class LaunchShell(contract.ICommand):
     control to the prompt loop.
     """
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        connection: contract.IConnection,
+        console: contract.IConsole,
+        /,
+    ) -> None:
+        """[...]
+
+        Args:
+            connection: [...]
+            console: [...]
+        """
+
+        super().__init__(connection, console)
+
         self._stop_event = util.TaskEvent()
         self._task_pool = util.TaskPool(self._stop_event)
 
-    def execute(self, session: contract.IConnection, console: contract.IConsole, /) -> None:
-        """Start the shell session and block until the operator exits.
+    def send_request(self) -> None:
+        """[...]"""
 
-        Registers the response-reader as a background task, starts it, then
-        runs the request-sender in the foreground. Stops all tasks on
-        ``KeyboardInterrupt`` or normal completion.
-
-        Args:
-            session: The active connection used for bidirectional I/O.
-            console: Console for reading operator input and writing output.
-        """
-
-        input_handler = self._create_shell_output_handler(session, console)
-        output_handler = self._create_shell_input_handler(session, console)
+        input_handler = self._create_shell_output_handler(self._connection, self._console)
 
         self._task_pool.add_task(input_handler)
         self._task_pool.start_all()
+
+    def read_response(self) -> None:
+        """[...]"""
+
+        output_handler = self._create_shell_input_handler(self._connection, self._console)
 
         try:
             output_handler(self._stop_event)
 
             self._task_pool.wait_all()
         except KeyboardInterrupt:
-            console.write_message("[keyboard interrupt received]")
+            self._console.write_message("[keyboard interrupt received]")
         finally:
             self._task_pool.stop()
 
-    def _create_shell_input_handler(self, session: contract.IConnection, console: contract.IConsole, /) -> util.TaskHandler:
+    def _create_shell_input_handler(self, connection: contract.IConnection, console: contract.IConsole, /) -> util.TaskHandler:
         """Return a ``TaskHandler`` that forwards operator input to the remote client.
 
         Reads lines from *console* and writes non-empty ones to *session*.
@@ -54,11 +63,11 @@ class LaunchShell(contract.ICommand):
                 command_request = console.read_line()
 
                 if command_request:
-                    session.write(command_request.encode())
+                    connection.write(command_request.encode())
 
         return _handle_request
 
-    def _create_shell_output_handler(self, session: contract.IConnection, console: contract.IConsole, /) -> util.TaskHandler:
+    def _create_shell_output_handler(self, connection: contract.IConnection, console: contract.IConsole, /) -> util.TaskHandler:
         """Return a ``TaskHandler`` that streams remote output to the console.
 
         Removes the session timeout for the duration of the shell (blocking
@@ -67,15 +76,15 @@ class LaunchShell(contract.ICommand):
         """
 
         def _handle_response(stop_event: util.TaskEvent) -> None:
-            previous_timeout = session.timeout
+            previous_timeout = connection.timeout
 
             try:
-                session.timeout = None
+                connection.timeout = None
 
                 while not stop_event.is_set():
-                    for chunk in session.read():
+                    for chunk in connection.read():
                         console.write_binary_data(chunk)
             finally:
-                session.timeout = previous_timeout
+                connection.timeout = previous_timeout
 
         return _handle_response
