@@ -22,7 +22,7 @@ def create_help_controller(get_documentation: DocumentationProvider, get_route_u
 
         arguments, _ = req.parse_arguments({"command": str | None})
 
-        if help_command := arguments["command"]:
+        if help_command := arguments.get("command"):
             deps.console.write_message(f"{help_command}: {get_route_usage(help_command)}")
         else:
             deps.console.write_message(get_documentation())
