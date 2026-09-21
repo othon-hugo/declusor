@@ -1,9 +1,9 @@
 from pathlib import Path
 
-from declusor import config, interface, util
+from declusor import config, contract, util
 
 
-class _BaseFileCommand(interface.ICommand):
+class _BaseFileCommand(contract.ICommand):
     """Shared logic for commands that base64-encode a local file and invoke a client function.
 
     Subclasses set ``_OPCODE`` to select the appropriate client-side function
@@ -28,7 +28,7 @@ class _BaseFileCommand(interface.ICommand):
 
         self._filepath = util.ensure_file_exists(filepath)
 
-    def execute(self, session: interface.IConnection, console: interface.IConsole, /) -> None:
+    def execute(self, session: contract.IConnection, console: contract.IConsole, /) -> None:
         """Serialize and transmit the file to the remote client.
 
         Reads the file, base64-encodes it, wraps it in the appropriate
@@ -44,7 +44,7 @@ class _BaseFileCommand(interface.ICommand):
 
         session.write(self._format_command(session.client))
 
-    def _format_command(self, profile: interface.IConnectionProfile) -> bytes:
+    def _format_command(self, profile: contract.IConnectionProfile) -> bytes:
         """Build the encoded command bytes using *profile*'s operation mapping.
 
         Base64-encodes the file content, then passes it to

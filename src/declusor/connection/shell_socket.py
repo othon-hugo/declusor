@@ -4,11 +4,11 @@ from pathlib import Path
 from socket import socket
 from types import MappingProxyType
 
-from declusor import config, interface, util
+from declusor import config, contract, util
 
 
 @dataclass(frozen=True)
-class ShellSocketProfile(interface.IConnectionProfile):
+class ShellSocketProfile(contract.IConnectionProfile):
     """Immutable configuration profile for a shell-over-socket client.
 
     All fields are set at construction time; the dataclass is frozen to prevent
@@ -87,7 +87,7 @@ class ShellSocketProfile(interface.IConnectionProfile):
         return function_name + (" " + " ".join(util.quote(a) for a in args) if args else "")
 
 
-class ShellSocketFileStore(interface.IClientFileStore):
+class ShellSocketFileStore(contract.IClientFileStore):
     """Filesystem adapter for shell client templates, libraries and payloads."""
 
     def __init__(
@@ -162,7 +162,7 @@ class ShellSocketFileStore(interface.IClientFileStore):
         return util.load_file(module_path)
 
 
-class ShellSocketConnection(interface.IConnection):
+class ShellSocketConnection(contract.IConnection):
     """``IConnection`` implementation over a raw TCP socket.
 
     Wraps a connected ``socket.socket``, applies ACK-based framing for all
@@ -171,7 +171,7 @@ class ShellSocketConnection(interface.IConnection):
     automatically when the ``with`` block exits.
     """
 
-    def __init__(self, connection: socket, profile: ShellSocketProfile, files: interface.IClientFileStore, /) -> None:
+    def __init__(self, connection: socket, profile: ShellSocketProfile, files: contract.IClientFileStore, /) -> None:
         """Bind a live socket to a profile and prepare the session for use.
 
         Sets the socket timeout from the profile, then pre-render the client
@@ -212,7 +212,7 @@ class ShellSocketConnection(interface.IConnection):
             raise config.ConnectionFailure("failed waiting for client ACK during session initialization.") from error
 
     @property
-    def client(self) -> interface.IConnectionProfile:
+    def client(self) -> contract.IConnectionProfile:
         """The ``ShellSocketProfile`` used to configure this connection."""
 
         return self._profile

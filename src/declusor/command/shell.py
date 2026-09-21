@@ -1,7 +1,7 @@
-from declusor import interface, util
+from declusor import contract, util
 
 
-class LaunchShell(interface.ICommand):
+class LaunchShell(contract.ICommand):
     """Open an interactive bidirectional shell session with the remote client.
 
     Spawns a background thread to stream responses from the client while the
@@ -15,7 +15,7 @@ class LaunchShell(interface.ICommand):
         self._stop_event = util.TaskEvent()
         self._task_pool = util.TaskPool(self._stop_event)
 
-    def execute(self, session: interface.IConnection, console: interface.IConsole, /) -> None:
+    def execute(self, session: contract.IConnection, console: contract.IConsole, /) -> None:
         """Start the shell session and block until the operator exits.
 
         Registers the response-reader as a background task, starts it, then
@@ -42,7 +42,7 @@ class LaunchShell(interface.ICommand):
         finally:
             self._task_pool.stop()
 
-    def _create_shell_input_handler(self, session: interface.IConnection, console: interface.IConsole, /) -> util.TaskHandler:
+    def _create_shell_input_handler(self, session: contract.IConnection, console: contract.IConsole, /) -> util.TaskHandler:
         """Return a ``TaskHandler`` that forwards operator input to the remote client.
 
         Reads lines from *console* and writes non-empty ones to *session*.
@@ -58,7 +58,7 @@ class LaunchShell(interface.ICommand):
 
         return _handle_request
 
-    def _create_shell_output_handler(self, session: interface.IConnection, console: interface.IConsole, /) -> util.TaskHandler:
+    def _create_shell_output_handler(self, session: contract.IConnection, console: contract.IConsole, /) -> util.TaskHandler:
         """Return a ``TaskHandler`` that streams remote output to the console.
 
         Removes the session timeout for the duration of the shell (blocking

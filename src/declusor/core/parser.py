@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Final, TypedDict
 
-from declusor import config, interface, util
+from declusor import config, contract, util
 from declusor.core.clients import ClientRegistry
 
 
@@ -11,10 +11,10 @@ class DeclusorOptions(TypedDict):
 
     host: str
     port: int
-    client: interface.ClientConfig
+    client: contract.ClientConfig
 
 
-class DeclusorParser(util.Parser, interface.IParser[DeclusorOptions]):
+class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
     """Parser for command-line arguments."""
 
     flags: Final[dict[str, str]] = {

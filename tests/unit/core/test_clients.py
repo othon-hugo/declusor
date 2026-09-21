@@ -1,11 +1,11 @@
 from socket import socket
 
-from declusor import config, interface, util
+from declusor import config, contract, util
 from declusor.core.clients import ClientRegistry
 from declusor.core.parser import DeclusorParser
 
 
-class FakeRuntime(interface.IClientRuntime):
+class FakeRuntime(contract.IClientRuntime):
     """Minimal runtime used to satisfy the fake plugin contract."""
 
     @property
@@ -14,13 +14,13 @@ class FakeRuntime(interface.IClientRuntime):
 
         return ""
 
-    def create_connection(self, connection: socket, /) -> interface.IConnection:
+    def create_connection(self, connection: socket, /) -> contract.IConnection:
         """The fake runtime does not create real connections."""
 
         raise NotImplementedError
 
 
-class FakePlugin(interface.IClientPlugin):
+class FakePlugin(contract.IClientPlugin):
     """Client plugin used to verify registry isolation."""
 
     name = "fake"
@@ -30,17 +30,17 @@ class FakePlugin(interface.IClientPlugin):
         """Register no client-specific arguments."""
 
     @classmethod
-    def build_config(cls, args: util.Namespace, data_paths: config.DataPaths, /) -> interface.ClientConfig:
+    def build_config(cls, args: util.Namespace, data_paths: config.DataPaths, /) -> contract.ClientConfig:
         """Build a configuration identifying the fake client."""
 
-        return interface.ClientConfig(cls.name, args.host, args.port, data_paths=data_paths)
+        return contract.ClientConfig(cls.name, args.host, args.port, data_paths=data_paths)
 
     @classmethod
-    def validate(cls, client_config: interface.ClientConfig, /) -> None:
+    def validate(cls, client_config: contract.ClientConfig, /) -> None:
         """Accept the fake configuration."""
 
     @classmethod
-    def build_runtime(cls, client_config: interface.ClientConfig, /) -> interface.IClientRuntime:
+    def build_runtime(cls, client_config: contract.ClientConfig, /) -> contract.IClientRuntime:
         """Build the fake runtime."""
 
         return FakeRuntime()

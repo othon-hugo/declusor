@@ -1,7 +1,7 @@
-from declusor import config, interface
+from declusor import config, contract
 
 
-class Router(interface.IRouter):
+class Router(contract.IRouter):
     """Default ``IRouter`` implementation backed by an in-memory dictionary.
 
     Routes are registered via ``connect`` and dispatched via ``locate``.
@@ -11,7 +11,7 @@ class Router(interface.IRouter):
     """
 
     def __init__(self) -> None:
-        self._route_table: dict[str, interface.Controller] = {}
+        self._route_table: dict[str, contract.Controller] = {}
 
     @property
     def routes(self) -> tuple[str, ...]:
@@ -31,7 +31,7 @@ class Router(interface.IRouter):
 
         return documentation
 
-    def connect(self, route: str, controller: interface.Controller, /) -> None:
+    def connect(self, route: str, controller: contract.Controller, /) -> None:
         """Register *controller* under *route*.
 
         Raises:
@@ -45,7 +45,7 @@ class Router(interface.IRouter):
 
         self._route_table[route] = controller
 
-    def locate(self, route: str, /) -> interface.Controller:
+    def locate(self, route: str, /) -> contract.Controller:
         """Return the controller bound to *route*.
 
         Raises:

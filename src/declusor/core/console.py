@@ -7,10 +7,10 @@ from collections.abc import Sequence
 from contextlib import suppress
 from pathlib import Path
 
-from declusor import interface
+from declusor import contract
 
 
-class Console(interface.IConsole):
+class Console(contract.IConsole):
     """Console implementation using readline for input and output."""
 
     def __init__(self) -> None:
