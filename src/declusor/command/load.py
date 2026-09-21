@@ -1,9 +1,9 @@
 from pathlib import Path
 
-from declusor import config, interface, util
+from declusor import config, contract, util
 
 
-class LoadPayload(interface.ICommand):
+class LoadPayload(contract.ICommand):
     """Send a pre-built payload file verbatim to the remote client.
 
     Unlike ``ExecuteFile``, the file is not base64-encoded; it is sent as raw
@@ -23,7 +23,7 @@ class LoadPayload(interface.ICommand):
 
         self._filepath = util.ensure_file_exists(filepath)
 
-    def execute(self, session: interface.IConnection, console: interface.IConsole, /) -> None:
+    def execute(self, session: contract.IConnection, console: contract.IConsole, /) -> None:
         """Read and transmit the payload file to the remote client.
 
         Args:

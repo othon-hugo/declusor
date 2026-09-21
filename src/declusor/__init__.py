@@ -1,4 +1,4 @@
-from . import command, config, connection, controller, core, interface, main, plugin, util
+from . import command, config, connection, controller, core, contract, main, plugin, util
 
 __all__ = [
     "command",
@@ -6,7 +6,7 @@ __all__ = [
     "connection",
     "controller",
     "core",
-    "interface",
+    "contract",
     "main",
     "plugin",
     "util",

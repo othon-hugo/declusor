@@ -7,7 +7,7 @@ from declusor import config, util
 from declusor.config import DataPaths
 
 if TYPE_CHECKING:
-    from declusor.interface.connection import IConnection
+    from declusor.contract.connection import IConnection
 
 
 @dataclass(frozen=True)

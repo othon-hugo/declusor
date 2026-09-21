@@ -1,7 +1,7 @@
-from declusor import command, interface, util
+from declusor import command, contract, util
 
 
-def call_execute(session: interface.IConnection, console: interface.IConsole, line: str) -> None:
+def call_execute(session: contract.IConnection, console: contract.IConsole, line: str) -> None:
     """Execute a program or script from the local system on the remote system."""
 
     arguments, _ = util.parse_command_arguments(line, {"filepath": str})

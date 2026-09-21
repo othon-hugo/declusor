@@ -1,8 +1,8 @@
 from typing import TypeAlias
 
-from declusor import config, interface
+from declusor import config, contract
 
-ClientPlugin: TypeAlias = type[interface.IClientPlugin]
+ClientPlugin: TypeAlias = type[contract.IClientPlugin]
 
 
 class ClientRegistry:

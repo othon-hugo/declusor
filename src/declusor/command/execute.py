@@ -1,7 +1,7 @@
-from declusor import interface
+from declusor import contract
 
 
-class ExecuteCommand(interface.ICommand):
+class ExecuteCommand(contract.ICommand):
     """Send a raw shell command string to the remote client for execution."""
 
     def __init__(self, command_line: str) -> None:
@@ -13,7 +13,7 @@ class ExecuteCommand(interface.ICommand):
 
         self._command_line = command_line.encode()
 
-    def execute(self, session: interface.IConnection, console: interface.IConsole, /) -> None:
+    def execute(self, session: contract.IConnection, console: contract.IConsole, /) -> None:
         """Transmit the command to the remote client.
 
         Args:

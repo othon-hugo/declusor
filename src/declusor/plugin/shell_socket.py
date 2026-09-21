@@ -1,11 +1,11 @@
 from pathlib import Path
 from socket import socket
 
-from declusor import config, interface, util
+from declusor import config, contract, util
 from declusor import connection as connection_module
 
 
-class ShellSocketPlugin(interface.IClientPlugin):
+class ShellSocketPlugin(contract.IClientPlugin):
     """Plugin that configures the shell-socket client."""
 
     name = str(config.ClientFile.SHELL_SOCKET)
@@ -23,7 +23,7 @@ class ShellSocketPlugin(interface.IClientPlugin):
         return None
 
     @classmethod
-    def build_config(cls, args: util.Namespace, data_paths: config.DataPaths, /) -> interface.ClientConfig:
+    def build_config(cls, args: util.Namespace, data_paths: config.DataPaths, /) -> contract.ClientConfig:
         """Build the shell-socket client configuration.
 
         Args:
@@ -36,7 +36,7 @@ class ShellSocketPlugin(interface.IClientPlugin):
 
         client_path = data_paths.clients / cls.name
 
-        return interface.ClientConfig(
+        return contract.ClientConfig(
             kind=cls.name,
             host=args.host,
             port=args.port,
@@ -47,7 +47,7 @@ class ShellSocketPlugin(interface.IClientPlugin):
         )
 
     @classmethod
-    def validate(cls, client_config: interface.ClientConfig, /) -> None:
+    def validate(cls, client_config: contract.ClientConfig, /) -> None:
         """Validate the shell-socket client configuration.
 
         Args:
@@ -73,7 +73,7 @@ class ShellSocketPlugin(interface.IClientPlugin):
             raise config.ParserError(f"Client file does not exist: {client_path}")
 
     @classmethod
-    def build_runtime(cls, client_config: interface.ClientConfig, /) -> interface.IClientRuntime:
+    def build_runtime(cls, client_config: contract.ClientConfig, /) -> contract.IClientRuntime:
         """Build the shell-socket runtime from client configuration.
 
         Args:
@@ -86,10 +86,10 @@ class ShellSocketPlugin(interface.IClientPlugin):
         return ShellSocketRuntime(client_config)
 
 
-class ShellSocketRuntime(interface.IClientRuntime):
+class ShellSocketRuntime(contract.IClientRuntime):
     """Runtime adapter between shell client configuration and its transport."""
 
-    def __init__(self, client_config: interface.ClientConfig, /) -> None:
+    def __init__(self, client_config: contract.ClientConfig, /) -> None:
         self._client_config = client_config
 
         self._profile = connection_module.ShellSocketProfile(
@@ -115,7 +115,7 @@ class ShellSocketRuntime(interface.IClientRuntime):
             self._profile.ack_client_raw,
         )
 
-    def create_connection(self, connection: socket, /) -> interface.IConnection:
+    def create_connection(self, connection: socket, /) -> contract.IConnection:
         """Create a shell-socket connection for an accepted socket.
 
         Args:

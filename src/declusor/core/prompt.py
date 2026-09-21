@@ -1,7 +1,7 @@
-from declusor import config, interface
+from declusor import config, contract
 
 
-class PromptCLI(interface.IPrompt):
+class PromptCLI(contract.IPrompt):
     """Readline-backed interactive prompt that routes commands to registered controllers.
 
     Displays a ``[name] `` prefix on each input line. Handles ``KeyboardInterrupt``
@@ -10,7 +10,7 @@ class PromptCLI(interface.IPrompt):
     terminating the session.
     """
 
-    def __init__(self, name: str, router: interface.IRouter, session: interface.IConnection, console: interface.IConsole) -> None:
+    def __init__(self, name: str, router: contract.IRouter, session: contract.IConnection, console: contract.IConsole) -> None:
         self._prompt = f"[{name}] "
 
         self._router = router

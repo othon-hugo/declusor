@@ -1,7 +1,7 @@
-from declusor import command, interface, util
+from declusor import command, contract, util
 
 
-def call_load(session: interface.IConnection, console: interface.IConsole, line: str) -> None:
+def call_load(session: contract.IConnection, console: contract.IConsole, line: str) -> None:
     """Load a payload file from your local system and execute it on the remote system"""
 
     arguments, _ = util.parse_command_arguments(line, {"filepath": str})
