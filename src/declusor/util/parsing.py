@@ -1,15 +1,24 @@
 import shlex
+import types
 from argparse import ArgumentParser, HelpFormatter
 from collections.abc import Callable, Mapping
-from typing import Any, NoReturn, Union, get_args, get_origin
+from typing import Any, NoReturn, TypeAlias, Union, get_args, get_origin
 
 from declusor import config
 
-ArgumentDefinitions = Mapping[str, type[Any] | Any]
-"""The definitions: `argument name` -> `expected type`"""
+union_types = (Union, types.UnionType)
 
-ParsedArguments = dict[str, Any]
-"""The parsed result: `argument name` -> `actual value`"""
+SupportedType: TypeAlias = type[str] | type[int]
+"""Tipos primitivos aceitos como argumentos de linha de comando."""
+
+ArgumentType: TypeAlias = SupportedType | types.UnionType | Any
+"""Especificação de tipo para um argumento, incluindo formas opcionais."""
+
+ArgumentDefinitions: TypeAlias = Mapping[str, ArgumentType]
+"""Mapeamento de nomes de argumentos para seus respectivos tipos esperados."""
+
+ParsedArguments: TypeAlias = dict[str, Any]
+"""Resultado do processamento contendo os pares argumento-valor extraídos."""
 
 
 class Parser(ArgumentParser):
@@ -41,6 +50,51 @@ class Parser(ArgumentParser):
         return HelpFormatter(prog, max_help_position=30)
 
 
+def build_command_parser(definitions: ArgumentDefinitions) -> Parser:
+    """Builds and configures a command parser based on argument definitions.
+
+    Args:
+        definitions: A mapping of argument names to their expected types.
+
+    Returns:
+        A configured Parser instance ready to process input arguments.
+
+    Raises:
+        InvalidOperation: If an argument type is not supported.
+    """
+
+    supported_types: set[SupportedType] = {str, int}
+    parser: Parser = Parser(add_help=False)
+
+    for arg_name, raw_type in definitions.items():
+        origin: Any = get_origin(raw_type)
+        is_optional: bool = False
+        target_type: Any = raw_type
+
+        if origin in union_types:
+            all_args: tuple[Any, ...] = get_args(raw_type)
+            non_none_args: list[Any] = [a for a in all_args if a is not type(None)]
+
+            if len(non_none_args) < len(all_args):
+                is_optional = True
+
+            if len(non_none_args) == 1:
+                target_type = non_none_args[0]
+
+        if target_type not in supported_types:
+            raise config.InvalidOperation(f"Argument type {target_type!r} for {arg_name!r} is not supported.")
+
+        kwargs: dict[str, Any] = {"type": target_type}
+
+        if is_optional:
+            kwargs["nargs"] = "?"
+            kwargs["default"] = None
+
+        parser.add_argument(arg_name, **kwargs)
+
+    return parser
+
+
 def parse_command_arguments(line: str, definitions: ArgumentDefinitions, allow_unknown: bool = False) -> tuple[ParsedArguments, list[str]]:
     """Parses command arguments from a string based on provided definitions.
 
@@ -58,46 +112,19 @@ def parse_command_arguments(line: str, definitions: ArgumentDefinitions, allow_u
         InvalidOperation: If an argument type is not supported or if there is a parsing error.
     """
 
-    line = line.strip()
+    cleaned_line: str = line.strip()
 
-    if line == "":
-        return (dict(), list())
-
-    supported_types: set[type[Any]] = {str, int}
-
-    if not definitions and not line.strip():
+    if not cleaned_line:
         return {}, []
 
-    parser = Parser(add_help=False)
-
-    for arg_name, arg_type in definitions.items():
-        origin, is_optional = get_origin(arg_type), False
-
-        if origin is Union:
-            origin_types = get_args(arg_type)
-
-            if type(None) in origin_types:
-                is_optional = True
-
-                actual_types: list[type[Any]] = [a for a in origin_types if not isinstance(a, type(None))]
-
-                if actual_types:
-                    arg_type = actual_types[0]
-
-        if arg_type not in supported_types:
-            raise config.InvalidOperation(f"Argument type {arg_type!r} for {arg_name!r} is not supported.")
-
-        kwargs: dict[str, Any] = {"type": arg_type}
-
-        if is_optional:
-            kwargs["nargs"] = "?"
-
-        parser.add_argument(arg_name, **kwargs)
+    parser: Parser = build_command_parser(definitions)
 
     try:
-        args_list = shlex.split(line)
+        args_list: list[str] = shlex.split(cleaned_line)
     except ValueError as e:
         raise config.InvalidOperation(f"Parsing error: {e}") from e
+
+    unrecognized_args: list[str]
 
     if allow_unknown:
         namespace, unrecognized_args = parser.parse_known_args(args_list)
@@ -105,9 +132,4 @@ def parse_command_arguments(line: str, definitions: ArgumentDefinitions, allow_u
         namespace = parser.parse_args(args_list)
         unrecognized_args = []
 
-    parsed_args: dict[str, Any] = {}
-
-    for k, v in vars(namespace).items():
-        parsed_args[k] = v
-
-    return parsed_args, unrecognized_args
+    return vars(namespace), unrecognized_args
