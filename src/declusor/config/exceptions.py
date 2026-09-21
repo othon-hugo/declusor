@@ -120,6 +120,21 @@ class ControllerError(DeclusorException):
         super().__init__(f"controller error: {self.description}")
 
 
+class CommandError(DeclusorException):
+    """[...]"""
+
+    def __init__(self, /, description: str) -> None:
+        """Initialize the exception.
+
+        Args:
+            description: Detailed explanation of the command error.
+        """
+
+        self.description = description
+
+        super().__init__(f"command error: {self.description}")
+
+
 class ExitRequest(DeclusorException):
     """Raised to signal a request to exit the application gracefully.
 

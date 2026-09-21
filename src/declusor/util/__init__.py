@@ -14,11 +14,12 @@ from .encoding import (
     quote,
 )
 from .network import await_connection
-from .parsing import Parser, parse_command_arguments
+from .parsing import ArgumentDefinitions, ParsedArguments, Parser, parse_command_arguments
 from .security import validate_file_extension, validate_file_relative
 from .storage import ensure_directory_exists, ensure_file_exists, load_file, try_load_file
 
 __all__ = [
+    "ArgumentDefinitions",
     "await_connection",
     "convert_base64_to_bytes",
     "convert_bytes_to_hex",
@@ -35,6 +36,7 @@ __all__ = [
     "load_file",
     "Namespace",
     "parse_command_arguments",
+    "ParsedArguments",
     "Parser",
     "quote",
     "Task",

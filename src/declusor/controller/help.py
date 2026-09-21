@@ -1,6 +1,6 @@
 from collections.abc import Callable
 
-from declusor import contract, util
+from declusor import contract
 
 DocumentationProvider = Callable[[], str]
 RouteUsageProvider = Callable[[str], str]
@@ -17,14 +17,14 @@ def create_help_controller(get_documentation: DocumentationProvider, get_route_u
         Help controller function.
     """
 
-    def call_help(session: contract.IConnection, console: contract.IConsole, line: str) -> None:
+    def call_help(deps: contract.ControllerDependencies, req: contract.ControllerRequest) -> None:
         """Display detailed information about available commands or a specific command."""
 
-        arguments, _ = util.parse_command_arguments(line, {"command": str | None})
+        arguments, _ = req.parse_arguments({"command": str | None})
 
         if help_command := arguments["command"]:
-            console.write_message(f"{help_command}: {get_route_usage(help_command)}")
+            deps.console.write_message(f"{help_command}: {get_route_usage(help_command)}")
         else:
-            console.write_message(get_documentation())
+            deps.console.write_message(get_documentation())
 
     return call_help

@@ -1,5 +1,6 @@
 from .enums import ClientFile, OperationCode
 from .exceptions import (
+    CommandError,
     ConnectionFailure,
     ControllerError,
     DeclusorException,
@@ -18,6 +19,7 @@ __all__ = [
     "ClientFile",
     "ConnectionFailure",
     "ControllerError",
+    "CommandError",
     "DeclusorException",
     "DeclusorWarning",
     "ExitRequest",

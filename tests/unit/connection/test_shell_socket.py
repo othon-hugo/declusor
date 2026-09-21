@@ -29,9 +29,9 @@ def test_write_uses_sendall_for_payload_and_ack(tmp_path: Path) -> None:
     """Writing a message must transmit the payload and ACK completely."""
 
     socket_connection = MagicMock()
-    session = _create_connection(tmp_path, socket_connection)
+    connection = _create_connection(tmp_path, socket_connection)
 
-    session.write(b"command")
+    connection.write(b"command")
 
     assert socket_connection.sendall.call_args_list == [((b"command",),), ((b"\x00",),)]
 
@@ -52,9 +52,9 @@ def test_write_translates_transport_errors(tmp_path: Path, error: BaseException)
     socket_connection = MagicMock()
     socket_connection.sendall.side_effect = error
 
-    session = _create_connection(tmp_path, socket_connection)
+    connection = _create_connection(tmp_path, socket_connection)
 
     with pytest.raises(config.ConnectionFailure) as raised:
-        session.write(b"command")
+        connection.write(b"command")
 
     assert raised.value.__cause__ is error

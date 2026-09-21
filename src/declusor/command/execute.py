@@ -4,21 +4,33 @@ from declusor import contract
 class ExecuteCommand(contract.ICommand):
     """Send a raw shell command string to the remote client for execution."""
 
-    def __init__(self, command_line: str) -> None:
-        """Encode *command_line* as UTF-8 bytes for transmission.
+    def __init__(
+        self,
+        connection: contract.IConnection,
+        console: contract.IConsole,
+        /,
+        *,
+        command_line: str,
+    ) -> None:
+        """[...]
 
         Args:
-            command_line: The shell command to run on the remote system.
+            connection: [...]
+            console: [...]
+            command_line: [...]
         """
+
+        super().__init__(connection, console)
 
         self._command_line = command_line.encode()
 
-    def execute(self, session: contract.IConnection, console: contract.IConsole, /) -> None:
-        """Transmit the command to the remote client.
+    def send_request(self) -> None:
+        """[...]"""
 
-        Args:
-            session: The active connection to write the command to.
-            console: Unused; present to satisfy the ``ICommand`` interface.
-        """
+        self._connection.write(self._command_line)
 
-        session.write(self._command_line)
+    def read_response(self) -> None:
+        """[...]"""
+
+        for data in self._connection.read():
+            self._console.write_binary_data(data)

@@ -1,13 +1,15 @@
-from declusor import command, contract, util
+from declusor import command, contract
 
 
-def call_load(session: contract.IConnection, console: contract.IConsole, line: str) -> None:
-    """Load a payload file from your local system and execute it on the remote system"""
+def call_load(deps: contract.ControllerDependencies, req: contract.ControllerRequest) -> None:
+    """Load a selected module from ``data/modules`` on the remote system."""
 
-    arguments, _ = util.parse_command_arguments(line, {"filepath": str})
-    filepath = arguments["filepath"]
+    arguments, _ = req.parse_arguments({"module": str})
+    module_name = arguments["module"]
 
-    command.LoadPayload(filepath).execute(session, console)
-
-    for data in session.read():
-        console.write_binary_data(data)
+    command.LoadModule(
+        deps.connection,
+        deps.console,
+        deps.files,
+        module_name=module_name,
+    ).execute()

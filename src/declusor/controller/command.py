@@ -1,13 +1,14 @@
-from declusor import command, contract, util
+from declusor import command, contract
 
 
-def call_command(session: contract.IConnection, console: contract.IConsole, line: str) -> None:
+def call_command(deps: contract.ControllerDependencies, req: contract.ControllerRequest) -> None:
     """Execute a single command on the remote system."""
 
-    arguments, _ = util.parse_command_arguments(line, {"command": str})
+    arguments, _ = req.parse_arguments({"command": str})
     command_line = arguments["command"]
 
-    command.ExecuteCommand(command_line).execute(session, console)
-
-    for data in session.read():
-        console.write_binary_data(data)
+    command.ExecuteCommand(
+        deps.connection,
+        deps.console,
+        command_line=command_line,
+    ).execute()

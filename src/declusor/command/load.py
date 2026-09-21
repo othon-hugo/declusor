@@ -1,40 +1,45 @@
-from pathlib import Path
-
-from declusor import config, contract, util
+from declusor import config, contract
 
 
-class LoadPayload(contract.ICommand):
-    """Send a pre-built payload file verbatim to the remote client.
+class LoadModule(contract.ICommand):
+    """Send an operator-selected module to the remote client.
 
-    Unlike ``ExecuteFile``, the file is not base64-encoded; it is sent as raw
-    bytes. Intended for payloads already formatted for direct execution by the
-    client runtime.
+    Modules are resolved by the active connection's client file store and are
+    distinct from libraries, which are loaded automatically during startup.
     """
 
-    def __init__(self, filepath: str | Path) -> None:
-        """Resolve and validate *filepath*.
+    def __init__(
+        self,
+        connection: contract.IConnection,
+        console: contract.IConsole,
+        files: contract.IClientFileStore,
+        /,
+        *,
+        module_name: str,
+    ) -> None:
+        """[...]
 
         Args:
-            filepath: Path to the payload file to send.
-
-        Raises:
-            InvalidOperation: If the file does not exist or is not a regular file.
+            connection: [...]
+            console: [...]
+            files: [...]
+            module_name: [...]
         """
 
-        self._filepath = util.ensure_file_exists(filepath)
+        super().__init__(connection, console, files)
 
-    def execute(self, session: contract.IConnection, console: contract.IConsole, /) -> None:
-        """Read and transmit the payload file to the remote client.
+        if self._files is None:
+            raise config.CommandError("[...]")
 
-        Args:
-            session: The active connection to write the payload to.
-            console: Unused; present to satisfy the ``ICommand`` interface.
+        self._module_name = module_name
 
-        Raises:
-            InvalidOperation: If the file content cannot be read.
-        """
+    def send_request(self) -> None:
+        """[...]"""
 
-        if (file_content := util.try_load_file(self._filepath)) is None:
-            raise config.InvalidOperation(f"failed to load file content: {self._filepath!r}")
+        self._connection.write(self._files.load_module(self._module_name))
 
-        session.write(file_content)
+    def read_response(self) -> None:
+        """[...]"""
+
+        for data in self._connection.read():
+            self._console.write_binary_data(data)

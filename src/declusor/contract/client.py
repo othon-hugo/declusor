@@ -43,6 +43,13 @@ class IClientRuntime(ABC):
 
     @property
     @abstractmethod
+    def client_files(self) -> "IClientFileStore":
+        """[...]"""
+
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
     def client_script(self) -> str:
         """Return the rendered client bootstrap script."""
 

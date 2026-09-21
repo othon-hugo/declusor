@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from declusor.contract.types import Controller
+    from declusor.contract.controller import Controller
 
 
 class IRouter(ABC):

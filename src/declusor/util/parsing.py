@@ -58,6 +58,11 @@ def parse_command_arguments(line: str, definitions: ArgumentDefinitions, allow_u
         InvalidOperation: If an argument type is not supported or if there is a parsing error.
     """
 
+    line = line.strip()
+
+    if line == "":
+        return (dict(), list())
+
     supported_types: set[type[Any]] = {str, int}
 
     if not definitions and not line.strip():
