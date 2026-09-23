@@ -1,12 +1,14 @@
 from declusor import command, contract
 
 
-def call_shell(deps: contract.ControllerDependencies, req: contract.ControllerRequest) -> None:
+def call_shell(deps: contract.ControllerDependencies, req: contract.ControllerRequest) -> contract.ControllerResult:
     """Initiate an interactive shell session on the remote system."""
 
     req.parse_arguments({})
 
     command.LaunchShell(
-        deps.connection,
-        deps.console,
-    ).send_request()
+        connection=deps.connection,
+        console=deps.console,
+    ).execute()
+
+    return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)

@@ -28,160 +28,161 @@ Declusor is a command-and-control (C2) framework built with clean architecture p
 graph TB
     subgraph "Foundation Layer"
         CONFIG[config<br/>Configuration & Exceptions]
-        INTERFACE[interface<br/>Domain Abstractions]
         UTIL[util<br/>Shared Utilities]
+        CONTRACT[contract<br/>Domain Abstractions & Contracts]
     end
 
     subgraph "Implementation Layer"
-        CONNECTION[connection<br/>Transport Implementations]
-        CORE[core<br/>Infrastructure Implementations]
-        COMMAND[command<br/>Operation Implementations]
+        CORE[core<br/>Infrastructure: Router, Registry, Parser]
+        PRESENTATION[presentation<br/>View Layer: Console, PromptCLI]
         CONTROLLER[controller<br/>Request Handlers]
+        COMMAND[command<br/>Operation Implementations]
+        CONNECTION[connection<br/>Transport State Machine]
+        PLUGIN[plugin<br/>Client Plugins & Runtimes]
     end
 
     subgraph "Application Layer"
-        MAIN[main<br/>Orchestration & DI]
+        MAIN[main<br/>Composition Root & DI]
     end
 
-    %% Dependencies (what depends on what)
-    CONNECTION -->|implements| INTERFACE
+    %% Dependencies
+    UTIL -->|uses| CONFIG
+    CONTRACT -->|uses| CONFIG
+    CONTRACT -->|uses| UTIL
+
+    CORE -->|implements| CONTRACT
+    CORE -->|uses| CONFIG
+    CORE -->|uses| UTIL
+
+    PRESENTATION -->|implements| CONTRACT
+    PRESENTATION -->|uses| CONFIG
+    PRESENTATION -->|uses| UTIL
+
+    CONNECTION -->|implements| CONTRACT
     CONNECTION -->|uses| CONFIG
     CONNECTION -->|uses| UTIL
 
-    CORE -->|implements| INTERFACE
-    CORE -->|uses| CONFIG
-
-    COMMAND -->|implements| INTERFACE
+    COMMAND -->|implements| CONTRACT
     COMMAND -->|uses| CONFIG
     COMMAND -->|uses| UTIL
 
-    CONTROLLER -->|depends on| INTERFACE
+    CONTROLLER -->|depends on| CONTRACT
     CONTROLLER -->|uses| COMMAND
+    CONTROLLER -->|uses| CONFIG
 
-    MAIN -->|uses| CONNECTION
-    MAIN -->|uses| CORE
-    MAIN -->|uses| CONTROLLER
-    MAIN -->|uses| CONFIG
+    PLUGIN -->|implements| CONTRACT
+    PLUGIN -->|uses| CONNECTION
+    PLUGIN -->|uses| CONFIG
+    PLUGIN -->|uses| UTIL
 
-    UTIL -->|uses| CONFIG
-
-    classDef foundation fill:#e1f5ff,stroke:#01579b,stroke-width:2px
-    classDef implementation fill:#fff9c4,stroke:#f57f17,stroke-width:2px
-    classDef application fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-
-    class CONFIG,INTERFACE,UTIL foundation
-    class CONNECTION,CORE,COMMAND,CONTROLLER implementation
-    class MAIN application
+    MAIN -->|wires| PRESENTATION
+    MAIN -->|wires| CONTROLLER
+    MAIN -->|wires| CORE
+    MAIN -->|wires| PLUGIN
+    MAIN -->|wires| CONNECTION
 ```
-
-**Legend:**
-
-- **Solid arrows**: Compile-time dependencies (imports)
 
 ## Package Responsibilities
 
 ### Foundation Layer
 
-#### `interface` (Domain Layer)
+#### `contract` (Domain Layer)
 
-Defines abstract contracts for all system components. No external dependencies.
+Defines abstract contracts for all system components. Depends only on foundation utilities and configuration.
 
-| Interface     | Role                                                            |
-| ------------- | --------------------------------------------------------------- |
-| `IConnection` | Network connection lifecycle; supports context manager protocol |
-| `IProfile`    | Client configuration data and operation formatting              |
-| `ICommand`    | Executable action within a session context                      |
-| `IRouter`     | Route-to-controller mapping and dispatch                        |
-| `IConsole`    | All console I/O (input, output, errors) — fully abstract        |
-| `IPrompt`     | Interactive command loop                                        |
-| `IParser[T]`  | Generic command-line argument parser                            |
-| `Controller`  | Type alias: `(IConnection, IConsole, str) -> None`              |
+| Interface            | Role                                                                  |
+| -------------------- | --------------------------------------------------------------------- |
+| `IConnection`        | Network connection lifecycle state machine and framed read/write      |
+| `IConnectionProfile` | Client configuration data and shell command formatting                |
+| `ICommand`           | Executable action within a session context (`send_request` -> `read`) |
+| `IRouter`            | Route-to-controller mapping and dispatch                              |
+| `IConsole`           | All console I/O (input, output, errors) — fully abstract              |
+| `IPrompt`            | Interactive command loop                                              |
+| `IParser[T]`         | Generic command-line argument parser                                  |
+| `ControllerAction`   | Lifecycle signals (`CONTINUE`, `TERMINATE`)                           |
+| `ControllerResult`   | Action and optional message returned to the presentation loop         |
+| `Controller`         | Type alias: `(ControllerDependencies, ControllerRequest) -> Result`   |
 
 #### `config`
 
-Centralized configuration, constants, and exception hierarchy.
+Centralized configuration, constants, and exception hierarchy. Level 0 foundation with zero internal dependencies.
 
-| Module          | Contents                                                    |
-| --------------- | ----------------------------------------------------------- |
-| `settings.py`   | `Settings` (project metadata), `BasePath` (directory paths) |
-| `enums.py`      | `ClientFile`, `OperationCode` — only actual enums           |
-| `exceptions.py` | Exception hierarchy rooted at `DeclusorException`           |
-
-Exception hierarchy:
-
-```
-DeclusorException
-├── ConnectionFailure    # network/transport errors
-├── InvalidOperation     # invalid runtime operation
-├── ParserError          # CLI argument parsing failure
-├── RouterError          # route lookup failure
-├── PromptError          # invalid user input
-├── ControllerError      # controller execution failure
-└── ExitRequest          # graceful shutdown signal (control flow)
-```
+| Module          | Contents                                                             |
+| --------------- | -------------------------------------------------------------------- |
+| `settings.py`   | `Settings` (project metadata, default ACKs), `BasePath`, `DataPaths` |
+| `enums.py`      | `ClientFile`, `OperationCode`                                        |
+| `exceptions.py` | Exception hierarchy rooted at `DeclusorException`                    |
 
 #### `util`
 
-Stateless utility functions used across all layers. Only depends on `config`.
+Stateless utility functions used across all layers. Depends only on `config`.
 
 | Module           | Purpose                                                        |
 | ---------------- | -------------------------------------------------------------- |
-| `encoding.py`    | Base64, hex, hashing (MD5, SHA-256/384/512)                    |
+| `encoding.py`    | Base64, hex, hashing (MD5, SHA-256/384/512), shell quoting     |
 | `storage.py`     | File loading, path validation                                  |
-| `security.py`    | File extension and path-relative validation                    |
-| `network.py`     | Socket connection context manager                              |
-| `client.py`      | Client script template formatting                              |
+| `security.py`    | File extension and path-relative sandbox validation            |
+| `network.py`     | Socket connection context manager with timeout support         |
 | `parsing.py`     | Command argument parsing (`Parser`, `parse_command_arguments`) |
-| `concurrency.py` | Thread pool and task management (`TaskPool`)                   |
+| `concurrency.py` | Thread pool and cooperative task management (`TaskPool`)       |
 
 ### Implementation Layer
 
-#### `connection`
+#### `presentation` (View Layer)
 
-Transport-layer implementations. Manages socket connections, ACK-based protocols, and client profiles.
+User interface and operator interaction components.
 
-| Class                   | Role                                                                                                                                                                           |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `ShellSocketProfile`    | Frozen dataclass holding client config (ACK values, paths, extensions, supported functions). Pure data — no I/O.                                                               |
-| `ShellSocketConnection` | Implements `IConnection`. Handles socket read/write with ACK framing, connection lifecycle, and all I/O (library loading, client script formatting). Supports context manager. |
-| `DEFAULT_SHELL_SOCKET`  | Pre-configured profile instance for the default shell socket client.                                                                                                           |
+| Class       | Implements | Role                                                               |
+| ----------- | ---------- | ------------------------------------------------------------------ |
+| `Console`   | `IConsole` | Readline-based terminal I/O with autocomplete, history and streams |
+| `PromptCLI` | `IPrompt`  | Interactive REPL view loop coordinating controller action signals  |
 
 #### `core`
 
-Concrete implementations of domain interfaces.
+Application infrastructure services.
 
 | Class            | Implements                 | Role                                                   |
 | ---------------- | -------------------------- | ------------------------------------------------------ |
 | `Router`         | `IRouter`                  | Route table with registration guards and documentation |
-| `Console`        | `IConsole`                 | Readline-based console with tab completion and history |
-| `PromptCLI`      | `IPrompt`                  | Interactive command loop with routing dispatch         |
-| `DeclusorParser` | `IParser[DeclusorOptions]` | CLI argument parser for host, port, and client         |
+| `ClientRegistry` | N/A                        | Dynamic registry of available client plugins           |
+| `DeclusorParser` | `IParser[DeclusorOptions]` | CLI argument parser for host, port, and client options |
+
+#### `connection`
+
+Transport-layer implementations and network lifecycle management.
+
+| Class                   | Role                                                                                                              |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `ConnectionState`       | Explicit lifecycle state machine (`CREATED`, `INITIALIZING`, `CONNECTED`, `CLOSED`)                               |
+| `ShellSocketProfile`    | Frozen dataclass holding client protocol parameters and operation mappings                                        |
+| `ShellSocketConnection` | Implements `IConnection`. Handles TCP socket read/write with ACK framing, stream-safe handshake, and lifecycle.   |
+| `ShellSocketFileStore`  | Implements `IClientFileStore`. Reads client bootstrap scripts, loads libraries and validates payload containment. |
 
 #### `command`
 
 Executable operations using the Command design pattern.
 
-| Class            | Implements | Purpose                                     |
-| ---------------- | ---------- | ------------------------------------------- |
-| `ExecuteFile`    | `ICommand` | Execute a local script on the remote system |
-| `UploadFile`     | `ICommand` | Upload a file to the remote system          |
-| `LoadPayload`    | `ICommand` | Load and send a payload file                |
-| `ExecuteCommand` | `ICommand` | Execute a single shell command              |
-| `LaunchShell`    | `ICommand` | Start an interactive shell session          |
+| Class            | Implements | Purpose                                                                      |
+| ---------------- | ---------- | ---------------------------------------------------------------------------- |
+| `ExecuteFile`    | `ICommand` | Execute a local script on the remote system                                  |
+| `UploadFile`     | `ICommand` | Upload a file to the remote system without executing it                      |
+| `LoadModule`     | `ICommand` | Load and transmit an operator module from `data/modules`                     |
+| `ExecuteCommand` | `ICommand` | Execute a single remote shell command string                                 |
+| `LaunchShell`    | `ICommand` | Interactive bidirectional shell session with cooperative thread coordination |
 
 #### `controller`
 
-Request handlers that bridge user input to command execution.
+Request handlers converting user input into command execution and returning presentation signals.
 
-| Function                 | Route     | Purpose                                                          |
-| ------------------------ | --------- | ---------------------------------------------------------------- |
-| `call_execute`           | `execute` | Parse filepath, execute on remote, stream output                 |
-| `call_upload`            | `upload`  | Parse filepath, upload to remote, stream output                  |
-| `call_load`              | `load`    | Parse filepath, load payload, stream output                      |
-| `call_command`           | `command` | Parse command string, run on remote, stream output               |
-| `call_shell`             | `shell`   | Launch interactive shell                                         |
-| `call_exit`              | `exit`    | Raise `ExitRequest` for graceful shutdown                        |
-| `create_help_controller` | `help`    | Factory returning a help controller with documentation providers |
+| Function                 | Route     | Purpose                                                                 |
+| ------------------------ | --------- | ----------------------------------------------------------------------- |
+| `call_execute`           | `execute` | Parse filepath, execute on remote, return `ControllerAction.CONTINUE`   |
+| `call_upload`            | `upload`  | Parse filepath, upload to remote, return `ControllerAction.CONTINUE`    |
+| `call_load`              | `load`    | Parse module name, load module, return `ControllerAction.CONTINUE`      |
+| `call_command`           | `command` | Parse command string, run on remote, return `ControllerAction.CONTINUE` |
+| `call_shell`             | `shell`   | Launch interactive shell, return `ControllerAction.CONTINUE`            |
+| `call_exit`              | `exit`    | Cleanly return `ControllerAction.TERMINATE` to stop prompt loop         |
+| `create_help_controller` | `help`    | Factory returning help controller with route documentation              |
 
 Shared via `_helpers.py`: the `_execute_and_read` helper eliminates the duplicated execute → read → display loop across file-based controllers.
 

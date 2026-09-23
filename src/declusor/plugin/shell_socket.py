@@ -94,8 +94,8 @@ class ShellSocketRuntime(contract.IClientRuntime):
 
         self._profile = connection_module.ShellSocketProfile(
             name=client_config.kind,
-            ack_server_raw=b"\x00",
-            ack_client_raw=util.hash_sha256(b"\xba\xdc\x00\xff\xee"),
+            ack_server_raw=config.Settings.DEFAULT_SERVER_ACK,
+            ack_client_raw=util.hash_sha256(config.Settings.DEFAULT_CLIENT_ACK_SEED),
         )
 
         self._files = connection_module.ShellSocketFileStore(

@@ -8,19 +8,10 @@ class ExecuteCommand(contract.ICommand):
         self,
         connection: contract.IConnection,
         console: contract.IConsole,
-        /,
         *,
         command_line: str,
     ) -> None:
-        """[...]
-
-        Args:
-            connection: [...]
-            console: [...]
-            command_line: [...]
-        """
-
-        super().__init__(connection, console)
+        super().__init__(connection=connection, console=console)
 
         self._command_line = command_line.encode()
 

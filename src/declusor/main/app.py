@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 
-from declusor import config, controller, core, plugin, util
+from declusor import config, controller, core, plugin, presentation, util
 
 
 class Application:
@@ -19,7 +19,7 @@ class Application:
 
         self._registry = registry
         self._router = core.Router()
-        self._console = core.Console()
+        self._console = presentation.Console()
 
     def parse(self, argv: Sequence[str] | None = None, /) -> core.DeclusorOptions:
         """Parse command-line options using the composed client registry.
@@ -64,7 +64,7 @@ class Application:
             with client_runtime.create_connection(socket_connection) as connection:
                 connection.initialize()
 
-                core.PromptCLI(
+                presentation.PromptCLI(
                     config.Settings.PROJECT_NAME,
                     router=self._router,
                     connection=connection,

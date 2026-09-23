@@ -35,8 +35,13 @@ class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
         super().__init__(prog=name, description=description or None)
 
         self._registry = registry
+        self._configured = False
+        self._configure_common_arguments()
 
     def _configure_common_arguments(self) -> None:
+        if self._configured:
+            return
+
         self.add_argument(
             "host",
             help=self.flags["host"],
@@ -65,8 +70,9 @@ class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
             default=str(config.ClientFile.SHELL_SOCKET),
         )
 
+        self._configured = True
+
     def parse(self, argv: Sequence[str] | None = None, /) -> DeclusorOptions:
-        self._configure_common_arguments()
 
         preliminary_args, _ = self.parse_known_args(argv)
         plugin = self._registry.get(preliminary_args.client)

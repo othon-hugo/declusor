@@ -12,6 +12,7 @@ class Router(contract.IRouter):
 
     def __init__(self) -> None:
         self._route_table: dict[str, contract.Controller] = {}
+        self._documentation_cache: str | None = None
 
     @property
     def routes(self) -> tuple[str, ...]:
@@ -44,6 +45,7 @@ class Router(contract.IRouter):
             raise ValueError("route already exists.")
 
         self._route_table[route] = controller
+        self._documentation_cache = None
 
     def locate(self, route: str, /) -> contract.Controller:
         """Return the controller bound to *route*.
@@ -65,6 +67,9 @@ class Router(contract.IRouter):
         if no routes are registered.
         """
 
+        if self._documentation_cache is not None:
+            return self._documentation_cache
+
         if not self._route_table:
             return ""
 
@@ -76,4 +81,5 @@ class Router(contract.IRouter):
             documentation += f"{route:<{key_length}}: "
             documentation += f"{self.get_route_usage(route)}\n"
 
-        return documentation.rstrip()
+        self._documentation_cache = documentation.rstrip()
+        return self._documentation_cache

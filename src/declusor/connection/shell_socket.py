@@ -4,7 +4,18 @@ from pathlib import Path
 from socket import socket
 from types import MappingProxyType
 
+from enum import StrEnum
+
 from declusor import config, contract, util
+
+
+class ConnectionState(StrEnum):
+    """Lifecycle state machine for a shell-socket connection."""
+
+    CREATED = "CREATED"
+    INITIALIZING = "INITIALIZING"
+    CONNECTED = "CONNECTED"
+    CLOSED = "CLOSED"
 
 
 @dataclass(frozen=True)
@@ -121,6 +132,9 @@ class ShellSocketFileStore(contract.IClientFileStore):
     def load_library(self) -> bytes:
         """Load and concatenate valid shell libraries."""
 
+        if not self._data_paths.library.exists():
+            return b""
+
         modules: list[bytes] = []
 
         for file in self._data_paths.library.iterdir():
@@ -186,9 +200,16 @@ class ShellSocketConnection(contract.IConnection):
         self._files = files
         self._connection = connection
         self._timeout = profile.default_timeout
+        self._state = ConnectionState.CREATED
 
         if self._timeout is not None:
             self._connection.settimeout(self._timeout)
+
+    @property
+    def state(self) -> ConnectionState:
+        """Current lifecycle state of the connection."""
+
+        return self._state
 
     def initialize(self) -> None:
         """Perform the initial protocol handshake.
@@ -198,18 +219,36 @@ class ShellSocketConnection(contract.IConnection):
         is not received within the configured timeout, or if the value is wrong.
 
         Raises:
-            ConnectionFailure: On timeout or invalid client ACK.
+            ConnectionFailure: On timeout, invalid client ACK, or closed connection.
         """
 
+        if self._state == ConnectionState.CLOSED:
+            raise config.ConnectionFailure("Cannot initialize a closed connection.")
+
+        self._state = ConnectionState.INITIALIZING
         self.write(self._files.load_library())
 
-        try:
-            initial_data = self._connection.recv(self._profile.default_buffer_size)
+        expected_ack = self._profile.ack_client_raw
+        ack_len = len(expected_ack)
+        received_ack = bytearray()
 
-            if initial_data != self._profile.ack_client_raw:
+        try:
+            while len(received_ack) < ack_len:
+                remaining = ack_len - len(received_ack)
+                read_size = min(self._profile.default_buffer_size, remaining)
+                chunk = self._connection.recv(read_size)
+
+                if not chunk:
+                    raise config.ConnectionFailure("Connection closed by client before receiving ACK.")
+
+                received_ack.extend(chunk)
+
+            if bytes(received_ack) != expected_ack:
                 raise config.ConnectionFailure("invalid client ACK during session initialization.")
         except (OSError, TimeoutError) as error:
             raise config.ConnectionFailure("failed waiting for client ACK during session initialization.") from error
+
+        self._state = ConnectionState.CONNECTED
 
     @property
     def client(self) -> contract.IConnectionProfile:
@@ -305,14 +344,22 @@ class ShellSocketConnection(contract.IConnection):
             raise config.ConnectionFailure(f"Failed to write to connection: {e}") from e
 
     def close(self) -> None:
-        """Close the underlying socket, releasing the OS file descriptor."""
+        """Close the underlying socket idempotently, releasing the OS file descriptor."""
 
-        self._connection.close()
+        if self._state == ConnectionState.CLOSED:
+            return
+
+        self._state = ConnectionState.CLOSED
+
+        try:
+            self._connection.close()
+        except OSError:
+            pass
 
 
 DEFAULT_SHELL_SOCKET = ShellSocketProfile(
     name="Shell Socket",
-    ack_server_raw=b"\x00",
-    ack_client_raw=util.hash_sha256(b"\xba\xdc\x00\xff\xee"),
+    ack_server_raw=config.Settings.DEFAULT_SERVER_ACK,
+    ack_client_raw=util.hash_sha256(config.Settings.DEFAULT_CLIENT_ACK_SEED),
 )
 """Default ShellSocketProfile instance with typical configuration for a shell socket client."""

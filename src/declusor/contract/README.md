@@ -3,7 +3,7 @@
 The **interface** package defines the abstract contracts that establish the boundaries between system components. This is the **domain layer** — pure abstractions with no implementation logic.
 
 > [!NOTE]
-> This package has **zero dependencies** on other application packages.
+> This package depends only on foundation layers (`config` and `util`). It has zero dependencies on concrete implementation packages (`core`, `connection`, `command`, `controller`, `presentation`, `plugin`, or `main`).
 
 ## Modules
 

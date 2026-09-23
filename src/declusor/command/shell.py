@@ -15,36 +15,27 @@ class LaunchShell(contract.ICommand):
         self,
         connection: contract.IConnection,
         console: contract.IConsole,
-        /,
     ) -> None:
-        """[...]
-
-        Args:
-            connection: [...]
-            console: [...]
-        """
-
-        super().__init__(connection, console)
+        super().__init__(connection=connection, console=console)
 
         self._stop_event = util.TaskEvent()
         self._task_pool = util.TaskPool(self._stop_event)
 
     def send_request(self) -> None:
-        """[...]"""
+        """Start the remote output streaming task in the background."""
 
-        input_handler = self._create_shell_output_handler(self._connection, self._console)
+        output_streamer = self._create_shell_output_handler(self._connection, self._console)
 
-        self._task_pool.add_task(input_handler)
+        self._task_pool.add_task(output_streamer, name="shell_output_streamer")
         self._task_pool.start_all()
 
     def read_response(self) -> None:
-        """[...]"""
+        """Forward operator input in the foreground until interrupted."""
 
-        output_handler = self._create_shell_input_handler(self._connection, self._console)
+        input_forwarder = self._create_shell_input_handler(self._connection, self._console)
 
         try:
-            output_handler(self._stop_event)
-
+            input_forwarder(self._stop_event)
             self._task_pool.wait_all()
         except KeyboardInterrupt:
             self._console.write_message("[keyboard interrupt received]")
