@@ -9,16 +9,16 @@ from declusor import config
 union_types = (Union, types.UnionType)
 
 SupportedType: TypeAlias = type[str] | type[int]
-"""Tipos primitivos aceitos como argumentos de linha de comando."""
+"""Primitive types accepted as command-line arguments."""
 
 ArgumentType: TypeAlias = SupportedType | types.UnionType | Any
-"""Especificação de tipo para um argumento, incluindo formas opcionais."""
+"""Type specification for a command argument, including optional forms."""
 
 ArgumentDefinitions: TypeAlias = Mapping[str, ArgumentType]
-"""Mapeamento de nomes de argumentos para seus respectivos tipos esperados."""
+"""Mapping of argument names to their expected types."""
 
 ParsedArguments: TypeAlias = dict[str, Any]
-"""Resultado do processamento contendo os pares argumento-valor extraídos."""
+"""Extracted argument-value pairs resulting from parsing."""
 
 
 class Parser(ArgumentParser):

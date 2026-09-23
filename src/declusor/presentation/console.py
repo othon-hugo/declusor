@@ -11,7 +11,7 @@ from declusor import contract
 
 
 class Console(contract.IConsole):
-    """Console implementation using readline for input and output."""
+    """Console implementation using readline for terminal input and output."""
 
     def __init__(self) -> None:
         self._history_file: Path | None = None

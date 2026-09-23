@@ -18,13 +18,18 @@ class ICommand(ABC):
     These dependencies are provided by the caller for each execution.
     """
 
-    def __init__(self, connection: "IConnection", console: "IConsole", /, files: "IClientFileStore | None" = None) -> None:
-        """[...]
+    def __init__(
+        self,
+        connection: "IConnection",
+        console: "IConsole",
+        files: "IClientFileStore | None" = None,
+    ) -> None:
+        """Initialize the command execution context.
 
         Args:
-            connection: [...]
-            console: [...]
-            files: [...]
+            connection: Active connection to the remote client.
+            console: Console interface for operator output.
+            files: Client file store for module/library loading.
         """
 
         super().__init__()
@@ -64,5 +69,5 @@ class ICommand(ABC):
         different execution sequence.
         """
 
-        self.read_response()
         self.send_request()
+        self.read_response()

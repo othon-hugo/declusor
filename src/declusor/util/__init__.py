@@ -29,7 +29,6 @@ __all__ = [
     "ensure_directory_exists",
     "ensure_file_exists",
     "format_template",
-    "format_template",
     "hash_md5",
     "hash_sha256",
     "hash_sha384",

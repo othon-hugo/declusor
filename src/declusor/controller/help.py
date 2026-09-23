@@ -17,7 +17,7 @@ def create_help_controller(get_documentation: DocumentationProvider, get_route_u
         Help controller function.
     """
 
-    def call_help(deps: contract.ControllerDependencies, req: contract.ControllerRequest) -> None:
+    def call_help(deps: contract.ControllerDependencies, req: contract.ControllerRequest) -> contract.ControllerResult:
         """Display detailed information about available commands or a specific command."""
 
         arguments, _ = req.parse_arguments({"command": str | None})
@@ -26,5 +26,7 @@ def create_help_controller(get_documentation: DocumentationProvider, get_route_u
             deps.console.write_message(f"{help_command}: {get_route_usage(help_command)}")
         else:
             deps.console.write_message(get_documentation())
+
+        return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
 
     return call_help

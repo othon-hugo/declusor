@@ -1,7 +1,7 @@
 from declusor import command, contract
 
 
-def call_execute(deps: contract.ControllerDependencies, req: contract.ControllerRequest) -> None:
+def call_execute(deps: contract.ControllerDependencies, req: contract.ControllerRequest) -> contract.ControllerResult:
     """Execute a program or script from the local system on the remote system."""
 
     arguments, _ = req.parse_arguments({"filepath": str})
@@ -9,6 +9,8 @@ def call_execute(deps: contract.ControllerDependencies, req: contract.Controller
 
     command.ExecuteFile(
         deps.connection,
-        deps.console,
+        console=deps.console,
         filepath=filepath,
     ).execute()
+
+    return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)

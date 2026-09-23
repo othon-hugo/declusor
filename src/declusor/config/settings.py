@@ -1,15 +1,22 @@
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Final
 
 
 class Settings:
     """Configuration settings for Declusor."""
 
-    PROJECT_NAME = "declusor"
+    PROJECT_NAME: Final[str] = "declusor"
     """Name of the project."""
 
-    PROJECT_DESCRIPTION = "a versatile tool for delivering Bash payloads to Linux systems."
+    PROJECT_DESCRIPTION: Final[str] = "a versatile tool for delivering Bash payloads to Linux systems."
     """Short description of the project."""
+
+    DEFAULT_SERVER_ACK: Final[bytes] = b"\x00"
+    """Default server acknowledgment byte sequence."""
+
+    DEFAULT_CLIENT_ACK_SEED: Final[bytes] = b"\xba\xdc\x00\xff\xee"
+    """Default client acknowledgment seed used for SHA-256 calculation."""
 
 
 @dataclass(frozen=True)

@@ -16,23 +16,10 @@ class _BaseFileCommand(contract.ICommand):
         self,
         connection: contract.IConnection,
         console: contract.IConsole,
-        /,
         *,
         filepath: str | Path,
     ) -> None:
-        """[...]
-
-        Args:
-            connection: [...]
-            console: [...]
-            filepath: [...]
-
-        Raises:
-            NotImplementedError: If ``_OPCODE`` was not overridden by a subclass.
-            InvalidOperation: If the file does not exist or is not a regular file.
-        """
-
-        super().__init__(connection, console)
+        super().__init__(connection=connection, console=console)
 
         if NotImplemented == self._OPCODE:
             raise NotImplementedError("FUNC_NAME must be defined in subclasses.")

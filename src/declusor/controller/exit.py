@@ -1,7 +1,7 @@
-from declusor import config, contract
+from declusor import contract
 
 
-def call_exit(deps: contract.ControllerDependencies, req: contract.ControllerRequest) -> None:
+def call_exit(deps: contract.ControllerDependencies, req: contract.ControllerRequest) -> contract.ControllerResult:
     """Terminate the session and exit the program."""
 
-    raise config.ExitRequest
+    return contract.ControllerResult(action=contract.ControllerAction.TERMINATE)

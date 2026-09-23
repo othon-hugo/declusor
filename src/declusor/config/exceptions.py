@@ -136,8 +136,9 @@ class CommandError(DeclusorException):
 
 
 class ExitRequest(DeclusorException):
-    """Raised to signal a request to exit the application gracefully.
+    """Signals a request to exit the application.
 
-    This exception is used as a control flow mechanism to cleanly
-    terminate the application when the user requests to exit.
+    Deprecated: Controllers now return ``ControllerResult(action=ControllerAction.TERMINATE)``
+    directly to the presentation layer without relying on exceptions for control flow.
+    Retained for backwards compatibility.
     """

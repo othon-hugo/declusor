@@ -13,20 +13,10 @@ class LoadModule(contract.ICommand):
         connection: contract.IConnection,
         console: contract.IConsole,
         files: contract.IClientFileStore,
-        /,
         *,
         module_name: str,
     ) -> None:
-        """[...]
-
-        Args:
-            connection: [...]
-            console: [...]
-            files: [...]
-            module_name: [...]
-        """
-
-        super().__init__(connection, console, files)
+        super().__init__(connection=connection, console=console, files=files)
 
         if self._files is None:
             raise config.CommandError("[...]")
