@@ -2,7 +2,14 @@ from .client import ClientConfig, IClientFileStore, IClientPlugin, IClientRuntim
 from .command import ICommand
 from .connection import IConnection, IConnectionProfile
 from .console import IConsole
-from .controller import Controller, ControllerAction, ControllerDependencies, ControllerRequest, ControllerResult
+from .controller import (
+    Controller,
+    ControllerAction,
+    ControllerDependencies,
+    ControllerRequest,
+    ControllerResult,
+    SessionContext,
+)
 from .parser import IParser
 from .prompt import IPrompt
 from .router import IRouter
@@ -24,4 +31,5 @@ __all__ = [
     "IParser",
     "IPrompt",
     "IRouter",
+    "SessionContext",
 ]
