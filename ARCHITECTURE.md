@@ -90,18 +90,19 @@ graph TB
 
 Defines abstract contracts for all system components. Depends only on foundation utilities and configuration.
 
-| Interface            | Role                                                                  |
-| -------------------- | --------------------------------------------------------------------- |
-| `IConnection`        | Network connection lifecycle state machine and framed read/write      |
-| `IConnectionProfile` | Client configuration data and shell command formatting                |
-| `ICommand`           | Executable action within a session context (`send_request` -> `read`) |
-| `IRouter`            | Route-to-controller mapping and dispatch                              |
-| `IConsole`           | All console I/O (input, output, errors) — fully abstract              |
-| `IPrompt`            | Interactive command loop                                              |
-| `IParser[T]`         | Generic command-line argument parser                                  |
-| `ControllerAction`   | Lifecycle signals (`CONTINUE`, `TERMINATE`)                           |
-| `ControllerResult`   | Action and optional message returned to the presentation loop         |
-| `Controller`         | Type alias: `(ControllerDependencies, ControllerRequest) -> Result`   |
+| Interface            | Role                                                                           |
+| -------------------- | ------------------------------------------------------------------------------ | ----- |
+| `IConnection`        | Network connection lifecycle state machine and framed read/write               |
+| `IConnectionProfile` | Client configuration data and shell command formatting                         |
+| `ICommand`           | Executable action within a session context (`send_request` -> `read`)          |
+| `IRouter`            | Route-to-controller mapping and dispatch                                       |
+| `IConsole`           | All console I/O (input, output, errors) — fully abstract                       |
+| `IPrompt`            | Interactive command loop                                                       |
+| `IParser[T]`         | Generic command-line argument parser                                           |
+| `ControllerAction`   | Lifecycle signals (`CONTINUE`, `TERMINATE`)                                    |
+| `ControllerResult`   | Action and optional message returned to the presentation loop                  |
+| `SessionContext`     | Encapsulates active session (connection, console, files) and executes commands |
+| `Controller`         | Type alias: `(SessionContext, ControllerRequest) -> ControllerResult           | None` |
 
 #### `config`
 
@@ -160,15 +161,27 @@ Transport-layer implementations and network lifecycle management.
 
 #### `command`
 
-Executable operations using the Command design pattern.
+Executable operations using the Command design pattern. Commands are pure, stateless operation objects holding only their validated input parameters.
 
-| Class            | Implements | Purpose                                                                      |
-| ---------------- | ---------- | ---------------------------------------------------------------------------- |
-| `ExecuteFile`    | `ICommand` | Execute a local script on the remote system                                  |
-| `UploadFile`     | `ICommand` | Upload a file to the remote system without executing it                      |
-| `LoadModule`     | `ICommand` | Load and transmit an operator module from `data/modules`                     |
-| `ExecuteCommand` | `ICommand` | Execute a single remote shell command string                                 |
-| `LaunchShell`    | `ICommand` | Interactive bidirectional shell session with cooperative thread coordination |
+##### Command DTOs
+
+| DTO                 | Invariant Validation                     | Purpose                                           |
+| ------------------- | ---------------------------------------- | ------------------------------------------------- |
+| `ExecuteCommandDTO` | Non-empty command line string            | Parameters for remote command execution           |
+| `ExecuteFileDTO`    | Validated local script file `Path`       | Parameters for script upload and remote execution |
+| `UploadFileDTO`     | Validated local file `Path`              | Parameters for file upload without execution      |
+| `LoadModuleDTO`     | Non-empty, no traversal (`..`, `/`, `\`) | Parameters for remote module loading              |
+| `ShellDTO`          | Optional shell banner message            | Interactive shell configuration                   |
+
+##### Command Classes
+
+| Class            | Accepts DTO         | Implements | Purpose                                                                      |
+| ---------------- | ------------------- | ---------- | ---------------------------------------------------------------------------- |
+| `ExecuteFile`    | `ExecuteFileDTO`    | `ICommand` | Execute a local script on the remote system                                  |
+| `UploadFile`     | `UploadFileDTO`     | `ICommand` | Upload a file to the remote system without executing it                      |
+| `LoadModule`     | `LoadModuleDTO`     | `ICommand` | Load and transmit an operator module from `data/modules`                     |
+| `ExecuteCommand` | `ExecuteCommandDTO` | `ICommand` | Execute a single remote shell command string                                 |
+| `LaunchShell`    | `ShellDTO` (opt)    | `ICommand` | Interactive bidirectional shell session with cooperative thread coordination |
 
 #### `controller`
 

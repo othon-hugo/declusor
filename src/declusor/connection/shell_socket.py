@@ -1,10 +1,10 @@
 from collections.abc import Generator, Mapping
+from contextlib import suppress
 from dataclasses import dataclass, field
+from enum import StrEnum
 from pathlib import Path
 from socket import socket
 from types import MappingProxyType
-
-from enum import StrEnum
 
 from declusor import config, contract, util
 
@@ -351,10 +351,8 @@ class ShellSocketConnection(contract.IConnection):
 
         self._state = ConnectionState.CLOSED
 
-        try:
+        with suppress(OSError):
             self._connection.close()
-        except OSError:
-            pass
 
 
 DEFAULT_SHELL_SOCKET = ShellSocketProfile(

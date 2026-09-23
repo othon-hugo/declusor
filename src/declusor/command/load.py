@@ -1,35 +1,64 @@
 from declusor import config, contract
+from declusor.command.dto import LoadModuleDTO
 
 
 class LoadModule(contract.ICommand):
-    """Send an operator-selected module to the remote client.
+    """Load an operator-selected module into the remote client.
 
-    Modules are resolved by the active connection's client file store and are
-    distinct from libraries, which are loaded automatically during startup.
+    Retrieves module payload from the active session's client file store,
+    transmits the module definition across the network connection, and
+    displays the resulting client response on the operator console.
+
+    Attributes:
+        dto: The validated parameters for this module load command.
     """
 
-    def __init__(
-        self,
-        connection: contract.IConnection,
-        console: contract.IConsole,
-        files: contract.IClientFileStore,
-        *,
-        module_name: str,
-    ) -> None:
-        super().__init__(connection=connection, console=console, files=files)
+    def __init__(self, dto: LoadModuleDTO) -> None:
+        """Initialize LoadModule with validated module parameters.
 
-        if self._files is None:
-            raise config.CommandError("[...]")
+        Args:
+            dto: Validated DTO containing the clean module identifier.
+        """
 
-        self._module_name = module_name
+        super().__init__()
 
-    def send_request(self) -> None:
-        """[...]"""
+        self._dto = dto
+        self._module_name = dto.module_name
 
-        self._connection.write(self._files.load_module(self._module_name))
+    @property
+    def dto(self) -> LoadModuleDTO:
+        """The command parameters."""
 
-    def read_response(self) -> None:
-        """[...]"""
+        return self._dto
 
-        for data in self._connection.read():
-            self._console.write_binary_data(data)
+    def send_request(self, session: contract.SessionContext) -> None:
+        """Send the resolved module script to the remote client.
+
+        Args:
+            session: Active session providing connection transport and file store.
+
+        Raises:
+            CommandError: If the session file store is unavailable.
+            ModuleNotFound: If the requested module file cannot be found.
+            ConnectionClosed: If the connection is closed.
+            ConnectionWriteError: If transmitting the module payload fails.
+        """
+
+        if session.files is None:
+            raise config.CommandError("Client file store is not configured for this session.")
+
+        module_bytes = session.files.load_module(self._module_name)
+        session.connection.write(module_bytes)
+
+    def read_response(self, session: contract.SessionContext) -> None:
+        """Read and display the remote client's module registration response.
+
+        Args:
+            session: Active session providing connection and console interfaces.
+
+        Raises:
+            ConnectionClosed: If the remote peer terminates the connection unexpectedly.
+        """
+
+        for data in session.connection.read():
+            session.console.write_binary_data(data)

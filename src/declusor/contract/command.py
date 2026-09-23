@@ -2,72 +2,53 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from declusor.contract.client import IClientFileStore
-    from declusor.contract.connection import IConnection
-    from declusor.contract.console import IConsole
+    from declusor.contract.controller import SessionContext
 
 
 class ICommand(ABC):
-    """An executable operation that runs within an active connection context.
+    """An executable operation that runs within an active session context.
 
-    Each command encapsulates the data and behavior required to perform a
-    single remote operation, such as executing a file, uploading a payload,
-    or running a shell command.
+    Each command encapsulates the parameters and data required to perform a
+    single remote operation (e.g. executing a file, uploading a payload,
+    loading a module, or running a shell command).
 
-    Commands do not own or retain the connection or console they operate on.
-    These dependencies are provided by the caller for each execution.
+    Commands are stateless with respect to the runtime environment: they do
+    not own or retain the connection, console, or file store. These dependencies
+    are provided via the ``SessionContext`` upon execution.
     """
 
-    def __init__(
-        self,
-        connection: "IConnection",
-        console: "IConsole",
-        files: "IClientFileStore | None" = None,
-    ) -> None:
-        """Initialize the command execution context.
+    @abstractmethod
+    def send_request(self, session: "SessionContext") -> None:
+        """Send the request initiating the remote operation through the session.
+
+        Implementations transmit the command payload through ``session.connection``.
 
         Args:
-            connection: Active connection to the remote client.
-            console: Console interface for operator output.
-            files: Client file store for module/library loading.
+            session: Active session context providing connection and console.
         """
-
-        super().__init__()
-
-        self._connection = connection
-        self._console = console
-
-        if files is not None:
-            self._files = files
-
-    @abstractmethod
-    def send_request(self) -> None:
-        """Send the request that initiates the remote operation.
-
-        Implementations are responsible for transmitting the command request
-        through the active connection. This method does not read or process
-        the response produced by the operation.
-        """
-
         raise NotImplementedError
 
     @abstractmethod
-    def read_response(self) -> None:
-        """Read and display the response produced by the remote operation.
+    def read_response(self, session: "SessionContext") -> None:
+        """Read and display the operation response through the session console.
 
-        Implementations are responsible for consuming the response through
-        the active connection and presenting its output through the console.
+        Implementations consume chunks from ``session.connection`` and write
+        them to ``session.console``.
+
+        Args:
+            session: Active session context providing connection and console.
         """
-
         raise NotImplementedError
 
-    def execute(self) -> None:
-        """Execute the complete request-response lifecycle.
+    def execute(self, session: "SessionContext") -> None:
+        """Execute the complete request-response lifecycle within the session.
 
-        Sends the command request and then reads and displays the response.
-        Subclasses may override this method when the operation requires a
-        different execution sequence.
+        Transmits the command request and subsequently reads and presents
+        the response. Subclasses may override this method when an alternative
+        coordination pattern (such as bidirectional streaming) is required.
+
+        Args:
+            session: Active session context providing connection and console.
         """
-
-        self.send_request()
-        self.read_response()
+        self.send_request(session)
+        self.read_response(session)

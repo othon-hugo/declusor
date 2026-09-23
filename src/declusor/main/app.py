@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 
-from declusor import config, controller, core, plugin, presentation, util
+from declusor import config, contract, controller, core, plugin, presentation, util
 
 
 class Application:
@@ -64,12 +64,16 @@ class Application:
             with client_runtime.create_connection(socket_connection) as connection:
                 connection.initialize()
 
-                presentation.PromptCLI(
-                    config.Settings.PROJECT_NAME,
-                    router=self._router,
+                session = contract.SessionContext(
                     connection=connection,
                     console=self._console,
                     files=client_runtime.client_files,
+                )
+
+                presentation.PromptCLI(
+                    config.Settings.PROJECT_NAME,
+                    router=self._router,
+                    session=session,
                 ).run()
 
     @staticmethod
