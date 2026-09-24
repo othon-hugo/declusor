@@ -120,17 +120,21 @@ def test_connection_state_lifecycle_transitions(tmp_path: Path) -> None:
     mock_socket.recv.return_value = b"valid_ack_32_bytes_long_sentinel"
 
     conn = _create_connection(tmp_path, mock_socket, ack=b"valid_ack_32_bytes_long_sentinel")
-    assert conn.state == contract.ConnectionState.CREATED
+    state: contract.ConnectionState = conn.state
+    assert state == contract.ConnectionState.CREATED
 
     conn.initialize()
-    assert conn.state == contract.ConnectionState.CONNECTED
+    state = conn.state
+    assert state == contract.ConnectionState.CONNECTED
 
     conn.close()
-    assert conn.state == contract.ConnectionState.CLOSED
+    state = conn.state
+    assert state == contract.ConnectionState.CLOSED
 
     # Calling close again must be idempotent
     conn.close()
-    assert conn.state == contract.ConnectionState.CLOSED
+    state = conn.state
+    assert state == contract.ConnectionState.CLOSED
 
 
 def test_connection_segmented_ack_streaming(tmp_path: Path) -> None:
@@ -194,7 +198,7 @@ def test_shell_socket_plugin_metadata() -> None:
     """Verify shell_socket.ShellSocketPlugin metadata properties (name, description, version)."""
 
     assert shell_socket.ShellSocketPlugin.name == "shell_socket"
-    assert shell_socket.shell_socket.ShellSocketPlugin.description != ""
+    assert shell_socket.ShellSocketPlugin.description != ""
     assert shell_socket.ShellSocketPlugin.version == "1.0.0"
 
 

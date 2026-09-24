@@ -1,100 +1,126 @@
+"""Unit tests for command execution lifecycles using typed test doubles."""
+
 from pathlib import Path
-from unittest.mock import MagicMock, call
 
 import pytest
 
 from declusor import command, config, contract
+from tests.testing import (
+    DummyClientFileStore,
+    DummyConnection,
+    DummyConnectionProfile,
+    DummyConsole,
+)
 
 
-@pytest.fixture
-def session() -> contract.SessionContext:
-    connection = MagicMock(spec=contract.IConnection)
-    connection.read.return_value = [b"chunk1\n", b"chunk2\n"]
-    console = MagicMock(spec=contract.IConsole)
-    files = MagicMock(spec=contract.IClientFileStore)
-
-    return contract.SessionContext(
-        connection=connection,
-        console=console,
-        files=files,
-    )
-
-
-def test_execute_command_lifecycle(session: contract.SessionContext) -> None:
+def test_execute_command_lifecycle(
+    test_session: contract.SessionContext,
+    dummy_connection: DummyConnection,
+    dummy_console: DummyConsole,
+) -> None:
+    """ExecuteCommand transmits the raw command string and streams chunks to console."""
     dto = command.ExecuteCommandDTO(command_line="id")
     cmd = command.ExecuteCommand(dto=dto)
 
-    session.execute(cmd)
+    test_session.execute(cmd)
 
-    session.connection.write.assert_called_once_with(b"id")
-    assert session.console.write_binary_data.call_args_list == [
-        call(b"chunk1\n"),
-        call(b"chunk2\n"),
-    ]
+    assert dummy_connection.written == [b"id"]
+    assert dummy_console.binary_data == [b"chunk1\n", b"chunk2\n"]
 
 
-def test_execute_file_lifecycle(tmp_path: Path, session: contract.SessionContext) -> None:
+def test_execute_file_lifecycle(
+    tmp_path: Path,
+    test_session: contract.SessionContext,
+    dummy_connection: DummyConnection,
+    dummy_console: DummyConsole,
+    dummy_profile: DummyConnectionProfile,
+) -> None:
+    """ExecuteFile encodes file content, invokes profile rendering, and executes."""
     script_file = tmp_path / "test.sh"
     script_file.write_text("echo hello")
 
-    session.connection.client.render_operation_command.return_value = "rendered_exec_script"
+    dummy_profile.set_rendered_command(config.OperationCode.EXEC_FILE, "rendered_exec_script")
 
     dto = command.ExecuteFileDTO(filepath=script_file)
-    cmd = command.(dto=dto)
+    cmd = command.ExecuteFile(dto=dto)
 
-    session.execute(cmd)
+    test_session.execute(cmd)
 
-    session.connection.client.render_operation_command.assert_called_once()
-    session.connection.write.assert_called_once_with(b"rendered_exec_script")
-    assert session.console.write_binary_data.call_count == 2
+    assert len(dummy_profile.render_calls) == 1
+    assert dummy_profile.render_calls[0][0] == config.OperationCode.EXEC_FILE
+    assert dummy_connection.written == [b"rendered_exec_script"]
+    assert len(dummy_console.binary_data) == 2
 
 
-def test_upload_file_lifecycle(tmp_path: Path, session: contract.SessionContext) -> None:
+def test_upload_file_lifecycle(
+    tmp_path: Path,
+    test_session: contract.SessionContext,
+    dummy_connection: DummyConnection,
+    dummy_console: DummyConsole,
+    dummy_profile: DummyConnectionProfile,
+) -> None:
+    """UploadFile encodes file content, renders STORE_FILE command, and transmits."""
     data_file = tmp_path / "data.bin"
     data_file.write_bytes(b"content")
 
-    session.connection.client.render_operation_command.return_value = "rendered_upload_script"
+    dummy_profile.set_rendered_command(config.OperationCode.STORE_FILE, "rendered_upload_script")
 
     dto = command.UploadFileDTO(filepath=data_file)
     cmd = command.UploadFile(dto=dto)
 
-    session.execute(cmd)
+    test_session.execute(cmd)
 
-    session.connection.client.render_operation_command.assert_called_once()
-    session.connection.write.assert_called_once_with(b"rendered_upload_script")
-    assert session.console.write_binary_data.call_count == 2
+    assert len(dummy_profile.render_calls) == 1
+    assert dummy_profile.render_calls[0][0] == config.OperationCode.STORE_FILE
+    assert dummy_connection.written == [b"rendered_upload_script"]
+    assert len(dummy_console.binary_data) == 2
 
 
-def test_file_command_render_failure_raises(tmp_path: Path, session: contract.SessionContext) -> None:
+def test_file_command_render_failure_raises(
+    tmp_path: Path,
+    test_session: contract.SessionContext,
+    dummy_profile: DummyConnectionProfile,
+) -> None:
+    """Commands raise InvalidOperation when profile cannot render operation command."""
     data_file = tmp_path / "fail.bin"
     data_file.write_bytes(b"content")
 
-    session.connection.client.render_operation_command.return_value = None
+    dummy_profile.set_rendered_command(config.OperationCode.STORE_FILE, None)
 
     dto = command.UploadFileDTO(filepath=data_file)
     cmd = command.UploadFile(dto=dto)
 
     with pytest.raises(config.InvalidOperation, match="Failed to generate script data"):
-        cmd.send_request(session)
+        cmd.send_request(test_session)
 
 
-def test_load_module_lifecycle(session: contract.SessionContext) -> None:
-    session.files.load_module.return_value = b"module_code_bytes"
+def test_load_module_lifecycle(
+    test_session: contract.SessionContext,
+    dummy_connection: DummyConnection,
+    dummy_console: DummyConsole,
+    dummy_file_store: DummyClientFileStore,
+) -> None:
+    """LoadModule reads module bytes from file store and sends to remote client."""
+    dummy_file_store.set_module("discovery/sysinfo", b"module_code_bytes")
 
     dto = command.LoadModuleDTO(module_name="discovery/sysinfo")
     cmd = command.LoadModule(dto=dto)
 
-    session.execute(cmd)
+    test_session.execute(cmd)
 
-    session.files.load_module.assert_called_once_with("discovery/sysinfo")
-    session.connection.write.assert_called_once_with(b"module_code_bytes")
-    assert session.console.write_binary_data.call_count == 2
+    assert dummy_file_store.load_module_calls == ["discovery/sysinfo"]
+    assert dummy_connection.written == [b"module_code_bytes"]
+    assert len(dummy_console.binary_data) == 2
 
 
-def test_load_module_missing_files_store() -> None:
+def test_load_module_missing_files_store(
+    dummy_connection: DummyConnection,
+    dummy_console: DummyConsole,
+) -> None:
+    """LoadModule raises CommandError if SessionContext has no file store configured."""
     session_no_files = contract.SessionContext(
-        connection=MagicMock(spec=contract.IConnection),
-        console=MagicMock(spec=contract.IConsole),
+        connection=dummy_connection,
+        console=dummy_console,
         files=None,  # type: ignore[arg-type]
     )
 
@@ -106,6 +132,7 @@ def test_load_module_missing_files_store() -> None:
 
 
 def test_launch_shell_instantiation_with_dto() -> None:
+    """LaunchShell stores DTO properly on instantiation."""
     dto = command.LaunchShellDTO(banner="Welcome to shell")
     cmd = command.LaunchShell(dto=dto)
 

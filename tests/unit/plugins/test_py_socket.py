@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from declusor import config, contract
-from plugins. import py_socket
+from plugins import py_socket
 
 # ---------------------------------------------------------------------------
 # Profile Tests

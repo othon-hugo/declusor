@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from declusor import config, contract, core
+from declusor import config, contract, core, util
 
 
 class DummyValidPlugin(contract.IClientPlugin):
@@ -13,20 +13,20 @@ class DummyValidPlugin(contract.IClientPlugin):
     description = "A dummy plugin for unit tests"
 
     @classmethod
-    def configure_parser(cls, parser, /) -> None:
+    def configure_parser(cls, parser: util.Parser, /) -> None:
         pass
 
     @classmethod
-    def build_config(cls, args, data_paths=None, /):
-        return MagicMock()
+    def build_config(cls, args: util.Namespace, data_paths: config.DataPaths, /) -> contract.ClientConfig:
+        return contract.ClientConfig(kind=cls.name, host="127.0.0.1", port=9000, data_paths=data_paths)
 
     @classmethod
-    def validate(cls, client_config, /) -> None:
+    def validate(cls, client_config: contract.ClientConfig, /) -> None:
         pass
 
     @classmethod
-    def build_runtime(cls, client_config, /):
-        return MagicMock()
+    def build_runtime(cls, client_config: contract.ClientConfig, /) -> contract.IClientRuntime:
+        return MagicMock(spec=contract.IClientRuntime)
 
 
 class NotAPlugin:
@@ -55,21 +55,21 @@ def test_validation_accepts_valid_plugin() -> None:
 def test_validation_rejects_non_class() -> None:
     """Verify that validating a non-class object raises PluginValidationError."""
     manager = core.PluginManager()
-    with pytest.raises(core.PluginValidationError, match="must be a class"):
+    with pytest.raises(config.PluginValidationError, match="must be a class"):
         manager.validate_plugin("not_a_class")  # type: ignore[arg-type]
 
 
 def test_validation_rejects_non_subclass() -> None:
     """Verify that classes not inheriting from IClientPlugin are rejected."""
     manager = core.PluginManager()
-    with pytest.raises(core.PluginValidationError, match="must implement 'IClientPlugin'"):
+    with pytest.raises(config.PluginValidationError, match="must implement 'IClientPlugin'"):
         manager.validate_plugin(NotAPlugin)
 
 
 def test_validation_rejects_unimplemented_abstract_methods() -> None:
     """Verify that plugins with unimplemented abstract methods raise PluginValidationError."""
     manager = core.PluginManager()
-    with pytest.raises(core.PluginValidationError, match="unimplemented abstract methods"):
+    with pytest.raises(config.PluginValidationError, match="unimplemented abstract methods"):
         manager.validate_plugin(MissingAbstractMethods)
 
 
@@ -80,7 +80,7 @@ def test_validation_rejects_empty_name() -> None:
         name = "   "
 
     manager = core.PluginManager()
-    with pytest.raises(core.PluginValidationError, match="must define a non-empty string 'name'"):
+    with pytest.raises(config.PluginValidationError, match="must define a non-empty string 'name'"):
         manager.validate_plugin(EmptyNamePlugin)
 
 

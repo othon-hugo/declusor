@@ -1,12 +1,20 @@
-from unittest.mock import MagicMock, patch
+"""Unit tests for Application lifecycle and route wiring using typed test doubles."""
 
-from declusor import contract, core
+from unittest.mock import patch
+
+from declusor import core
 from declusor.main.app import Application, create_application
+from tests.testing import (
+    DummyClientPlugin,
+    DummyClientRuntime,
+    DummyConnection,
+    DummySocket,
+    create_dummy_client_config,
+)
 
 
 def test_create_application_initializes_plugins() -> None:
     """Verify create_application loads built-in plugins into registry."""
-
     app = create_application()
     assert isinstance(app, Application)
     assert "shell_socket" in app._registry.names()
@@ -15,7 +23,6 @@ def test_create_application_initializes_plugins() -> None:
 
 def test_application_connect_routes() -> None:
     """Verify application registers core routes on its router."""
-
     registry = core.ClientRegistry()
     app = Application(registry)
     app._connect_routes()
@@ -26,47 +33,30 @@ def test_application_connect_routes() -> None:
 
 def test_application_run_lifecycle() -> None:
     """Verify Application.run lifecycle from validation to prompt execution."""
-
-    mock_plugin = MagicMock(spec=contract.IClientPlugin)
-    mock_plugin.name = "mock_client"
-
-    mock_runtime = MagicMock(spec=contract.IClientRuntime)
-    mock_runtime.client_script = "#!/bin/sh"
-    mock_connection = MagicMock(spec=contract.IConnection)
-    mock_runtime.create_connection.return_value = mock_connection
-
-    mock_plugin.build_runtime.return_value = mock_runtime
+    dummy_conn = DummyConnection()
+    dummy_runtime = DummyClientRuntime(connection_to_return=dummy_conn)
+    DummyClientPlugin.reset()
+    DummyClientPlugin.runtime_instance = dummy_runtime
 
     registry = core.ClientRegistry()
-    registry.register(mock_plugin)
+    registry.register(DummyClientPlugin)
 
     app = Application(registry)
 
-    mock_client_config = MagicMock(spec=contract.ClientConfig)
-    mock_client_config.kind = "mock_client"
-    mock_client_config.host = "127.0.0.1"
-    mock_client_config.port = 9000
-    mock_client_config.data_paths = MagicMock()
-    mock_client_config.data_paths.clients.exists.return_value = False
-    mock_client_config.data_paths.modules.exists.return_value = False
-    mock_client_config.data_paths.library.exists.return_value = False
-
+    client_config = create_dummy_client_config(kind=DummyClientPlugin.name)
     options: core.DeclusorOptions = {
         "host": "127.0.0.1",
         "port": 9000,
-        "client": mock_client_config,
+        "client": client_config,
     }
 
+    dummy_sock = DummySocket()
     with (
-        patch("declusor.util.await_connection") as mock_await,
+        patch("declusor.util.await_connection", return_value=dummy_sock) as mock_await,
         patch("declusor.presentation.PromptCLI.run") as mock_prompt_run,
     ):
-        mock_socket = MagicMock()
-        mock_await.return_value.__enter__.return_value = mock_socket
-        mock_connection.__enter__.return_value = mock_connection
-
         app.run(options)
 
         mock_await.assert_called_once_with("127.0.0.1", 9000)
-        mock_connection.initialize.assert_called_once()
+        assert dummy_conn.initialize_called
         mock_prompt_run.assert_called_once()

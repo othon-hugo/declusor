@@ -1,4 +1,8 @@
+"""Unit tests for the CLI entry point (main) and error handling."""
+
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 from declusor import config
 from declusor.main.cli import main
@@ -6,7 +10,6 @@ from declusor.main.cli import main
 
 def test_main_success() -> None:
     """Verify main returns 0 on successful application execution."""
-
     mock_app = MagicMock()
     mock_app.parse.return_value = {"mock": "options"}
 
@@ -16,9 +19,8 @@ def test_main_success() -> None:
         mock_app.run.assert_called_once_with({"mock": "options"})
 
 
-def test_main_parser_error(capsys) -> None:
+def test_main_parser_error(capsys: pytest.CaptureFixture[str]) -> None:
     """Verify main returns 2 on ParserError and prints error to stderr."""
-
     mock_app = MagicMock()
     mock_app.parse.side_effect = config.ParserError("invalid option")
 
@@ -29,9 +31,8 @@ def test_main_parser_error(capsys) -> None:
         assert "parser error: invalid option" in captured.err
 
 
-def test_main_declusor_exception(capsys) -> None:
+def test_main_declusor_exception(capsys: pytest.CaptureFixture[str]) -> None:
     """Verify main returns 1 on general DeclusorException and prints error to stderr."""
-
     mock_app = MagicMock()
     mock_app.parse.side_effect = config.ConnectionError("network failed")
 
@@ -44,7 +45,6 @@ def test_main_declusor_exception(capsys) -> None:
 
 def test_main_keyboard_interrupt() -> None:
     """Verify main returns 0 on KeyboardInterrupt."""
-
     mock_app = MagicMock()
     mock_app.parse.side_effect = KeyboardInterrupt
 

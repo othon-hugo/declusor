@@ -116,7 +116,7 @@ class PluginManager(PluginRegistry):
 
         # Check for unimplemented abstract methods
         if inspect.isabstract(candidate):
-            abstract_methods = getattr(candidate, "__abstractmethods__", set())
+            abstract_methods: set[str] = getattr(candidate, "__abstractmethods__", set())
 
             raise config.PluginValidationError(
                 f"Plugin class {candidate.__name__!r} has unimplemented abstract methods: {', '.join(sorted(abstract_methods))}"
