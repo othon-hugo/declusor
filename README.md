@@ -15,7 +15,7 @@
   </p>
 
   <p>
-    <a href="#the-problem--why-i-built-declusor">Why Declusor</a> •
+    <a href="#why-declusor">Why Declusor</a> •
     <a href="#visual-overview--interactive-demo">Demo</a> •
     <a href="#key-capabilities">Capabilities</a> •
     <a href="#getting-started">Quickstart</a> •
@@ -27,17 +27,15 @@
 
 </div>
 
-## The Problem & Why I Built Declusor
+## Why Declusor?
 
-If you have spent any time in capture-the-flag (CTF) competitions or authorized penetration testing engagements, you already know the frustration:
+Catching a reverse shell during a CTF or penetration test shouldn't feel like walking a tightrope:
 
-- **The Netcat Fragility Trap**: You finally achieve remote code execution, catch the reverse shell with `nc -lvnp 4444`, instinctively press `Up-Arrow` to recall a command or hit `Ctrl+C` to stop a running binary — and your entire session instantly evaporates. You scramble through cheat sheets to spawn a pseudo-terminal with Python `pty.spawn()`, struggle with raw terminal dimensions, and resort to messy base64 copy-paste gymnastics just to push an enumeration script.
-- **The Heavyweight C2 Overkill**: You consider reaching for a full-scale Command & Control (C2) framework, only to realize you have to configure multi-container Docker compose stacks, spin up background databases, and manage team servers. It is excessive overhead when all you need is a fast, rock-solid, and interactive handler for an engagement.
-- **The Brittle One-Off Scripts**: Custom listener scripts often lack rigorous error handling, have hardcoded protocol assumptions, and crash as soon as they encounter unexpected binary bytes or a closed socket.
+- **Netcat is too fragile**: One accidental `Ctrl+C` kills your session. PTY stabilization and base64 transfers are tedious gymnastics.
+- **Heavy C2s are overkill**: Multi-container Docker setups and database configs are unnecessary when you just need fast, reliable remote interaction.
+- **Ad-hoc scripts break**: Unchecked binary bytes and socket drops easily crash fragile custom listeners.
 
-I built **Declusor** because I wanted to end that compromise once and for all.
-
-Declusor bridges the gap: it delivers the **zero-overhead, single-command simplicity** of netcat combined with the **ergonomics of a modern interactive CLI**. You get full readline history, intelligent tab-completion for remote and local paths, in-memory script staging, and modular, swappable client transports — all built on a strict, typed architecture that will not crash when you need it most.
+I built **Declusor** to bridge that gap: the single-command simplicity of netcat with the ergonomics of a modern interactive CLI — readline history, tab-completion, in-memory script staging, and swappable transport plugins that never crash mid-engagement.
 
 ## Visual Overview & Interactive Demo
 
