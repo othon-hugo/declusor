@@ -13,14 +13,24 @@ The `shell_socket` plugin provides a lightweight, zero-dependency reverse-shell 
 
 ```text
 plugins/shell_socket/
-├── __init__.py        # Public package exports
-├── plugin.py          # ShellSocketPlugin (IClientPlugin) & ShellSocketRuntime (IClientRuntime)
-├── connection.py      # ShellSocketConnection (IConnection) & ShellSocketFileStore
-├── README.md          # This documentation
-└── assets/            # Bundled stagers and libraries
-    ├── launchers/     # shell_socket_client.sh (one-line stager)
-    ├── helpers/       # file.sh, util.sh (initialization bundle)
-    └── modules/       # discovery/*.sh (on-demand modules)
+├── pyproject.toml     # Standalone package metadata & entry point
+├── README.md          # Plugin documentation
+├── src/
+│   └── shell_socket/
+│       ├── __init__.py    # Public exports
+│       ├── plugin.py      # ShellSocketPlugin (IClientPlugin) & ShellSocketRuntime
+│       └── connection.py  # ShellSocketConnection (IConnection) & ShellSocketFileStore
+├── assets/            # Bundled stagers and libraries
+│   ├── launchers/     # shell_socket_client.sh (one-line stager)
+│   ├── helpers/       # file.sh, util.sh (initialization bundle)
+│   └── modules/       # discovery/*.sh (on-demand modules)
+└── tests/             # Autonomous unit & contract conformance test suite
+    ├── conftest.py
+    ├── test_conformance.py
+    ├── test_connection.py
+    ├── test_filestore.py
+    ├── test_plugin.py
+    └── test_profile.py
 ```
 
 ## How It Works

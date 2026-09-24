@@ -4,9 +4,10 @@ from pathlib import Path
 from socket import socket
 from typing import cast
 
+import shell_socket
+
 from declusor import contract
 from declusor.testing import DummySocket
-from plugins import shell_socket
 
 
 def test_shell_socket_plugin_metadata() -> None:

@@ -1,9 +1,9 @@
 """Unit tests for ShellSocketProfile."""
 
 import pytest
+import shell_socket
 
 from declusor import config
-from plugins import shell_socket
 
 
 def test_profile_supported_functions_are_immutable() -> None:

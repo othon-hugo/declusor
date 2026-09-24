@@ -4,10 +4,10 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from py_socket import PySocketPlugin
 
 from declusor import contract
 from declusor.testing import PluginConformanceTestSuite
-from plugins.py_socket import PySocketPlugin
 
 
 class TestPySocketConformance(PluginConformanceTestSuite):

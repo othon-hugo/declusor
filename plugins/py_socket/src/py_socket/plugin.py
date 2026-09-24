@@ -5,7 +5,9 @@ from declusor import config, contract, util
 
 from .connection import PySocketConnection, PySocketFileStore, PySocketProfile
 
-ASSETS_DIR = Path(__file__).resolve().parent / "assets"
+_REPO_ASSETS_DIR = Path(__file__).resolve().parents[2] / "assets"
+_PACKAGE_ASSETS_DIR = Path(__file__).resolve().parent / "assets"
+ASSETS_DIR = _REPO_ASSETS_DIR if _REPO_ASSETS_DIR.exists() else _PACKAGE_ASSETS_DIR
 
 
 class PySocketPlugin(contract.IClientPlugin):

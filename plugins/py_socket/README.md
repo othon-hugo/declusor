@@ -13,14 +13,23 @@ The `py_socket` plugin provides a cross-platform Python-based reverse-shell clie
 
 ```text
 plugins/py_socket/
-├── __init__.py        # Public package exports
-├── plugin.py          # PySocketPlugin (IClientPlugin) & PySocketRuntime (IClientRuntime)
-├── connection.py      # PySocketConnection (IConnection) & PySocketFileStore
-├── README.md          # This documentation
-└── assets/            # Bundled stagers and libraries
-    ├── launchers/     # py_socket_client.py (self-contained agent)
-    ├── helpers/       # file.py, util.py (initialization bundle)
-    └── modules/       # discovery/dev_tools.py, discovery/system_info.py
+├── pyproject.toml     # Standalone package metadata & entry point
+├── README.md          # Plugin documentation
+├── src/
+│   └── py_socket/
+│       ├── __init__.py    # Public exports
+│       ├── plugin.py      # PySocketPlugin (IClientPlugin) & PySocketRuntime
+│       └── connection.py  # PySocketConnection (IConnection) & PySocketFileStore
+├── assets/            # Bundled stagers and libraries
+│   ├── launchers/     # py_socket_client.py (self-contained agent)
+│   ├── helpers/       # file.py, util.py (initialization bundle)
+│   └── modules/       # discovery/dev_tools.py, discovery/system_info.py
+└── tests/             # Autonomous unit & contract conformance test suite
+    ├── test_conformance.py
+    ├── test_connection.py
+    ├── test_filestore.py
+    ├── test_plugin.py
+    └── test_profile.py
 ```
 
 ## How It Works

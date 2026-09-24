@@ -6,6 +6,7 @@ from . import (
     core,
     main,
     presentation,
+    testing,
     util,
 )
 
@@ -17,5 +18,6 @@ __all__ = [
     "core",
     "main",
     "presentation",
+    "testing",
     "util",
 ]

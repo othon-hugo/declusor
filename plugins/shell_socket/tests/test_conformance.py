@@ -4,10 +4,10 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from shell_socket import ShellSocketPlugin
 
 from declusor import contract
 from declusor.testing import PluginConformanceTestSuite
-from plugins.shell_socket import ShellSocketPlugin
 
 
 class TestShellSocketConformance(PluginConformanceTestSuite):

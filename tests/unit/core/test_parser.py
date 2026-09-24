@@ -1,5 +1,3 @@
-"""Unit tests for DeclusorParser argument parsing using typed test doubles."""
-
 from pathlib import Path
 
 import pytest

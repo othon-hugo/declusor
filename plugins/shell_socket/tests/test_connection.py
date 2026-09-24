@@ -3,10 +3,10 @@
 from collections.abc import Callable
 
 import pytest
+import shell_socket
 
 from declusor import config, contract
 from declusor.testing import DummySocket
-from plugins import shell_socket
 
 
 def test_connection_state_lifecycle_transitions(

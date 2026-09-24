@@ -38,10 +38,6 @@ Issues = "https://github.com/othonhugo/declusor/issues"
 [project.scripts]
 declusor = "declusor.main:main"
 
-[project.entry-points."declusor.plugins"]
-shell_socket = "plugins.shell_socket:ShellSocketPlugin"
-py_socket = "plugins.py_socket:PySocketPlugin"
-
 [project.entry-points.pytest11]
 declusor_testing = "declusor.testing.pytest_plugin"
 
@@ -91,7 +87,8 @@ indent-style = "space"
 
 [tool.mypy]
 python_version = "3.12"
-mypy_path = "src:."
+mypy_path = "src:.:plugins/shell_socket/src:plugins/py_socket/src"
+explicit_package_bases = true
 exclude = ["plugins/.*/assets/.*"]
 pretty = true
 strict = true
@@ -100,8 +97,8 @@ disallow_any_unimported = false
 disallow_subclassing_any = false
 
 [tool.pytest.ini_options]
-addopts = "-ra --strict-markers --tb=short -v"
-pythonpath = ["src", "."]
+addopts = "-ra --strict-markers --tb=short -v --import-mode=importlib"
+pythonpath = ["src", ".", "plugins/shell_socket/src", "plugins/py_socket/src"]
 testpaths = ["tests", "plugins"]
 norecursedirs = [
     ".vscode",

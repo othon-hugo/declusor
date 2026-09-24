@@ -3,8 +3,9 @@
 from socket import socket
 from typing import cast
 
+import py_socket
+
 from declusor.testing import DummyClientFileStore, DummySocket
-from plugins import py_socket
 
 
 def test_py_socket_connection_write_sends_null_delimited_frame(

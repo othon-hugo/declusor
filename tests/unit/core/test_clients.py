@@ -1,5 +1,3 @@
-"""Unit tests for ClientRegistry isolation and DeclusorParser client selection."""
-
 import pytest
 
 from declusor import core

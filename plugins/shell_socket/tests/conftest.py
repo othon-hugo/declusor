@@ -6,9 +6,9 @@ from socket import socket
 from typing import cast
 
 import pytest
+import shell_socket
 
 from declusor.testing import DummySocket
-from plugins import shell_socket
 
 
 @pytest.fixture

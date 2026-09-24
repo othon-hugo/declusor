@@ -4,11 +4,11 @@ from pathlib import Path
 from socket import socket
 from typing import cast
 
+import py_socket
 import pytest
 
 from declusor import config, contract
 from declusor.testing import DummySocket
-from plugins import py_socket
 
 
 def test_build_runtime_renders_configured_client_script(tmp_path: Path) -> None:

@@ -1,9 +1,9 @@
 """Unit tests for PySocketProfile."""
 
+import py_socket
 import pytest
 
 from declusor import config
-from plugins import py_socket
 
 
 def test_py_socket_profile_render_operation_command_exec_file() -> None:

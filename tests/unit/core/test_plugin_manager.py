@@ -181,6 +181,44 @@ class CustomAgentPlugin(contract.IClientPlugin):
     assert manager.get("custom_agent").name == "custom_agent"
 
 
+def test_discover_from_directory_src_layout(tmp_path: Path) -> None:
+    """Verify plugin discovery from an autonomous package using src/<plugin_name>/ layout."""
+    plugin_root = tmp_path / "custom_src_agent"
+    src_pkg = plugin_root / "src" / "custom_src_agent"
+    src_pkg.mkdir(parents=True)
+
+    plugin_code = """
+from declusor import contract
+
+class CustomSrcAgentPlugin(contract.IClientPlugin):
+    name = "custom_src_agent"
+    description = "Drop-in test agent using src layout"
+
+    @classmethod
+    def configure_parser(cls, parser, /) -> None:
+        pass
+
+    @classmethod
+    def build_config(cls, args, data_paths=None, /):
+        return None
+
+    @classmethod
+    def validate(cls, client_config, /) -> None:
+        pass
+
+    @classmethod
+    def build_runtime(cls, client_config, /):
+        return None
+"""
+    (src_pkg / "__init__.py").write_text(plugin_code, encoding="utf-8")
+
+    manager = core.PluginManager()
+    loaded = manager.load_from_directory(tmp_path)
+
+    assert "custom_src_agent" in loaded
+    assert manager.get("custom_src_agent").name == "custom_src_agent"
+
+
 def test_discover_from_entry_points() -> None:
     """Verify plugin discovery via Python entry points ('declusor.plugins')."""
 

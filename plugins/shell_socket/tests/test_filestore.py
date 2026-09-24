@@ -3,9 +3,9 @@
 from pathlib import Path
 
 import pytest
+import shell_socket
 
 from declusor import config, util
-from plugins import shell_socket
 
 
 def test_load_library_reports_read_errors(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

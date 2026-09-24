@@ -2,10 +2,10 @@
 
 from pathlib import Path
 
+import py_socket
 import pytest
 
 from declusor import config
-from plugins import py_socket
 
 
 def test_py_socket_file_store_load_library_returns_concatenated_helpers(tmp_path: Path) -> None:

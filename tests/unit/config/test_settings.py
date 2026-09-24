@@ -1,9 +1,9 @@
 from pathlib import Path
 
 import pytest
+import shell_socket
 
 from declusor import config, core, main
-from plugins import shell_socket
 
 
 def test_settings_constants() -> None:

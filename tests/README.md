@@ -11,9 +11,9 @@ declusor/
 │   ├── factories.py          # create_test_session, create_dummy_client_config, etc.
 │   ├── conformance.py        # Reusable PluginConformanceTestSuite for plugin validation
 │   └── pytest_plugin.py      # Standard pytest fixtures (dummy_console, test_session, etc.)
-├── plugins/                  # Autonomous native plugins with colocated test suites
-│   ├── shell_socket/tests/   # Colocated unit & conformance tests for shell_socket
-│   └── py_socket/tests/      # Colocated unit & conformance tests for py_socket
+├── plugins/                  # Autonomous native plugin packages
+│   ├── shell_socket/         # pyproject.toml, src/shell_socket/, tests/, assets/
+│   └── py_socket/            # pyproject.toml, src/py_socket/, tests/, assets/
 └── tests/                    # Host-level component, integration, and e2e test suite
     ├── conftest.py           # Loads declusor.testing.pytest_plugin
     ├── unit/
@@ -44,17 +44,17 @@ declusor/
 
 The `declusor.testing` package is distributed with Declusor, allowing both internal tests and third-party plugin authors to consume it:
 
-| Double                   | Implements                    | Key Capabilities                                                                                                  |
-| :----------------------- | :---------------------------- | :---------------------------------------------------------------------------------------------------------------- |
-| `DummyConsole`           | `contract.IConsole`           | Captures messages, binary data, errors, warnings; simulates input queue; tests `KeyboardInterrupt`.               |
-| `DummyConnection`        | `contract.IConnection`        | Enforces state transitions (`CREATED` $\to$ `CONNECTED` $\to$ `CLOSED`), records frames, streams incoming chunks. |
-| `DummyConnectionProfile` | `contract.IConnectionProfile` | Configurable command rendering per `OperationCode`, default opcode token generation, call history.                |
-| `DummyClientFileStore`   | `contract.IClientFileStore`   | In-memory library byte streaming, script templating, modular payload registration.                                |
-| `DummyClientRuntime`     | `contract.IClientRuntime`     | Produces dummy connections, exposes bootstrap scripts without touching disk.                                      |
-| `DummyClientPlugin`      | `contract.IClientPlugin`      | Self-contained plugin for testing discovery, parser configuration, and runtime instantiations.                    |
-| `DummyRouter`            | `contract.IRouter`            | Dynamic controller registration, route inspection, usage documentation, `RouterError` dispatch.                   |
-| `DummySocket`            | OS Socket Interface           | In-memory socket buffer simulation (`recv`, `send`, `sendall`, `close`) without OS network ports.                 |
-| `DummyApplication`       | `main.Application`            | In-memory CLI execution double tracking parse/run calls and simulating parser and runtime errors.                 |
+| Double                           | Implements                    | Key Capabilities                                                                                                  |
+| :------------------------------- | :---------------------------- | :---------------------------------------------------------------------------------------------------------------- |
+| `testing.DummyConsole`           | `contract.IConsole`           | Captures messages, binary data, errors, warnings; simulates input queue; tests `KeyboardInterrupt`.               |
+| `testing.DummyConnection`        | `contract.IConnection`        | Enforces state transitions (`CREATED` $\to$ `CONNECTED` $\to$ `CLOSED`), records frames, streams incoming chunks. |
+| `testing.DummyConnectionProfile` | `contract.IConnectionProfile` | Configurable command rendering per `OperationCode`, default opcode token generation, call history.                |
+| `testing.DummyClientFileStore`   | `contract.IClientFileStore`   | In-memory library byte streaming, script templating, modular payload registration.                                |
+| `testing.DummyClientRuntime`     | `contract.IClientRuntime`     | Produces dummy connections, exposes bootstrap scripts without touching disk.                                      |
+| `testing.DummyClientPlugin`      | `contract.IClientPlugin`      | Self-contained plugin for testing discovery, parser configuration, and runtime instantiations.                    |
+| `testing.DummyRouter`            | `contract.IRouter`            | Dynamic controller registration, route inspection, usage documentation, `RouterError` dispatch.                   |
+| `testing.DummySocket`            | OS Socket Interface           | In-memory socket buffer simulation (`recv`, `send`, `sendall`, `close`) without OS network ports.                 |
+| `testing.DummyApplication`       | `main.Application`            | In-memory CLI execution double tracking parse/run calls and simulating parser and runtime errors.                 |
 
 ## 4. Running the Tests and Quality Checks
 
