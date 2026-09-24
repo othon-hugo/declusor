@@ -1,12 +1,31 @@
-# Declusor
+<div align="center">
 
-A fast, modular, and extensible reverse-shell framework and payload delivery handler for security professionals and CTF players.
+  <h1>Declusor</h1>
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
-[![PyPI version](https://img.shields.io/pypi/v/declusor.svg)](https://pypi.org/project/declusor/)
-[![Typing: Strict](https://img.shields.io/badge/typing-strict-brightgreen.svg)](https://mypy.readthedocs.io/)
-[![Code Style: Ruff](https://img.shields.io/badge/code%20style-ruff-orange.svg)](https://docs.astral.sh/ruff/)
+  <p>
+    <strong>A fast, modular, and extensible reverse-shell framework and payload delivery handler for security professionals and CTF players.</strong>
+  </p>
+
+  <p>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+    <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.11%2B-blue.svg" alt="Python 3.11+"></a>
+    <a href="https://pypi.org/project/declusor/"><img src="https://img.shields.io/pypi/v/declusor.svg" alt="PyPI version"></a>
+    <a href="https://mypy.readthedocs.io/"><img src="https://img.shields.io/badge/typing-strict-brightgreen.svg" alt="Typing: Strict"></a>
+    <a href="https://docs.astral.sh/ruff/"><img src="https://img.shields.io/badge/code%20style-ruff-orange.svg" alt="Code Style: Ruff"></a>
+  </p>
+
+  <p>
+    <a href="#the-problem--why-i-built-declusor">Why Declusor</a> •
+    <a href="#visual-overview--interactive-demo">Demo</a> •
+    <a href="#key-capabilities">Capabilities</a> •
+    <a href="#getting-started">Quickstart</a> •
+    <a href="#real-world-workflow--usage">Usage</a> •
+    <a href="#extensible-plugin-ecosystem">Plugins</a> •
+    <a href="#architectural-highlights">Architecture</a> •
+    <a href="#contributing--quality-gates">Contributing</a>
+  </p>
+
+</div>
 
 ## The Problem & Why I Built Declusor
 
