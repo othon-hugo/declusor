@@ -19,6 +19,7 @@ class DummyCommand(contract.ICommand):
 
 def test_command_execute_runs_send_request_before_read_response() -> None:
     """ICommand.execute must invoke send_request before read_response."""
+
     session = contract.SessionContext(
         connection=MagicMock(spec=contract.IConnection),
         console=MagicMock(spec=contract.IConsole),

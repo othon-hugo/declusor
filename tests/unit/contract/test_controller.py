@@ -5,6 +5,7 @@ from declusor import contract
 
 def test_controller_dependencies_extract_order() -> None:
     """ControllerDependencies unpacking order must preserve connection, console, files."""
+
     connection = MagicMock(spec=contract.IConnection)
     console = MagicMock(spec=contract.IConsole)
     files = MagicMock(spec=contract.IClientFileStore)

@@ -8,6 +8,7 @@ from declusor.util import storage
 
 def test_load_file_success(tmp_path: Path) -> None:
     """Verify loading existing file content as bytes."""
+
     target = tmp_path / "payload.bin"
     target.write_bytes(b"payload content")
 
@@ -17,6 +18,7 @@ def test_load_file_success(tmp_path: Path) -> None:
 
 def test_load_file_missing_raises_invalid_operation(tmp_path: Path) -> None:
     """Verify missing file raises InvalidOperation."""
+
     missing = tmp_path / "nonexistent.bin"
     with pytest.raises(config.InvalidOperation, match="does not exist"):
         storage.load_file(missing)
@@ -24,6 +26,7 @@ def test_load_file_missing_raises_invalid_operation(tmp_path: Path) -> None:
 
 def test_load_file_directory_raises_invalid_operation(tmp_path: Path) -> None:
     """Verify directory path raises InvalidOperation."""
+
     directory = tmp_path / "subdir"
     directory.mkdir()
     with pytest.raises(config.InvalidOperation, match="is not a file"):
@@ -32,6 +35,7 @@ def test_load_file_directory_raises_invalid_operation(tmp_path: Path) -> None:
 
 def test_try_load_file_success_and_failure(tmp_path: Path) -> None:
     """Verify try_load_file returns bytes on success, None on failure."""
+
     target = tmp_path / "payload.bin"
     target.write_bytes(b"data")
 
@@ -41,6 +45,7 @@ def test_try_load_file_success_and_failure(tmp_path: Path) -> None:
 
 def test_ensure_file_exists(tmp_path: Path) -> None:
     """Verify ensure_file_exists resolves and returns Path."""
+
     target = tmp_path / "valid.txt"
     target.write_text("ok")
 
@@ -50,6 +55,7 @@ def test_ensure_file_exists(tmp_path: Path) -> None:
 
 def test_ensure_directory_exists(tmp_path: Path) -> None:
     """Verify ensure_directory_exists resolves Path or raises."""
+
     subdir = tmp_path / "valid_dir"
     subdir.mkdir()
 

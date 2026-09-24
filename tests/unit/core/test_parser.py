@@ -7,6 +7,7 @@ from declusor import config, contract, core
 
 def test_declusor_parser_initialization_with_registry() -> None:
     """Verify parser configures common arguments based on registry plugins."""
+
     mock_plugin = MagicMock(spec=contract.IClientPlugin)
     mock_plugin.name = "mock_client"
 
@@ -19,6 +20,7 @@ def test_declusor_parser_initialization_with_registry() -> None:
 
 def test_declusor_parser_parse_success(tmp_path) -> None:
     """Verify parser parses argv and builds validated ClientConfig."""
+
     mock_plugin = MagicMock()
     mock_plugin.name = "mock_client"
     mock_config = MagicMock(spec=contract.ClientConfig)
@@ -40,6 +42,7 @@ def test_declusor_parser_parse_success(tmp_path) -> None:
 
 def test_declusor_parser_parse_missing_positional_raises() -> None:
     """Verify parser raises ParserError when required positional args are missing."""
+
     registry = core.ClientRegistry()
     parser = core.DeclusorParser(registry, name="test_app")
 

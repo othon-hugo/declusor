@@ -7,6 +7,7 @@ from declusor.util import concurrency
 
 def test_task_pool_execution_and_results() -> None:
     """Verify tasks execute and results are collected."""
+
     pool = concurrency.TaskPool()
 
     def task_fn(stop_event: concurrency.TaskEvent) -> int:
@@ -24,6 +25,7 @@ def test_task_pool_execution_and_results() -> None:
 
 def test_task_pool_exception_capture() -> None:
     """Verify task exceptions are captured in errors property."""
+
     pool = concurrency.TaskPool()
 
     def failing_task(stop_event: concurrency.TaskEvent) -> None:
@@ -40,6 +42,7 @@ def test_task_pool_exception_capture() -> None:
 
 def test_task_pool_max_size_limit() -> None:
     """Verify TaskPool enforces max_size limit."""
+
     pool = concurrency.TaskPool(max_size=1)
 
     pool.add_task(lambda _: None)
@@ -49,6 +52,7 @@ def test_task_pool_max_size_limit() -> None:
 
 def test_task_pool_cooperative_stop() -> None:
     """Verify stop signals the TaskEvent."""
+
     event = concurrency.TaskEvent()
     pool = concurrency.TaskPool(stop_event=event)
 

@@ -6,6 +6,7 @@ from declusor import command, contract, controller
 
 def test_call_exit_returns_terminate_action() -> None:
     """call_exit must return ControllerResult with action=TERMINATE."""
+
     session = contract.SessionContext(
         connection=MagicMock(spec=contract.IConnection),
         console=MagicMock(spec=contract.IConsole),
@@ -21,6 +22,7 @@ def test_call_exit_returns_terminate_action() -> None:
 
 def test_call_command_executes_with_dto_and_returns_continue() -> None:
     """call_command must construct ExecuteCommand with ExecuteCommandDTO and execute via session."""
+
     session = contract.SessionContext(
         connection=MagicMock(spec=contract.IConnection),
         console=MagicMock(spec=contract.IConsole),
@@ -39,6 +41,7 @@ def test_call_command_executes_with_dto_and_returns_continue() -> None:
 
 def test_call_execute_file_with_dto(tmp_path: Path) -> None:
     """call_execute must construct ExecuteFile with ExecuteFileDTO and execute via session."""
+
     test_file = tmp_path / "script.sh"
     test_file.write_text("echo test")
 
@@ -60,6 +63,7 @@ def test_call_execute_file_with_dto(tmp_path: Path) -> None:
 
 def test_call_upload_file_with_dto(tmp_path: Path) -> None:
     """call_upload must construct UploadFile with UploadFileDTO and execute via session."""
+
     test_file = tmp_path / "upload.bin"
     test_file.write_bytes(b"data")
 
@@ -81,6 +85,7 @@ def test_call_upload_file_with_dto(tmp_path: Path) -> None:
 
 def test_call_load_module_with_dto() -> None:
     """call_load must construct LoadModule with LoadModuleDTO and execute via session."""
+
     session = contract.SessionContext(
         connection=MagicMock(spec=contract.IConnection),
         console=MagicMock(spec=contract.IConsole),
@@ -99,6 +104,7 @@ def test_call_load_module_with_dto() -> None:
 
 def test_call_shell_executes_and_returns_continue() -> None:
     """call_shell must execute LaunchShell via session."""
+
     session = contract.SessionContext(
         connection=MagicMock(spec=contract.IConnection),
         console=MagicMock(spec=contract.IConsole),

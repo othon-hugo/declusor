@@ -30,11 +30,13 @@ tests/
 ## 3. Running the Tests
 
 Run the complete test suite:
+
 ```bash
 pytest tests -v
 ```
 
 Run tests for a specific layer:
+
 ```bash
 pytest tests/unit/config/ -v
 pytest tests/unit/util/ -v
@@ -42,6 +44,7 @@ pytest tests/unit/plugins/ -v
 ```
 
 Run integration tests:
+
 ```bash
 pytest tests/integration/ -v
 ```

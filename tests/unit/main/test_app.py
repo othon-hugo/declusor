@@ -6,6 +6,7 @@ from declusor.main.app import Application, create_application
 
 def test_create_application_initializes_plugins() -> None:
     """Verify create_application loads built-in plugins into registry."""
+
     app = create_application()
     assert isinstance(app, Application)
     assert "shell_socket" in app._registry.names()
@@ -14,6 +15,7 @@ def test_create_application_initializes_plugins() -> None:
 
 def test_application_connect_routes() -> None:
     """Verify application registers core routes on its router."""
+
     registry = core.ClientRegistry()
     app = Application(registry)
     app._connect_routes()
@@ -24,6 +26,7 @@ def test_application_connect_routes() -> None:
 
 def test_application_run_lifecycle() -> None:
     """Verify Application.run lifecycle from validation to prompt execution."""
+
     mock_plugin = MagicMock(spec=contract.IClientPlugin)
     mock_plugin.name = "mock_client"
 

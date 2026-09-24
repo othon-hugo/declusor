@@ -8,6 +8,7 @@ from declusor.presentation import PromptCLI
 
 def test_prompt_terminates_on_controller_terminate_action() -> None:
     """PromptCLI must stop cleanly when a controller signals ControllerAction.TERMINATE."""
+
     mock_router = MagicMock(spec=contract.IRouter)
     mock_connection = MagicMock(spec=contract.IConnection)
     mock_console = MagicMock(spec=contract.IConsole)
@@ -33,6 +34,7 @@ def test_prompt_terminates_on_controller_terminate_action() -> None:
 
 def test_prompt_init_missing_dependencies_raises() -> None:
     """Verify PromptCLI raises InvalidOperation when dependencies are incomplete."""
+
     mock_router = MagicMock(spec=contract.IRouter)
 
     with pytest.raises(config.InvalidOperation):
@@ -41,6 +43,7 @@ def test_prompt_init_missing_dependencies_raises() -> None:
 
 def test_prompt_handles_keyboard_interrupt_on_input() -> None:
     """PromptCLI must terminate loop gracefully on KeyboardInterrupt during input."""
+
     mock_router = MagicMock(spec=contract.IRouter)
     mock_console = MagicMock(spec=contract.IConsole)
     mock_connection = MagicMock(spec=contract.IConnection)
@@ -61,6 +64,7 @@ def test_prompt_handles_keyboard_interrupt_on_input() -> None:
 
 def test_prompt_handles_keyboard_interrupt_during_execution() -> None:
     """PromptCLI catches KeyboardInterrupt during command execution and continues."""
+
     mock_router = MagicMock(spec=contract.IRouter)
     mock_console = MagicMock(spec=contract.IConsole)
     mock_connection = MagicMock(spec=contract.IConnection)
@@ -92,6 +96,7 @@ def test_prompt_handles_keyboard_interrupt_during_execution() -> None:
 
 def test_prompt_handles_declusor_exception() -> None:
     """PromptCLI catches DeclusorException and prints error without terminating loop."""
+
     mock_router = MagicMock(spec=contract.IRouter)
     mock_console = MagicMock(spec=contract.IConsole)
     mock_connection = MagicMock(spec=contract.IConnection)
