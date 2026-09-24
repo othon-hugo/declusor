@@ -84,30 +84,19 @@ class TestDeclusorPluginConformance(testing.PluginConformanceTestSuite):
 
 ## 5. Verification Commands
 
-Targeted verification for plugins can be executed via `make` or directly using the virtual environment tools:
-
-### Using Makefile Targets
+Targeted verification for plugins is executed using `make`:
 
 ```bash
 # Run all quality checks for a specific plugin (format-check, lint, type-check, test)
 make check-plugin PLUGIN=<plugin_name>
 
 # Granular plugin targets
-make test-plugin PLUGIN=<plugin_name>
-make type-check-plugin PLUGIN=<plugin_name>
-make lint-plugin PLUGIN=<plugin_name>
-make format-check-plugin PLUGIN=<plugin_name>
-make format-plugin PLUGIN=<plugin_name>
+make test-plugin PLUGIN=<plugin_name>         # Run unit and conformance tests
+make type-check-plugin PLUGIN=<plugin_name>   # Strict mypy static analysis
+make lint-plugin PLUGIN=<plugin_name>         # Ruff linter validation
+make format-check-plugin PLUGIN=<plugin_name> # Code formatting validation
+make format-plugin PLUGIN=<plugin_name>       # Auto-format and fix
 
 # Run tests across all plugins
 make test-plugins
-```
-
-### Direct CLI Commands
-
-```bash
-.venv/bin/pytest plugins/<plugin_name>/tests/
-.venv/bin/mypy plugins/<plugin_name>/
-.venv/bin/ruff check plugins/<plugin_name>/
-.venv/bin/ruff format --check plugins/<plugin_name>/
 ```

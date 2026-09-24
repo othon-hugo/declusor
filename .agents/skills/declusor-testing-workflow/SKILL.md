@@ -44,20 +44,24 @@ Standard typed pytest fixtures are pre-registered via `pytest_plugins = ["declus
 
 ## 3. Verification Execution Commands
 
-Before submitting or committing any change, run the full verification chain:
+Before submitting or committing any change, run the verification chain via the project `Makefile`:
 
 ```bash
-# 1. Full test suite (including colocated plugin tests)
-.venv/bin/pytest -q
+# Full quality check across entire codebase (format-check, lint, type-check, tests)
+make check
 
-# 2. Strict static type analysis across host, plugins, and tests
-.venv/bin/mypy src plugins tests
+# Granular verification targets
+make format-check       # Verify Ruff formatting
+make format             # Automatically format code and apply safe fixes
+make lint               # Run Ruff linter checks
+make type-check         # Run Mypy strict type analysis across host and plugins
+make test               # Run Pytest suite across host and plugins
+make compile            # Verify bytecode compilation across src, tests, and plugins
 
-# 3. Linting rules
-.venv/bin/ruff check src plugins tests
-
-# 4. Code formatting check
-.venv/bin/ruff format --check src plugins tests
+# Plugin-specific targets
+make check-plugin PLUGIN=<plugin_name>  # Full check for a specific plugin
+make test-plugin PLUGIN=<plugin_name>   # Run tests for a specific plugin
+make test-plugins                       # Run tests across all plugins
 ```
 
-All 4 commands must pass with 0 errors and 0 warnings.
+All checks must pass with 0 errors.

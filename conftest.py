@@ -1,1 +1,1 @@
-pytest_plugins = ["declusor.testing.pytest_plugin"]
+pytest_plugins = ["declusor_testing"]

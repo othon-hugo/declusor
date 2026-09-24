@@ -121,10 +121,10 @@ class TestMyClientConformance(PluginConformanceTestSuite):
         return MyClientPlugin
 ```
 
-Execute with `pytest`:
+Execute verification using `make`:
 
 ```bash
-pytest my_client/tests/ -v
+make test-plugin PLUGIN=my_client
 ```
 
 ### 4. Test Live with Declusor

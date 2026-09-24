@@ -1,5 +1,6 @@
 .PHONY: all
 .PHONY: install
+.PHONY: install-plugins
 .PHONY: reinstall
 .PHONY: compile
 .PHONY: lock
@@ -39,8 +40,29 @@ all: check
 install:
 ifneq ($(strip $(UV)),)
 	$(UV) sync --link-mode=$(UV_LINK_MODE)
+	$(MAKE) install-plugins
 else
-	@echo "Notice: uv not found; ensure dependencies are installed in .venv"
+	@if [ -d ".venv" ]; then \
+		$(EXEC)pip install -e ".[dev,testing]" 2>/dev/null || $(EXEC)python -m pip install -e ".[dev,testing]" 2>/dev/null || true; \
+		$(MAKE) install-plugins; \
+	else \
+		echo "Notice: uv not found; ensure dependencies are installed in .venv"; \
+	fi
+endif
+
+install-plugins:
+ifneq ($(strip $(UV)),)
+	@for p in plugins/*; do \
+		if [ -f "$$p/pyproject.toml" ]; then \
+			$(UV) pip install --no-deps -e "$$p"; \
+		fi; \
+	done
+else
+	@for p in plugins/*; do \
+		if [ -f "$$p/pyproject.toml" ]; then \
+			$(EXEC)pip install --no-deps -e "$$p" 2>/dev/null || $(EXEC)python -m pip install --no-deps -e "$$p" 2>/dev/null || true; \
+		fi; \
+	done
 endif
 
 reinstall:

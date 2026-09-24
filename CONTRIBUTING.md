@@ -55,8 +55,12 @@ main (Composition Root)
 
 ### Prerequisites
 
-- Python 3.11+
-- Virtual environment (`.venv`)
+- **Python 3.11+**
+- **uv** (recommended high-performance package and project manager)
+- **Make** (GNU Make for standardized execution workflows)
+- **Pytest** (test suite runner and assertion harness)
+- **Mypy** (strict static type analysis)
+- **Ruff** (high-speed linter and code formatter)
 
 ### Setting up the Environment
 
@@ -65,14 +69,14 @@ main (Composition Root)
 git clone https://github.com/othonhugo/declusor.git
 cd declusor
 
-# Create and activate virtual environment
+# Option A: Fast setup using uv (Recommended)
+make install
+# This syncs dependencies via uv and automatically installs all plugins in editable mode.
+
+# Option B: Manual setup using python3 venv + pip
 python3 -m venv .venv
 source .venv/bin/activate
-
-# Install development dependencies and host package in editable mode
 pip install -e ".[dev,testing]"
-
-# Install native plugins in editable mode
 pip install -e plugins/shell_socket
 pip install -e plugins/py_socket
 ```
@@ -217,39 +221,24 @@ dependencies = ["declusor>=0.3.1"]
 
 ## 6. Verification & Quality Gates
 
-Before opening a pull request or submitting code, ensure that all quality gates pass:
-
-### Using Makefile (Recommended)
+Before opening a pull request or submitting code, ensure that all quality gates pass using the project `Makefile`:
 
 ```bash
-# Run all quality checks across the codebase
+# Run the complete verification suite (formatting check, linting, strict mypy, and tests)
 make check
 
-# Granular targets
-make format-check
-make lint
-make type-check
-make test
+# Granular verification targets
+make format-check       # Verify code formatting with Ruff
+make format             # Automatically format code and apply safe fixes
+make lint               # Run Ruff linter checks
+make type-check         # Run Mypy strict type analysis across host and plugins
+make test               # Run all unit, integration, and conformance tests
+make compile            # Verify bytecode compilation across src, tests, and plugins
 
-# Plugin-specific targets
-make check-plugin PLUGIN=<plugin_name>
-make test-plugins
-```
-
-### Direct CLI Commands
-
-```bash
-# 1. Full test suite (host tests + colocated plugin tests)
-.venv/bin/pytest -q
-
-# 2. Strict static type analysis across host, plugins, and tests
-.venv/bin/mypy .
-
-# 3. Linter validation
-.venv/bin/ruff check .
-
-# 4. Formatter validation
-.venv/bin/ruff format --check .
+# Plugin verification targets
+make check-plugin PLUGIN=<plugin_name>  # Full check for a specific plugin
+make test-plugin PLUGIN=<plugin_name>   # Run tests for a specific plugin
+make test-plugins                       # Run tests across all plugins
 ```
 
 ## 7. Git Workflow & Commit Guidelines
