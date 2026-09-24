@@ -3,19 +3,7 @@ from unittest.mock import MagicMock, call
 
 import pytest
 
-from declusor import config, contract
-from declusor.command import (
-    ExecuteCommand,
-    ExecuteCommandDTO,
-    ExecuteFile,
-    ExecuteFileDTO,
-    LaunchShell,
-    LaunchShellDTO,
-    LoadModule,
-    LoadModuleDTO,
-    UploadFile,
-    UploadFileDTO,
-)
+from declusor import command, config, contract
 
 
 @pytest.fixture

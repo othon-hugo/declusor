@@ -4,13 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from declusor import config, contract, util
-from plugins.shell_socket import (
-    DEFAULT_SHELL_SOCKET,
-    ShellSocketConnection,
-    ShellSocketFileStore,
-    ShellSocketPlugin,
-    ShellSocketProfile,
-)
+from plugins import shell_socket
 
 
 def _create_connection(tmp_path: Path, socket_connection: MagicMock, ack: bytes = b"ack") -> ShellSocketConnection:
@@ -33,12 +27,16 @@ def _create_connection(tmp_path: Path, socket_connection: MagicMock, ack: bytes 
 
 
 def test_profile_supported_functions_are_immutable() -> None:
+    """Verify supported functions mapping in ShellSocketProfile cannot be modified."""
+
     profile = ShellSocketProfile(name="test", ack_server_raw=b"\x00", ack_client_raw=b"ack")
     with pytest.raises(TypeError):
         profile._supported_functions[config.OperationCode.EXEC_FILE] = "changed"  # type: ignore[index]
 
 
 def test_profile_render_operation_command() -> None:
+    """Verify render_operation_command produces correct shell function invocations."""
+
     profile = DEFAULT_SHELL_SOCKET
     rendered_exec = profile.render_operation_command(config.OperationCode.EXEC_FILE, "payload==")
     assert rendered_exec is not None
@@ -55,6 +53,8 @@ def test_profile_render_operation_command() -> None:
 
 
 def test_load_library_reports_read_errors(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verify load_library wraps file reading errors into ConnectionError."""
+
     helpers = tmp_path / "helpers"
     helpers.mkdir(parents=True)
     (helpers / "common.sh").write_bytes(b"echo common")
@@ -71,6 +71,8 @@ def test_load_library_reports_read_errors(tmp_path: Path, monkeypatch: pytest.Mo
 
 
 def test_load_library_returns_non_empty_scripts(tmp_path: Path) -> None:
+    """Verify load_library concatenates valid shell scripts from helpers directory."""
+
     helpers = tmp_path / "helpers"
     helpers.mkdir(parents=True)
     (helpers / "common.sh").write_bytes(b"echo common")
@@ -80,6 +82,8 @@ def test_load_library_returns_non_empty_scripts(tmp_path: Path) -> None:
 
 
 def test_load_module_reads_only_from_modules_directory(tmp_path: Path) -> None:
+    """Verify load_module reads modules from the designated modules directory."""
+
     modules = tmp_path / "modules"
     modules.mkdir(parents=True)
     (modules / "example.sh").write_bytes(b"echo module")
@@ -89,6 +93,8 @@ def test_load_module_reads_only_from_modules_directory(tmp_path: Path) -> None:
 
 
 def test_load_module_rejects_traversal_and_wrong_extension(tmp_path: Path) -> None:
+    """Verify load_module rejects path traversal escapes and unauthorized file extensions."""
+
     modules = tmp_path / "modules"
     modules.mkdir(parents=True)
     (tmp_path / "outside.txt").write_bytes(b"outside")
@@ -108,6 +114,8 @@ def test_load_module_rejects_traversal_and_wrong_extension(tmp_path: Path) -> No
 
 
 def test_connection_state_lifecycle_transitions(tmp_path: Path) -> None:
+    """Verify connection lifecycle transitions: CREATED -> CONNECTED -> CLOSED."""
+
     mock_socket = MagicMock()
     mock_socket.recv.return_value = b"valid_ack_32_bytes_long_sentinel"
 
@@ -126,6 +134,8 @@ def test_connection_state_lifecycle_transitions(tmp_path: Path) -> None:
 
 
 def test_connection_segmented_ack_streaming(tmp_path: Path) -> None:
+    """Verify ACK validation handles segmented byte streaming properly."""
+
     mock_socket = MagicMock()
     mock_socket.recv.side_effect = [
         b"\x00",
@@ -140,6 +150,8 @@ def test_connection_segmented_ack_streaming(tmp_path: Path) -> None:
 
 
 def test_initialize_fails_on_closed_connection(tmp_path: Path) -> None:
+    """Verify initialize raises ConnectionError when connection is already closed."""
+
     mock_socket = MagicMock()
     conn = _create_connection(tmp_path, mock_socket)
     conn.close()
@@ -149,6 +161,8 @@ def test_initialize_fails_on_closed_connection(tmp_path: Path) -> None:
 
 
 def test_write_uses_sendall_for_payload_and_ack(tmp_path: Path) -> None:
+    """Verify write uses sendall to transmit payload followed by null byte framing."""
+
     socket_connection = MagicMock()
     connection = _create_connection(tmp_path, socket_connection)
 
@@ -158,6 +172,8 @@ def test_write_uses_sendall_for_payload_and_ack(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize("error", [OSError("broken pipe"), TimeoutError("timed out")])
 def test_write_translates_transport_errors(tmp_path: Path, error: BaseException) -> None:
+    """Verify write translates socket transport errors into domain ConnectionError."""
+
     socket_connection = MagicMock()
     socket_connection.sendall.side_effect = error
 
@@ -175,12 +191,16 @@ def test_write_translates_transport_errors(tmp_path: Path, error: BaseException)
 
 
 def test_shell_socket_plugin_metadata() -> None:
+    """Verify ShellSocketPlugin metadata properties (name, description, version)."""
+
     assert ShellSocketPlugin.name == "shell_socket"
     assert ShellSocketPlugin.description != ""
     assert ShellSocketPlugin.version == "1.0.0"
 
 
 def test_build_runtime_renders_configured_client_script(tmp_path: Path) -> None:
+    """Verify ShellSocketPlugin.build_runtime renders client script with substituted parameters."""
+
     client_path = tmp_path / "client.sh"
     client_path.write_text("connect $HOST:$PORT ack=$ACKNOWLEDGE", encoding="utf-8")
     client_config = contract.ClientConfig(
@@ -199,6 +219,8 @@ def test_build_runtime_renders_configured_client_script(tmp_path: Path) -> None:
 
 
 def test_build_runtime_creates_shell_socket_connection(tmp_path: Path) -> None:
+    """Verify runtime creates a valid ShellSocketConnection instance."""
+
     client_path = tmp_path / "client.sh"
     client_path.write_text("$HOST:$PORT", encoding="utf-8")
     client_config = contract.ClientConfig(

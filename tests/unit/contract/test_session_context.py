@@ -5,6 +5,7 @@ from declusor import contract
 
 def test_session_context_initialization_and_properties() -> None:
     """SessionContext should properly hold and expose connection, console, and files."""
+
     connection = MagicMock(spec=contract.IConnection)
     console = MagicMock(spec=contract.IConsole)
     files = MagicMock(spec=contract.IClientFileStore)
@@ -22,6 +23,7 @@ def test_session_context_initialization_and_properties() -> None:
 
 def test_session_context_execute_invokes_command_execute() -> None:
     """session.execute(command) must dispatch command.execute(session)."""
+
     connection = MagicMock(spec=contract.IConnection)
     console = MagicMock(spec=contract.IConsole)
     files = MagicMock(spec=contract.IClientFileStore)
@@ -40,6 +42,7 @@ def test_session_context_execute_invokes_command_execute() -> None:
 
 def test_session_context_backward_compatibility_tuple_unpacking() -> None:
     """SessionContext must support tuple indexing, unpacking, and len for backward compatibility."""
+
     connection = MagicMock(spec=contract.IConnection)
     console = MagicMock(spec=contract.IConsole)
     files = MagicMock(spec=contract.IClientFileStore)
@@ -63,4 +66,5 @@ def test_session_context_backward_compatibility_tuple_unpacking() -> None:
 
 def test_controller_dependencies_alias() -> None:
     """ControllerDependencies must be an alias for SessionContext."""
+
     assert contract.ControllerDependencies is contract.SessionContext

@@ -5,6 +5,7 @@ from declusor import config, contract, core
 
 def test_router_connect_and_locate() -> None:
     """Verify route registration and lookup."""
+
     router = core.Router()
 
     def dummy_controller(dependencies: contract.SessionContext, argument: str) -> contract.ControllerAction:
@@ -20,6 +21,7 @@ def test_router_connect_and_locate() -> None:
 
 def test_router_duplicate_connect_raises_value_error() -> None:
     """Verify registering the same route twice raises ValueError."""
+
     router = core.Router()
 
     def dummy_controller(dependencies: contract.SessionContext, argument: str) -> contract.ControllerAction:
@@ -33,6 +35,7 @@ def test_router_duplicate_connect_raises_value_error() -> None:
 
 def test_router_locate_unknown_raises_router_error() -> None:
     """Verify looking up unregistered route raises RouterError."""
+
     router = core.Router()
 
     with pytest.raises(config.RouterError) as exc_info:
@@ -43,6 +46,7 @@ def test_router_locate_unknown_raises_router_error() -> None:
 
 def test_router_get_route_usage_and_documentation() -> None:
     """Verify route usage extraction and formatted documentation string."""
+
     router = core.Router()
 
     def cmd_a(dependencies: contract.SessionContext, argument: str) -> contract.ControllerAction:
@@ -67,5 +71,6 @@ def test_router_get_route_usage_and_documentation() -> None:
 
 def test_router_documentation_empty_when_no_routes() -> None:
     """Verify empty string documentation when no routes registered."""
+
     router = core.Router()
     assert router.documentation == ""

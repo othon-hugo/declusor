@@ -6,6 +6,7 @@ from declusor.util import parsing
 
 def test_parser_custom_error_raises_parser_error() -> None:
     """Verify Parser.error raises config.ParserError instead of sys.exit."""
+
     parser = parsing.Parser(prog="test")
     parser.add_argument("name", type=str)
 
@@ -15,6 +16,7 @@ def test_parser_custom_error_raises_parser_error() -> None:
 
 def test_build_command_parser_with_supported_types() -> None:
     """Verify build_command_parser creates positional arguments correctly."""
+
     definitions = {
         "command": str,
         "count": int,
@@ -30,12 +32,14 @@ def test_build_command_parser_with_supported_types() -> None:
 
 def test_build_command_parser_with_unsupported_type() -> None:
     """Verify build_command_parser raises InvalidOperation on unsupported types."""
+
     with pytest.raises(config.InvalidOperation, match="is not supported"):
         parsing.build_command_parser({"bad": list})
 
 
 def test_parse_command_arguments_success() -> None:
     """Verify parse_command_arguments extracts values into dictionary."""
+
     definitions = {
         "host": str,
         "port": int,
@@ -48,6 +52,7 @@ def test_parse_command_arguments_success() -> None:
 
 def test_parse_command_arguments_unknown_args() -> None:
     """Verify parse_command_arguments preserves unknown arguments when allowed."""
+
     definitions = {"host": str}
     parsed, unknown = parsing.parse_command_arguments("127.0.0.1 extra1 extra2", definitions, allow_unknown=True)
 
@@ -57,6 +62,7 @@ def test_parse_command_arguments_unknown_args() -> None:
 
 def test_parse_command_arguments_failure() -> None:
     """Verify parse_command_arguments raises ParserError on invalid arguments."""
+
     definitions = {"port": int}
     with pytest.raises(config.ParserError):
         parsing.parse_command_arguments("not_an_int", definitions)

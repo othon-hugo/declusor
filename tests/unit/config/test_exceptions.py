@@ -5,6 +5,7 @@ from declusor import config
 
 def test_exception_hierarchy() -> None:
     """Verify that all domain exceptions inherit from DeclusorException."""
+
     assert issubclass(config.DeclusorException, Exception)
     assert issubclass(config.ConnectionError, config.DeclusorException)
     assert issubclass(config.ConnectionClosed, config.ConnectionError)
@@ -24,7 +25,9 @@ def test_exception_hierarchy() -> None:
 
 def test_declusor_warning_hierarchy() -> None:
     """Verify DeclusorWarning inherits from Warning."""
+
     assert issubclass(config.DeclusorWarning, Warning)
+
     warning = config.DeclusorWarning("test warning")
     assert warning.description == "test warning"
     assert str(warning) == "test warning"
@@ -32,6 +35,7 @@ def test_declusor_warning_hierarchy() -> None:
 
 def test_prompt_error_formatting() -> None:
     """Verify PromptError formatting with and without description."""
+
     err_without_desc = config.PromptError("foo")
     assert err_without_desc.argument == "foo"
     assert err_without_desc.description is None
@@ -45,6 +49,7 @@ def test_prompt_error_formatting() -> None:
 
 def test_router_error_formatting() -> None:
     """Verify RouterError formatting with and without description."""
+
     err_without_desc = config.RouterError("help")
     assert err_without_desc.route == "help"
     assert err_without_desc.description is None
@@ -58,6 +63,7 @@ def test_router_error_formatting() -> None:
 
 def test_invalid_operation_formatting() -> None:
     """Verify InvalidOperation formatting."""
+
     err = config.InvalidOperation("file missing")
     assert err.description == "file missing"
     assert str(err) == "invalid operation: file missing"
@@ -65,6 +71,7 @@ def test_invalid_operation_formatting() -> None:
 
 def test_command_error_formatting() -> None:
     """Verify CommandError formatting."""
+
     err = config.CommandError("execution failed")
     assert err.description == "execution failed"
     assert str(err) == "command error: execution failed"
@@ -72,6 +79,7 @@ def test_command_error_formatting() -> None:
 
 def test_controller_error_formatting() -> None:
     """Verify ControllerError formatting."""
+
     err = config.ControllerError("dispatch failed")
     assert err.description == "dispatch failed"
     assert str(err) == "controller error: dispatch failed"
@@ -79,6 +87,7 @@ def test_controller_error_formatting() -> None:
 
 def test_catch_all_with_declusor_exception() -> None:
     """Verify that any domain error can be caught with DeclusorException."""
+
     exceptions = [
         config.ConnectionError("conn"),
         config.ConnectionClosed("closed"),
