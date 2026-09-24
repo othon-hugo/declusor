@@ -2,29 +2,6 @@
 
 This directory houses the built-in client plugins distributed with Declusor. Because Declusor employs a dynamic, multi-tier discovery architecture, third-party developers can create, test, and distribute custom plugins using the exact same structure.
 
----
-
-## Directory Topography
-
-```text
-plugins/
-├── README.md             # This plugin developer guide
-├── shell_socket/         # Native Bash /dev/tcp reverse shell
-│   ├── README.md         # Documentation specific to shell_socket
-│   ├── __init__.py       # Package exports
-│   ├── plugin.py         # ShellSocketPlugin & ShellSocketRuntime
-│   ├── connection.py     # ShellSocketConnection & FileStore
-│   └── assets/           # Bundled launchers, helpers, and modules
-└── py_socket/            # Cross-platform Python reverse shell
-    ├── README.md         # Documentation specific to py_socket
-    ├── __init__.py       # Package exports
-    ├── plugin.py         # PySocketPlugin & PySocketRuntime
-    ├── connection.py     # PySocketConnection & FileStore
-    └── assets/           # Bundled launchers, helpers, and modules
-```
-
----
-
 ## Plugin Architecture & Contracts
 
 Every plugin is an autonomous package that implements the contracts defined in `declusor.contract`:
@@ -37,28 +14,30 @@ Every plugin is an autonomous package that implements the contracts defined in `
 | `IClientFileStore`   | Asset manager             | Loads initialization helpers, bootstrap scripts, and on-demand discovery modules.       |
 | `IConnectionProfile` | Protocol metadata         | Holds timeouts, buffer sizes, and operation templates (`EXEC_FILE`, `STORE_FILE`).      |
 
----
-
 ## How Plugins are Discovered
 
 Declusor discovers plugins at runtime across **three tiers**:
 
 1. **Repository / Built-in Plugins** (`plugins/` directory):
+
    All valid subdirectories in `plugins/` that implement `IClientPlugin` are automatically discovered on startup.
+
 2. **Python Entry Points** (PEP 621):
+
    External plugins installed via `pip` declare the `declusor.plugins` entry point group:
+
    ```toml
    [project.entry-points."declusor.plugins"]
    my_plugin = "my_plugin_package:MyPluginClass"
    ```
+
 3. **Drop-in Directories**:
+
    Plugins placed in `~/.declusor/plugins/` or specified via the `--plugin-dir` CLI option are dynamically loaded via `importlib`.
 
 **Precedence Order**: Custom CLI (`--plugin-dir`) > User drop-in (`~/.declusor/plugins`) > Entry points (pip) > Built-in (`plugins/`).
 
----
-
-## Creating a Custom Plugin: Step-by-Step
+## Creating a Custom Plugin
 
 ### 1. Create a Package Directory
 
@@ -74,6 +53,7 @@ In `my_client/plugin.py`:
 ```python
 from pathlib import Path
 from declusor import contract, util, config
+
 
 class MyClientPlugin(contract.IClientPlugin):
     name = "my_client"

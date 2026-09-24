@@ -70,8 +70,6 @@ class PromptCLI(contract.IPrompt):
 
                 if action == contract.ControllerAction.TERMINATE:
                     break
-            except config.ExitRequest:
-                break
             except KeyboardInterrupt:
                 continue
             except config.DeclusorException as e:
@@ -110,7 +108,7 @@ class PromptCLI(contract.IPrompt):
             case [route]:
                 result = self._router.locate(route)(session, contract.ControllerRequest())
             case _:
-                raise config.PromptError(f"Invalid command: {command_line}")
+                raise config.PromptError(command_line, "invalid command")
 
         if isinstance(result, contract.ControllerResult):
             return result.action

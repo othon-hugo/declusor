@@ -1,5 +1,17 @@
+from dataclasses import dataclass
+
 from declusor import contract, util
-from declusor.command.dto import ShellDTO
+
+
+@dataclass(frozen=True)
+class LaunchShellDTO:
+    """Data transfer object configuring an interactive shell session.
+
+    Attributes:
+        banner: Optional informational banner message displayed upon entering shell mode.
+    """
+
+    banner: str | None = None
 
 
 class LaunchShell(contract.ICommand):
@@ -14,7 +26,7 @@ class LaunchShell(contract.ICommand):
         dto: Configuration options for the shell session.
     """
 
-    def __init__(self, dto: ShellDTO | None = None) -> None:
+    def __init__(self, dto: LaunchShellDTO | None = None) -> None:
         """Initialize the interactive shell command.
 
         Args:
@@ -23,12 +35,12 @@ class LaunchShell(contract.ICommand):
 
         super().__init__()
 
-        self._dto = dto or ShellDTO()
+        self._dto = dto or LaunchShellDTO()
         self._stop_event = util.TaskEvent()
         self._task_pool = util.TaskPool(self._stop_event)
 
     @property
-    def dto(self) -> ShellDTO:
+    def dto(self) -> LaunchShellDTO:
         """The command parameters."""
 
         return self._dto

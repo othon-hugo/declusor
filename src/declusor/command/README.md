@@ -1,16 +1,15 @@
 # Command Package
 
-The **command** package implements the Command design pattern. Each class
-encapsulates one remote operation and its data-formatting logic.
+The **command** package implements the Command design pattern. Each class encapsulates one remote operation and its data-formatting logic.
 
 ## Modules
 
-| Module       | Class                       | Responsibility                                       |
-| ------------ | --------------------------- | ---------------------------------------------------- |
-| `execute.py` | `ExecuteCommand`            | Encode and transmit a shell command                  |
-| `file.py`    | `ExecuteFile`, `UploadFile` | Encode a local file and invoke a client operation    |
-| `load.py`    | `LoadModule`                | Load an operator-selected module from `data/modules` |
-| `shell.py`   | `LaunchShell`               | Manage an interactive shell session                  |
+| Module    | Responsibility                                       |
+| --------- | ---------------------------------------------------- |
+| `execute` | Encode and transmit a shell command                  |
+| `file`    | Encode a local file and invoke a client operation    |
+| `load`    | Load an operator-selected module from `data/modules` |
+| `shell`   | Manage an interactive shell session                  |
 
 ## Design Principles
 

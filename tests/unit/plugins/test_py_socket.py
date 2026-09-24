@@ -10,7 +10,6 @@ from plugins.py_socket import (
     PySocketFileStore,
     PySocketPlugin,
     PySocketProfile,
-    PySocketRuntime,
 )
 
 # ---------------------------------------------------------------------------

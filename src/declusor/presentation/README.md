@@ -4,10 +4,10 @@ The **presentation** package implements the operator user interface and interact
 
 ## Modules
 
-| Module       | Class       | Implements                                                              |
-| ------------ | ----------- | ----------------------------------------------------------------------- |
-| `console.py` | `Console`   | `IConsole` — readline-backed terminal I/O with tab-completion & history |
-| `prompt.py`  | `PromptCLI` | `IPrompt` — interactive read-eval-dispatch loop with SessionContext     |
+| Module    | Responsability |
+| --------- | -------------- |
+| `console` |                |
+| `prompt`  |                |
 
 ## Design Principles
 

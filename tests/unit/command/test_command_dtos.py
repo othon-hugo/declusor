@@ -3,11 +3,11 @@ from pathlib import Path
 import pytest
 
 from declusor import config
-from declusor.command.dto import (
+from declusor.command import (
     ExecuteCommandDTO,
     ExecuteFileDTO,
+    LaunchShellDTO,
     LoadModuleDTO,
-    ShellDTO,
     UploadFileDTO,
 )
 
@@ -71,6 +71,6 @@ def test_load_module_dto_rejects_invalid_names(invalid_name: str) -> None:
 
 
 def test_shell_dto_defaults() -> None:
-    """ShellDTO should allow instantiation with defaults."""
-    dto = ShellDTO()
+    """LaunchShellDTO should allow instantiation with defaults."""
+    dto = LaunchShellDTO()
     assert dto.banner is None

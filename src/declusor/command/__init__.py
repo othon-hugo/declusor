@@ -1,14 +1,21 @@
-from .dto import (
+from .execute import (
+    ExecuteCommand,
     ExecuteCommandDTO,
+)
+from .file import (
+    ExecuteFile,
     ExecuteFileDTO,
-    LoadModuleDTO,
-    ShellDTO,
+    UploadFile,
     UploadFileDTO,
 )
-from .execute import ExecuteCommand
-from .file import ExecuteFile, UploadFile
-from .load import LoadModule
-from .shell import LaunchShell
+from .load import (
+    LoadModule,
+    LoadModuleDTO,
+)
+from .shell import (
+    LaunchShell,
+    LaunchShellDTO,
+)
 
 __all__ = [
     "ExecuteCommand",
@@ -16,9 +23,9 @@ __all__ = [
     "ExecuteFile",
     "ExecuteFileDTO",
     "LaunchShell",
+    "LaunchShellDTO",
     "LoadModule",
     "LoadModuleDTO",
-    "ShellDTO",
     "UploadFile",
     "UploadFileDTO",
 ]

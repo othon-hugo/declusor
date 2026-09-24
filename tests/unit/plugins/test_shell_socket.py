@@ -10,7 +10,6 @@ from plugins.shell_socket import (
     ShellSocketFileStore,
     ShellSocketPlugin,
     ShellSocketProfile,
-    ShellSocketRuntime,
 )
 
 
@@ -67,7 +66,7 @@ def test_load_library_reports_read_errors(tmp_path: Path, monkeypatch: pytest.Mo
 
     monkeypatch.setattr(util, "load_file", fail_load_file)
 
-    with pytest.raises(config.ConnectionFailure, match="common.sh"):
+    with pytest.raises(config.ConnectionError, match="common.sh"):
         store.load_library()
 
 
@@ -145,7 +144,7 @@ def test_initialize_fails_on_closed_connection(tmp_path: Path) -> None:
     conn = _create_connection(tmp_path, mock_socket)
     conn.close()
 
-    with pytest.raises(config.ConnectionFailure, match="Cannot initialize a closed connection"):
+    with pytest.raises(config.ConnectionError, match="Cannot initialize a closed connection"):
         conn.initialize()
 
 
@@ -164,7 +163,7 @@ def test_write_translates_transport_errors(tmp_path: Path, error: BaseException)
 
     connection = _create_connection(tmp_path, socket_connection)
 
-    with pytest.raises(config.ConnectionFailure) as raised:
+    with pytest.raises(config.ConnectionError) as raised:
         connection.write(b"command")
 
     assert raised.value.__cause__ is error

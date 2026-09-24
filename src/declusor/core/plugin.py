@@ -71,10 +71,6 @@ class PluginRegistry:
 ClientRegistry: TypeAlias = PluginRegistry
 
 
-class PluginValidationError(config.InvalidOperation):
-    """Raised when a candidate plugin does not satisfy the ``IClientPlugin`` contract."""
-
-
 class PluginManager(PluginRegistry):
     """Dynamic discovery and lifecycle registry for Declusor client plugins.
 
@@ -108,21 +104,21 @@ class PluginManager(PluginRegistry):
         """
 
         if not inspect.isclass(candidate):
-            raise PluginValidationError(f"Plugin candidate {candidate!r} must be a class.")
+            raise config.PluginValidationError(f"Plugin candidate {candidate!r} must be a class.")
 
         if not issubclass(candidate, contract.IClientPlugin):
-            raise PluginValidationError(f"Plugin class {candidate.__name__!r} must implement 'IClientPlugin'.")
+            raise config.PluginValidationError(f"Plugin class {candidate.__name__!r} must implement 'IClientPlugin'.")
 
         name = getattr(candidate, "name", None)
 
         if not isinstance(name, str) or not name.strip():
-            raise PluginValidationError(f"Plugin class {candidate.__name__!r} must define a non-empty string 'name'.")
+            raise config.PluginValidationError(f"Plugin class {candidate.__name__!r} must define a non-empty string 'name'.")
 
         # Check for unimplemented abstract methods
         if inspect.isabstract(candidate):
             abstract_methods = getattr(candidate, "__abstractmethods__", set())
 
-            raise PluginValidationError(
+            raise config.PluginValidationError(
                 f"Plugin class {candidate.__name__!r} has unimplemented abstract methods: {', '.join(sorted(abstract_methods))}"
             )
 
@@ -188,7 +184,7 @@ class PluginManager(PluginRegistry):
                 try:
                     self.register(plugin_class, source=f"{source_label}:{item.name}", allow_override=allow_override)
                     loaded_names.append(plugin_class.name)
-                except (PluginValidationError, ValueError):
+                except (config.PluginValidationError, ValueError):
                     continue
 
         return loaded_names

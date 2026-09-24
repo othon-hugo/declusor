@@ -54,16 +54,19 @@ class SessionContext:
     @property
     def connection(self) -> "IConnection":
         """Active connection to the remote client."""
+
         return self._connection
 
     @property
     def console(self) -> "IConsole":
         """Console interface for operator I/O."""
+
         return self._console
 
     @property
     def files(self) -> "IClientFileStore":
         """Client file store for module/library loading."""
+
         return self._files
 
     def execute(self, command: "ICommand") -> None:
@@ -72,19 +75,24 @@ class SessionContext:
         Args:
             command: The command object to execute.
         """
+
         command.execute(self)
 
     def __getitem__(self, index: int) -> Any:
         """Allow tuple indexing for backward compatibility."""
+
         items = (self._connection, self._console, self._files)
+
         return items[index]
 
     def __iter__(self) -> Iterator[Any]:
         """Allow tuple unpacking (connection, console, files) for backward compatibility."""
+
         return iter((self._connection, self._console, self._files))
 
     def __len__(self) -> int:
         """Return 3 for tuple compatibility."""
+
         return 3
 
 

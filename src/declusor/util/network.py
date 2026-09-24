@@ -56,6 +56,6 @@ def _handle_socket_exception(e: Exception) -> None:
 
     for exception_type, exception_message in exception_message_table.items():
         if isinstance(e, exception_type):
-            raise config.ConnectionFailure(exception_message) from e
+            raise config.DeclusorException(exception_message) from e
 
     raise e from e

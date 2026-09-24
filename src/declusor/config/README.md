@@ -7,11 +7,11 @@ The **config** package sits at the base of the dependency hierarchy. It provides
 
 ## Modules
 
-| Module          | Contents                                                                          |
-| --------------- | --------------------------------------------------------------------------------- |
-| `settings.py`   | `Settings` (project name/description) and `BasePath` (directory constants)        |
-| `enums.py`      | `ClientFile` (client script filenames) and `OperationCode` (file operation codes) |
-| `exceptions.py` | Full exception hierarchy rooted at `DeclusorException`                            |
+| Module        | Responsability |
+| ------------- | -------------- |
+| `settings.`   |                |
+| `enums.`      |                |
+| `exceptions.` |                |
 
 ## Exception Hierarchy
 

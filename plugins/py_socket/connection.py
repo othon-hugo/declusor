@@ -48,10 +48,10 @@ class PySocketProfile(contract.IConnectionProfile):
         object.__setattr__(self, "_supported_functions", MappingProxyType(dict(self._supported_functions)))
 
         if self._default_buffer_size <= 0:
-            raise config.ConnectionFailure("buffer_size must be > 0")
+            raise contract.ConnectionError("buffer_size must be > 0")
 
         if self.default_timeout and self.default_timeout < 0:
-            raise config.ConnectionFailure("connection_timeout must be >= 0 or None")
+            raise contract.ConnectionError("connection_timeout must be >= 0 or None")
 
     @property
     def default_buffer_size(self) -> int:
@@ -103,7 +103,7 @@ class PySocketFileStore(contract.IClientFileStore):
         try:
             client_script_template = self._launcher_path.read_text(encoding="utf-8")
         except OSError as error:
-            raise config.ConnectionFailure(f"Failed to read client script: {error}") from error
+            raise contract.ConnectionError(f"Failed to read client script: {error}") from error
 
         return util.format_template(
             client_script_template,
@@ -126,7 +126,7 @@ class PySocketFileStore(contract.IClientFileStore):
             try:
                 module_content = util.load_file(file)
             except config.InvalidOperation as error:
-                raise config.ConnectionFailure(f"Failed to read helper file: {file}: {error}") from error
+                raise contract.ConnectionError(f"Failed to read helper file: {file}: {error}") from error
 
             if module_content:
                 modules.append(module_content)
@@ -182,7 +182,7 @@ class PySocketConnection(contract.IConnection):
     def initialize(self) -> None:
         """Perform the Python agent initialization handshake."""
         if self._state == ConnectionState.CLOSED:
-            raise config.ConnectionFailure("Cannot initialize a closed connection.")
+            raise contract.ConnectionError("Cannot initialize a closed connection.")
 
         self._state = ConnectionState.INITIALIZING
         self.write(self._files.load_library())
@@ -198,27 +198,27 @@ class PySocketConnection(contract.IConnection):
                 chunk = self._connection.recv(read_size)
 
                 if not chunk:
-                    raise config.ConnectionFailure("Connection closed by client before receiving ACK.")
+                    raise contract.ConnectionError("Connection closed by client before receiving ACK.")
 
                 received_ack.extend(chunk)
 
             if bytes(received_ack) != expected_ack:
-                raise config.ConnectionFailure("Invalid client ACK during session initialization.")
+                raise contract.ConnectionError("Invalid client ACK during session initialization.")
         except (OSError, TimeoutError) as error:
-            raise config.ConnectionFailure("Failed waiting for client ACK during session initialization.") from error
+            raise contract.ConnectionError("Failed waiting for client ACK during session initialization.") from error
 
         self._state = ConnectionState.CONNECTED
 
     def write(self, data: bytes, /) -> None:
         """Send a null-delimited payload to the remote Python agent."""
         if self._state == ConnectionState.CLOSED:
-            raise config.ConnectionClosed("Connection is closed.")
+            raise contract.ConnectionClosed("Connection is closed.")
 
         try:
             self._connection.sendall(data + b"\x00")
             self._connection.recv(len(self._profile.ack_server_raw))
         except (OSError, TimeoutError) as error:
-            raise config.ConnectionFailure(f"Failed to write to connection: {error}") from error
+            raise contract.ConnectionError(f"Failed to write to connection: {error}") from error
 
     def read(self) -> Generator[bytes, None, None]:
         """Stream response chunks from the Python agent until the ACK sentinel."""
@@ -229,10 +229,10 @@ class PySocketConnection(contract.IConnection):
             try:
                 chunk = self._connection.recv(self._profile.default_buffer_size)
             except (OSError, TimeoutError) as error:
-                raise config.ConnectionClosed(f"Connection interrupted during read: {error}") from error
+                raise contract.ConnectionClosed(f"Connection interrupted during read: {error}") from error
 
             if not chunk:
-                raise config.ConnectionClosed("Connection closed by client during response stream.")
+                raise contract.ConnectionClosed("Connection closed by client during response stream.")
 
             buffer.extend(chunk)
 

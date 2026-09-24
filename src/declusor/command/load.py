@@ -1,5 +1,32 @@
+from dataclasses import dataclass
+
 from declusor import config, contract
-from declusor.command.dto import LoadModuleDTO
+
+
+@dataclass(frozen=True)
+class LoadModuleDTO:
+    """Data transfer object containing parameters for loading a client module.
+
+    Encapsulates and validates the name of the module to load from the client's
+    module repository. Prevents path traversal vulnerabilities.
+
+    Attributes:
+        module_name: Clean module identifier (e.g. ``discovery/sysinfo``).
+
+    Raises:
+        InvalidOperation: If ``module_name`` is empty or attempts directory traversal.
+    """
+
+    module_name: str
+
+    def __post_init__(self) -> None:
+        if not self.module_name or not self.module_name.strip():
+            raise config.InvalidOperation("Module name cannot be empty.")
+
+        clean_name = self.module_name.strip()
+
+        if ".." in clean_name or clean_name.startswith("/") or "\\" in clean_name:
+            raise config.InvalidOperation(f"Invalid module name '{self.module_name}': path traversal is not permitted.")
 
 
 class LoadModule(contract.ICommand):

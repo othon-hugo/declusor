@@ -10,9 +10,9 @@ from declusor.command import (
     ExecuteFile,
     ExecuteFileDTO,
     LaunchShell,
+    LaunchShellDTO,
     LoadModule,
     LoadModuleDTO,
-    ShellDTO,
     UploadFile,
     UploadFileDTO,
 )
@@ -118,7 +118,7 @@ def test_load_module_missing_files_store() -> None:
 
 
 def test_launch_shell_instantiation_with_dto() -> None:
-    dto = ShellDTO(banner="Welcome to shell")
+    dto = LaunchShellDTO(banner="Welcome to shell")
     cmd = LaunchShell(dto=dto)
 
     assert cmd.dto.banner == "Welcome to shell"
