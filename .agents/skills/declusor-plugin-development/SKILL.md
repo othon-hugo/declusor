@@ -1,0 +1,93 @@
+---
+name: declusor-plugin-development
+description: >-
+  Guide for developing, structuring, configuring, and verifying autonomous client transport plugins for Declusor. Use when creating a new plugin, refactoring existing plugins, or adding conformance tests.
+---
+
+# Declusor Plugin Development Guide
+
+This skill details how to author, package, and verify autonomous client plugins for Declusor.
+
+## 1. Plugin Directory Layout
+
+Every plugin must be an autonomous package situated in `plugins/<plugin_name>/`:
+
+```text
+plugins/<plugin_name>/
+├── pyproject.toml         # Standalone package definition
+├── README.md              # Documentation with ## Modules and ## Design Principles
+├── src/
+│   └── <plugin_name>/
+│       ├── __init__.py    # Public exports (__all__ = ["<PluginClass>"])
+│       ├── plugin.py      # Implements IClientPlugin & IClientRuntime
+│       └── connection.py  # Implements IConnection, IConnectionProfile, IClientFileStore
+├── assets/
+│   ├── launchers/         # Bootstrap stagers (e.g. client.py, client.sh)
+│   ├── helpers/           # Library files sent during session handshake
+│   └── modules/           # On-demand discovery/execution modules
+└── tests/
+    ├── conftest.py
+    └── test_conformance.py # PluginConformanceTestSuite inheritance
+```
+
+## 2. Manifest Configuration (`pyproject.toml`)
+
+Configure `pyproject.toml` with the entry point under group `declusor.plugins`:
+
+```toml
+[project]
+name = "declusor-<plugin_name>"
+version = "<major>.<minor>.<patch>"
+description = "<plugin description>"
+readme = "README.md"
+requires-python = ">=3.11,<4.0"
+dependencies = [
+    "declusor>=0.3.1",
+]
+
+[project.entry-points."declusor.plugins"]
+<plugin_name> = "<plugin_name>:<PluginClass>"
+```
+
+## 3. Implementing Core Interfaces
+
+Plugins implement contracts defined in `declusor.contract`:
+
+1. **`IClientPlugin`**:
+   - `name: str`: Unique identifier matching the entry point key.
+   - `description: str`, `version: str`: Metadata.
+   - `configure_parser(parser: IParser) -> None`: Registers plugin-specific CLI flags.
+   - `build_config(args: Namespace, data_paths: DataPaths) -> ClientConfig`: Constructs validated configuration.
+   - `validate(client_config: ClientConfig) -> None`: Validates assets and pre-conditions.
+   - `build_runtime(client_config: ClientConfig) -> IClientRuntime`: Instantiates runtime.
+2. **`IClientRuntime`**:
+   - `client_files: IClientFileStore`: Exposes file store.
+   - `client_script: str`: Returns rendered stager code.
+   - `create_connection(connection: socket) -> IConnection`: Wraps raw socket in transport connection.
+3. **`IConnection`**:
+   - Manages state lifecycle: `ConnectionState.CREATED` -> `CONNECTED` -> `CLOSED`.
+   - Idempotent `close()`.
+   - Streaming `read() -> Iterator[bytes]` and `write(data: bytes) -> None`.
+
+## 4. Contract Conformance Testing
+
+Always inherit from `PluginConformanceTestSuite` to automatically verify all contract invariants:
+
+```python
+from declusor import testing
+from declusor_plugin import DeclusorPlugin
+
+class TestDeclusorPluginConformance(testing.PluginConformanceTestSuite):
+    plugin_class = DeclusorPlugin
+```
+
+## 5. Verification Commands
+
+Run targeted verification for the plugin:
+
+```bash
+.venv/bin/pytest plugins/<plugin_name>/tests/
+.venv/bin/mypy plugins/<plugin_name>/
+.venv/bin/ruff check plugins/<plugin_name>/
+.venv/bin/ruff format --check plugins/<plugin_name>/
+```
