@@ -2,8 +2,6 @@
 
 Declusor is an interactive post-exploitation and command-and-control (C2) framework designed with clean architecture principles. It emphasizes modularity, separation of concerns, and strict dependency inversion. Dependencies flow strictly downward and inward toward domain abstractions, ensuring testability, runtime safety, and seamless extensibility across an autonomous plugin ecosystem.
 
----
-
 ## 1. Architectural Principles
 
 ### 1.1. Dependency Inversion & Contract-First Design
@@ -35,8 +33,6 @@ Declusor is an interactive post-exploitation and command-and-control (C2) framew
 
 - Reusable test infrastructure is shipped as a first-class package within the project.
 - Tests rely on deterministic, fully-typed test doubles and automated contract conformance suites rather than fragile, untyped mock monkeypatching.
-
----
 
 ## 2. Layer Architecture & Dependency Model
 
@@ -113,8 +109,6 @@ graph TB
 | `src/declusor/` $\to$ concrete plugins                           |   **NO**   | Host code must never import specific plugin packages directly.                |
 | Production code $\to$ `testing`                                  |   **NO**   | Production packages must never depend on test infrastructure.                 |
 
----
-
 ## 3. High-Level Layer Responsibilities
 
 ### 3.1. Foundation Layer (`config`, `util`)
@@ -148,8 +142,6 @@ graph TB
 - **Contract-Compliant Test Doubles**: Supplies mock-free, deterministic doubles for all domain abstractions, enabling comprehensive testing without physical operating system sockets or external network dependencies.
 - **Conformance Harness**: Provides reusable test suites that verify third-party and native plugins against host contract requirements.
 
----
-
 ## 4. Extensible Plugin Ecosystem
 
 Declusor treats client transports as autonomous, independently versionable packages.
@@ -170,8 +162,6 @@ Plugins bundle default assets within their own directories. Operators can overla
 1. **Launchers**: One-line stager scripts rendered dynamically with connection host, port, and security tokens.
 2. **Helpers**: Library scripts concatenated and evaluated in-memory during session initialization.
 3. **Modules**: On-demand operational scripts loaded dynamically during post-exploitation.
-
----
 
 ## 5. System Execution Flows
 
@@ -212,8 +202,6 @@ sequenceDiagram
     Main->>Plugin: Close transport connection
     Main-->>Operator: Exit process with status code
 ```
-
----
 
 ## 6. Architecture Quality & Safety Invariants
 

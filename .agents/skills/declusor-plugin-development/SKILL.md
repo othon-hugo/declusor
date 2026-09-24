@@ -77,13 +77,33 @@ Always inherit from `PluginConformanceTestSuite` to automatically verify all con
 from declusor import testing
 from declusor_plugin import DeclusorPlugin
 
+
 class TestDeclusorPluginConformance(testing.PluginConformanceTestSuite):
     plugin_class = DeclusorPlugin
 ```
 
 ## 5. Verification Commands
 
-Run targeted verification for the plugin:
+Targeted verification for plugins can be executed via `make` or directly using the virtual environment tools:
+
+### Using Makefile Targets
+
+```bash
+# Run all quality checks for a specific plugin (format-check, lint, type-check, test)
+make check-plugin PLUGIN=<plugin_name>
+
+# Granular plugin targets
+make test-plugin PLUGIN=<plugin_name>
+make type-check-plugin PLUGIN=<plugin_name>
+make lint-plugin PLUGIN=<plugin_name>
+make format-check-plugin PLUGIN=<plugin_name>
+make format-plugin PLUGIN=<plugin_name>
+
+# Run tests across all plugins
+make test-plugins
+```
+
+### Direct CLI Commands
 
 ```bash
 .venv/bin/pytest plugins/<plugin_name>/tests/

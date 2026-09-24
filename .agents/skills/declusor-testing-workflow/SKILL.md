@@ -23,6 +23,7 @@ Never mock framework contracts using raw `MagicMock`. Use typed doubles provided
 ```python
 from declusor import contract, testing
 
+
 def test_handler(dummy_connection: testing.DummyConnection, dummy_console: testing.DummyConsole) -> None:
     """Always document test intent with a clean pydoc and blank line below."""
 

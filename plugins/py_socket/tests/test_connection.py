@@ -10,6 +10,7 @@ def test_py_socket_connection_write_sends_null_delimited_frame(
     dummy_file_store: DummyClientFileStore,
 ) -> None:
     """Verify PySocketConnection transmits data with null byte framing."""
+
     dummy_sock = DummySocket(incoming_bytes=b"\x00")
     profile = py_socket.PySocketProfile(name="test", ack_server_raw=b"\x00", ack_client_raw=b"\xab" * 32)
 
@@ -24,6 +25,7 @@ def test_py_socket_connection_close_is_idempotent(
     dummy_file_store: DummyClientFileStore,
 ) -> None:
     """Verify closing PySocketConnection multiple times is idempotent."""
+
     dummy_sock = DummySocket()
     profile = py_socket.PySocketProfile(name="test", ack_server_raw=b"\x00", ack_client_raw=b"\xab" * 32)
 

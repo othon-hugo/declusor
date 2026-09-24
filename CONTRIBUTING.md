@@ -1,8 +1,6 @@
 # Contributing to Declusor
 
-Thank you for your interest in contributing to **Declusor**! Whether you are a human engineer or an autonomous AI agent, this document provides the architectural principles, quality standards, coding invariants, and workflows required to contribute effectively to this repository.
-
----
+Thank you for your interest in contributing to **Declusor**! This document provides the architectural principles, quality standards, coding invariants, and workflows required to contribute effectively to this repository.
 
 ## 1. Architectural Overview & Boundaries
 
@@ -53,8 +51,6 @@ main (Composition Root)
     - Native client transports (`plugins/shell_socket/`, `plugins/py_socket/`) are standalone packages with their own `pyproject.toml`, `src-layout`, `assets/`, and `tests/`.
     - **Isolation Invariant**: Core code (`src/declusor/`) and host unit tests (`tests/`) **MUST NEVER** import concrete plugins directly.
 
----
-
 ## 2. Development Setup
 
 ### Prerequisites
@@ -80,8 +76,6 @@ pip install -e ".[dev,testing]"
 pip install -e plugins/shell_socket
 pip install -e plugins/py_socket
 ```
-
----
 
 ## 3. Coding Standards & Invariants
 
@@ -142,16 +136,15 @@ def test_something() -> None:
 
 Every package directory must maintain a `README.md` containing at least:
 
-1. `## Modules`: A markdown table with columns `Module` and `Responsibility` documenting every module in the package without empty rows.
-2. `## Design Principles`: A numbered list detailing the design rationale and architectural guarantees of that layer.
+1. `# <Package Name>`: Top-level section with the package name followed by a concise description of the package's role, dependencies, and architectural context.
+2. `## Modules`: A markdown table with columns `Module` and `Responsibility` documenting every module in the package without empty rows.
+3. `## Design Principles`: A numbered list detailing the design rationale and architectural guarantees of that layer.
 
 ### 3.5. Strict Static Typing
 
 - All production and test code must carry complete, precise type annotations.
 - `mypy src plugins tests` must pass with zero errors under `--strict`.
 - Never use untyped `Any` where a generic `TypeVar`, `Protocol`, or explicit union can be defined.
-
----
 
 ## 4. Testing Guidelines
 
@@ -181,11 +174,10 @@ Standard pytest fixtures are pre-registered via `pytest_plugins = ["declusor.tes
   from declusor import testing
   from declusor_plugin import DeclusorPlugin
 
+
   class TestDeclusorPluginConformance(testing.PluginConformanceTestSuite):
       plugin_class = DeclusorPlugin
   ```
-
----
 
 ## 5. Plugin Authoring Guide
 
@@ -223,27 +215,42 @@ dependencies = ["declusor>=0.3.1"]
 <plugin_name> = "<plugin_name>:<PluginClass>"
 ```
 
----
-
 ## 6. Verification & Quality Gates
 
 Before opening a pull request or submitting code, ensure that all quality gates pass:
 
+### Using Makefile (Recommended)
+
 ```bash
-# 1. Run full test suite (host tests + colocated plugin tests)
+# Run all quality checks across the codebase
+make check
+
+# Granular targets
+make format-check
+make lint
+make type-check
+make test
+
+# Plugin-specific targets
+make check-plugin PLUGIN=<plugin_name>
+make test-plugins
+```
+
+### Direct CLI Commands
+
+```bash
+# 1. Full test suite (host tests + colocated plugin tests)
 .venv/bin/pytest -q
 
 # 2. Strict static type analysis across host, plugins, and tests
-.venv/bin/mypy src plugins tests
+.venv/bin/mypy .
 
 # 3. Linter validation
-.venv/bin/ruff check src plugins tests
+.venv/bin/ruff check .
 
 # 4. Formatter validation
-.venv/bin/ruff format --check src plugins tests
+.venv/bin/ruff format --check .
 ```
-
----
 
 ## 7. Git Workflow & Commit Guidelines
 

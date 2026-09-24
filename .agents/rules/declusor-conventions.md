@@ -65,8 +65,9 @@ def test_something() -> None:
 
 Every package directory must maintain a `README.md` containing at least:
 
-1. `## Modules`: A markdown table with columns `Module` and `Responsibility` documenting every module in the package without empty rows.
-2. `## Design Principles`: A numbered list detailing the design rationale and architectural guarantees of that layer.
+1. `# <Package Name>`: Top-level section with the package name followed by a concise description of the package's role, dependencies, and architectural context.
+2. `## Modules`: A markdown table with columns `Module` and `Responsibility` documenting every module in the package without empty rows.
+3. `## Design Principles`: A numbered list detailing the design rationale and architectural guarantees of that layer.
 
 ## 3. Testing Discipline & Standards
 
