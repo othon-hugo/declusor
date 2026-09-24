@@ -5,17 +5,22 @@ import pytest
 from declusor import config, connection, util
 
 
+def _make_store(tmp_path: Path, *, lib_exts: tuple = (".sh",), mod_exts: tuple = (".sh",)) -> connection.ShellSocketFileStore:
+    """Build a ``ShellSocketFileStore`` rooted under ``tmp_path/shell_socket/``."""
+    client_path = tmp_path / "shell_socket" / "launchers" / "shell_socket.sh"
+    client_path.parent.mkdir(parents=True, exist_ok=True)
+    data_paths = config.DataPaths.from_root(tmp_path)
+    return connection.ShellSocketFileStore(client_path, data_paths, lib_exts, mod_exts)
+
+
 def test_load_library_reports_read_errors(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Library read failures must not be silently treated as missing files."""
 
-    library = tmp_path / "library"
-    library.mkdir()
+    helpers_dir = tmp_path / "shell_socket" / "helpers"
+    helpers_dir.mkdir(parents=True)
+    (helpers_dir / "common.sh").write_bytes(b"echo common")
 
-    library_file = library / "common.sh"
-    library_file.write_bytes(b"echo common")
-
-    data_paths = config.DataPaths.from_root(tmp_path)
-    store = connection.ShellSocketFileStore(tmp_path / "client.sh", data_paths, (".sh",), (".sh",))
+    store = _make_store(tmp_path)
 
     def fail_load_file(filepath: str | Path, /) -> bytes:
         raise config.InvalidOperation(f"cannot read {filepath}")
@@ -29,25 +34,23 @@ def test_load_library_reports_read_errors(tmp_path: Path, monkeypatch: pytest.Mo
 def test_load_library_returns_non_empty_scripts(tmp_path: Path) -> None:
     """Valid shell libraries must be concatenated in the upload payload."""
 
-    library = tmp_path / "library"
-    library.mkdir()
+    helpers_dir = tmp_path / "shell_socket" / "helpers"
+    helpers_dir.mkdir(parents=True)
+    (helpers_dir / "common.sh").write_bytes(b"echo common")
 
-    (library / "common.sh").write_bytes(b"echo common")
-
-    data_paths = config.DataPaths.from_root(tmp_path)
-    store = connection.ShellSocketFileStore(tmp_path / "client.sh", data_paths, (".sh",), (".sh",))
+    store = _make_store(tmp_path)
 
     assert store.load_library() == b"echo common"
 
 
 def test_load_module_reads_only_from_modules_directory(tmp_path: Path) -> None:
-    """Explicit module loading must use ``data/modules`` and its policy."""
+    """Explicit module loading must use ``shell_socket/modules`` and its policy."""
 
-    modules = tmp_path / "modules"
-    modules.mkdir()
-    (modules / "example.sh").write_bytes(b"echo module")
-    data_paths = config.DataPaths.from_root(tmp_path)
-    store = connection.ShellSocketFileStore(tmp_path / "client.sh", data_paths, (".sh",), (".sh",))
+    modules_dir = tmp_path / "shell_socket" / "modules"
+    modules_dir.mkdir(parents=True)
+    (modules_dir / "example.sh").write_bytes(b"echo module")
+
+    store = _make_store(tmp_path)
 
     assert store.load_module("example.sh") == b"echo module"
 
@@ -55,11 +58,11 @@ def test_load_module_reads_only_from_modules_directory(tmp_path: Path) -> None:
 def test_load_module_rejects_traversal_and_wrong_extension(tmp_path: Path) -> None:
     """Explicit module loading must reject unsafe or unsupported paths."""
 
-    modules = tmp_path / "modules"
-    modules.mkdir()
+    modules_dir = tmp_path / "shell_socket" / "modules"
+    modules_dir.mkdir(parents=True)
     (tmp_path / "outside.txt").write_bytes(b"outside")
-    data_paths = config.DataPaths.from_root(tmp_path)
-    store = connection.ShellSocketFileStore(tmp_path / "client.sh", data_paths, (".sh",), (".sh",))
+
+    store = _make_store(tmp_path)
 
     with pytest.raises(config.InvalidOperation):
         store.load_module("../outside.txt")

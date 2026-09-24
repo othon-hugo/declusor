@@ -119,5 +119,6 @@ def create_application() -> Application:
 
     registry = core.ClientRegistry()
     registry.register(plugin.ShellSocketPlugin)
+    registry.register(plugin.PySocketPlugin)
 
     return Application(registry)

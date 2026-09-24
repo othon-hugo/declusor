@@ -11,10 +11,11 @@ from .exceptions import (
     PromptError,
     RouterError,
 )
-from .settings import BasePath, DataPaths, Settings
+from .settings import BasePath, ClientDataPaths, DataPaths, Settings
 
 __all__ = [
     "BasePath",
+    "ClientDataPaths",
     "DataPaths",
     "ClientFile",
     "ConnectionFailure",
