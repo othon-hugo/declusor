@@ -1,5 +1,5 @@
 [project]
-name = "declusor-plugin-shell-socket"
+name = "declusor-shell-socket"
 version = "0.1.0"
 description = "POSIX shell socket transport client plugin for Declusor."
 readme = "README.md"
@@ -9,7 +9,7 @@ dependencies = [
 ]
 
 [project.entry-points."declusor.plugins"]
-shell_socket = "shell_socket:ShellSocketPlugin"
+shell_socket = "declusor_shell_socket:ShellSocketPlugin"
 
 [project.optional-dependencies]
 testing = [

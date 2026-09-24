@@ -5,6 +5,7 @@ from declusor import main
 
 def test_create_application_discovers_builtin_plugins() -> None:
     """Application factory must discover built-in plugins automatically."""
+
     app = main.create_application()
     available = app._registry.names()
 
@@ -14,6 +15,7 @@ def test_create_application_discovers_builtin_plugins() -> None:
 
 def test_create_application_discovers_custom_plugins_via_search_dirs(tmp_path: Path) -> None:
     """Application factory must incorporate custom search directories."""
+
     custom_plugin_dir = tmp_path / "extra_client"
     custom_plugin_dir.mkdir()
 

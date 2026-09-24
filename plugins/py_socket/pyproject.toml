@@ -1,5 +1,5 @@
 [project]
-name = "declusor-plugin-py-socket"
+name = "declusor-py-socket"
 version = "0.1.0"
 description = "Cross-platform Python socket transport client plugin for Declusor."
 readme = "README.md"
@@ -9,7 +9,7 @@ dependencies = [
 ]
 
 [project.entry-points."declusor.plugins"]
-py_socket = "py_socket:PySocketPlugin"
+py_socket = "declusor_py_socket:PySocketPlugin"
 
 [project.optional-dependencies]
 testing = [

@@ -15,7 +15,7 @@ class Settings:
     DEFAULT_SERVER_ACK: Final[bytes] = b"\x00"
     """Default server acknowledgment byte sequence."""
 
-    DEFAULT_CLIENT_ACK_SEED: Final[bytes] = b"\xba\xdc\x00\xff\xee"
+    DEFAULT_CLIENT_ACK_SEED: Final[bytes] = b"declusor"
     """Default client acknowledgment seed used for SHA-256 calculation."""
 
 
@@ -26,21 +26,21 @@ class DataPaths:
     root: Path
     """Root directory containing the Declusor data directories."""
 
-    clients: Path
-    """Directory containing client bootstrap templates."""
+    launchers: Path
+    """Directory containing client bootstrap templates and launcher scripts."""
 
     modules: Path
     """Directory containing payload modules."""
 
-    library: Path
-    """Directory containing reusable client libraries."""
+    helpers: Path
+    """Directory containing reusable client helper libraries."""
 
     @classmethod
     def from_root(cls, root: Path, /) -> "DataPaths":
         """Build normalized data paths from a root directory.
 
         Args:
-            root: Directory containing ``clients``, ``modules`` and ``library``.
+            root: Directory containing ``launchers``, ``modules`` and ``helpers``.
 
         Returns:
             Immutable paths derived from ``root``.
@@ -50,10 +50,22 @@ class DataPaths:
 
         return cls(
             root=normalized_root,
-            clients=normalized_root / "clients",
+            launchers=normalized_root / "launchers",
             modules=normalized_root / "modules",
-            library=normalized_root / "library",
+            helpers=normalized_root / "helpers",
         )
+
+    @property
+    def clients(self) -> Path:
+        """Deprecated alias for launchers directory."""
+
+        return self.launchers
+
+    @property
+    def library(self) -> Path:
+        """Deprecated alias for helpers directory."""
+
+        return self.helpers
 
     def for_client(self, client_name: str, /) -> "ClientDataPaths":
         """Derive namespaced data paths for a specific client plugin.
@@ -67,6 +79,7 @@ class DataPaths:
         Returns:
             Immutable client-scoped paths derived from the root data directory.
         """
+
         client_root = self.root / client_name
 
         return ClientDataPaths(
@@ -108,20 +121,8 @@ class BasePath:
     PLUGINS_DIR = (ROOT_DIR / "plugins").resolve()
     """Root plugins directory for built-in and repository-level plugins."""
 
-    USER_PLUGINS_DIR = (Path.home() / ".declusor" / "plugins").resolve()
+    USER_DIR = (Path.home() / ".declusor").resolve()
+    """Default user-level configuration and runtime directory."""
+
+    USER_PLUGINS_DIR = (USER_DIR / "plugins").resolve()
     """Default user-level plugins directory for drop-in extensions."""
-
-    DATA_DIR = (ROOT_DIR / "data").resolve()
-    """Normalized data directory path."""
-
-    CLIENTS_DIR = (DATA_DIR / "clients").resolve()
-    """Normalized clients directory path."""
-
-    MODULES_DIR = (DATA_DIR / "modules").resolve()
-    """Normalized modules directory path."""
-
-    LIBRARY_DIR = (DATA_DIR / "library").resolve()
-    """Normalized library directory path."""
-
-    DATA_PATHS = DataPaths.from_root(DATA_DIR)
-    """Default data paths used during development."""

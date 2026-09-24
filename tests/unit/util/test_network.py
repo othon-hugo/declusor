@@ -25,6 +25,7 @@ def test_handle_socket_exception_unmapped_type() -> None:
     """Verify unmapped exceptions are re-raised as-is."""
 
     custom_exc = RuntimeError("unhandled error")
+
     with pytest.raises(RuntimeError, match="unhandled error"):
         network._handle_socket_exception(custom_exc)
 

@@ -1,29 +1,30 @@
 import pytest
 
-from declusor import core
-from declusor.testing import DummyClientPlugin
+from declusor import core, testing
 
 
 def test_registries_are_isolated() -> None:
     """Registering a plugin must not affect another registry instance."""
-    first = core.ClientRegistry()
-    second = core.ClientRegistry()
 
-    first.register(DummyClientPlugin)
+    first = core.ClientPluginRegistry()
+    second = core.ClientPluginRegistry()
 
-    assert first.names() == (DummyClientPlugin.name,)
+    first.register(testing.DummyClientPlugin)
+
+    assert first.names() == (testing.DummyClientPlugin.name,)
     assert second.names() == ()
 
 
-def test_parser_uses_injected_registry(monkeypatch: pytest.MonkeyPatch) -> None:
-    """The parser must resolve clients only from its injected registry."""
-    registry = core.ClientRegistry()
-    registry.register(DummyClientPlugin)
+def test_parser_uses_injected_manager(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The parser must resolve clients only from its injected manager."""
+
+    manager = core.ClientPluginManager()
+    manager.register(testing.DummyClientPlugin)
     monkeypatch.setattr(
         "sys.argv",
-        ["declusor", "127.0.0.1", "9000", "--client", DummyClientPlugin.name],
+        ["declusor", "127.0.0.1", "9000", "--client", testing.DummyClientPlugin.name],
     )
 
-    options = core.DeclusorParser(registry, name="declusor").parse()
+    options = core.DeclusorParser(manager, name="declusor").parse()
 
-    assert options["client"].kind == DummyClientPlugin.name
+    assert options["client"].kind == testing.DummyClientPlugin.name

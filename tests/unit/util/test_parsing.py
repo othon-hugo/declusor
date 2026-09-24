@@ -64,5 +64,6 @@ def test_parse_command_arguments_failure() -> None:
     """Verify parse_command_arguments raises ParserError on invalid arguments."""
 
     definitions = {"port": int}
+
     with pytest.raises(config.ParserError):
         parsing.parse_command_arguments("not_an_int", definitions)

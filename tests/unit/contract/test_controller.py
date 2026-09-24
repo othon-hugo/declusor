@@ -1,15 +1,13 @@
-"""Unit tests for Controller types and dependency unpacking."""
-
-from declusor import contract
-from declusor.testing import DummyClientFileStore, DummyConnection, DummyConsole
+from declusor import contract, testing
 
 
 def test_controller_dependencies_extract_order(
-    dummy_connection: DummyConnection,
-    dummy_console: DummyConsole,
-    dummy_file_store: DummyClientFileStore,
+    dummy_connection: testing.DummyConnection,
+    dummy_console: testing.DummyConsole,
+    dummy_file_store: testing.DummyClientFileStore,
 ) -> None:
     """ControllerDependencies unpacking order must preserve connection, console, files."""
+
     deps = contract.ControllerDependencies(dummy_connection, dummy_console, dummy_file_store)
 
     conn_out, console_out, files_out = deps

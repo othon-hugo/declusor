@@ -1,12 +1,10 @@
-"""Fixtures and test helpers for shell_socket plugin tests."""
-
 from collections.abc import Callable
 from pathlib import Path
 from socket import socket
 from typing import cast
 
+import declusor_shell_socket as shell_socket
 import pytest
-import shell_socket
 
 from declusor.testing import DummySocket
 
@@ -31,6 +29,7 @@ def make_shell_connection(
         sock = socket_connection or DummySocket(peer_name=("127.0.0.1", 9000))
         profile = shell_socket.ShellSocketProfile(name="test", ack_server_raw=b"\x00", ack_client_raw=ack)
         files = shell_socket.ShellSocketFileStore(launcher, helpers, modules, (".sh",), (".sh",))
+
         return shell_socket.ShellSocketConnection(cast(socket, sock), profile, files), sock
 
     return _create_connection

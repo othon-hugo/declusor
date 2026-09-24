@@ -4,7 +4,10 @@ from .connection import (
     PySocketFileStore,
     PySocketProfile,
 )
-from .plugin import PySocketPlugin, PySocketRuntime
+from .plugin import (
+    PySocketPlugin,
+    PySocketRuntime,
+)
 
 __all__ = [
     "DEFAULT_PY_SOCKET",

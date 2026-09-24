@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 
-from declusor import config, contract, core
+from declusor import contract, core
 
 
 class DummyApplication:
@@ -22,7 +22,7 @@ class DummyApplication:
                     kind="dummy",
                     host="127.0.0.1",
                     port=9000,
-                    data_paths=config.BasePath.DATA_PATHS,
+                    data_paths=None,
                     options={},
                 ),
             }

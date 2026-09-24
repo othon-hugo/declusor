@@ -1,76 +1,195 @@
-# Declusor: Remote Control and Payload Delivery Handler
+<div align="center">
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-![Python 3.x](https://img.shields.io/badge/python-3.x-blue.svg)
+  <h1>Declusor</h1>
 
-**Declusor** is a fast, flexible, and modular Python tool built for penetration testers, CTF players, and security professionals. It streamlines payload delivery and provides reliable remote control through an extensible, plugin-driven interactive CLI.
+  <p>
+    <strong>A fast, modular, and extensible reverse-shell framework and payload delivery handler for security professionals and CTF players.</strong>
+  </p>
 
-Its intelligent command-line interface boosts productivity with smart command and path completion, while supporting remote command execution, interactive sessions, payload management, and file transfers — all in one place.
+  <p>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+    <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.11%2B-blue.svg" alt="Python 3.11+"></a>
+    <a href="https://pypi.org/project/declusor/"><img src="https://img.shields.io/pypi/v/declusor.svg" alt="PyPI version"></a>
+    <a href="https://mypy.readthedocs.io/"><img src="https://img.shields.io/badge/typing-strict-brightgreen.svg" alt="Typing: Strict"></a>
+    <a href="https://docs.astral.sh/ruff/"><img src="https://img.shields.io/badge/code%20style-ruff-orange.svg" alt="Code Style: Ruff"></a>
+  </p>
 
-![Capabilities Overview](https://i.imgur.com/Wsw2l90.gif)
+  <p>
+    <a href="#why-declusor">Why Declusor</a> •
+    <a href="#see-it-in-action">Demo</a> •
+    <a href="#key-capabilities">Capabilities</a> •
+    <a href="#getting-started">Quickstart</a> •
+    <a href="#real-world-workflow--usage">Usage</a> •
+    <a href="#extensible-plugin-ecosystem">Plugins</a> •
+    <a href="#architectural-highlights">Architecture</a> •
+    <a href="#contributing--quality-gates">Contributing</a>
+  </p>
 
-> [!WARNING]
-> **Legal Notice**: This software is intended solely for educational use and authorized security research. The developers assume no liability for any misuse or unlawful activity carried out with this tool. Executing this software on networks or systems without ownership or explicit, written authorization for any form of testing or operation is strictly prohibited.
+</div>
 
-## Features
+## Why Declusor?
 
-- **Extensible Client Plugin Architecture**: Autonomous, self-contained plugins supporting different remote agents (e.g. native Bash `/dev/tcp`, Python agent with dual-mode execution).
-- **Multi-Tier Runtime Discovery**: Dynamically discovers built-in plugins (`plugins/`), external Python packages via Entry Points (`declusor.plugins`), and drop-in directories (`--plugin-dir`).
-- **Shell Management**: Establish, maintain, and manage reverse shell sessions with connected targets.
-- **Interactive Shell**: Spawn a fully interactive shell on the remote host for real-time command execution.
-- **Command Execution**: Execute arbitrary commands on the remote system and stream output back cleanly.
-- **File Upload & Execution**: Transfer files or execute local scripts in memory / via temporary binaries on the target.
-- **On-Demand Module Loading**: Execute reconnaissance and post-exploitation modules with tabular presentation.
-- **Zero Heavy Dependencies**: Core engine depends exclusively on the Python standard library.
+Catching a reverse shell during a CTF or penetration test shouldn't feel like walking a tightrope:
+
+- **Netcat is a little too minimal**: You get your shell, hit `Ctrl+C` by accident, and suddenly you're back to Googling PTY one-liners and pasting base64 blobs like it's 1995.
+- **C2 frameworks are a bit much**: Sometimes you just want to catch a shell and run `id`. You don't need twelve containers, a database, and a team server for that.
+- **Raw sockets don't handle drama well**: A few lines of socket code work great — until the connection drops, binary data shows up, or the shell does something you didn't expect.
+
+So I built **Declusor**: the simplicity of a raw listener, with the interactive features you'd actually want — history, completion, script staging, and an extensible transport layer without turning the whole thing into a science experiment.
+
+## See It in Action
+
+<!--
+  ASSET PLACEHOLDER:
+  Replace the image below with your high-resolution terminal screenshot at 'docs/assets/overview.png'.
+  See docs/assets/README.md for instructions and recommended dimensions.
+-->
+<p align="center">
+  <img src="docs/assets/overview.png" alt="Declusor Overview" width="900" onerror="this.style.display='none'"/>
+</p>
+
+<!--
+  ASSET PLACEHOLDER:
+  Replace the GIF below with your custom recording at 'docs/assets/demo.gif'.
+  Follow the VHS tape script in docs/assets/README.md to record an animated terminal walkthrough.
+-->
+<p align="center">
+  <img src="docs/assets/demo.gif" alt="Declusor Interactive Demo" width="900" onerror="this.onerror=null;this.src='https://i.imgur.com/Wsw2l90.gif';"/>
+  <br>
+  <em>From listener startup to remote execution in seconds: Catching a reverse shell, navigating with tab-completion, and loading modules in-memory.</em>
+</p>
+
+### What's Happening in the Demo?
+
+When an operator launches Declusor, the entire engagement workflow is automated and streamlined:
+
+1. **Automatic Stager Generation**: Declusor starts the listener and immediately displays the ready-to-run launcher command for the target system.
+2. **Deterministic Handshake & Sentinel ACK**: Upon connection, the framework verifies the remote transport, transmits helper libraries in-memory, and negotiates framed communication without requiring manual PTY acrobatics.
+3. **Interactive Readline Environment**: The operator gains full command recall, history search, and tab-completion for remote commands and local filesystem paths.
+4. **Clean In-Memory Payload Execution**: Modules and post-exploitation scripts are staged directly into remote memory, minimizing forensic artifacts on disk.
+
+| Operational Phase        | Operator Experience                          | Target Impact                         |
+| :----------------------- | :------------------------------------------- | :------------------------------------ |
+| **1. Listener Launch**   | Single CLI command (`declusor 0.0.0.0 4444`) | Prints pre-formatted stager one-liner |
+| **2. Session Ingress**   | Automatic connection detection & handshake   | Zero manual PTY stabilization needed  |
+| **3. Command Dispatch**  | Framed streaming with tab-completion         | Output streamed back chunk-by-chunk   |
+| **4. Post-Exploitation** | In-memory module loading (`load ...`)        | Execution memory-resident; clean exit |
+
+## Key Capabilities
+
+### 🎮 Operator Experience
+
+- **Smart Interactive REPL**: Built-in tab-completion for commands, target arguments, and local files.
+- **Persistent Command History**: Maintains command recall across operations, eliminating accidental disconnections from `Up-Arrow` or unhandled key sequences.
+- **Clean Stream Presentation**: Real-time output streaming with dedicated diagnostic reporting and structured tabular formatting.
+
+### ⚡ Tactical Operations
+
+- **Single Command Execution**: Execute arbitrary commands on the remote target with framed stream delivery.
+- **In-Memory Script Execution**: Stream local scripts directly into remote execution memory without writing forensic artifacts to disk.
+- **Binary File Transfers**: Upload reconnaissance and privilege-escalation binaries through framed chunking.
+- **Modular Post-Exploitation**: Execute modular payloads from local directories with clean parameter isolation.
+- **Interactive Shell Spawning**: Drop into an interactive shell session whenever you need unrestricted access.
+
+### 🧩 Autonomous Plugin Architecture
+
+- **Multi-Tier Dynamic Discovery**: Seamlessly load plugins from built-ins, standard pip packages via `declusor.plugins` entry points, or on-the-fly from operator drop-in folders (`--plugin-dir`).
+- **Fully Decoupled Transports**: Shipped with native Linux `/dev/tcp` (`shell_socket`) and memory-resident Python (`py_socket`) agents with zero hardcoded coupling to the core orchestration engine.
+- **Contract-Driven Stability**: Every plugin strictly implements domain interfaces (`IClientPlugin`, `IClientRuntime`, `IConnection`) with isolated asset overlays (launchers, helpers, and modules).
+- **First-Class Testing SDK**: Authors can verify conformance in seconds using `declusor.testing.PluginConformanceTestSuite` with zero mocks.
 
 ## Getting Started
 
 ### Prerequisites
 
-- **Python 3.11+** installed on the local machine running Declusor.
-- **Target environment**: Unix-like system for `shell_socket`, or any system with Python 3.6+ for `py_socket`.
+| Environment                 | Requirement          | Notes                                                         |
+| :-------------------------- | :------------------- | :------------------------------------------------------------ |
+| **Operator Machine**        | Python 3.11+         | Linux, macOS, or Windows                                      |
+| **Target (`shell_socket`)** | Bash with `/dev/tcp` | Standard on almost all Linux distributions; zero dependencies |
+| **Target (`py_socket`)**    | Python 3.6+          | Cross-platform (Linux, macOS, Windows); in-memory execution   |
 
 ### Installation
 
-Clone the repository and set up a virtual environment:
+#### Option A: Isolated CLI Install (Recommended for Operators)
+
+Install directly into an isolated environment using [uv](https://github.com/astral-sh/uv), [pipx](https://pypa.github.io/pipx/), or standard `pip`:
+
+```bash
+# Using uv (fastest)
+uv tool install declusor
+# or run ephemerally without installing
+uvx declusor 0.0.0.0 4444
+
+# Using pipx
+pipx install declusor
+
+# Using pip
+pip install declusor
+```
+
+#### Option B: Fast Development Setup with `uv` (Recommended for Contributors)
+
+Clone the repository and let `make install` configure your virtual environment, sync all dependencies, and link all native plugins in editable mode:
 
 ```bash
 git clone https://github.com/othonhugo/declusor.git
 cd declusor
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e .
+
+# Option B1: Using Make (recommended, runs uv sync + installs editable plugins)
+make install
+
+# Option B2: Using uv directly
+uv sync
+make install-plugins
+# (or: uv pip install -e plugins/shell_socket -e plugins/py_socket)
 ```
 
-## Usage
-
-### Starting the Listener
-
-Start Declusor specifying the bind address and port:
+#### Option C: Standard Virtualenv Setup with `pip`
 
 ```bash
-# Default (shell_socket client)
-declusor 0.0.0.0 4444
+git clone https://github.com/othonhugo/declusor.git
+cd declusor
 
-# Select client plugin explicitly
-declusor 0.0.0.0 4444 --client py_socket
+# Create and activate virtual environment
+python3 -m venv .venv && source .venv/bin/activate
 
-# Load external drop-in plugins
-declusor 0.0.0.0 4444 --plugin-dir /path/to/custom_plugins --client my_custom_agent
+# Install host package and development tools
+pip install -e ".[dev,testing]"
+
+# Install native plugins in editable mode
+make install-plugins
+# (or: pip install -e plugins/shell_socket -e plugins/py_socket)
 ```
 
-On startup, Declusor prints the client launcher command to execute on the target system.
+## Real-World Workflow & Usage
 
-### Available Client Plugins
+### 1. Start the Listener
 
-| Client            | Flag              | Target Compatibility                | Execution Method                                                       |
-| ----------------- | ----------------- | ----------------------------------- | ---------------------------------------------------------------------- |
-| **Shell Socket**  | `-c shell_socket` | Linux / Bash                        | Native `/dev/tcp` file descriptor                                      |
-| **Python Socket** | `-c py_socket`    | Linux, macOS, Windows (Python 3.6+) | In-memory `exec()` with persistent session scope & subprocess fallback |
+Start Declusor by specifying your local listening IP and port:
 
-### Interacting with the Target
+```bash
+# Default listener (uses native shell_socket client)
+declusor 0.0.0.0 4444
 
-Once the target connects back to the listener, an interactive prompt is presented:
+# Select the cross-platform Python client
+declusor 0.0.0.0 4444 --client py_socket
+
+# Load external custom plugins from an operator directory
+declusor 0.0.0.0 4444 --plugin-dir ~/custom_plugins --client my_agent
+```
+
+On startup, Declusor initializes the listener and **prints the exact one-liner launcher command** to run on your target.
+
+### 2. Built-in Client Transports
+
+| Client Plugin     | Flag              | Target OS             | Execution Mechanism                                                    |
+| :---------------- | :---------------- | :-------------------- | :--------------------------------------------------------------------- |
+| **Shell Socket**  | `-c shell_socket` | Linux / POSIX         | Native `/dev/tcp` file descriptor; zero external dependencies          |
+| **Python Socket** | `-c py_socket`    | Linux, macOS, Windows | In-memory `exec()` with persistent session scope & subprocess fallback |
+
+### 3. Interact with the Session
+
+Once your target connects back, Declusor drops you into an interactive session:
 
 ```text
 [declusor] help
@@ -83,7 +202,15 @@ execute : Execute a program or script from the local system on the remote system
 exit    : Terminate the session and exit the program.
 ```
 
-Example payload module execution:
+#### Example: Running Commands
+
+```text
+[declusor] command id && uname -a
+uid=1000(dev) gid=1000(dev) groups=1000(dev),27(sudo)
+Linux target-node 6.8.0-45-generic #45-Ubuntu SMP PREEMPT_DYNAMIC x86_64 GNU/Linux
+```
+
+#### Example: In-Memory Module Loading
 
 ```text
 [declusor] load discovery/system_info.py
@@ -96,21 +223,92 @@ Hostname: target-host
 User: dev
 ```
 
-## Developing Plugins
+## Extensible Plugin Ecosystem
 
-Declusor was built from the ground up to allow users to build and publish custom client transports:
+Declusor was architected from day one as an extensible engine. Transport plugins are fully autonomous packages with their own manifests, assets, and tests:
 
-- See the [Plugins Developer Guide](plugins/README.md) for full documentation, directory layout specifications, and step-by-step tutorials.
-- See [ARCHITECTURE.md](ARCHITECTURE.md) for the complete domain contract specifications and layer architecture.
+```text
+plugins/<plugin_name>/
+├── pyproject.toml                # Standalone package metadata & entry-point declaration
+├── README.md                     # Documentation (## Modules and ## Design Principles)
+├── src/declusor_<plugin_name>/   # Core transport and runtime implementation
+│   ├── __init__.py               # Public exports (__all__ = ["<PluginClass>"])
+│   ├── plugin.py                 # Implements IClientPlugin & IClientRuntime
+│   └── connection.py             # Implements IConnection, IConnectionProfile, IClientFileStore
+├── assets/                       # Bundled stagers and operational payloads
+│   ├── launchers/                # Client bootstrap templates (e.g. client.sh, client.py)
+│   ├── helpers/                  # In-memory initialization libraries (sent during handshake)
+│   └── modules/                  # On-demand reconnaissance and post-exploitation payloads
+└── tests/                        # Dedicated unit & contract conformance test suite
+    └── test_conformance.py       # Inherits from PluginConformanceTestSuite
+```
 
-## Contributing
+### Multi-Tier Dynamic Discovery
 
-Contributions are welcome! Please ensure that:
+Declusor discovers plugins at runtime across three distinct source tiers with zero hardcoded coupling:
 
-1. Code adheres to clean architecture principles and domain contracts in `src/declusor/contract/`.
-2. All new components include unit tests (`pytest`).
-3. Code passes linting (`ruff check src plugins tests`).
+1. **Built-in Plugins**: Shipped repository packages located in `plugins/` (`shell_socket`, `py_socket`).
+2. **Python Entry Points**: Standard distribution packages registered via PEP 621 entry points (`[project.entry-points."declusor.plugins"]`).
+3. **Operator Drop-in Folders**: Custom plugin directories loaded dynamically on the fly via `--plugin-dir <path>`.
+
+### Verifying Conformance in Seconds
+
+Every plugin can verify its compliance against Declusor's contracts using the built-in testing SDK:
+
+```python
+from declusor import testing
+from declusor_plugin import DeclusorPlugin
+
+
+class TestDeclusorPluginConformance(testing.PluginConformanceTestSuite):
+    plugin_class = DeclusorPlugin
+```
+
+Execute plugin tests and quality checks via `make`:
+
+```bash
+# Run unit and conformance tests for a specific plugin
+make test-plugin PLUGIN=py_socket
+
+# Run full quality check (format-check, lint, strict type-check, tests)
+make check-plugin PLUGIN=py_socket
+```
+
+For complete packaging tutorials, asset overlay mechanics, and step-by-step guides, check out the [Plugins Developer Guide](plugins/README.md).
+
+## Architectural Highlights
+
+Declusor adheres to strict **Clean Architecture** and **Dependency Inversion** principles:
+
+- **Unidirectional Layer Boundaries**: Dependencies flow downward into pure domain contracts (`declusor.contract`). Core framework code never imports concrete plugins.
+- **Fail-Fast Invariants**: Immutable Command DTOs validate parameters at the boundary, preventing invalid operations from propagating into transports.
+- **Deterministic Flow Control**: Controllers return explicit lifecycle signals (`CONTINUE`, `TERMINATE`) rather than relying on control-flow exceptions.
+- **100% Strict Static Typing**: Fully typed with strict mypy enforcement across core, native plugins, and tests.
+
+Read the complete architectural specification in [ARCHITECTURE.md](ARCHITECTURE.md).
+
+## Contributing & Quality Gates
+
+Contributions from both humans and autonomous agents are warmly welcomed! Please read our [CONTRIBUTING.md](CONTRIBUTING.md) guide before opening a pull request.
+
+Before committing, ensure that all quality gates pass:
+
+```bash
+# Run full test suite, linter, formatter, and strict type-checks
+make check
+
+# Run all plugin test suites
+make test-plugins
+
+# Check a specific plugin
+make check-plugin PLUGIN=py_socket
+```
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is open-source software licensed under the [MIT License](LICENSE).
+
+---
+
+> [!WARNING]
+> **Legal Disclaimer**: Declusor is intended solely for educational purposes and authorized security research. The authors assume no liability for misuse. Executing this software against systems without explicit, prior written authorization is strictly prohibited.

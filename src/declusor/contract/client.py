@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from socket import socket
 from typing import TYPE_CHECKING, Any
 
-from declusor import config, util
+from declusor import util
 from declusor.config import DataPaths
 
 if TYPE_CHECKING:
@@ -27,8 +27,8 @@ class ClientConfig:
     port: int
     """Port used by the server."""
 
-    data_paths: DataPaths = config.BasePath.DATA_PATHS
-    """Filesystem paths used by the selected client runtime."""
+    data_paths: DataPaths | None = None
+    """Optional filesystem paths used by the selected client runtime."""
 
     options: dict[str, Any] = field(default_factory=dict)
     """Client-specific configuration options."""
@@ -101,12 +101,12 @@ class IClientPlugin(ABC):
 
     @classmethod
     @abstractmethod
-    def build_config(cls, args: util.Namespace, data_paths: DataPaths, /) -> ClientConfig:
+    def build_config(cls, args: util.Namespace, data_paths: DataPaths | None = None, /) -> ClientConfig:
         """Build a client configuration from parsed arguments and data paths.
 
         Args:
             args: Namespace containing common and client-specific arguments.
-            data_paths: Resolved filesystem paths for the application.
+            data_paths: Resolved filesystem paths for the application, or None to use bundled assets.
 
         Returns:
             Configuration object for the selected client.

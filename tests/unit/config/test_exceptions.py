@@ -105,3 +105,28 @@ def test_catch_all_with_declusor_exception() -> None:
     for exc in exceptions:
         with pytest.raises(config.DeclusorException):
             raise exc
+
+
+def test_package_exception_exports() -> None:
+    """Verify that domain packages re-export their respective domain exceptions."""
+
+    from declusor import command, contract, controller, core, presentation
+
+    assert command.CommandError is config.CommandError
+    assert command.CommandValidationError is config.CommandValidationError
+    assert command.InvalidOperation is config.InvalidOperation
+
+    assert controller.ControllerError is config.ControllerError
+
+    assert core.ParserError is config.ParserError
+    assert core.PluginError is config.PluginError
+    assert core.PluginValidationError is config.PluginValidationError
+    assert core.RouterError is config.RouterError
+
+    assert presentation.PromptError is config.PromptError
+
+    assert contract.ConnectionError is config.ConnectionError
+    assert contract.ConnectionClosed is config.ConnectionClosed
+    assert contract.ConnectionTimeoutError is config.ConnectionTimeoutError
+    assert contract.ConnectionHandshakeError is config.ConnectionHandshakeError
+    assert contract.InvalidOperation is config.InvalidOperation

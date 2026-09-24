@@ -7,11 +7,11 @@ The **config** package sits at the base of the dependency hierarchy. It provides
 
 ## Modules
 
-| Module        | Responsability |
-| ------------- | -------------- |
-| `settings.`   |                |
-| `enums.`      |                |
-| `exceptions.` |                |
+| Module       | Responsibility                                                              |
+| ------------ | --------------------------------------------------------------------------- |
+| `enums`      | Enumerations for connection states, operation codes, and controller actions |
+| `exceptions` | Canonical domain exception hierarchy and custom warnings                    |
+| `settings`   | Configuration paths, runtime directories, and client configuration options  |
 
 ## Exception Hierarchy
 

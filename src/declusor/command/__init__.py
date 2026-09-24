@@ -1,3 +1,9 @@
+from declusor.config import (
+    CommandError,
+    CommandValidationError,
+    InvalidOperation,
+)
+
 from .execute import (
     ExecuteCommand,
     ExecuteCommandDTO,
@@ -18,10 +24,13 @@ from .shell import (
 )
 
 __all__ = [
+    "CommandError",
+    "CommandValidationError",
     "ExecuteCommand",
     "ExecuteCommandDTO",
     "ExecuteFile",
     "ExecuteFileDTO",
+    "InvalidOperation",
     "LaunchShell",
     "LaunchShellDTO",
     "LoadModule",

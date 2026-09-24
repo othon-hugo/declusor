@@ -1,3 +1,11 @@
+from declusor.config import (
+    ConnectionClosed,
+    ConnectionError,
+    ConnectionHandshakeError,
+    ConnectionTimeoutError,
+    InvalidOperation,
+)
+
 from .client import (
     ClientConfig,
     IClientFileStore,
@@ -35,7 +43,11 @@ from .router import (
 
 __all__ = [
     "ClientConfig",
+    "ConnectionClosed",
+    "ConnectionError",
+    "ConnectionHandshakeError",
     "ConnectionState",
+    "ConnectionTimeoutError",
     "Controller",
     "ControllerAction",
     "ControllerDependencies",
@@ -48,6 +60,7 @@ __all__ = [
     "IConnection",
     "IConnectionProfile",
     "IConsole",
+    "InvalidOperation",
     "IParser",
     "IPrompt",
     "IRouter",
