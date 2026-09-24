@@ -1,4 +1,5 @@
-from declusor import config, contract
+from declusor import contract
+from declusor.config import RouterError
 
 
 class Router(contract.IRouter):
@@ -57,7 +58,7 @@ class Router(contract.IRouter):
         if controller := self._route_table.get(route.strip()):
             return controller
 
-        raise config.RouterError(route)
+        raise RouterError(route)
 
     @property
     def documentation(self) -> str:

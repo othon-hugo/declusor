@@ -46,10 +46,10 @@ class ShellSocketProfile(contract.IConnectionProfile):
         object.__setattr__(self, "_supported_functions", MappingProxyType(dict(self._supported_functions)))
 
         if self._default_buffer_size <= 0:
-            raise config.ConnectionFailure("buffer_size must be > 0")
+            raise config.ConnectionError("buffer_size must be > 0")
 
         if self.default_timeout and self.default_timeout < 0:
-            raise config.ConnectionFailure("connection_timeout must be >= 0 or None")
+            raise config.ConnectionError("connection_timeout must be >= 0 or None")
 
     @property
     def default_buffer_size(self) -> int:
@@ -104,7 +104,7 @@ class ShellSocketFileStore(contract.IClientFileStore):
         try:
             client_script_template = self._launcher_path.read_text(encoding="utf-8")
         except OSError as error:
-            raise config.ConnectionFailure(f"Failed to read client script: {error}") from error
+            raise config.ConnectionError(f"Failed to read client script: {error}") from error
 
         return util.format_template(
             client_script_template,
@@ -127,7 +127,7 @@ class ShellSocketFileStore(contract.IClientFileStore):
             try:
                 module_content = util.load_file(file)
             except config.InvalidOperation as error:
-                raise config.ConnectionFailure(f"Failed to read library file: {file}: {error}") from error
+                raise config.ConnectionError(f"Failed to read library file: {file}: {error}") from error
 
             if module_content:
                 modules.append(module_content)
@@ -183,7 +183,7 @@ class ShellSocketConnection(contract.IConnection):
     def initialize(self) -> None:
         """Perform the client initialization handshake."""
         if self._state == ConnectionState.CLOSED:
-            raise config.ConnectionFailure("Cannot initialize a closed connection.")
+            raise config.ConnectionError("Cannot initialize a closed connection.")
 
         self._state = ConnectionState.INITIALIZING
         self.write(self._files.load_library())
@@ -199,14 +199,14 @@ class ShellSocketConnection(contract.IConnection):
                 chunk = self._connection.recv(read_size)
 
                 if not chunk:
-                    raise config.ConnectionFailure("Connection closed by client before receiving ACK.")
+                    raise config.ConnectionError("Connection closed by client before receiving ACK.")
 
                 received_ack.extend(chunk)
 
             if bytes(received_ack) != expected_ack:
-                raise config.ConnectionFailure("Invalid client ACK during session initialization.")
+                raise config.ConnectionError("Invalid client ACK during session initialization.")
         except (OSError, TimeoutError) as error:
-            raise config.ConnectionFailure("Failed waiting for client ACK during session initialization.") from error
+            raise config.ConnectionError("Failed waiting for client ACK during session initialization.") from error
 
         self._state = ConnectionState.CONNECTED
 
@@ -220,7 +220,7 @@ class ShellSocketConnection(contract.IConnection):
             self._connection.sendall(self._profile.ack_server_raw)
             self._connection.recv(len(self._profile.ack_server_raw))
         except (OSError, TimeoutError) as error:
-            raise config.ConnectionFailure(f"Failed to write to connection: {error}") from error
+            raise config.ConnectionError(f"Failed to write to connection: {error}") from error
 
     def read(self) -> Generator[bytes, None, None]:
         """Stream response chunks from the client until the ACK sentinel."""

@@ -173,7 +173,7 @@ Stateless command pattern operations holding validated parameter DTOs.
 | `ExecuteFileDTO`    | Validated local script file `Path`       | Parameters for script upload and execution   |
 | `UploadFileDTO`     | Validated local file `Path`              | Parameters for file upload without execution |
 | `LoadModuleDTO`     | Non-empty, no traversal (`..`, `/`, `\`) | Parameters for remote module loading         |
-| `ShellDTO`          | Optional shell banner message            | Interactive shell configuration              |
+| `LaunchShellDTO`    | Optional shell banner message            | Interactive shell configuration              |
 
 ### Extensible Plugins Layer (`plugins/` & External Packages)
 

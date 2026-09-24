@@ -7,16 +7,16 @@ The **contract** package defines the abstract contracts that establish the bound
 
 ## Modules & Contracts
 
-| Module          | Contract / Invariant                                                   | Purpose                                                                                                          |
-| --------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `client.py`     | `IClientPlugin`, `IClientRuntime`, `IClientFileStore`, `ClientConfig`  | Configuration, lifecycle adapter, and file store contracts for client plugins                                    |
-| `connection.py` | `IConnection`, `IConnectionProfile`, `ConnectionState`                 | Transport session contract with lifecycle state machine (`CREATED` -> `INITIALIZING` -> `CONNECTED` -> `CLOSED`) |
-| `command.py`    | `ICommand`                                                             | Stateless contract for executable command objects (`execute(session)`)                                           |
-| `controller.py` | `SessionContext`, `Controller`, `ControllerAction`, `ControllerResult` | Controller handlers, execution result wrappers, and the domain Session coordinator                               |
-| `console.py`    | `IConsole`                                                             | Contract for presentation console I/O                                                                            |
-| `parser.py`     | `IParser`                                                              | Contract for command-line argument parsing                                                                       |
-| `prompt.py`     | `IPrompt`                                                              | Contract for the interactive command prompt loop                                                                 |
-| `router.py`     | `IRouter`                                                              | Contract for route registration, dispatch, and documentation                                                     |
+| Module        | Responsability |
+| ------------- | -------------- |
+| `client`      |                |
+| `connection.` |                |
+| `command.`    |                |
+| `controller.` |                |
+| `console.`    |                |
+| `parser.`     |                |
+| `prompt.`     |                |
+| `router.`     |                |
 
 ## Design Principles
 

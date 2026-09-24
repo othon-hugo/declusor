@@ -1,135 +1,96 @@
 class DeclusorException(Exception):
-    """Base exception class for all Declusor-related errors.
+    """Root base exception for all errors raised across Declusor.
 
-    All custom exceptions in the Declusor application should inherit from this class
-    to allow for centralized exception handling.
+    All custom domain exceptions inherit from this class, enabling higher
+    layers to catch any framework error using a single unified type.
     """
 
 
 class DeclusorWarning(Warning):
-    """Base warning for Declusor-related warnings.
+    """Root base warning for non-fatal diagnostic messages in Declusor."""
 
-    Used to signal non-critical issues that don't prevent operation but should be brought to the user's attention.
-    """
-
-    def __init__(self, /, description: str) -> None:
-        """Initialize the warning.
-
-        Args:
-            description: Human-readable description of the warning.
-        """
-
+    def __init__(self, description: str, /) -> None:
         self.description = description
 
         super().__init__(self.description)
 
 
-class InvalidOperation(DeclusorException):
-    """Raised when an internal operation cannot be performed.
-
-    This exception indicates that a requested operation is not valid
-    in the current context or state of the application.
-    """
-
-    def __init__(self, /, description: str) -> None:
-        """Initialize the exception.
-
-        Args:
-            description: Detailed explanation of why the operation is invalid.
-        """
-
-        self.description = description
-
-        super().__init__(f"invalid operation: {self.description}")
+class ConnectionError(DeclusorException):
+    """Raised when an operation on a network connection or transport fails."""
 
 
-class ConnectionFailure(DeclusorException):
-    """Raised when a session operation fails.
-
-    This exception indicates that a network session encountered an error
-    during initialization, reading, writing, or other session operations.
-    """
+class ConnectionClosed(ConnectionError):
+    """Raised when the remote peer gracefully closes or terminates the connection unexpectedly."""
 
 
-class ParserError(DeclusorException):
-    """Raised when command-line argument parsing fails.
-
-    This exception is raised when the parser encounters invalid syntax,
-    missing required arguments, or type conversion errors.
-    """
+class ConnectionTimeoutError(ConnectionError):
+    """Raised when a socket read, write, or handshake operation times out."""
 
 
-class RouterError(DeclusorException):
-    """Raised when a route cannot be processed.
-
-    This exception indicates that a requested route is invalid, not found,
-    or cannot be executed in the current context.
-    """
-
-    def __init__(self, /, route: str, *, description: str | None = None) -> None:
-        """Initialize the exception.
-
-        Args:
-            route: The route that caused the error.
-            description: Optional detailed explanation of the error.
-        """
-
-        self.route = route
-        self.description = description
-
-        super().__init__(f"invalid route: {self.route!r}")
+class ConnectionHandshakeError(ConnectionError):
+    """Raised when the client session initialization handshake or ACK validation fails."""
 
 
 class PromptError(DeclusorException):
-    """Raised when a user-supplied argument cannot be processed.
+    """Raised when an interactive prompt command or argument is invalid or malformed."""
 
-    This exception is raised when user input is invalid, malformed,
-    or cannot be processed by the command handler.
-    """
-
-    def __init__(self, /, argument: str, *, description: str | None = None) -> None:
-        """Initialize the exception.
-
-        Args:
-            argument: The invalid argument that was provided.
-            description: Optional detailed explanation of why the argument is invalid.
-        """
-
+    def __init__(self, argument: str, /, description: str | None = None) -> None:
         self.argument = argument
         self.description = description
 
-        super().__init__(f"invalid argument: {self.argument!r}")
+        msg = f"invalid argument: {argument!r}" + (f" ({description})" if description else "")
+
+        super().__init__(msg)
+
+
+class InvalidOperation(DeclusorException):
+    """Raised when an invalid command operation is requested in the current session."""
+
+    def __init__(self, description: str, /) -> None:
+        self.description = description
+        super().__init__(f"invalid operation: {self.description}")
+
+
+class CommandError(DeclusorException):
+    """Raised when a command fails to prepare, validate, or execute."""
+
+    def __init__(self, description: str, /) -> None:
+        self.description = description
+        super().__init__(f"command error: {self.description}")
+
+
+class CommandValidationError(CommandError, InvalidOperation):
+    """Raised when command input parameters or DTO invariants are violated."""
 
 
 class ControllerError(DeclusorException):
-    """Raised when an error occurs during controller execution.
+    """Raised when an error occurs during controller dispatch, parameter extraction, or execution."""
 
-    This exception indicates that a controller encountered an error
-    while processing a command or performing an operation.
-    """
-
-    def __init__(self, /, description: str) -> None:
-        """Initialize the exception.
-
-        Args:
-            description: Detailed explanation of the controller error.
-        """
-
+    def __init__(self, description: str, /) -> None:
         self.description = description
 
         super().__init__(f"controller error: {self.description}")
 
 
-class CommandError(DeclusorException):
-    """[...]"""
+class ParserError(DeclusorException):
+    """Raised when command-line argument parsing or configuration validation fails."""
 
-    def __init__(self, /, description: str) -> None:
-        """Initialize the exception.
 
-        Args:
-            description: Detailed explanation of the command error.
-        """
+class RouterError(DeclusorException):
+    """Raised when a route cannot be found or is invalid in the route table."""
 
+    def __init__(self, route: str, /, description: str | None = None) -> None:
+        self.route = route
         self.description = description
 
-        super().__init__(f"command error: {self.description}")
+        msg = f"invalid route: {route!r}" + (f" ({description})" if description else "")
+
+        super().__init__(msg)
+
+
+class PluginError(DeclusorException):
+    """Base exception for client plugin discovery, loading, and runtime errors."""
+
+
+class PluginValidationError(PluginError):
+    """Raised when a candidate plugin fails contract validation during discovery or registration."""

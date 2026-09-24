@@ -1,8 +1,54 @@
+from dataclasses import dataclass
 from pathlib import Path
 from typing import ClassVar
 
 from declusor import config, contract, util
-from declusor.command.dto import ExecuteFileDTO, UploadFileDTO
+
+
+@dataclass(frozen=True)
+class ExecuteFileDTO:
+    """Data transfer object containing parameters for remote script execution.
+
+    Encapsulates and validates the path to a local script file to be encoded,
+    uploaded, and executed on the remote client.
+
+    Attributes:
+        filepath: Validated, absolute or relative ``Path`` to an existing local file.
+
+    Raises:
+        InvalidOperation: If the specified file does not exist or is not a regular file.
+    """
+
+    filepath: Path
+
+    def __init__(self, filepath: str | Path) -> None:
+        path_obj = Path(filepath)
+        validated_path = util.ensure_file_exists(path_obj)
+
+        object.__setattr__(self, "filepath", validated_path)
+
+
+@dataclass(frozen=True)
+class UploadFileDTO:
+    """Data transfer object containing parameters for file upload.
+
+    Encapsulates and validates the path to a local file to be uploaded and stored
+    on the remote client without execution.
+
+    Attributes:
+        filepath: Validated ``Path`` to an existing local file.
+
+    Raises:
+        InvalidOperation: If the specified file does not exist or is not a regular file.
+    """
+
+    filepath: Path
+
+    def __init__(self, filepath: str | Path) -> None:
+        path_obj = Path(filepath)
+        validated_path = util.ensure_file_exists(path_obj)
+
+        object.__setattr__(self, "filepath", validated_path)
 
 
 class _BaseFileCommand(contract.ICommand):
@@ -15,7 +61,7 @@ class _BaseFileCommand(contract.ICommand):
     Subclasses must define ``_OPCODE`` to specify the intended operation code.
     """
 
-    _OPCODE: ClassVar[config.OperationCode] = NotImplemented  # type: ignore[assignment]
+    _OPCODE: ClassVar[config.OperationCode] = NotImplemented
 
     def __init__(self, dto: ExecuteFileDTO | UploadFileDTO) -> None:
         """Initialize the base file command.

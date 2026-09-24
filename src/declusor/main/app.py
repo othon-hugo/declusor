@@ -80,6 +80,7 @@ class Application:
     @staticmethod
     def _validate_directories(data_paths: config.DataPaths, /) -> None:
         """Validate optional data directories if specified."""
+
         directories = (
             data_paths.clients,
             data_paths.modules,

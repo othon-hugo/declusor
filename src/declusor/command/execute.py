@@ -1,5 +1,27 @@
-from declusor import contract
-from declusor.command.dto import ExecuteCommandDTO
+from dataclasses import dataclass
+
+from declusor import config, contract
+
+
+@dataclass(frozen=True)
+class ExecuteCommandDTO:
+    """Data transfer object containing parameters for remote command execution.
+
+    Encapsulates and validates the raw command line string to be transmitted
+    and executed on the remote client.
+
+    Attributes:
+        command_line: Non-empty shell command line string.
+
+    Raises:
+        InvalidOperation: If ``command_line`` is empty or consists solely of whitespace.
+    """
+
+    command_line: str
+
+    def __post_init__(self) -> None:
+        if not self.command_line or not self.command_line.strip():
+            raise config.InvalidOperation("Command line cannot be empty.")
 
 
 class ExecuteCommand(contract.ICommand):
@@ -28,6 +50,7 @@ class ExecuteCommand(contract.ICommand):
     @property
     def dto(self) -> ExecuteCommandDTO:
         """The command parameters."""
+
         return self._dto
 
     def send_request(self, session: contract.SessionContext) -> None:

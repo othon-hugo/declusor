@@ -7,14 +7,14 @@ The **util** package provides stateless helper functions consumed across every l
 
 ## Modules
 
-| Module           | Key Exports                                                                                                  | Responsibility                                                   |
-| ---------------- | ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
-| `concurrency.py` | `Task`, `TaskEvent`, `TaskHandler`, `TaskPool`                                                               | Thread-based cooperative concurrency for the interactive shell   |
-| `encoding.py`    | `convert_bytes_to_hex`, `convert_to_base64`, `convert_base64_to_bytes`, `hash_*`, `quote`, `format_template` | Data encoding, hashing, shell quoting, and template formatting   |
-| `network.py`     | `await_connection`                                                                                           | Context-manager socket listener with user-friendly error mapping |
-| `parsing.py`     | `Parser`, `parse_command_arguments`                                                                          | Custom `argparse` subclass and type-aware argument parsing       |
-| `security.py`    | `validate_file_extension`, `validate_file_relative`                                                          | Path-traversal and file-extension guards                         |
-| `storage.py`     | `load_file`, `try_load_file`, `ensure_file_exists`, `ensure_directory_exists`                                | File loading and existence validation                            |
+| Module        | Responsibility                                                   |
+| ------------- | ---------------------------------------------------------------- |
+| `concurrency` | Thread-based cooperative concurrency for the interactive shell   |
+| `encoding`    | Data encoding, hashing, shell quoting, and template formatting   |
+| `network`     | Context-manager socket listener with user-friendly error mapping |
+| `parsing`     | Custom `argparse` subclass and type-aware argument parsing       |
+| `security`    | Path-traversal and file-extension guards                         |
+| `storage`     | File loading and existence validation                            |
 
 ## Design Principles
 

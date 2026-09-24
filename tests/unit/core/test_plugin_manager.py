@@ -3,8 +3,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from declusor import config, contract, core
-from declusor.core.plugin_manager import PluginManager, PluginValidationError
+from declusor import config, contract
+from declusor.config import PluginValidationError
+from declusor.core import PluginManager
 
 
 class DummyValidPlugin(contract.IClientPlugin):

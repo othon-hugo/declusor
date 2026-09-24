@@ -26,6 +26,7 @@ class ICommand(ABC):
         Args:
             session: Active session context providing connection and console.
         """
+
         raise NotImplementedError
 
     @abstractmethod
@@ -38,6 +39,7 @@ class ICommand(ABC):
         Args:
             session: Active session context providing connection and console.
         """
+
         raise NotImplementedError
 
     def execute(self, session: "SessionContext") -> None:
@@ -50,5 +52,6 @@ class ICommand(ABC):
         Args:
             session: Active session context providing connection and console.
         """
+
         self.send_request(session)
         self.read_response(session)
