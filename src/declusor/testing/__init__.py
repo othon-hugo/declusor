@@ -1,8 +1,11 @@
-from declusor.testing.conformance import (
+from . import (
+    pytest_plugin,
+)
+from .conformance import (
     PluginConformanceTestSuite,
     assert_conforms_to_client_plugin,
 )
-from declusor.testing.doubles import (
+from .doubles import (
     DummyApplication,
     DummyClientFileStore,
     DummyClientPlugin,
@@ -14,7 +17,7 @@ from declusor.testing.doubles import (
     DummyRouter,
     DummySocket,
 )
-from declusor.testing.factories import (
+from .factories import (
     create_dummy_client_config,
     create_dummy_controller_request,
     create_dummy_options,
@@ -22,6 +25,11 @@ from declusor.testing.factories import (
 )
 
 __all__ = [
+    "assert_conforms_to_client_plugin",
+    "create_dummy_client_config",
+    "create_dummy_controller_request",
+    "create_dummy_options",
+    "create_test_session",
     "DummyApplication",
     "DummyClientFileStore",
     "DummyClientPlugin",
@@ -33,9 +41,5 @@ __all__ = [
     "DummyRouter",
     "DummySocket",
     "PluginConformanceTestSuite",
-    "assert_conforms_to_client_plugin",
-    "create_dummy_client_config",
-    "create_dummy_controller_request",
-    "create_dummy_options",
-    "create_test_session",
+    "pytest_plugin",
 ]

@@ -1,7 +1,6 @@
 import pytest
 
-from declusor import core
-from declusor.testing import DummyClientPlugin
+from declusor import core, testing
 
 
 def test_registries_are_isolated() -> None:
@@ -9,21 +8,21 @@ def test_registries_are_isolated() -> None:
     first = core.ClientRegistry()
     second = core.ClientRegistry()
 
-    first.register(DummyClientPlugin)
+    first.register(testing.DummyClientPlugin)
 
-    assert first.names() == (DummyClientPlugin.name,)
+    assert first.names() == (testing.DummyClientPlugin.name,)
     assert second.names() == ()
 
 
 def test_parser_uses_injected_registry(monkeypatch: pytest.MonkeyPatch) -> None:
     """The parser must resolve clients only from its injected registry."""
     registry = core.ClientRegistry()
-    registry.register(DummyClientPlugin)
+    registry.register(testing.DummyClientPlugin)
     monkeypatch.setattr(
         "sys.argv",
-        ["declusor", "127.0.0.1", "9000", "--client", DummyClientPlugin.name],
+        ["declusor", "127.0.0.1", "9000", "--client", testing.DummyClientPlugin.name],
     )
 
     options = core.DeclusorParser(registry, name="declusor").parse()
 
-    assert options["client"].kind == DummyClientPlugin.name
+    assert options["client"].kind == testing.DummyClientPlugin.name

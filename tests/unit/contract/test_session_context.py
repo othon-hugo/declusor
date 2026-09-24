@@ -1,20 +1,13 @@
-"""Unit tests for SessionContext coordination and backward-compatible interface."""
-
-from declusor import contract
-from declusor.testing import (
-    DummyClientFileStore,
-    DummyCommand,
-    DummyConnection,
-    DummyConsole,
-)
+from declusor import contract, testing
 
 
 def test_session_context_initialization_and_properties(
-    dummy_connection: DummyConnection,
-    dummy_console: DummyConsole,
-    dummy_file_store: DummyClientFileStore,
+    dummy_connection: testing.DummyConnection,
+    dummy_console: testing.DummyConsole,
+    dummy_file_store: testing.DummyClientFileStore,
 ) -> None:
     """SessionContext should properly hold and expose connection, console, and files."""
+
     session = contract.SessionContext(
         connection=dummy_connection,
         console=dummy_console,
@@ -30,18 +23,20 @@ def test_session_context_execute_invokes_command_execute(
     test_session: contract.SessionContext,
 ) -> None:
     """session.execute(command) must dispatch command.execute(session)."""
-    command = DummyCommand()
+
+    command = testing.DummyCommand()
     test_session.execute(command)
 
     assert command.call_sequence == ["send_request", "read_response"]
 
 
 def test_session_context_backward_compatibility_tuple_unpacking(
-    dummy_connection: DummyConnection,
-    dummy_console: DummyConsole,
-    dummy_file_store: DummyClientFileStore,
+    dummy_connection: testing.DummyConnection,
+    dummy_console: testing.DummyConsole,
+    dummy_file_store: testing.DummyClientFileStore,
 ) -> None:
     """SessionContext must support tuple indexing, unpacking, and len for backward compatibility."""
+
     session = contract.SessionContext(
         connection=dummy_connection,
         console=dummy_console,
@@ -61,4 +56,5 @@ def test_session_context_backward_compatibility_tuple_unpacking(
 
 def test_controller_dependencies_alias() -> None:
     """ControllerDependencies must be an alias for SessionContext."""
+
     assert contract.ControllerDependencies is contract.SessionContext

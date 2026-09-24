@@ -30,6 +30,10 @@ from .parsing import (
     build_command_parser,
     parse_command_arguments,
 )
+from .plugin import (
+    find_plugin_entry,
+    import_plugin_from_file,
+)
 from .security import (
     validate_file_extension,
     validate_file_relative,
@@ -51,11 +55,13 @@ __all__ = [
     "convert_to_bytes",
     "ensure_directory_exists",
     "ensure_file_exists",
+    "find_plugin_entry",
     "format_template",
     "hash_md5",
     "hash_sha256",
     "hash_sha384",
     "hash_sha512",
+    "import_plugin_from_file",
     "load_file",
     "Namespace",
     "parse_command_arguments",

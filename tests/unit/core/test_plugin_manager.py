@@ -3,8 +3,7 @@ from unittest.mock import patch
 
 import pytest
 
-from declusor import config, contract, core, util
-from declusor.testing import DummyClientRuntime
+from declusor import config, contract, core, testing, util
 
 
 class DummyValidPlugin(contract.IClientPlugin):
@@ -27,7 +26,7 @@ class DummyValidPlugin(contract.IClientPlugin):
 
     @classmethod
     def build_runtime(cls, client_config: contract.ClientConfig, /) -> contract.IClientRuntime:
-        return DummyClientRuntime()
+        return testing.DummyClientRuntime()
 
 
 class NotAPlugin:
@@ -49,27 +48,34 @@ class MissingAbstractMethods(contract.IClientPlugin):
 
 def test_validation_accepts_valid_plugin() -> None:
     """Verify that a compliant IClientPlugin subclass passes contract validation."""
+
     manager = core.PluginManager()
     manager.validate_plugin(DummyValidPlugin)
 
 
 def test_validation_rejects_non_class() -> None:
     """Verify that validating a non-class object raises PluginValidationError."""
+
     manager = core.PluginManager()
+
     with pytest.raises(config.PluginValidationError, match="must be a class"):
         manager.validate_plugin("not_a_class")  # type: ignore[arg-type]
 
 
 def test_validation_rejects_non_subclass() -> None:
     """Verify that classes not inheriting from IClientPlugin are rejected."""
+
     manager = core.PluginManager()
+
     with pytest.raises(config.PluginValidationError, match="must implement 'IClientPlugin'"):
         manager.validate_plugin(NotAPlugin)
 
 
 def test_validation_rejects_unimplemented_abstract_methods() -> None:
     """Verify that plugins with unimplemented abstract methods raise PluginValidationError."""
+
     manager = core.PluginManager()
+
     with pytest.raises(config.PluginValidationError, match="unimplemented abstract methods"):
         manager.validate_plugin(MissingAbstractMethods)
 
@@ -81,6 +87,7 @@ def test_validation_rejects_empty_name() -> None:
         name = "   "
 
     manager = core.PluginManager()
+
     with pytest.raises(config.PluginValidationError, match="must define a non-empty string 'name'"):
         manager.validate_plugin(EmptyNamePlugin)
 
@@ -101,6 +108,7 @@ def test_register_and_get() -> None:
 
 def test_register_duplicate_without_override_raises() -> None:
     """Verify that registering a duplicate plugin without allow_override raises ValueError."""
+
     manager = core.PluginManager()
     manager.register(DummyValidPlugin, source="first")
 
@@ -124,7 +132,9 @@ def test_register_duplicate_with_override_replaces() -> None:
 
 def test_get_unknown_plugin_raises_parser_error() -> None:
     """Verify that retrieving an unregistered plugin name raises ParserError."""
+
     manager = core.PluginManager()
+
     with pytest.raises(config.ParserError, match="Unknown client 'unknown'"):
         manager.get("unknown")
 
@@ -136,6 +146,7 @@ def test_get_unknown_plugin_raises_parser_error() -> None:
 
 def test_discover_builtins() -> None:
     """Verify automatic discovery of built-in plugins (shell_socket and py_socket)."""
+
     manager = core.PluginManager()
     manager.discover(enable_entry_points=False)
 
@@ -146,6 +157,7 @@ def test_discover_builtins() -> None:
 
 def test_discover_from_directory(tmp_path: Path) -> None:
     """Verify dynamic plugin discovery from a filesystem directory."""
+
     plugin_dir = tmp_path / "custom_agent"
     plugin_dir.mkdir()
 
@@ -183,6 +195,7 @@ class CustomAgentPlugin(contract.IClientPlugin):
 
 def test_discover_from_directory_src_layout(tmp_path: Path) -> None:
     """Verify plugin discovery from an autonomous package using src/<plugin_name>/ layout."""
+
     plugin_root = tmp_path / "custom_src_agent"
     src_pkg = plugin_root / "src" / "custom_src_agent"
     src_pkg.mkdir(parents=True)

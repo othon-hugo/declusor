@@ -1,9 +1,8 @@
 from pathlib import Path
 
 import pytest
-import shell_socket
 
-from declusor import config, core, main
+from declusor import config, contract, core, main, testing, util
 
 
 def test_settings_constants() -> None:
@@ -34,19 +33,50 @@ def test_base_path_attributes() -> None:
     assert isinstance(config.BasePath.DATA_PATHS, config.DataPaths)
 
 
+class DummyPathClientPlugin(contract.IClientPlugin):
+    """Dummy client plugin for testing data path derivation."""
+
+    name = "dummy_path_client"
+    description = "Dummy path client"
+
+    @classmethod
+    def configure_parser(cls, parser: util.Parser, /) -> None:
+        pass
+
+    @classmethod
+    def build_config(cls, args: util.Namespace, data_paths: config.DataPaths, /) -> contract.ClientConfig:
+        client_paths = data_paths.for_client(cls.name)
+        launcher = client_paths.launcher / "client.sh"
+        return contract.ClientConfig(
+            kind=cls.name,
+            host=getattr(args, "host", "127.0.0.1"),
+            port=getattr(args, "port", 9000),
+            data_paths=data_paths,
+            options={"launcher_path": launcher},
+        )
+
+    @classmethod
+    def validate(cls, client_config: contract.ClientConfig, /) -> None:
+        pass
+
+    @classmethod
+    def build_runtime(cls, client_config: contract.ClientConfig, /) -> contract.IClientRuntime:
+        return testing.DummyClientRuntime()
+
+
 def test_parser_builds_client_paths_from_data_root(tmp_path: Path) -> None:
     """Client configuration must derive all data paths from ``--data-root``."""
 
-    launcher_dir = tmp_path / "shell_socket" / "launchers"
+    launcher_dir = tmp_path / "dummy_path_client" / "launchers"
     launcher_dir.mkdir(parents=True)
-    launcher_file = launcher_dir / "shell_socket_client.sh"
+    launcher_file = launcher_dir / "client.sh"
     launcher_file.write_text("", encoding="utf-8")
 
     registry = core.ClientRegistry()
-    registry.register(shell_socket.ShellSocketPlugin)
+    registry.register(DummyPathClientPlugin)
 
     options = core.DeclusorParser(registry, name="declusor").parse(
-        ("127.0.0.1", "9000", "--data-root", str(tmp_path)),
+        ("127.0.0.1", "9000", "--client", "dummy_path_client", "--data-root", str(tmp_path)),
     )
 
     data_paths = options["client"].data_paths

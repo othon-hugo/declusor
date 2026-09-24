@@ -1,33 +1,16 @@
-"""Unit tests for the testing support package doubles and factories."""
-
 from pathlib import Path
 from socket import socket
 from typing import cast
 
 import pytest
 
-from declusor import config, contract, util
-from declusor.testing import (
-    DummyApplication,
-    DummyClientFileStore,
-    DummyClientPlugin,
-    DummyClientRuntime,
-    DummyCommand,
-    DummyConnection,
-    DummyConnectionProfile,
-    DummyConsole,
-    DummyRouter,
-    DummySocket,
-    create_dummy_client_config,
-    create_dummy_controller_request,
-    create_dummy_options,
-    create_test_session,
-)
+from declusor import config, contract, testing, util
 
 
 def test_dummy_console_write_and_capture() -> None:
     """DummyConsole captures messages, binary data, errors, and warnings."""
-    console = DummyConsole()
+
+    console = testing.DummyConsole()
     console.write_message("info")
     console.write_binary_data(b"data")
     err = ValueError("err")
@@ -42,7 +25,8 @@ def test_dummy_console_write_and_capture() -> None:
 
 def test_dummy_console_inputs_and_prompts() -> None:
     """DummyConsole feeds inputs, appends newlines for read_line, and records prompts."""
-    console = DummyConsole(["first", "second\n"])
+
+    console = testing.DummyConsole(["first", "second\n"])
     assert console.read_line("> ") == "first\n"
     assert console.read_line("$ ") == "second\n"
     assert console.read_line() == "\n"
@@ -55,7 +39,8 @@ def test_dummy_console_inputs_and_prompts() -> None:
 
 def test_dummy_console_input_exception() -> None:
     """DummyConsole raises input_exception when configured."""
-    console = DummyConsole()
+
+    console = testing.DummyConsole()
     console.input_exception = KeyboardInterrupt("ctrl-c")
 
     with pytest.raises(KeyboardInterrupt):
@@ -67,7 +52,8 @@ def test_dummy_console_input_exception() -> None:
 
 def test_dummy_console_history_and_completer(tmp_path: Path) -> None:
     """DummyConsole records completer setups and history files."""
-    console = DummyConsole()
+
+    console = testing.DummyConsole()
     console.setup_completer(["help", "exit"])
     history_file = tmp_path / "hist"
     console.enable_history(history_file)
@@ -78,7 +64,8 @@ def test_dummy_console_history_and_completer(tmp_path: Path) -> None:
 
 def test_dummy_connection_profile() -> None:
     """DummyConnectionProfile exposes properties and formats rendered commands."""
-    profile = DummyConnectionProfile(name="test_p", buffer_size=1024, timeout=2.5)
+
+    profile = testing.DummyConnectionProfile(name="test_p", buffer_size=1024, timeout=2.5)
     assert profile.default_buffer_size == 1024
     assert profile.default_timeout == 2.5
 
@@ -92,7 +79,8 @@ def test_dummy_connection_profile() -> None:
 
 def test_dummy_connection_lifecycle_and_io() -> None:
     """DummyConnection handles initialization, framed read, write, and close."""
-    conn = DummyConnection(initial_state=contract.ConnectionState.CREATED)
+
+    conn = testing.DummyConnection(initial_state=contract.ConnectionState.CREATED)
     state: contract.ConnectionState = conn.state
     assert state == contract.ConnectionState.CREATED
     assert not conn.initialize_called
@@ -120,21 +108,26 @@ def test_dummy_connection_lifecycle_and_io() -> None:
 
 def test_dummy_connection_errors() -> None:
     """DummyConnection raises configured errors on initialize, read, or write."""
-    conn = DummyConnection()
+
+    conn = testing.DummyConnection()
     conn.initialize_error = config.ConnectionError("init fail")
+
     with pytest.raises(config.ConnectionError, match="init fail"):
         conn.initialize()
 
     conn.write_error = config.ConnectionError("write fail")
+
     with pytest.raises(config.ConnectionError, match="write fail"):
         conn.write(b"data")
 
     conn.read_error = config.ConnectionError("read fail")
+
     with pytest.raises(config.ConnectionError, match="read fail"):
         list(conn.read())
 
     # Invariant: closed connection rejects initialize and write
     conn.close()
+
     with pytest.raises(config.ConnectionError, match="Cannot initialize a closed connection"):
         conn.initialize()
 
@@ -144,8 +137,10 @@ def test_dummy_connection_errors() -> None:
 
 def test_dummy_client_file_store() -> None:
     """DummyClientFileStore renders scripts, returns library payloads, and tracks module loading."""
-    store = DummyClientFileStore()
+
+    store = testing.DummyClientFileStore()
     rendered = store.render_client_script("10.0.0.1", 4444, b"\xaa\xbb")
+
     assert "10.0.0.1" in rendered
     assert "4444" in rendered
     assert "aabb" in rendered
@@ -176,13 +171,14 @@ def test_dummy_client_file_store() -> None:
 
 def test_dummy_client_runtime() -> None:
     """DummyClientRuntime exposes client script and creates dummy connections."""
-    conn = DummyConnection()
-    runtime = DummyClientRuntime(client_script="echo test", connection_to_return=conn)
+
+    conn = testing.DummyConnection()
+    runtime = testing.DummyClientRuntime(client_script="echo test", connection_to_return=conn)
 
     assert isinstance(runtime.client_files, contract.IClientFileStore)
     assert runtime.client_script == "echo test"
 
-    dummy_socket = DummySocket()
+    dummy_socket = testing.DummySocket()
     created = runtime.create_connection(cast(socket, dummy_socket))
     assert created is conn
     assert runtime.created_connections == [conn]
@@ -190,36 +186,39 @@ def test_dummy_client_runtime() -> None:
 
 def test_dummy_client_plugin() -> None:
     """DummyClientPlugin implements the IClientPlugin contract with reset support."""
-    DummyClientPlugin.reset()
-    assert DummyClientPlugin.name == "dummy"
+
+    testing.DummyClientPlugin.reset()
+    assert testing.DummyClientPlugin.name == "dummy"
 
     parser = util.Parser()
-    DummyClientPlugin.configure_parser(parser)
-    assert DummyClientPlugin.configured_parsers == [parser]
+    testing.DummyClientPlugin.configure_parser(parser)
+    assert testing.DummyClientPlugin.configured_parsers == [parser]
 
     ns = util.Namespace(host="10.0.0.2", port=8000)
-    cfg = DummyClientPlugin.build_config(ns, config.BasePath.DATA_PATHS)
+    cfg = testing.DummyClientPlugin.build_config(ns, config.BasePath.DATA_PATHS)
     assert cfg.kind == "dummy"
     assert cfg.host == "10.0.0.2"
     assert cfg.port == 8000
 
-    DummyClientPlugin.validate(cfg)
+    testing.DummyClientPlugin.validate(cfg)
 
-    DummyClientPlugin.validation_error = config.ParserError("bad config")
+    testing.DummyClientPlugin.validation_error = config.ParserError("bad config")
+
     with pytest.raises(config.ParserError, match="bad config"):
-        DummyClientPlugin.validate(cfg)
+        testing.DummyClientPlugin.validate(cfg)
 
-    runtime = DummyClientPlugin.build_runtime(cfg)
+    runtime = testing.DummyClientPlugin.build_runtime(cfg)
     assert isinstance(runtime, contract.IClientRuntime)
 
-    DummyClientPlugin.reset()
-    assert len(DummyClientPlugin.configured_parsers) == 0
-    assert DummyClientPlugin.validation_error is None
+    testing.DummyClientPlugin.reset()
+    assert len(testing.DummyClientPlugin.configured_parsers) == 0
+    assert testing.DummyClientPlugin.validation_error is None
 
 
 def test_dummy_router() -> None:
     """DummyRouter connects routes, dispatches, handles usage, and raises RouterError on unknown."""
-    router = DummyRouter()
+
+    router = testing.DummyRouter()
 
     def sample_controller(
         session: contract.SessionContext,
@@ -228,6 +227,7 @@ def test_dummy_router() -> None:
         """Sample usage line.
         Extended explanation.
         """
+
         return contract.ControllerResult()
 
     router.connect("sample", sample_controller)
@@ -249,7 +249,8 @@ def test_dummy_router() -> None:
 
 def test_dummy_socket() -> None:
     """DummySocket simulates network I/O, byte buffers, peer names, chunks, and context manager."""
-    sock = DummySocket(incoming_bytes=b"hello world", peer_name=("1.2.3.4", 8080), fileno_val=99)
+
+    sock = testing.DummySocket(incoming_bytes=b"hello world", peer_name=("1.2.3.4", 8080), fileno_val=99)
     assert sock.getpeername() == ("1.2.3.4", 8080)
     assert sock.fileno() == 99
 
@@ -298,8 +299,9 @@ def test_dummy_socket() -> None:
 
 def test_dummy_application() -> None:
     """DummyApplication records parse and run calls and propagates configured errors."""
-    opts = create_dummy_options()
-    app = DummyApplication(parse_result=opts)
+
+    opts = testing.create_dummy_options()
+    app = testing.DummyApplication(parse_result=opts)
     assert app.parse(["--flag"]) == opts
     assert app.parse_calls == [["--flag"]]
 
@@ -317,32 +319,34 @@ def test_dummy_application() -> None:
 
 def test_dummy_command_and_errors(test_session: contract.SessionContext) -> None:
     """DummyCommand executes sequence and propagates configured errors."""
-    cmd = DummyCommand()
+
+    cmd = testing.DummyCommand()
     test_session.execute(cmd)
     assert cmd.call_sequence == ["send_request", "read_response"]
 
-    err_cmd = DummyCommand(send_request_error=config.CommandError("send failed"))
+    err_cmd = testing.DummyCommand(send_request_error=config.CommandError("send failed"))
     with pytest.raises(config.CommandError, match="send failed"):
         test_session.execute(err_cmd)
 
-    read_err_cmd = DummyCommand(read_response_error=config.CommandError("read failed"))
+    read_err_cmd = testing.DummyCommand(read_response_error=config.CommandError("read failed"))
     with pytest.raises(config.CommandError, match="read failed"):
         test_session.execute(read_err_cmd)
 
 
 def test_factories() -> None:
     """create_test_session, create_dummy_client_config, create_dummy_controller_request produce typed objects."""
-    session = create_test_session()
-    assert isinstance(session.connection, DummyConnection)
-    assert isinstance(session.console, DummyConsole)
-    assert isinstance(session.files, DummyClientFileStore)
 
-    cfg = create_dummy_client_config(kind="custom", host="192.168.1.1", port=1234, options={"opt": "val"})
+    session = testing.create_test_session()
+    assert isinstance(session.connection, testing.DummyConnection)
+    assert isinstance(session.console, testing.DummyConsole)
+    assert isinstance(session.files, testing.DummyClientFileStore)
+
+    cfg = testing.create_dummy_client_config(kind="custom", host="192.168.1.1", port=1234, options={"opt": "val"})
     assert cfg.kind == "custom"
     assert cfg.host == "192.168.1.1"
     assert cfg.port == 1234
     assert cfg.options == {"opt": "val"}
 
-    req = create_dummy_controller_request("hello world")
+    req = testing.create_dummy_controller_request("hello world")
     assert req == "hello world"
     assert isinstance(req, contract.ControllerRequest)

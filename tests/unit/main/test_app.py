@@ -2,21 +2,13 @@
 
 from unittest.mock import patch
 
-from declusor import core
-from declusor.main.app import Application, create_application
-from declusor.testing import (
-    DummyClientPlugin,
-    DummyClientRuntime,
-    DummyConnection,
-    DummySocket,
-    create_dummy_client_config,
-)
+from declusor import core, main, testing
 
 
 def test_create_application_initializes_plugins() -> None:
     """Verify create_application loads built-in plugins into registry."""
-    app = create_application()
-    assert isinstance(app, Application)
+    app = main.create_application()
+    assert isinstance(app, main.Application)
     assert "shell_socket" in app._registry.names()
     assert "py_socket" in app._registry.names()
 
@@ -24,7 +16,7 @@ def test_create_application_initializes_plugins() -> None:
 def test_application_connect_routes() -> None:
     """Verify application registers core routes on its router."""
     registry = core.ClientRegistry()
-    app = Application(registry)
+    app = main.Application(registry)
     app._connect_routes()
 
     expected_routes = {"help", "execute", "load", "shell", "upload", "command", "exit"}
@@ -33,24 +25,25 @@ def test_application_connect_routes() -> None:
 
 def test_application_run_lifecycle() -> None:
     """Verify Application.run lifecycle from validation to prompt execution."""
-    dummy_conn = DummyConnection()
-    dummy_runtime = DummyClientRuntime(connection_to_return=dummy_conn)
-    DummyClientPlugin.reset()
-    DummyClientPlugin.runtime_instance = dummy_runtime
+    dummy_conn = testing.DummyConnection()
+    dummy_runtime = testing.DummyClientRuntime(connection_to_return=dummy_conn)
+    testing.DummyClientPlugin.reset()
+    testing.DummyClientPlugin.runtime_instance = dummy_runtime
 
     registry = core.ClientRegistry()
-    registry.register(DummyClientPlugin)
+    registry.register(testing.DummyClientPlugin)
 
-    app = Application(registry)
+    app = main.Application(registry)
 
-    client_config = create_dummy_client_config(kind=DummyClientPlugin.name)
+    client_config = testing.create_dummy_client_config(kind=testing.DummyClientPlugin.name)
     options: core.DeclusorOptions = {
         "host": "127.0.0.1",
         "port": 9000,
         "client": client_config,
     }
 
-    dummy_sock = DummySocket()
+    dummy_sock = testing.DummySocket()
+
     with (
         patch("declusor.util.await_connection", return_value=dummy_sock) as mock_await,
         patch("declusor.presentation.PromptCLI.run") as mock_prompt_run,

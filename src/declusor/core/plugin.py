@@ -1,12 +1,10 @@
 import importlib.metadata
-import importlib.util
 import inspect
-import sys
 from collections.abc import Sequence
 from pathlib import Path
 from typing import TypeAlias
 
-from declusor import config, contract
+from declusor import config, contract, util
 
 PluginType: TypeAlias = type[contract.IClientPlugin]
 ClientPlugin: TypeAlias = PluginType
@@ -173,12 +171,16 @@ class PluginManager(PluginRegistry):
             if not item.is_dir() or item.name.startswith((".", "_")):
                 continue
 
-            plugin_file = self._find_plugin_entry(item)
+            plugin_file = util.find_plugin_entry(item)
 
             if not plugin_file:
                 continue
 
-            plugin_class = self._import_plugin_from_file(item.name, plugin_file)
+            plugin_class = util.import_plugin_from_file(
+                item.name,
+                plugin_file,
+                contract.IClientPlugin,  # type: ignore[type-abstract]
+            )
 
             if plugin_class:
                 try:
@@ -259,78 +261,3 @@ class PluginManager(PluginRegistry):
                     self.load_from_directory(custom_dir, source_label="custom-cli", allow_override=True)
 
         return self
-
-    @staticmethod
-    def _find_plugin_entry(plugin_dir: Path) -> Path | None:
-        """Locate the Python entry file for a plugin directory.
-
-        Supports both standard src-layout packages (``<plugin_dir>/src/<package>/``)
-        and flat directory layouts (``<plugin_dir>/``).
-        """
-
-        candidates: list[Path] = [
-            plugin_dir / "src" / plugin_dir.name / "__init__.py",
-            plugin_dir / "src" / plugin_dir.name / "plugin.py",
-        ]
-
-        src_dir = plugin_dir / "src"
-
-        if src_dir.is_dir():
-            for child in sorted(src_dir.iterdir()):
-                if child.is_dir() and not child.name.startswith((".", "_")):
-                    candidates.append(child / "__init__.py")
-                    candidates.append(child / "plugin.py")
-
-        candidates.extend(
-            [
-                plugin_dir / "__init__.py",
-                plugin_dir / "plugin.py",
-            ]
-        )
-
-        for candidate in candidates:
-            if candidate.is_file():
-                return candidate
-
-        return None
-
-    @staticmethod
-    def _import_plugin_from_file(module_name: str, file_path: Path) -> type[contract.IClientPlugin] | None:
-        """Dynamically import a module or package from file and extract the IClientPlugin class."""
-
-        full_module_name = f"declusor_dynamic_plugin_{module_name}"
-        search_locations = [str(file_path.parent)] if file_path.name == "__init__.py" else None
-
-        added_sys_path: str | None = None
-
-        if file_path.parent.parent.name == "src":
-            src_path = str(file_path.parent.parent)
-
-            if src_path not in sys.path:
-                sys.path.insert(0, src_path)
-                added_sys_path = src_path
-
-        try:
-            spec = importlib.util.spec_from_file_location(
-                full_module_name,
-                file_path,
-                submodule_search_locations=search_locations,
-            )
-
-            if not spec or not spec.loader:
-                return None
-
-            module = importlib.util.module_from_spec(spec)
-            sys.modules[full_module_name] = module
-            spec.loader.exec_module(module)
-
-            for _, obj in inspect.getmembers(module, inspect.isclass):
-                if issubclass(obj, contract.IClientPlugin) and obj is not contract.IClientPlugin:
-                    return obj
-        except Exception:
-            return None
-        finally:
-            if added_sys_path is not None and added_sys_path in sys.path:
-                sys.path.remove(added_sys_path)
-
-        return None

@@ -1,24 +1,17 @@
-"""Unit tests for command execution lifecycles using typed test doubles."""
-
 from pathlib import Path
 
 import pytest
 
-from declusor import command, config, contract
-from declusor.testing import (
-    DummyClientFileStore,
-    DummyConnection,
-    DummyConnectionProfile,
-    DummyConsole,
-)
+from declusor import command, config, contract, testing
 
 
 def test_execute_command_lifecycle(
     test_session: contract.SessionContext,
-    dummy_connection: DummyConnection,
-    dummy_console: DummyConsole,
+    dummy_connection: testing.DummyConnection,
+    dummy_console: testing.DummyConsole,
 ) -> None:
     """ExecuteCommand transmits the raw command string and streams chunks to console."""
+
     dto = command.ExecuteCommandDTO(command_line="id")
     cmd = command.ExecuteCommand(dto=dto)
 
@@ -31,11 +24,12 @@ def test_execute_command_lifecycle(
 def test_execute_file_lifecycle(
     tmp_path: Path,
     test_session: contract.SessionContext,
-    dummy_connection: DummyConnection,
-    dummy_console: DummyConsole,
-    dummy_profile: DummyConnectionProfile,
+    dummy_connection: testing.DummyConnection,
+    dummy_console: testing.DummyConsole,
+    dummy_profile: testing.DummyConnectionProfile,
 ) -> None:
     """ExecuteFile encodes file content, invokes profile rendering, and executes."""
+
     script_file = tmp_path / "test.sh"
     script_file.write_text("echo hello")
 
@@ -55,11 +49,12 @@ def test_execute_file_lifecycle(
 def test_upload_file_lifecycle(
     tmp_path: Path,
     test_session: contract.SessionContext,
-    dummy_connection: DummyConnection,
-    dummy_console: DummyConsole,
-    dummy_profile: DummyConnectionProfile,
+    dummy_connection: testing.DummyConnection,
+    dummy_console: testing.DummyConsole,
+    dummy_profile: testing.DummyConnectionProfile,
 ) -> None:
     """UploadFile encodes file content, renders STORE_FILE command, and transmits."""
+
     data_file = tmp_path / "data.bin"
     data_file.write_bytes(b"content")
 
@@ -79,9 +74,10 @@ def test_upload_file_lifecycle(
 def test_file_command_render_failure_raises(
     tmp_path: Path,
     test_session: contract.SessionContext,
-    dummy_profile: DummyConnectionProfile,
+    dummy_profile: testing.DummyConnectionProfile,
 ) -> None:
     """Commands raise InvalidOperation when profile cannot render operation command."""
+
     data_file = tmp_path / "fail.bin"
     data_file.write_bytes(b"content")
 
@@ -96,11 +92,12 @@ def test_file_command_render_failure_raises(
 
 def test_load_module_lifecycle(
     test_session: contract.SessionContext,
-    dummy_connection: DummyConnection,
-    dummy_console: DummyConsole,
-    dummy_file_store: DummyClientFileStore,
+    dummy_connection: testing.DummyConnection,
+    dummy_console: testing.DummyConsole,
+    dummy_file_store: testing.DummyClientFileStore,
 ) -> None:
     """LoadModule reads module bytes from file store and sends to remote client."""
+
     dummy_file_store.set_module("discovery/sysinfo", b"module_code_bytes")
 
     dto = command.LoadModuleDTO(module_name="discovery/sysinfo")
@@ -114,10 +111,11 @@ def test_load_module_lifecycle(
 
 
 def test_load_module_missing_files_store(
-    dummy_connection: DummyConnection,
-    dummy_console: DummyConsole,
+    dummy_connection: testing.DummyConnection,
+    dummy_console: testing.DummyConsole,
 ) -> None:
     """LoadModule raises CommandError if SessionContext has no file store configured."""
+
     session_no_files = contract.SessionContext(
         connection=dummy_connection,
         console=dummy_console,
@@ -133,6 +131,7 @@ def test_load_module_missing_files_store(
 
 def test_launch_shell_instantiation_with_dto() -> None:
     """LaunchShell stores DTO properly on instantiation."""
+
     dto = command.LaunchShellDTO(banner="Welcome to shell")
     cmd = command.LaunchShell(dto=dto)
 
