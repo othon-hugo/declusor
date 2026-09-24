@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Final, TypedDict
 
 from declusor import config, contract, util
-from declusor.core.plugin import ClientPluginRegistry
+from declusor.core.plugin import ClientPluginManager
 
 
 class DeclusorOptions(TypedDict):
@@ -23,20 +23,27 @@ class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
         "client": "agent responsible for handling requests",
     }
 
-    def __init__(self, registry: ClientPluginRegistry, /, name: str, description: str = "") -> None:
-        """Create a parser backed by a specific client registry.
+    def __init__(self, manager: ClientPluginManager, /, name: str, description: str = "") -> None:
+        """Create a parser backed by a specific client plugin manager.
 
         Args:
-            registry: Registry containing the clients available to the application.
-            *args: Arguments forwarded to ``argparse.ArgumentParser``.
-            **kwargs: Keyword arguments forwarded to ``argparse.ArgumentParser``.
+            manager: Plugin manager containing the clients available to the application.
+            name: Program name.
+            description: Short description of the application.
         """
 
         super().__init__(prog=name, description=description or None)
 
-        self._registry = registry
+        self._manager = manager
+        self._registry = manager
         self._configured = False
         self._configure_common_arguments()
+
+    @property
+    def manager(self) -> ClientPluginManager:
+        """The client plugin manager backing this parser."""
+
+        return self._manager
 
     def _configure_common_arguments(self) -> None:
         if self._configured:
@@ -87,15 +94,15 @@ class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
 
         plugin_dir = getattr(preliminary_args, "plugin_dir", None)
 
-        if plugin_dir and hasattr(self._registry, "load_from_directory"):
-            self._registry.load_from_directory(plugin_dir, source_label="cli-plugin-dir", allow_override=True)
+        if plugin_dir:
+            self._manager.load_from_directory(plugin_dir, source_label="cli-plugin-dir", allow_override=True)
 
-        plugin = self._registry.get(preliminary_args.client)
+        plugin = self._manager.get(preliminary_args.client)
         plugin.configure_parser(self)
 
         args = self.parse_args(argv)
 
-        data_paths = config.DataPaths.from_root(args.data_root) if args.data_root is not None else config.BasePath.DATA_PATHS
+        data_paths = config.DataPaths.from_root(args.data_root) if args.data_root is not None else None
         client_config = plugin.build_config(args, data_paths)
         plugin.validate(client_config)
 

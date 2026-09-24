@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from socket import socket
 from typing import TYPE_CHECKING, Any
 
-from declusor import config, util
+from declusor import util
 from declusor.config import DataPaths
 
 if TYPE_CHECKING:
@@ -27,8 +27,8 @@ class ClientConfig:
     port: int
     """Port used by the server."""
 
-    data_paths: DataPaths = config.BasePath.DATA_PATHS
-    """Filesystem paths used by the selected client runtime."""
+    data_paths: DataPaths | None = None
+    """Optional filesystem paths used by the selected client runtime."""
 
     options: dict[str, Any] = field(default_factory=dict)
     """Client-specific configuration options."""

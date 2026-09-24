@@ -126,30 +126,3 @@ class BasePath:
 
     USER_PLUGINS_DIR = (USER_DIR / "plugins").resolve()
     """Default user-level plugins directory for drop-in extensions."""
-
-    USER_DATA_DIR = (USER_DIR / "data").resolve()
-    """Default user-level data directory for custom client assets."""
-
-    DATA_DIR = (ROOT_DIR / "data").resolve()
-    """Normalized repository data directory path."""
-
-    LAUNCHERS_DIR = (DATA_DIR / "launchers").resolve()
-    """Normalized client launchers directory path."""
-
-    HELPERS_DIR = (DATA_DIR / "helpers").resolve()
-    """Normalized helper library directory path."""
-
-    MODULES_DIR = (DATA_DIR / "modules").resolve()
-    """Normalized payload modules directory path."""
-
-    CLIENTS_DIR = LAUNCHERS_DIR
-    """Deprecated alias for LAUNCHERS_DIR."""
-
-    LIBRARY_DIR = HELPERS_DIR
-    """Deprecated alias for HELPERS_DIR."""
-
-    USER_DATA_PATHS = DataPaths.from_root(USER_DATA_DIR)
-    """Default user data paths for ~/.declusor/data."""
-
-    DATA_PATHS = DataPaths.from_root(DATA_DIR)
-    """Default data paths used during development."""

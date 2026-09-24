@@ -195,7 +195,7 @@ def test_dummy_client_plugin() -> None:
     assert testing.DummyClientPlugin.configured_parsers == [parser]
 
     ns = util.Namespace(host="10.0.0.2", port=8000)
-    cfg = testing.DummyClientPlugin.build_config(ns, config.BasePath.DATA_PATHS)
+    cfg = testing.DummyClientPlugin.build_config(ns, None)
     assert cfg.kind == "dummy"
     assert cfg.host == "10.0.0.2"
     assert cfg.port == 8000

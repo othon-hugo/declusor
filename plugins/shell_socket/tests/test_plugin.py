@@ -4,7 +4,7 @@ from typing import cast
 
 import declusor_shell_socket as shell_socket
 
-from declusor import contract, testing
+from declusor import config, contract, testing, util
 
 
 def test_shell_socket_plugin_metadata() -> None:
@@ -13,6 +13,35 @@ def test_shell_socket_plugin_metadata() -> None:
     assert shell_socket.ShellSocketPlugin.name == "shell_socket"
     assert shell_socket.ShellSocketPlugin.description != ""
     assert shell_socket.ShellSocketPlugin.version == "1.0.0"
+
+
+def test_build_config_uses_bundled_assets_when_data_paths_is_none() -> None:
+    """When data_paths is None, plugin must cleanly resolve bundled ASSETS_DIR."""
+
+    args = util.Namespace(host="127.0.0.1", port=9000)
+    cfg = shell_socket.ShellSocketPlugin.build_config(args, None)
+
+    assert cfg.options["launcher_path"] == shell_socket.plugin.ASSETS_DIR / "launchers" / "shell_socket_client.sh"
+    assert cfg.options["helpers_dir"] == shell_socket.plugin.ASSETS_DIR / "helpers"
+    assert cfg.options["modules_dir"] == shell_socket.plugin.ASSETS_DIR / "modules"
+    assert cfg.data_paths is None
+    shell_socket.ShellSocketPlugin.validate(cfg)
+
+
+def test_build_config_resolves_custom_data_paths_when_provided(tmp_path: Path) -> None:
+    """When custom data_paths is provided, plugin resolves against client namespace."""
+
+    custom_launcher = tmp_path / "shell_socket" / "launchers" / "shell_socket_client.sh"
+    custom_launcher.parent.mkdir(parents=True)
+    custom_launcher.write_text("# custom launcher", encoding="utf-8")
+
+    data_paths = config.DataPaths.from_root(tmp_path)
+    args = util.Namespace(host="127.0.0.1", port=9000)
+    cfg = shell_socket.ShellSocketPlugin.build_config(args, data_paths)
+
+    assert cfg.options["launcher_path"] == custom_launcher
+    assert cfg.data_paths == data_paths
+    shell_socket.ShellSocketPlugin.validate(cfg)
 
 
 def test_build_runtime_renders_configured_client_script(tmp_path: Path) -> None:

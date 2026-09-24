@@ -66,7 +66,7 @@ class DummyClientPlugin(contract.IClientPlugin):
             kind=cls.name,
             host=getattr(args, "host", "127.0.0.1"),
             port=getattr(args, "port", 9000),
-            data_paths=data_paths or config.BasePath.DATA_PATHS,
+            data_paths=data_paths,
         )
 
     @classmethod

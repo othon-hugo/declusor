@@ -42,7 +42,7 @@ def create_dummy_client_config(
         kind: Client implementation identifier. Defaults to "dummy".
         host: Host address. Defaults to "127.0.0.1".
         port: Port number. Defaults to 9000.
-        data_paths: DataPaths instance. Defaults to config.BasePath.DATA_PATHS.
+        data_paths: Optional DataPaths instance. Defaults to None.
         options: Plugin options dictionary. Defaults to empty dict.
 
     Returns:
@@ -53,7 +53,7 @@ def create_dummy_client_config(
         kind=kind,
         host=host,
         port=port,
-        data_paths=data_paths if data_paths is not None else config.BasePath.DATA_PATHS,
+        data_paths=data_paths,
         options=options if options is not None else {},
     )
 

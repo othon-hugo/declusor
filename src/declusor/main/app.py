@@ -11,16 +11,32 @@ class Application:
     details behind the selected client plugin runtime.
     """
 
-    def __init__(self, registry: core.ClientPluginRegistry, /) -> None:
-        """Create an application using a configured client registry.
+    def __init__(self, manager: core.ClientPluginManager, /) -> None:
+        """Create an application using a configured client plugin manager.
 
         Args:
-            registry: Registry containing the available client plugins.
+            manager: Plugin manager containing the available client plugins.
         """
 
-        self._registry = registry
+        self._manager = manager
+        self._registry = manager
         self._router = core.Router()
         self._console = presentation.Console()
+
+    @property
+    def manager(self) -> core.ClientPluginManager:
+        """Client plugin manager containing registered and discovered plugins."""
+
+        return self._manager
+
+    def register_plugin(self, plugin: type[contract.IClientPlugin], /) -> None:
+        """Register a client plugin at runtime.
+
+        Args:
+            plugin: Plugin class implementing ``IClientPlugin``.
+        """
+
+        self._manager.register(plugin)
 
     def parse(self, argv: Sequence[str] | None = None, /) -> core.DeclusorOptions:
         """Parse command-line options using the composed client registry.
@@ -34,7 +50,7 @@ class Application:
         """
 
         return core.DeclusorParser(
-            self._registry,
+            self._manager,
             name=config.Settings.PROJECT_NAME,
             description=config.Settings.PROJECT_DESCRIPTION,
         ).parse(argv)
@@ -46,16 +62,13 @@ class Application:
             options: Parsed application and client configuration.
 
         Raises:
-            FileNotFoundError: If a required data directory is missing.
-            NotADirectoryError: If a required path is not a directory.
             ConnectionFailure: If the socket session cannot be established.
         """
 
-        self._validate_directories(options["client"].data_paths)
         self._connect_routes()
 
         client_config = options["client"]
-        client_plugin = self._registry.get(client_config.kind)
+        client_plugin = self._manager.get(client_config.kind)
         client_runtime = client_plugin.build_runtime(client_config)
 
         self._console.setup_completer(self._router.routes)
@@ -76,20 +89,6 @@ class Application:
                     router=self._router,
                     session=session,
                 ).run()
-
-    @staticmethod
-    def _validate_directories(data_paths: config.DataPaths, /) -> None:
-        """Validate optional data directories if specified."""
-
-        directories = (
-            data_paths.launchers,
-            data_paths.modules,
-            data_paths.helpers,
-        )
-
-        for directory in directories:
-            if directory.exists() and not directory.is_dir():
-                raise NotADirectoryError(directory)
 
     def _connect_routes(self) -> None:
         """Register built-in command routes on the application router."""

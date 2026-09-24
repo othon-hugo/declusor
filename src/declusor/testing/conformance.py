@@ -45,7 +45,7 @@ def assert_conforms_to_client_plugin(
         (client_data.launcher / f"{plugin_cls.name}_client.sh").write_text("# client")
         client_config = plugin_cls.build_config(args, data_paths)
     else:
-        client_config = plugin_cls.build_config(args, config.BasePath.DATA_PATHS)
+        client_config = plugin_cls.build_config(args, None)
 
     assert isinstance(client_config, contract.ClientConfig), f"build_config must return ClientConfig, got {type(client_config)}."
     assert client_config.kind == plugin_cls.name, f"client_config.kind ({client_config.kind}) must match plugin.name ({plugin_cls.name})."

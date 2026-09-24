@@ -15,16 +15,16 @@ def test_registries_are_isolated() -> None:
     assert second.names() == ()
 
 
-def test_parser_uses_injected_registry(monkeypatch: pytest.MonkeyPatch) -> None:
-    """The parser must resolve clients only from its injected registry."""
+def test_parser_uses_injected_manager(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The parser must resolve clients only from its injected manager."""
 
-    registry = core.ClientPluginRegistry()
-    registry.register(testing.DummyClientPlugin)
+    manager = core.ClientPluginManager()
+    manager.register(testing.DummyClientPlugin)
     monkeypatch.setattr(
         "sys.argv",
         ["declusor", "127.0.0.1", "9000", "--client", testing.DummyClientPlugin.name],
     )
 
-    options = core.DeclusorParser(registry, name="declusor").parse()
+    options = core.DeclusorParser(manager, name="declusor").parse()
 
     assert options["client"].kind == testing.DummyClientPlugin.name

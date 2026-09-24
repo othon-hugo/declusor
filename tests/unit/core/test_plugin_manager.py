@@ -22,7 +22,7 @@ class DummyValidPlugin(contract.IClientPlugin):
             kind=cls.name,
             host="127.0.0.1",
             port=9000,
-            data_paths=data_paths or config.BasePath.DATA_PATHS,
+            data_paths=data_paths,
         )
 
     @classmethod
