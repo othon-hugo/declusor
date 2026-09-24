@@ -34,7 +34,7 @@ class DummyConnection(contract.IConnection):
         self._state = value
 
     @property
-    def client(self) -> contract.IConnectionProfile:
+    def profile(self) -> contract.IConnectionProfile:
         return self._client
 
     @property

@@ -8,8 +8,8 @@ Every plugin is an autonomous package that implements the contracts defined in `
 
 | Contract             | Responsibility                                                                          |
 | -------------------- | --------------------------------------------------------------------------------------- |
-| `IClientPlugin`      | Registers CLI flags, parses options, validates configuration, and builds the runtime.   |
-| `IClientRuntime`     | Renders the bootstrap script and instantiates the `IConnection` for an accepted socket. |
+| `IPlugin`            | Registers CLI flags, parses options, validates configuration, and builds the runtime.   |
+| `IPluginRuntime`     | Renders the bootstrap script and instantiates the `IConnection` for an accepted socket. |
 | `IConnection`        | Manages the framed read/write protocol and lifecycle state (`ConnectionState`).         |
 | `IClientFileStore`   | Loads initialization helpers, bootstrap scripts, and on-demand discovery modules.       |
 | `IConnectionProfile` | Holds timeouts, buffer sizes, and operation templates (`EXEC_FILE`, `STORE_FILE`).      |
@@ -20,7 +20,7 @@ Declusor discovers plugins at runtime across **three tiers**:
 
 1. **Repository / Built-in Plugins** (`plugins/` directory):
 
-   All valid subdirectories in `plugins/` that implement `IClientPlugin` are automatically discovered on startup.
+   All valid subdirectories in `plugins/` that implement `IPlugin` are automatically discovered on startup.
 
 2. **Python Entry Points** (PEP 621):
 
@@ -58,7 +58,7 @@ my_client/
 ├── src/
 │   └── declusor_my_client/
 │       ├── __init__.py    # Exports
-│       ├── plugin.py      # IClientPlugin implementation
+│       ├── plugin.py      # IPlugin implementation
 │       └── connection.py  # IConnection & IClientFileStore implementation
 ├── assets/            # Bundled stagers and libraries
 │   ├── launchers/
@@ -77,7 +77,7 @@ from pathlib import Path
 from declusor import contract, util, config
 
 
-class MyClientPlugin(contract.IClientPlugin):
+class MyClientPlugin(contract.IPlugin):
     name = "my_client"
     description = "Description of my custom client"
     version = "1.0.0"
@@ -96,12 +96,12 @@ class MyClientPlugin(contract.IClientPlugin):
         )
 
     @classmethod
-    def validate(cls, client_config: contract.ClientConfig, /) -> None:
+    def validate(cls, plugin_config: contract.ClientConfig, /) -> None:
         pass
 
     @classmethod
-    def build_runtime(cls, client_config: contract.ClientConfig, /) -> contract.IClientRuntime:
-        return MyClientRuntime(client_config)
+    def build_runtime(cls, plugin_config: contract.ClientConfig, /) -> contract.IPluginRuntime:
+        return MyClientRuntime(plugin_config)
 ```
 
 ### 3. Verify Contract Conformance with `declusor.testing`
@@ -117,7 +117,7 @@ from declusor_my_client.plugin import MyClientPlugin
 
 class TestMyClientConformance(PluginConformanceTestSuite):
     @pytest.fixture
-    def plugin_class(self) -> type[contract.IClientPlugin]:
+    def plugin_class(self) -> type[contract.IPlugin]:
         return MyClientPlugin
 ```
 

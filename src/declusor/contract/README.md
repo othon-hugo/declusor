@@ -22,5 +22,5 @@ The **contract** package defines the abstract contracts that establish the bound
 
 1. **Pure Abstractions** — interfaces contain only `@abstractmethod` signatures, invariant state machines, and docstrings.
 2. **Single Responsibility** — each contract defines exactly one concern.
-3. **Rigid Interface / Extensible Implementation** — client plugins implemented in the external `plugins/` hierarchy or third-party packages strictly adhere to `IClientPlugin` and `IConnection`.
-4. **Liskov Substitution** — any plugin conforming to `IClientPlugin` is drop-in replaceable and discoverable at runtime.
+3. **Rigid Interface / Extensible Implementation** — client plugins implemented in the external `plugins/` hierarchy or third-party packages strictly adhere to `IPlugin` and `IConnection`.
+4. **Liskov Substitution** — any plugin conforming to `IPlugin` is drop-in replaceable and discoverable at runtime.

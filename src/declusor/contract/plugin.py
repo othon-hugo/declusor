@@ -43,7 +43,7 @@ class IPluginRuntime(ABC):
 
     @property
     @abstractmethod
-    def client_files(self) -> "IPluginFileStore":
+    def client_files(self) -> "IClientFileStore":
         """[...]"""
 
         raise NotImplementedError
@@ -116,11 +116,11 @@ class IPlugin(ABC):
 
     @classmethod
     @abstractmethod
-    def validate(cls, client_config: PluginConfig, /) -> None:
+    def validate(cls, plugin_config: PluginConfig, /) -> None:
         """Validate a client configuration.
 
         Args:
-            client_config: Configuration produced by ``build_config``.
+            plugin_config: Configuration produced by ``build_config``.
 
         Raises:
             config.ParserError: If the configuration is invalid.
@@ -130,11 +130,11 @@ class IPlugin(ABC):
 
     @classmethod
     @abstractmethod
-    def build_runtime(cls, client_config: PluginConfig, /) -> IPluginRuntime:
+    def build_runtime(cls, plugin_config: PluginConfig, /) -> IPluginRuntime:
         """Build the runtime for a validated client configuration.
 
         Args:
-            client_config: Configuration produced by ``build_config``.
+            plugin_config: Configuration produced by ``build_config``.
 
         Returns:
             Runtime that can render the bootstrap and create connections.
@@ -143,7 +143,7 @@ class IPlugin(ABC):
         raise NotImplementedError
 
 
-class IPluginFileStore(ABC):
+class IClientFileStore(ABC):
     """Provides client bootstrap, library and module file operations.
 
     Libraries are loaded automatically during session initialization, while

@@ -1,7 +1,6 @@
 from collections.abc import Generator, Mapping
 from contextlib import suppress
 from dataclasses import dataclass, field
-from pathlib import Path
 from socket import socket
 from types import MappingProxyType
 
@@ -79,82 +78,10 @@ class PySocketProfile(contract.IConnectionProfile):
         return f"{function_name}()"
 
 
-class PySocketFileStore(contract.IPluginFileStore):
-    """Filesystem adapter for Python client templates, libraries and payloads.
-
-    Resolves launchers, helpers and modules from the plugin's own self-contained
-    assets directory, with support for user-specified overlay directories.
-    """
-
-    def __init__(
-        self,
-        launcher_path: Path,
-        helpers_dir: Path,
-        modules_dir: Path,
-        library_extensions: tuple[str, ...] = (".py",),
-        module_extensions: tuple[str, ...] = (".py",),
-    ) -> None:
-        self._launcher_path = launcher_path
-        self._helpers_dir = helpers_dir
-        self._modules_dir = modules_dir
-        self._library_extensions = library_extensions
-        self._module_extensions = module_extensions
-
-    def render_client_script(self, host: str, port: int, acknowledge: bytes, /) -> str:
-        """Read and render the Python client bootstrap launcher script."""
-
-        try:
-            client_script_template = self._launcher_path.read_text(encoding="utf-8")
-        except OSError as error:
-            raise config.ConnectionError(f"Failed to read client script: {error}") from error
-
-        return util.format_template(
-            client_script_template,
-            HOST=host,
-            PORT=str(port),
-            ACKNOWLEDGE=util.convert_bytes_to_hex(acknowledge),
-        )
-
-    def load_library(self) -> bytes:
-        """Load and concatenate valid Python helper libraries."""
-
-        if not self._helpers_dir.exists():
-            return b""
-
-        modules: list[bytes] = []
-
-        for file in sorted(self._helpers_dir.iterdir()):
-            if not file.is_file() or not util.validate_file_extension(file, self._library_extensions):
-                continue
-
-            try:
-                module_content = util.load_file(file)
-            except config.InvalidOperation as error:
-                raise config.ConnectionError(f"Failed to read helper file: {file}: {error}") from error
-
-            if module_content:
-                modules.append(module_content)
-
-        return b"\n\n".join(modules)
-
-    def load_module(self, module_name: str, /) -> bytes:
-        """Load one operator-selected module from the modules directory."""
-
-        module_path = (self._modules_dir / module_name).resolve()
-
-        if not util.validate_file_relative(module_path, self._modules_dir):
-            raise config.InvalidOperation(f"Module path '{module_name}' is outside the permitted modules directory.")
-
-        if not util.validate_file_extension(module_path, self._module_extensions):
-            raise config.InvalidOperation(f"Module '{module_name}' has an unsupported extension. Allowed: {self._module_extensions}")
-
-        return util.load_file(module_path)
-
-
 class PySocketConnection(contract.IConnection):
     """``IConnection`` implementation for a Python-socket reverse-shell client."""
 
-    def __init__(self, connection: socket, profile: PySocketProfile, files: contract.IPluginFileStore, /) -> None:
+    def __init__(self, connection: socket, profile: PySocketProfile, files: contract.IClientFileStore, /) -> None:
         self._profile = profile
         self._files = files
         self._connection = connection
@@ -171,7 +98,7 @@ class PySocketConnection(contract.IConnection):
         return self._state
 
     @property
-    def client(self) -> PySocketProfile:
+    def profile(self) -> PySocketProfile:
         """The connection profile."""
 
         return self._profile

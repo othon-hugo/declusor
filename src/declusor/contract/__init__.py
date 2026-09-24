@@ -28,8 +28,8 @@ from .parser import (
     IParser,
 )
 from .plugin import (
+    IClientFileStore,
     IPlugin,
-    IPluginFileStore,
     IPluginRuntime,
     PluginConfig,
 )
@@ -57,7 +57,7 @@ __all__ = [
     "InvalidOperation",
     "IParser",
     "IPlugin",
-    "IPluginFileStore",
+    "IClientFileStore",
     "IPluginRuntime",
     "IPrompt",
     "IRouter",

@@ -67,7 +67,7 @@ def test_call_upload_file_with_dto(
 def test_call_load_module_with_dto(
     test_session: contract.SessionContext,
     dummy_connection: testing.DummyConnection,
-    dummy_file_store: testing.DummyClientFileStore,
+    dummy_file_store: testing.DummyPluginFileStore,
 ) -> None:
     """call_load must construct LoadModule with LoadModuleDTO and execute via session."""
 

@@ -38,7 +38,7 @@ main (Composition Root)
    - Returns structured `ControllerResult(action=ControllerAction.CONTINUE | TERMINATE)` lifecycle signals instead of relying on control-flow exceptions.
 6. **`core` (Infrastructure Services)**:
    - Implements `IRouter` (`Router`), `IParser` (`DeclusorParser`), and `PluginManager`.
-   - Completely decoupled from concrete client implementations.
+   - Completely decoupled from concrete plugin implementations.
 7. **`presentation` (View Layer)**:
    - Manages readline terminal I/O (`Console`) and the interactive prompt execution loop (`PromptCLI`).
    - Interacts with controllers exclusively via route dispatching and `ControllerResult` signals.
@@ -46,7 +46,7 @@ main (Composition Root)
    - Bootstraps registries, discovers plugins, wires core routes, and runs the application.
    - Entrypoint function `main(argv)` catches all exceptions, prints user-friendly messages, and maps to deterministic exit codes (`0`, `1`, `2`).
 9. **`testing` (Public Testing SDK)**:
-   - Ships deterministic, fully-typed test doubles (`DummyConsole`, `DummyConnection`, `DummyClientFileStore`, `DummyClientRuntime`, etc.) and reusable conformance suites (`PluginConformanceTestSuite`).
+   - Ships deterministic, fully-typed test doubles (`DummyConsole`, `DummyConnection`, `DummyPluginFileStore`, `DummyPluginRuntime`, etc.) and reusable conformance suites (`PluginConformanceTestSuite`).
 
 ## Autonomous Plugin Topology
 
@@ -59,8 +59,8 @@ plugins/<plugin_name>/
 ├── src/
 │   └── <plugin_name>/
 │       ├── __init__.py    # Public exports
-│       ├── plugin.py      # IClientPlugin & IClientRuntime implementation
-│       └── connection.py  # IConnection, IConnectionProfile & IClientFileStore
+│       ├── plugin.py      # IPlugin & IPluginRuntime & IClientFileStore implementation
+│       └── connection.py  # IConnection, IConnectionProfile
 ├── assets/                # Self-contained stagers, libraries, and helpers
 │   ├── launchers/         # Embedded client bootstrap scripts
 │   ├── helpers/           # In-memory helper functions sent during handshake
@@ -72,7 +72,7 @@ plugins/<plugin_name>/
 
 ### Plugin Invariants
 
-1. **Isolation Invariant**: Production code in `src/declusor/` and host unit tests in `tests/` **MUST NEVER** import concrete plugins directly (e.g. `import shell_socket`). Tests use test doubles (`DummyClientPlugin`).
+1. **Isolation Invariant**: Production code in `src/declusor/` and host unit tests in `tests/` **MUST NEVER** import concrete plugins directly (e.g. `import shell_socket`). Tests use test doubles (`DummyPlugin`).
 2. **Registration Standard**: Plugins register via the standard entry point group:
    ```toml
    [project.entry-points."declusor.plugins"]

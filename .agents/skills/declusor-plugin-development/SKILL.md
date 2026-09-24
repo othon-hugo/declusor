@@ -19,7 +19,7 @@ plugins/<plugin_name>/
 ├── src/
 │   └── declusor_<plugin_name>/
 │       ├── __init__.py    # Public exports (__all__ = ["<PluginClass>"])
-│       ├── plugin.py      # Implements IClientPlugin & IClientRuntime
+│       ├── plugin.py      # Implements IPlugin & IPluginRuntime
 │       └── connection.py  # Implements IConnection, IConnectionProfile, IClientFileStore
 ├── assets/
 │   ├── launchers/         # Bootstrap stagers (e.g. client.py, client.sh)
@@ -53,14 +53,14 @@ dependencies = [
 
 Plugins implement contracts defined in `declusor.contract`:
 
-1. **`IClientPlugin`**:
+1. **`IPlugin`**:
    - `name: str`: Unique identifier matching the entry point key.
    - `description: str`, `version: str`: Metadata.
    - `configure_parser(parser: IParser) -> None`: Registers plugin-specific CLI flags.
    - `build_config(args: Namespace, data_paths: DataPaths) -> ClientConfig`: Constructs validated configuration.
-   - `validate(client_config: ClientConfig) -> None`: Validates assets and pre-conditions.
-   - `build_runtime(client_config: ClientConfig) -> IClientRuntime`: Instantiates runtime.
-2. **`IClientRuntime`**:
+   - `validate(plugin_config: ClientConfig) -> None`: Validates assets and pre-conditions.
+   - `build_runtime(plugin_config: ClientConfig) -> IPluginRuntime`: Instantiates runtime.
+2. **`IPluginRuntime`**:
    - `client_files: IClientFileStore`: Exposes file store.
    - `client_script: str`: Returns rendered stager code.
    - `create_connection(connection: socket) -> IConnection`: Wraps raw socket in transport connection.

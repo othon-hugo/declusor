@@ -79,12 +79,12 @@ class DummyPathClientPlugin(contract.IPlugin):
         )
 
     @classmethod
-    def validate(cls, client_config: contract.PluginConfig, /) -> None:
+    def validate(cls, plugin_config: contract.PluginConfig, /) -> None:
         pass
 
     @classmethod
-    def build_runtime(cls, client_config: contract.PluginConfig, /) -> contract.IPluginRuntime:
-        return testing.DummyClientRuntime()
+    def build_runtime(cls, plugin_config: contract.PluginConfig, /) -> contract.IPluginRuntime:
+        return testing.DummyPluginRuntime()
 
 
 def test_parser_builds_client_paths_from_data_root(tmp_path: Path) -> None:

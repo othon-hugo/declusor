@@ -46,7 +46,7 @@ main (Composition Root)
    - Bootstraps registries, discovers plugins, wires core routes, and runs the application.
    - Entrypoint function `main(argv)` catches all exceptions, prints user-friendly messages, and maps to deterministic exit codes (`0`, `1`, `2`).
 9. **`testing` (Public Testing SDK)**:
-   - Ships deterministic, fully-typed test doubles (`DummyConsole`, `DummyConnection`, `DummyClientFileStore`, `DummyClientRuntime`, etc.) and reusable conformance suites (`PluginConformanceTestSuite`).
+   - Ships deterministic, fully-typed test doubles (`DummyConsole`, `DummyConnection`, `DummyPluginFileStore`, `DummyPluginRuntime`, etc.) and reusable conformance suites (`PluginConformanceTestSuite`).
 10. **`plugins/` (Autonomous Packages)**:
     - Native client transports (`plugins/shell_socket/`, `plugins/py_socket/`) are standalone packages with their own `pyproject.toml`, `src-layout`, `assets/`, and `tests/`.
     - **Isolation Invariant**: Core code (`src/declusor/`) and host unit tests (`tests/`) **MUST NEVER** import concrete plugins directly.
@@ -159,9 +159,9 @@ Do **not** use unconstrained `unittest.mock.MagicMock` or fragile monkeypatching
 - `testing.DummyConsole`: Simulates I/O, error logging, and input queues.
 - `testing.DummyConnection`: Full state machine (`CREATED` -> `CONNECTED` -> `CLOSED`), frame recording, and chunk streaming.
 - `testing.DummyConnectionProfile`: Script rendering and command formatting.
-- `testing.DummyClientFileStore`: In-memory file, library, and module streaming.
-- `testing.DummyClientRuntime`: Deterministic connection creation.
-- `testing.DummyClientPlugin`: Self-contained client plugin for discovery and registration tests.
+- `testing.DummyPluginFileStore`: In-memory file, library, and module streaming.
+- `testing.DummyPluginRuntime`: Deterministic connection creation.
+- `testing.DummyPlugin`: Self-contained client plugin for discovery and registration tests.
 - `testing.DummyRouter`: Route inspection, usage docs, and deterministic dispatching.
 - `testing.DummySocket`: In-memory byte buffers simulating socket send/recv without OS network binding.
 - `testing.DummyApplication`: In-memory CLI execution double tracking `parse` and `run` calls.
@@ -194,7 +194,7 @@ plugins/<plugin_name>/
 ├── src/
 │   └── declusor_<plugin_name>/
 │       ├── __init__.py    # Exports: __all__ = ["<PluginClass>"]
-│       ├── plugin.py      # Implements IClientPlugin & IClientRuntime
+│       ├── plugin.py      # Implements IPlugin & IPluginRuntime
 │       └── connection.py  # Implements IConnection, IConnectionProfile & IClientFileStore
 ├── assets/                # Bundled stagers and libraries
 │   ├── launchers/         # Bootstrap stagers (e.g. client.py, client.sh)

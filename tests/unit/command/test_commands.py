@@ -94,7 +94,7 @@ def test_load_module_lifecycle(
     test_session: contract.SessionContext,
     dummy_connection: testing.DummyConnection,
     dummy_console: testing.DummyConsole,
-    dummy_file_store: testing.DummyClientFileStore,
+    dummy_file_store: testing.DummyPluginFileStore,
 ) -> None:
     """LoadModule reads module bytes from file store and sends to remote client."""
 

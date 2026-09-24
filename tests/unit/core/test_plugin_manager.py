@@ -26,12 +26,12 @@ class DummyValidPlugin(contract.IPlugin):
         )
 
     @classmethod
-    def validate(cls, client_config: contract.PluginConfig, /) -> None:
+    def validate(cls, plugin_config: contract.PluginConfig, /) -> None:
         pass
 
     @classmethod
-    def build_runtime(cls, client_config: contract.PluginConfig, /) -> contract.IPluginRuntime:
-        return testing.DummyClientRuntime()
+    def build_runtime(cls, plugin_config: contract.PluginConfig, /) -> contract.IPluginRuntime:
+        return testing.DummyPluginRuntime()
 
 
 class NotAPlugin:
@@ -183,11 +183,11 @@ class CustomAgentPlugin(contract.IPlugin):
         return None
 
     @classmethod
-    def validate(cls, client_config, /) -> None:
+    def validate(cls, plugin_config, /) -> None:
         pass
 
     @classmethod
-    def build_runtime(cls, client_config, /):
+    def build_runtime(cls, plugin_config, /):
         return None
 """
     (plugin_dir / "plugin.py").write_text(plugin_code, encoding="utf-8")
@@ -222,11 +222,11 @@ class CustomSrcAgentPlugin(contract.IPlugin):
         return None
 
     @classmethod
-    def validate(cls, client_config, /) -> None:
+    def validate(cls, plugin_config, /) -> None:
         pass
 
     @classmethod
-    def build_runtime(cls, client_config, /):
+    def build_runtime(cls, plugin_config, /):
         return None
 """
     (src_pkg / "__init__.py").write_text(plugin_code, encoding="utf-8")

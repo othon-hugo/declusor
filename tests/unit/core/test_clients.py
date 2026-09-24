@@ -9,9 +9,9 @@ def test_registries_are_isolated() -> None:
     first = core.PluginRegistry()
     second = core.PluginRegistry()
 
-    first.register(testing.DummyClientPlugin)
+    first.register(testing.DummyPlugin)
 
-    assert first.names() == (testing.DummyClientPlugin.name,)
+    assert first.names() == (testing.DummyPlugin.name,)
     assert second.names() == ()
 
 
@@ -19,12 +19,12 @@ def test_parser_uses_injected_manager(monkeypatch: pytest.MonkeyPatch) -> None:
     """The parser must resolve clients only from its injected manager."""
 
     manager = core.PluginManager()
-    manager.register(testing.DummyClientPlugin)
+    manager.register(testing.DummyPlugin)
     monkeypatch.setattr(
         "sys.argv",
-        ["declusor", "127.0.0.1", "9000", "--client", testing.DummyClientPlugin.name],
+        ["declusor", "127.0.0.1", "9000", "--client", testing.DummyPlugin.name],
     )
 
     options = core.DeclusorParser(manager, name="declusor").parse()
 
-    assert options["plugin"].kind == testing.DummyClientPlugin.name
+    assert options["plugin"].kind == testing.DummyPlugin.name

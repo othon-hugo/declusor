@@ -5,17 +5,17 @@ import pytest
 from declusor import contract
 from declusor.testing.doubles import (
     DummyApplication,
-    DummyClientFileStore,
-    DummyClientPlugin,
-    DummyClientRuntime,
     DummyConnection,
     DummyConnectionProfile,
     DummyConsole,
+    DummyPlugin,
+    DummyPluginFileStore,
+    DummyPluginRuntime,
     DummyRouter,
     DummySocket,
 )
 from declusor.testing.factories import (
-    create_dummy_client_config,
+    create_dummy_plugin_config,
     create_test_session,
 )
 
@@ -42,17 +42,17 @@ def dummy_connection(dummy_profile: DummyConnectionProfile) -> DummyConnection:
 
 
 @pytest.fixture
-def dummy_file_store() -> DummyClientFileStore:
-    """Provide a fresh DummyClientFileStore."""
+def dummy_file_store() -> DummyPluginFileStore:
+    """Provide a fresh DummyPluginFileStore."""
 
-    return DummyClientFileStore()
+    return DummyPluginFileStore()
 
 
 @pytest.fixture
 def test_session(
     dummy_connection: DummyConnection,
     dummy_console: DummyConsole,
-    dummy_file_store: DummyClientFileStore,
+    dummy_file_store: DummyPluginFileStore,
 ) -> contract.SessionContext:
     """Provide a SessionContext wired to isolated test doubles."""
 
@@ -64,19 +64,19 @@ def test_session(
 
 
 @pytest.fixture
-def dummy_runtime(dummy_file_store: DummyClientFileStore) -> DummyClientRuntime:
-    """Provide a fresh DummyClientRuntime."""
+def dummy_runtime(dummy_file_store: DummyPluginFileStore) -> DummyPluginRuntime:
+    """Provide a fresh DummyPluginRuntime."""
 
-    return DummyClientRuntime(file_store=dummy_file_store)
+    return DummyPluginRuntime(file_store=dummy_file_store)
 
 
 @pytest.fixture
-def dummy_plugin() -> Generator[type[DummyClientPlugin], None, None]:
-    """Provide a clean DummyClientPlugin class with isolated static state."""
+def dummy_plugin() -> Generator[type[DummyPlugin], None, None]:
+    """Provide a clean DummyPlugin class with isolated static state."""
 
-    DummyClientPlugin.reset()
-    yield DummyClientPlugin
-    DummyClientPlugin.reset()
+    DummyPlugin.reset()
+    yield DummyPlugin
+    DummyPlugin.reset()
 
 
 @pytest.fixture
@@ -94,13 +94,13 @@ def dummy_socket() -> DummySocket:
 
 
 @pytest.fixture
-def dummy_client_config() -> contract.PluginConfig:
+def dummy_plugin_config() -> contract.PluginConfig:
     """Provide a standard test PluginConfig."""
 
-    return create_dummy_client_config()
+    return create_dummy_plugin_config()
 
 
-dummy_plugin_config = dummy_client_config
+dummy_plugin_config = dummy_plugin_config
 
 
 @pytest.fixture

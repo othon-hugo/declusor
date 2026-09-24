@@ -136,9 +136,9 @@ def test_dummy_connection_errors() -> None:
 
 
 def test_dummy_client_file_store() -> None:
-    """DummyClientFileStore renders scripts, returns library payloads, and tracks module loading."""
+    """DummyPluginFileStore renders scripts, returns library payloads, and tracks module loading."""
 
-    store = testing.DummyClientFileStore()
+    store = testing.DummyPluginFileStore()
     rendered = store.render_client_script("10.0.0.1", 4444, b"\xaa\xbb")
 
     assert "10.0.0.1" in rendered
@@ -170,12 +170,12 @@ def test_dummy_client_file_store() -> None:
 
 
 def test_dummy_client_runtime() -> None:
-    """DummyClientRuntime exposes client script and creates dummy connections."""
+    """DummyPluginRuntime exposes client script and creates dummy connections."""
 
     conn = testing.DummyConnection()
-    runtime = testing.DummyClientRuntime(client_script="echo test", connection_to_return=conn)
+    runtime = testing.DummyPluginRuntime(client_script="echo test", connection_to_return=conn)
 
-    assert isinstance(runtime.client_files, contract.IPluginFileStore)
+    assert isinstance(runtime.client_files, contract.IClientFileStore)
     assert runtime.client_script == "echo test"
 
     dummy_socket = testing.DummySocket()
@@ -185,34 +185,34 @@ def test_dummy_client_runtime() -> None:
 
 
 def test_dummy_client_plugin() -> None:
-    """DummyClientPlugin implements the IClientPlugin contract with reset support."""
+    """DummyPlugin implements the IPlugin contract with reset support."""
 
-    testing.DummyClientPlugin.reset()
-    assert testing.DummyClientPlugin.name == "dummy"
+    testing.DummyPlugin.reset()
+    assert testing.DummyPlugin.name == "dummy"
 
     parser = util.Parser()
-    testing.DummyClientPlugin.configure_parser(parser)
-    assert testing.DummyClientPlugin.configured_parsers == [parser]
+    testing.DummyPlugin.configure_parser(parser)
+    assert testing.DummyPlugin.configured_parsers == [parser]
 
     ns = util.Namespace(host="10.0.0.2", port=8000)
-    cfg = testing.DummyClientPlugin.build_config(ns, None)
+    cfg = testing.DummyPlugin.build_config(ns, None)
     assert cfg.kind == "dummy"
     assert cfg.host == "10.0.0.2"
     assert cfg.port == 8000
 
-    testing.DummyClientPlugin.validate(cfg)
+    testing.DummyPlugin.validate(cfg)
 
-    testing.DummyClientPlugin.validation_error = config.ParserError("bad config")
+    testing.DummyPlugin.validation_error = config.ParserError("bad config")
 
     with pytest.raises(config.ParserError, match="bad config"):
-        testing.DummyClientPlugin.validate(cfg)
+        testing.DummyPlugin.validate(cfg)
 
-    runtime = testing.DummyClientPlugin.build_runtime(cfg)
+    runtime = testing.DummyPlugin.build_runtime(cfg)
     assert isinstance(runtime, contract.IPluginRuntime)
 
-    testing.DummyClientPlugin.reset()
-    assert len(testing.DummyClientPlugin.configured_parsers) == 0
-    assert testing.DummyClientPlugin.validation_error is None
+    testing.DummyPlugin.reset()
+    assert len(testing.DummyPlugin.configured_parsers) == 0
+    assert testing.DummyPlugin.validation_error is None
 
 
 def test_dummy_router() -> None:
@@ -334,14 +334,14 @@ def test_dummy_command_and_errors(test_session: contract.SessionContext) -> None
 
 
 def test_factories() -> None:
-    """create_test_session, create_dummy_client_config, create_dummy_controller_request produce typed objects."""
+    """create_test_session, create_dummy_plugin_config, create_dummy_controller_request produce typed objects."""
 
     session = testing.create_test_session()
     assert isinstance(session.connection, testing.DummyConnection)
     assert isinstance(session.console, testing.DummyConsole)
-    assert isinstance(session.files, testing.DummyClientFileStore)
+    assert isinstance(session.files, testing.DummyPluginFileStore)
 
-    cfg = testing.create_dummy_client_config(kind="custom", host="192.168.1.1", port=1234, options={"opt": "val"})
+    cfg = testing.create_dummy_plugin_config(kind="custom", host="192.168.1.1", port=1234, options={"opt": "val"})
     assert cfg.kind == "custom"
     assert cfg.host == "192.168.1.1"
     assert cfg.port == 1234

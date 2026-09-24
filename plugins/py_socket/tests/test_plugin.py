@@ -43,7 +43,7 @@ def test_build_runtime_renders_configured_client_script(tmp_path: Path) -> None:
     launcher = tmp_path / "py_socket_client.py"
     launcher.write_text("HOST = '$HOST'\nPORT = int('$PORT')\nACK = bytes.fromhex('$ACKNOWLEDGE')")
 
-    client_config = contract.PluginConfig(
+    plugin_config = contract.PluginConfig(
         kind=py_socket.PySocketPlugin.name,
         host="127.0.0.1",
         port=9000,
@@ -54,7 +54,7 @@ def test_build_runtime_renders_configured_client_script(tmp_path: Path) -> None:
         },
     )
 
-    runtime = py_socket.PySocketPlugin.build_runtime(client_config)
+    runtime = py_socket.PySocketPlugin.build_runtime(plugin_config)
     assert "127.0.0.1" in runtime.client_script
     assert "9000" in runtime.client_script
 
@@ -65,7 +65,7 @@ def test_build_runtime_creates_py_socket_connection(tmp_path: Path) -> None:
     launcher = tmp_path / "py_socket_client.py"
     launcher.write_text("HOST = '$HOST'\nPORT = int('$PORT')\nACK = bytes.fromhex('$ACKNOWLEDGE')")
 
-    client_config = contract.PluginConfig(
+    plugin_config = contract.PluginConfig(
         kind=py_socket.PySocketPlugin.name,
         host="127.0.0.1",
         port=9000,
@@ -76,7 +76,7 @@ def test_build_runtime_creates_py_socket_connection(tmp_path: Path) -> None:
         },
     )
 
-    runtime = py_socket.PySocketPlugin.build_runtime(client_config)
+    runtime = py_socket.PySocketPlugin.build_runtime(plugin_config)
     dummy_sock = testing.DummySocket()
     conn = runtime.create_connection(cast(socket, dummy_sock))
     assert isinstance(conn, py_socket.PySocketConnection)
@@ -88,20 +88,20 @@ def test_validate_passes_when_launcher_exists(tmp_path: Path) -> None:
     launcher = tmp_path / "py_socket_client.py"
     launcher.write_text("# launcher")
 
-    client_config = contract.PluginConfig(
+    plugin_config = contract.PluginConfig(
         kind=py_socket.PySocketPlugin.name,
         host="127.0.0.1",
         port=9000,
         options={"launcher_path": launcher},
     )
 
-    py_socket.PySocketPlugin.validate(client_config)
+    py_socket.PySocketPlugin.validate(plugin_config)
 
 
 def test_validate_raises_when_launcher_missing(tmp_path: Path) -> None:
     """Verify plugin configuration validation raises ParserError when launcher file is missing."""
 
-    client_config = contract.PluginConfig(
+    plugin_config = contract.PluginConfig(
         kind=py_socket.PySocketPlugin.name,
         host="127.0.0.1",
         port=9000,
@@ -109,4 +109,4 @@ def test_validate_raises_when_launcher_missing(tmp_path: Path) -> None:
     )
 
     with pytest.raises(config.ParserError, match="Client launcher file does not exist"):
-        py_socket.PySocketPlugin.validate(client_config)
+        py_socket.PySocketPlugin.validate(plugin_config)

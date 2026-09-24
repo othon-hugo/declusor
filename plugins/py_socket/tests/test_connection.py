@@ -7,7 +7,7 @@ from declusor import testing
 
 
 def test_py_socket_connection_write_sends_null_delimited_frame(
-    dummy_file_store: testing.DummyClientFileStore,
+    dummy_file_store: testing.DummyPluginFileStore,
 ) -> None:
     """Verify PySocketConnection transmits data with null byte framing."""
 
@@ -22,7 +22,7 @@ def test_py_socket_connection_write_sends_null_delimited_frame(
 
 
 def test_py_socket_connection_close_is_idempotent(
-    dummy_file_store: testing.DummyClientFileStore,
+    dummy_file_store: testing.DummyPluginFileStore,
 ) -> None:
     """Verify closing PySocketConnection multiple times is idempotent."""
 

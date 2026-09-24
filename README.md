@@ -95,7 +95,7 @@ When an operator launches Declusor, the entire engagement workflow is automated 
 
 - **Multi-Tier Dynamic Discovery**: Seamlessly load plugins from built-ins, standard pip packages via `declusor.plugins` entry points, or on-the-fly from operator drop-in folders (`--plugin-dir`).
 - **Fully Decoupled Transports**: Shipped with native Linux `/dev/tcp` (`shell_socket`) and memory-resident Python (`py_socket`) agents with zero hardcoded coupling to the core orchestration engine.
-- **Contract-Driven Stability**: Every plugin strictly implements domain interfaces (`IClientPlugin`, `IClientRuntime`, `IConnection`) with isolated asset overlays (launchers, helpers, and modules).
+- **Contract-Driven Stability**: Every plugin strictly implements domain interfaces (`IPlugin`, `IPluginRuntime`, `IConnection`) with isolated asset overlays (launchers, helpers, and modules).
 - **First-Class Testing SDK**: Authors can verify conformance in seconds using `declusor.testing.PluginConformanceTestSuite` with zero mocks.
 
 ## Getting Started
@@ -233,7 +233,7 @@ plugins/<plugin_name>/
 ├── README.md                     # Documentation (## Modules and ## Design Principles)
 ├── src/declusor_<plugin_name>/   # Core transport and runtime implementation
 │   ├── __init__.py               # Public exports (__all__ = ["<PluginClass>"])
-│   ├── plugin.py                 # Implements IClientPlugin & IClientRuntime
+│   ├── plugin.py                 # Implements IPlugin & IPluginRuntime
 │   └── connection.py             # Implements IConnection, IConnectionProfile, IClientFileStore
 ├── assets/                       # Bundled stagers and operational payloads
 │   ├── launchers/                # Client bootstrap templates (e.g. client.sh, client.py)

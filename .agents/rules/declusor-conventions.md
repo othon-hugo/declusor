@@ -78,9 +78,9 @@ Do **not** use unconstrained `unittest.mock.MagicMock` or fragile monkeypatching
 - `testing.DummyConsole`: Simulates I/O, error logging, and input queues.
 - `testing.DummyConnection`: Full state machine (`CREATED` -> `CONNECTED` -> `CLOSED`), frame recording, and chunk streaming.
 - `testing.DummyConnectionProfile`: Script rendering and command formatting.
-- `testing.DummyClientFileStore`: In-memory file, library, and module streaming.
-- `testing.DummyClientRuntime`: Deterministic connection creation.
-- `testing.DummyClientPlugin`: Self-contained client plugin for discovery and registration tests.
+- `testing.DummyPluginFileStore`: In-memory file, library, and module streaming.
+- `testing.DummyPluginRuntime`: Deterministic connection creation.
+- `testing.DummyPlugin`: Self-contained client plugin for discovery and registration tests.
 - `testing.DummyRouter`: Route inspection, usage docs, and deterministic dispatching.
 - `testing.DummySocket`: In-memory byte buffers simulating socket send/recv without OS network binding.
 - `testing.DummyApplication`: In-memory CLI execution double tracking `parse` and `run` calls.

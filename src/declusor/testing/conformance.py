@@ -43,23 +43,23 @@ def assert_conforms_to_client_plugin(
         client_data.launcher.mkdir(parents=True, exist_ok=True)
         (client_data.launcher / f"{plugin_cls.name}_client.py").write_text("# client")
         (client_data.launcher / f"{plugin_cls.name}_client.sh").write_text("# client")
-        client_config = plugin_cls.build_config(args, data_paths)
+        plugin_config = plugin_cls.build_config(args, data_paths)
     else:
-        client_config = plugin_cls.build_config(args, None)
+        plugin_config = plugin_cls.build_config(args, None)
 
-    assert isinstance(client_config, contract.PluginConfig), f"build_config must return PluginConfig, got {type(client_config)}."
-    assert client_config.kind == plugin_cls.name, f"client_config.kind ({client_config.kind}) must match plugin.name ({plugin_cls.name})."
-    assert client_config.host == "127.0.0.1"
-    assert client_config.port == 9000
+    assert isinstance(plugin_config, contract.PluginConfig), f"build_config must return PluginConfig, got {type(plugin_config)}."
+    assert plugin_config.kind == plugin_cls.name, f"plugin_config.kind ({plugin_config.kind}) must match plugin.name ({plugin_cls.name})."
+    assert plugin_config.host == "127.0.0.1"
+    assert plugin_config.port == 9000
 
     # Invariant 4: Validation
-    plugin_cls.validate(client_config)
+    plugin_cls.validate(plugin_config)
 
     # Invariant 5: Runtime creation
-    runtime = plugin_cls.build_runtime(client_config)
+    runtime = plugin_cls.build_runtime(plugin_config)
     assert isinstance(runtime, contract.IPluginRuntime), f"build_runtime must return IPluginRuntime, got {type(runtime)}."
     assert isinstance(runtime.client_script, str), "runtime.client_script must return a bootstrap string."
-    assert isinstance(runtime.client_files, contract.IPluginFileStore), "runtime.client_files must implement IPluginFileStore."
+    assert isinstance(runtime.client_files, contract.IClientFileStore), "runtime.client_files must implement IClientFileStore."
 
     # Invariant 6: Connection instantiation
     dummy_sock = DummySocket(incoming_bytes=b"")
@@ -124,11 +124,11 @@ class PluginConformanceTestSuite:
 
         args = util.Namespace(host="10.0.0.1", port=4444, **sample_options)
         data_paths = config.DataPaths.from_root(tmp_path)
-        client_config = plugin_class.build_config(args, data_paths)
-        assert isinstance(client_config, contract.PluginConfig)
-        assert client_config.kind == plugin_class.name
-        assert client_config.host == "10.0.0.1"
-        assert client_config.port == 4444
+        plugin_config = plugin_class.build_config(args, data_paths)
+        assert isinstance(plugin_config, contract.PluginConfig)
+        assert plugin_config.kind == plugin_class.name
+        assert plugin_config.host == "10.0.0.1"
+        assert plugin_config.port == 4444
 
     def test_full_conformance(
         self,

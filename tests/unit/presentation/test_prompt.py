@@ -7,7 +7,7 @@ def test_prompt_terminates_on_controller_terminate_action(
     dummy_router: testing.DummyRouter,
     dummy_connection: testing.DummyConnection,
     dummy_console: testing.DummyConsole,
-    dummy_file_store: testing.DummyClientFileStore,
+    dummy_file_store: testing.DummyPluginFileStore,
 ) -> None:
     """PromptCLI must stop cleanly when a controller signals ControllerAction.TERMINATE."""
 
@@ -45,7 +45,7 @@ def test_prompt_handles_keyboard_interrupt_on_input(
     dummy_router: testing.DummyRouter,
     dummy_connection: testing.DummyConnection,
     dummy_console: testing.DummyConsole,
-    dummy_file_store: testing.DummyClientFileStore,
+    dummy_file_store: testing.DummyPluginFileStore,
 ) -> None:
     """PromptCLI must terminate loop gracefully on KeyboardInterrupt during input."""
 
@@ -66,7 +66,7 @@ def test_prompt_handles_keyboard_interrupt_during_execution(
     dummy_router: testing.DummyRouter,
     dummy_connection: testing.DummyConnection,
     dummy_console: testing.DummyConsole,
-    dummy_file_store: testing.DummyClientFileStore,
+    dummy_file_store: testing.DummyPluginFileStore,
 ) -> None:
     """PromptCLI catches KeyboardInterrupt during command execution and continues."""
 
@@ -104,7 +104,7 @@ def test_prompt_handles_declusor_exception(
     dummy_router: testing.DummyRouter,
     dummy_connection: testing.DummyConnection,
     dummy_console: testing.DummyConsole,
-    dummy_file_store: testing.DummyClientFileStore,
+    dummy_file_store: testing.DummyPluginFileStore,
 ) -> None:
     """PromptCLI catches DeclusorException and prints error without terminating loop."""
 

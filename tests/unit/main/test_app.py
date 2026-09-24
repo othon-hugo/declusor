@@ -29,27 +29,27 @@ def test_application_register_plugin_at_runtime() -> None:
 
     manager = core.PluginManager()
     app = main.Application(manager)
-    testing.DummyClientPlugin.reset()
+    testing.DummyPlugin.reset()
 
-    app.register_plugin(testing.DummyClientPlugin)
-    assert testing.DummyClientPlugin.name in app.manager.names()
+    app.register_plugin(testing.DummyPlugin)
+    assert testing.DummyPlugin.name in app.manager.names()
 
 
 def test_application_run_lifecycle_with_no_data_paths() -> None:
     """Verify Application.run succeeds with data_paths=None without host filesystem checks."""
 
     dummy_conn = testing.DummyConnection()
-    dummy_runtime = testing.DummyClientRuntime(connection_to_return=dummy_conn)
-    testing.DummyClientPlugin.reset()
-    testing.DummyClientPlugin.runtime_instance = dummy_runtime
+    dummy_runtime = testing.DummyPluginRuntime(connection_to_return=dummy_conn)
+    testing.DummyPlugin.reset()
+    testing.DummyPlugin.runtime_instance = dummy_runtime
 
     manager = core.PluginManager()
-    manager.register(testing.DummyClientPlugin)
+    manager.register(testing.DummyPlugin)
 
     app = main.Application(manager)
 
-    client_config = contract.PluginConfig(
-        kind=testing.DummyClientPlugin.name,
+    plugin_config = contract.PluginConfig(
+        kind=testing.DummyPlugin.name,
         host="127.0.0.1",
         port=9000,
         data_paths=None,
@@ -57,7 +57,7 @@ def test_application_run_lifecycle_with_no_data_paths() -> None:
     options: core.DeclusorOptions = {
         "host": "127.0.0.1",
         "port": 9000,
-        "plugin": client_config,
+        "plugin": plugin_config,
     }
 
     dummy_sock = testing.DummySocket()

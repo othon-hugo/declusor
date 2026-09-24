@@ -2,25 +2,25 @@ from socket import socket
 
 from declusor import config, contract, util
 from declusor.testing.doubles.connection import DummyConnection
-from declusor.testing.doubles.filestore import DummyClientFileStore
+from declusor.testing.doubles.filestore import DummyPluginFileStore
 
 
-class DummyClientRuntime(contract.IPluginRuntime):
+class DummyPluginRuntime(contract.IPluginRuntime):
     """Fully-typed client runtime producing configured connections and scripts."""
 
     def __init__(
         self,
-        file_store: contract.IPluginFileStore | None = None,
+        file_store: contract.IClientFileStore | None = None,
         client_script: str = "#!/bin/sh\necho dummy",
         connection_to_return: contract.IConnection | None = None,
     ) -> None:
-        self._file_store: contract.IPluginFileStore = file_store or DummyClientFileStore()
+        self._file_store: contract.IClientFileStore = file_store or DummyPluginFileStore()
         self._client_script: str = client_script
         self.connection_to_return: contract.IConnection | None = connection_to_return
         self.created_connections: list[contract.IConnection] = []
 
     @property
-    def client_files(self) -> contract.IPluginFileStore:
+    def client_files(self) -> contract.IClientFileStore:
         return self._file_store
 
     @property
@@ -36,7 +36,7 @@ class DummyClientRuntime(contract.IPluginRuntime):
         return conn
 
 
-class DummyClientPlugin(contract.IPlugin):
+class DummyPlugin(contract.IPlugin):
     """Fully-typed plugin implementing the IPlugin extension point."""
 
     name: str = "dummy"
@@ -70,14 +70,14 @@ class DummyClientPlugin(contract.IPlugin):
         )
 
     @classmethod
-    def validate(cls, client_config: contract.PluginConfig, /) -> None:
+    def validate(cls, plugin_config: contract.PluginConfig, /) -> None:
         if cls.validation_error is not None:
             raise cls.validation_error
 
     @classmethod
-    def build_runtime(cls, client_config: contract.PluginConfig, /) -> contract.IPluginRuntime:
-        return cls.runtime_instance or DummyClientRuntime()
+    def build_runtime(cls, plugin_config: contract.PluginConfig, /) -> contract.IPluginRuntime:
+        return cls.runtime_instance or DummyPluginRuntime()
 
 
-DummyPlugin = DummyClientPlugin
-DummyPluginRuntime = DummyClientRuntime
+DummyPlugin = DummyPlugin
+DummyPluginRuntime = DummyPluginRuntime

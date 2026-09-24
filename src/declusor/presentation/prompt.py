@@ -19,7 +19,7 @@ class PromptCLI(contract.IPrompt):
         session: contract.SessionContext | None = None,
         connection: contract.IConnection | None = None,
         console: contract.IConsole | None = None,
-        files: contract.IPluginFileStore | None = None,
+        files: contract.IClientFileStore | None = None,
     ) -> None:
         """Initialize PromptCLI with an active session or individual session components.
 

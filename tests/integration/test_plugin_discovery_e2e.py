@@ -35,11 +35,11 @@ class ExtraClientPlugin(contract.IPlugin):
         return None
 
     @classmethod
-    def validate(cls, client_config, /) -> None:
+    def validate(cls, plugin_config, /) -> None:
         pass
 
     @classmethod
-    def build_runtime(cls, client_config, /):
+    def build_runtime(cls, plugin_config, /):
         return None
 """
     (custom_plugin_dir / "plugin.py").write_text(plugin_code, encoding="utf-8")

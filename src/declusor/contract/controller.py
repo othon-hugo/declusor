@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from declusor.contract.command import ICommand
     from declusor.contract.connection import IConnection
     from declusor.contract.console import IConsole
-    from declusor.contract.plugin import IPluginFileStore
+    from declusor.contract.plugin import IClientFileStore
 
 
 class ControllerAction(StrEnum):
@@ -38,7 +38,7 @@ class SessionContext:
         self,
         connection: "IConnection",
         console: "IConsole",
-        files: "IPluginFileStore",
+        files: "IClientFileStore",
     ) -> None:
         """Initialize the active session context.
 
@@ -65,7 +65,7 @@ class SessionContext:
         return self._console
 
     @property
-    def files(self) -> "IPluginFileStore":
+    def files(self) -> "IClientFileStore":
         """Client file store for module/library loading."""
 
         return self._files
