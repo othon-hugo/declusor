@@ -61,12 +61,12 @@ class DummyClientPlugin(contract.IClientPlugin):
         cls.configured_parsers.append(parser)
 
     @classmethod
-    def build_config(cls, args: util.Namespace, data_paths: config.DataPaths, /) -> contract.ClientConfig:
+    def build_config(cls, args: util.Namespace, data_paths: config.DataPaths | None = None, /) -> contract.ClientConfig:
         return contract.ClientConfig(
             kind=cls.name,
             host=getattr(args, "host", "127.0.0.1"),
             port=getattr(args, "port", 9000),
-            data_paths=data_paths,
+            data_paths=data_paths or config.BasePath.DATA_PATHS,
         )
 
     @classmethod

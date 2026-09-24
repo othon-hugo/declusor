@@ -45,7 +45,9 @@ class PySocketPlugin(contract.IClientPlugin):
     def build_config(cls, args: util.Namespace, data_paths: config.DataPaths | None = None, /) -> contract.ClientConfig:
         """Build the py_socket client configuration."""
 
-        if data_paths is not None:
+        if data_paths is not None and (
+            data_paths != config.BasePath.DATA_PATHS or (data_paths.for_client(cls.name).launcher / "py_socket_client.py").exists()
+        ):
             client_data = data_paths.for_client(cls.name)
             launcher_path = client_data.launcher / "py_socket_client.py"
             helpers_dir = client_data.helpers

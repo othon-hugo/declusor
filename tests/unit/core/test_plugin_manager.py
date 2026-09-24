@@ -17,8 +17,13 @@ class DummyValidPlugin(contract.IClientPlugin):
         pass
 
     @classmethod
-    def build_config(cls, args: util.Namespace, data_paths: config.DataPaths, /) -> contract.ClientConfig:
-        return contract.ClientConfig(kind=cls.name, host="127.0.0.1", port=9000, data_paths=data_paths)
+    def build_config(cls, args: util.Namespace, data_paths: config.DataPaths | None = None, /) -> contract.ClientConfig:
+        return contract.ClientConfig(
+            kind=cls.name,
+            host="127.0.0.1",
+            port=9000,
+            data_paths=data_paths or config.BasePath.DATA_PATHS,
+        )
 
     @classmethod
     def validate(cls, client_config: contract.ClientConfig, /) -> None:

@@ -26,21 +26,21 @@ class DataPaths:
     root: Path
     """Root directory containing the Declusor data directories."""
 
-    clients: Path
-    """Directory containing client bootstrap templates."""
+    launchers: Path
+    """Directory containing client bootstrap templates and launcher scripts."""
 
     modules: Path
     """Directory containing payload modules."""
 
-    library: Path
-    """Directory containing reusable client libraries."""
+    helpers: Path
+    """Directory containing reusable client helper libraries."""
 
     @classmethod
     def from_root(cls, root: Path, /) -> "DataPaths":
         """Build normalized data paths from a root directory.
 
         Args:
-            root: Directory containing ``clients``, ``modules`` and ``library``.
+            root: Directory containing ``launchers``, ``modules`` and ``helpers``.
 
         Returns:
             Immutable paths derived from ``root``.
@@ -50,10 +50,22 @@ class DataPaths:
 
         return cls(
             root=normalized_root,
-            clients=normalized_root / "clients",
+            launchers=normalized_root / "launchers",
             modules=normalized_root / "modules",
-            library=normalized_root / "library",
+            helpers=normalized_root / "helpers",
         )
+
+    @property
+    def clients(self) -> Path:
+        """Deprecated alias for launchers directory."""
+
+        return self.launchers
+
+    @property
+    def library(self) -> Path:
+        """Deprecated alias for helpers directory."""
+
+        return self.helpers
 
     def for_client(self, client_name: str, /) -> "ClientDataPaths":
         """Derive namespaced data paths for a specific client plugin.
@@ -109,20 +121,35 @@ class BasePath:
     PLUGINS_DIR = (ROOT_DIR / "plugins").resolve()
     """Root plugins directory for built-in and repository-level plugins."""
 
-    USER_PLUGINS_DIR = (Path.home() / ".declusor" / "plugins").resolve()
+    USER_DIR = (Path.home() / ".declusor").resolve()
+    """Default user-level configuration and runtime directory."""
+
+    USER_PLUGINS_DIR = (USER_DIR / "plugins").resolve()
     """Default user-level plugins directory for drop-in extensions."""
 
-    DATA_DIR = (ROOT_DIR / "data").resolve()
-    """Normalized data directory path."""
+    USER_DATA_DIR = (USER_DIR / "data").resolve()
+    """Default user-level data directory for custom client assets."""
 
-    CLIENTS_DIR = (DATA_DIR / "clients").resolve()
-    """Normalized clients directory path."""
+    DATA_DIR = (ROOT_DIR / "data").resolve()
+    """Normalized repository data directory path."""
+
+    LAUNCHERS_DIR = (DATA_DIR / "launchers").resolve()
+    """Normalized client launchers directory path."""
+
+    HELPERS_DIR = (DATA_DIR / "helpers").resolve()
+    """Normalized helper library directory path."""
 
     MODULES_DIR = (DATA_DIR / "modules").resolve()
-    """Normalized modules directory path."""
+    """Normalized payload modules directory path."""
 
-    LIBRARY_DIR = (DATA_DIR / "library").resolve()
-    """Normalized library directory path."""
+    CLIENTS_DIR = LAUNCHERS_DIR
+    """Deprecated alias for LAUNCHERS_DIR."""
+
+    LIBRARY_DIR = HELPERS_DIR
+    """Deprecated alias for HELPERS_DIR."""
+
+    USER_DATA_PATHS = DataPaths.from_root(USER_DATA_DIR)
+    """Default user data paths for ~/.declusor/data."""
 
     DATA_PATHS = DataPaths.from_root(DATA_DIR)
     """Default data paths used during development."""

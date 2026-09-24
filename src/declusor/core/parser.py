@@ -56,9 +56,9 @@ class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
 
         self.add_argument(
             "--data-root",
-            help="root directory containing clients, modules and libraries",
+            help="root directory containing client launchers, helpers, and modules",
             type=Path,
-            default=config.BasePath.DATA_DIR,
+            default=None,
         )
 
         self.add_argument(
@@ -86,6 +86,7 @@ class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
         preliminary_args, _ = self.parse_known_args(argv)
 
         plugin_dir = getattr(preliminary_args, "plugin_dir", None)
+
         if plugin_dir and hasattr(self._registry, "load_from_directory"):
             self._registry.load_from_directory(plugin_dir, source_label="cli-plugin-dir", allow_override=True)
 
@@ -94,7 +95,7 @@ class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
 
         args = self.parse_args(argv)
 
-        data_paths = config.DataPaths.from_root(args.data_root)
+        data_paths = config.DataPaths.from_root(args.data_root) if args.data_root is not None else config.BasePath.DATA_PATHS
         client_config = plugin.build_config(args, data_paths)
         plugin.validate(client_config)
 

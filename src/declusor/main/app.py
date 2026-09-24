@@ -82,9 +82,9 @@ class Application:
         """Validate optional data directories if specified."""
 
         directories = (
-            data_paths.clients,
+            data_paths.launchers,
             data_paths.modules,
-            data_paths.library,
+            data_paths.helpers,
         )
 
         for directory in directories:

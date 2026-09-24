@@ -42,7 +42,9 @@ class ShellSocketPlugin(contract.IClientPlugin):
     def build_config(cls, args: util.Namespace, data_paths: config.DataPaths | None = None, /) -> contract.ClientConfig:
         """Build the shell_socket client configuration."""
 
-        if data_paths is not None:
+        if data_paths is not None and (
+            data_paths != config.BasePath.DATA_PATHS or (data_paths.for_client(cls.name).launcher / "shell_socket_client.sh").exists()
+        ):
             client_data = data_paths.for_client(cls.name)
             launcher_path = client_data.launcher / "shell_socket_client.sh"
             helpers_dir = client_data.helpers

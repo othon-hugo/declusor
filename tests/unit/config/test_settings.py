@@ -23,13 +23,33 @@ def test_data_paths_for_client(tmp_path: Path) -> None:
     assert client_paths.modules == tmp_path / "test_client" / "modules"
 
 
+def test_data_paths_attributes_and_aliases(tmp_path: Path) -> None:
+    """Verify DataPaths attributes and backward-compatible aliases."""
+
+    paths = config.DataPaths.from_root(tmp_path)
+    assert paths.root == tmp_path
+    assert paths.launchers == tmp_path / "launchers"
+    assert paths.helpers == tmp_path / "helpers"
+    assert paths.modules == tmp_path / "modules"
+    assert paths.clients == paths.launchers
+    assert paths.library == paths.helpers
+
+
 def test_base_path_attributes() -> None:
     """Verify BasePath directory paths are resolved Path objects."""
 
     assert isinstance(config.BasePath.ROOT_DIR, Path)
     assert isinstance(config.BasePath.PLUGINS_DIR, Path)
+    assert isinstance(config.BasePath.USER_DIR, Path)
     assert isinstance(config.BasePath.USER_PLUGINS_DIR, Path)
+    assert isinstance(config.BasePath.USER_DATA_DIR, Path)
+    assert isinstance(config.BasePath.USER_DATA_PATHS, config.DataPaths)
     assert isinstance(config.BasePath.DATA_DIR, Path)
+    assert isinstance(config.BasePath.LAUNCHERS_DIR, Path)
+    assert isinstance(config.BasePath.HELPERS_DIR, Path)
+    assert isinstance(config.BasePath.MODULES_DIR, Path)
+    assert isinstance(config.BasePath.CLIENTS_DIR, Path)
+    assert isinstance(config.BasePath.LIBRARY_DIR, Path)
     assert isinstance(config.BasePath.DATA_PATHS, config.DataPaths)
 
 
@@ -44,14 +64,15 @@ class DummyPathClientPlugin(contract.IClientPlugin):
         pass
 
     @classmethod
-    def build_config(cls, args: util.Namespace, data_paths: config.DataPaths, /) -> contract.ClientConfig:
-        client_paths = data_paths.for_client(cls.name)
+    def build_config(cls, args: util.Namespace, data_paths: config.DataPaths | None = None, /) -> contract.ClientConfig:
+        resolved_paths = data_paths or config.BasePath.DATA_PATHS
+        client_paths = resolved_paths.for_client(cls.name)
         launcher = client_paths.launcher / "client.sh"
         return contract.ClientConfig(
             kind=cls.name,
             host=getattr(args, "host", "127.0.0.1"),
             port=getattr(args, "port", 9000),
-            data_paths=data_paths,
+            data_paths=resolved_paths,
             options={"launcher_path": launcher},
         )
 
@@ -87,7 +108,7 @@ def test_parser_builds_client_paths_from_data_root(tmp_path: Path) -> None:
 def test_application_directory_validation_does_not_change_cwd(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Validating data paths must not mutate the process working directory."""
 
-    for directory in ("clients", "modules", "library"):
+    for directory in ("launchers", "modules", "helpers"):
         (tmp_path / directory).mkdir()
 
     working_directory = tmp_path / "working"
