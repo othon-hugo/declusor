@@ -1,5 +1,3 @@
-"""Unit tests for PromptCLI interactive execution loop using typed test doubles."""
-
 import pytest
 
 from declusor import config, contract, presentation, testing

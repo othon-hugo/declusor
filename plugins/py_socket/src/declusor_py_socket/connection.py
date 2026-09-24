@@ -6,7 +6,6 @@ from socket import socket
 from types import MappingProxyType
 
 from declusor import config, contract, util
-from declusor.contract import ConnectionState
 
 
 @dataclass(frozen=True)
@@ -56,15 +55,18 @@ class PySocketProfile(contract.IConnectionProfile):
     @property
     def default_buffer_size(self) -> int:
         """Default buffer size for socket reads."""
+
         return self._default_buffer_size
 
     @property
     def default_timeout(self) -> float | None:
         """Default timeout for socket operations in seconds."""
+
         return self._default_timeout
 
     def render_operation_command(self, opcode: "config.OperationCode", /, *args: str) -> str | None:
         """Build the Python function call string for a given operation code."""
+
         function_name = self._supported_functions.get(opcode)
 
         if not function_name:
@@ -100,6 +102,7 @@ class PySocketFileStore(contract.IClientFileStore):
 
     def render_client_script(self, host: str, port: int, acknowledge: bytes, /) -> str:
         """Read and render the Python client bootstrap launcher script."""
+
         try:
             client_script_template = self._launcher_path.read_text(encoding="utf-8")
         except OSError as error:
@@ -114,6 +117,7 @@ class PySocketFileStore(contract.IClientFileStore):
 
     def load_library(self) -> bytes:
         """Load and concatenate valid Python helper libraries."""
+
         if not self._helpers_dir.exists():
             return b""
 
@@ -135,6 +139,7 @@ class PySocketFileStore(contract.IClientFileStore):
 
     def load_module(self, module_name: str, /) -> bytes:
         """Load one operator-selected module from the modules directory."""
+
         module_path = (self._modules_dir / module_name).resolve()
 
         if not util.validate_file_relative(module_path, self._modules_dir):
@@ -154,13 +159,13 @@ class PySocketConnection(contract.IConnection):
         self._files = files
         self._connection = connection
         self._timeout = profile.default_timeout
-        self._state = ConnectionState.CREATED
+        self._state = contract.ConnectionState.CREATED
 
         if self._timeout is not None:
             self._connection.settimeout(self._timeout)
 
     @property
-    def state(self) -> ConnectionState:
+    def state(self) -> contract.ConnectionState:
         """Current lifecycle state of the connection."""
         return self._state
 
@@ -172,6 +177,7 @@ class PySocketConnection(contract.IConnection):
     @property
     def timeout(self) -> float | None:
         """Current socket timeout in seconds."""
+
         return self._timeout
 
     @timeout.setter
@@ -181,10 +187,11 @@ class PySocketConnection(contract.IConnection):
 
     def initialize(self) -> None:
         """Perform the Python agent initialization handshake."""
-        if self._state == ConnectionState.CLOSED:
+
+        if self._state == contract.ConnectionState.CLOSED:
             raise config.ConnectionError("Cannot initialize a closed connection.")
 
-        self._state = ConnectionState.INITIALIZING
+        self._state = contract.ConnectionState.INITIALIZING
         self.write(self._files.load_library())
 
         expected_ack = self._profile.ack_client_raw
@@ -207,11 +214,12 @@ class PySocketConnection(contract.IConnection):
         except (OSError, TimeoutError) as error:
             raise config.ConnectionError("Failed waiting for client ACK during session initialization.") from error
 
-        self._state = ConnectionState.CONNECTED
+        self._state = contract.ConnectionState.CONNECTED
 
     def write(self, data: bytes, /) -> None:
         """Send a null-delimited payload to the remote Python agent."""
-        if self._state == ConnectionState.CLOSED:
+
+        if self._state == contract.ConnectionState.CLOSED:
             raise config.ConnectionClosed("Connection is closed.")
 
         try:
@@ -222,6 +230,7 @@ class PySocketConnection(contract.IConnection):
 
     def read(self) -> Generator[bytes, None, None]:
         """Stream response chunks from the Python agent until the ACK sentinel."""
+
         ack = self._profile.ack_client_raw
         buffer = bytearray()
 
@@ -260,10 +269,11 @@ class PySocketConnection(contract.IConnection):
 
     def close(self) -> None:
         """Close the underlying socket idempotently."""
-        if self._state == ConnectionState.CLOSED:
+
+        if self._state == contract.ConnectionState.CLOSED:
             return
 
-        self._state = ConnectionState.CLOSED
+        self._state = contract.ConnectionState.CLOSED
 
         with suppress(OSError):
             self._connection.close()

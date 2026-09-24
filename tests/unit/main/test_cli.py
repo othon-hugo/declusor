@@ -1,5 +1,3 @@
-"""Unit tests for the CLI entry point (main) and error handling."""
-
 from unittest.mock import patch
 
 import pytest

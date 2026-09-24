@@ -5,8 +5,7 @@ from typing import cast
 import declusor_py_socket as py_socket
 import pytest
 
-from declusor import config, contract
-from declusor.testing import DummySocket
+from declusor import config, contract, testing
 
 
 def test_build_runtime_renders_configured_client_script(tmp_path: Path) -> None:
@@ -49,7 +48,7 @@ def test_build_runtime_creates_py_socket_connection(tmp_path: Path) -> None:
     )
 
     runtime = py_socket.PySocketPlugin.build_runtime(client_config)
-    dummy_sock = DummySocket()
+    dummy_sock = testing.DummySocket()
     conn = runtime.create_connection(cast(socket, dummy_sock))
     assert isinstance(conn, py_socket.PySocketConnection)
 

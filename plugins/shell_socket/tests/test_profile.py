@@ -8,6 +8,7 @@ def test_profile_supported_functions_are_immutable() -> None:
     """Verify supported functions mapping in shell_socket.ShellSocketProfile cannot be modified."""
 
     profile = shell_socket.ShellSocketProfile(name="test", ack_server_raw=b"\x00", ack_client_raw=b"ack")
+
     with pytest.raises(TypeError):
         profile._supported_functions[config.OperationCode.EXEC_FILE] = "changed"  # type: ignore[index]
 

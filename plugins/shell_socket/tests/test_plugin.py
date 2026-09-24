@@ -4,8 +4,7 @@ from typing import cast
 
 import declusor_shell_socket as shell_socket
 
-from declusor import contract
-from declusor.testing import DummySocket
+from declusor import contract, testing
 
 
 def test_shell_socket_plugin_metadata() -> None:
@@ -51,7 +50,7 @@ def test_build_runtime_creates_shell_socket_connection(tmp_path: Path) -> None:
             "modules_dir": tmp_path / "modules",
         },
     )
-    dummy_sock = DummySocket(peer_name=("127.0.0.1", 9000))
+    dummy_sock = testing.DummySocket(peer_name=("127.0.0.1", 9000))
 
     runtime = shell_socket.ShellSocketPlugin.build_runtime(client_config)
     client_connection = runtime.create_connection(cast(socket, dummy_sock))

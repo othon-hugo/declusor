@@ -1,5 +1,3 @@
-"""Unit tests for the concrete Console presentation implementation."""
-
 from unittest.mock import patch
 
 import pytest

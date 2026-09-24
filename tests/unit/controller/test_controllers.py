@@ -1,5 +1,3 @@
-"""Unit tests for controller handlers using typed fixtures and test doubles."""
-
 from pathlib import Path
 
 from declusor import config, contract, controller, testing

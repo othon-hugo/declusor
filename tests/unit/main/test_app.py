@@ -1,5 +1,3 @@
-"""Unit tests for Application lifecycle and route wiring using typed test doubles."""
-
 from unittest.mock import patch
 
 from declusor import core, main, testing
