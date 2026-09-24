@@ -16,7 +16,7 @@ def test_create_application_initializes_plugins() -> None:
 def test_application_connect_routes() -> None:
     """Verify application registers core routes on its router."""
 
-    manager = core.ClientPluginManager()
+    manager = core.PluginManager()
     app = main.Application(manager)
     app._connect_routes()
 
@@ -27,7 +27,7 @@ def test_application_connect_routes() -> None:
 def test_application_register_plugin_at_runtime() -> None:
     """Verify application allows registering client plugins at runtime."""
 
-    manager = core.ClientPluginManager()
+    manager = core.PluginManager()
     app = main.Application(manager)
     testing.DummyClientPlugin.reset()
 
@@ -43,12 +43,12 @@ def test_application_run_lifecycle_with_no_data_paths() -> None:
     testing.DummyClientPlugin.reset()
     testing.DummyClientPlugin.runtime_instance = dummy_runtime
 
-    manager = core.ClientPluginManager()
+    manager = core.PluginManager()
     manager.register(testing.DummyClientPlugin)
 
     app = main.Application(manager)
 
-    client_config = contract.ClientConfig(
+    client_config = contract.PluginConfig(
         kind=testing.DummyClientPlugin.name,
         host="127.0.0.1",
         port=9000,
@@ -57,7 +57,7 @@ def test_application_run_lifecycle_with_no_data_paths() -> None:
     options: core.DeclusorOptions = {
         "host": "127.0.0.1",
         "port": 9000,
-        "client": client_config,
+        "plugin": client_config,
     }
 
     dummy_sock = testing.DummySocket()

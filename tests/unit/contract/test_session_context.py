@@ -52,9 +52,3 @@ def test_session_context_backward_compatibility_tuple_unpacking(
     assert unpacked_conn is dummy_connection
     assert unpacked_console is dummy_console
     assert unpacked_files is dummy_file_store
-
-
-def test_controller_dependencies_alias() -> None:
-    """ControllerDependencies must be an alias for SessionContext."""
-
-    assert contract.ControllerDependencies is contract.SessionContext

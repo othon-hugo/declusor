@@ -7,7 +7,7 @@ def test_create_application_discovers_builtin_plugins() -> None:
     """Application factory must discover built-in plugins automatically."""
 
     app = main.create_application()
-    available = app._registry.names()
+    available = app.manager.names()
 
     assert "shell_socket" in available
     assert "py_socket" in available
@@ -22,7 +22,7 @@ def test_create_application_discovers_custom_plugins_via_search_dirs(tmp_path: P
     plugin_code = """
 from declusor import contract
 
-class ExtraClientPlugin(contract.IClientPlugin):
+class ExtraClientPlugin(contract.IPlugin):
     name = "extra_client"
     description = "Extra client loaded via custom search path"
 
@@ -45,7 +45,7 @@ class ExtraClientPlugin(contract.IClientPlugin):
     (custom_plugin_dir / "plugin.py").write_text(plugin_code, encoding="utf-8")
 
     app = main.create_application(search_dirs=[tmp_path])
-    available = app._registry.names()
+    available = app.manager.names()
 
     assert "shell_socket" in available
     assert "py_socket" in available

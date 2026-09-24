@@ -6,12 +6,6 @@ from declusor.config import (
     InvalidOperation,
 )
 
-from .client import (
-    ClientConfig,
-    IClientFileStore,
-    IClientPlugin,
-    IClientRuntime,
-)
 from .command import (
     ICommand,
 )
@@ -26,13 +20,18 @@ from .console import (
 from .controller import (
     Controller,
     ControllerAction,
-    ControllerDependencies,
     ControllerRequest,
     ControllerResult,
     SessionContext,
 )
 from .parser import (
     IParser,
+)
+from .plugin import (
+    IPlugin,
+    IPluginFileStore,
+    IPluginRuntime,
+    PluginConfig,
 )
 from .prompt import (
     IPrompt,
@@ -42,7 +41,6 @@ from .router import (
 )
 
 __all__ = [
-    "ClientConfig",
     "ConnectionClosed",
     "ConnectionError",
     "ConnectionHandshakeError",
@@ -50,19 +48,19 @@ __all__ = [
     "ConnectionTimeoutError",
     "Controller",
     "ControllerAction",
-    "ControllerDependencies",
     "ControllerRequest",
     "ControllerResult",
-    "IClientFileStore",
-    "IClientPlugin",
-    "IClientRuntime",
     "ICommand",
     "IConnection",
     "IConnectionProfile",
     "IConsole",
     "InvalidOperation",
     "IParser",
+    "IPlugin",
+    "IPluginFileStore",
+    "IPluginRuntime",
     "IPrompt",
     "IRouter",
+    "PluginConfig",
     "SessionContext",
 ]

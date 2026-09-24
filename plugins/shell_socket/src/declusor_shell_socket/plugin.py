@@ -10,7 +10,7 @@ _PACKAGE_ASSETS_DIR = Path(__file__).resolve().parent / "assets"
 ASSETS_DIR = _REPO_ASSETS_DIR if _REPO_ASSETS_DIR.exists() else _PACKAGE_ASSETS_DIR
 
 
-class ShellSocketPlugin(contract.IClientPlugin):
+class ShellSocketPlugin(contract.IPlugin):
     """Plugin that configures the traditional shell-over-socket client.
 
     Deploys a Bash payload that connects to Declusor over TCP using Linux's
@@ -39,7 +39,7 @@ class ShellSocketPlugin(contract.IClientPlugin):
         return None
 
     @classmethod
-    def build_config(cls, args: util.Namespace, data_paths: config.DataPaths | None = None, /) -> contract.ClientConfig:
+    def build_config(cls, args: util.Namespace, data_paths: config.DataPaths | None = None, /) -> contract.PluginConfig:
         """Build the shell_socket client configuration."""
 
         if data_paths is not None:
@@ -52,7 +52,7 @@ class ShellSocketPlugin(contract.IClientPlugin):
             helpers_dir = ASSETS_DIR / "helpers"
             modules_dir = ASSETS_DIR / "modules"
 
-        return contract.ClientConfig(
+        return contract.PluginConfig(
             kind=cls.name,
             host=args.host,
             port=args.port,
@@ -65,7 +65,7 @@ class ShellSocketPlugin(contract.IClientPlugin):
         )
 
     @classmethod
-    def validate(cls, client_config: contract.ClientConfig, /) -> None:
+    def validate(cls, client_config: contract.PluginConfig, /) -> None:
         """Validate the shell_socket client configuration."""
 
         launcher_path = client_config.options.get("launcher_path")
@@ -79,16 +79,16 @@ class ShellSocketPlugin(contract.IClientPlugin):
             raise config.ParserError(f"Client launcher file does not exist: {launcher_path}")
 
     @classmethod
-    def build_runtime(cls, client_config: contract.ClientConfig, /) -> contract.IClientRuntime:
+    def build_runtime(cls, client_config: contract.PluginConfig, /) -> contract.IPluginRuntime:
         """Build the shell_socket runtime from client configuration."""
 
         return ShellSocketRuntime(client_config)
 
 
-class ShellSocketRuntime(contract.IClientRuntime):
+class ShellSocketRuntime(contract.IPluginRuntime):
     """Runtime adapter between shell_socket configuration and its transport."""
 
-    def __init__(self, client_config: contract.ClientConfig, /) -> None:
+    def __init__(self, client_config: contract.PluginConfig, /) -> None:
         self._client_config = client_config
 
         self._profile = ShellSocketProfile(
@@ -110,7 +110,7 @@ class ShellSocketRuntime(contract.IClientRuntime):
         )
 
     @property
-    def client_files(self) -> contract.IClientFileStore:
+    def client_files(self) -> contract.IPluginFileStore:
         """The shell_socket file store."""
 
         return self._files

@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Final, TypedDict
 
 from declusor import config, contract, util
-from declusor.core.plugin import ClientPluginManager
+from declusor.core.plugin import PluginManager
 
 
 class DeclusorOptions(TypedDict):
@@ -11,7 +11,7 @@ class DeclusorOptions(TypedDict):
 
     host: str
     port: int
-    client: contract.ClientConfig
+    plugin: contract.PluginConfig
 
 
 class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
@@ -20,10 +20,10 @@ class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
     flags: Final[dict[str, str]] = {
         "host": "IP address or hostname where the service should run",
         "port": "port number to listen on for incoming connections",
-        "client": "agent responsible for handling requests",
+        "plugin": "agent responsible for handling requests",
     }
 
-    def __init__(self, manager: ClientPluginManager, /, name: str, description: str = "") -> None:
+    def __init__(self, manager: PluginManager, /, name: str, description: str = "") -> None:
         """Create a parser backed by a specific client plugin manager.
 
         Args:
@@ -40,7 +40,7 @@ class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
         self._configure_common_arguments()
 
     @property
-    def manager(self) -> ClientPluginManager:
+    def manager(self) -> PluginManager:
         """The client plugin manager backing this parser."""
 
         return self._manager
@@ -79,9 +79,9 @@ class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
         default_client = "shell_socket" if "shell_socket" in available_clients else (available_clients[0] if available_clients else None)
 
         self.add_argument(
-            "-c",
-            "--client",
-            help=self.flags["client"],
+            "-p",
+            "--plugin",
+            help=self.flags["plugin"],
             type=str,
             choices=available_clients if available_clients else None,
             default=default_client,
@@ -97,17 +97,18 @@ class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
         if plugin_dir:
             self._manager.load_from_directory(plugin_dir, source_label="cli-plugin-dir", allow_override=True)
 
-        plugin = self._manager.get(preliminary_args.client)
-        plugin.configure_parser(self)
+        Plugin = self._manager.get(preliminary_args.client)
+        Plugin.configure_parser(self)
 
         args = self.parse_args(argv)
 
         data_paths = config.DataPaths.from_root(args.data_root) if args.data_root is not None else None
-        client_config = plugin.build_config(args, data_paths)
-        plugin.validate(client_config)
+        plugin_config = Plugin.build_config(args, data_paths)
+
+        Plugin.validate(plugin_config)
 
         return DeclusorOptions(
             host=args.host,
             port=args.port,
-            client=client_config,
+            plugin=plugin_config,
         )

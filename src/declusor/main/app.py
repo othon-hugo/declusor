@@ -11,7 +11,7 @@ class Application:
     details behind the selected client plugin runtime.
     """
 
-    def __init__(self, manager: core.ClientPluginManager, /) -> None:
+    def __init__(self, manager: core.PluginManager, /) -> None:
         """Create an application using a configured client plugin manager.
 
         Args:
@@ -24,16 +24,16 @@ class Application:
         self._console = presentation.Console()
 
     @property
-    def manager(self) -> core.ClientPluginManager:
+    def manager(self) -> core.PluginManager:
         """Client plugin manager containing registered and discovered plugins."""
 
         return self._manager
 
-    def register_plugin(self, plugin: type[contract.IClientPlugin], /) -> None:
+    def register_plugin(self, plugin: type[contract.IPlugin], /) -> None:
         """Register a client plugin at runtime.
 
         Args:
-            plugin: Plugin class implementing ``IClientPlugin``.
+            plugin: Plugin class implementing ``IPlugin``.
         """
 
         self._manager.register(plugin)
@@ -67,28 +67,29 @@ class Application:
 
         self._connect_routes()
 
-        client_config = options["client"]
-        client_plugin = self._manager.get(client_config.kind)
-        client_runtime = client_plugin.build_runtime(client_config)
+        plugin_config = options["plugin"]
+        plugin_runtime = self._manager.get(plugin_config.kind).build_runtime(plugin_config)
 
         self._console.setup_completer(self._router.routes)
-        self._console.write_message(client_runtime.client_script)
+        self._console.write_message(plugin_runtime.client_script)
 
-        with util.await_connection(client_config.host, client_config.port) as socket_connection:
-            with client_runtime.create_connection(socket_connection) as connection:
+        with util.await_connection(plugin_config.host, plugin_config.port) as socket_connection:
+            with plugin_runtime.create_connection(socket_connection) as connection:
                 connection.initialize()
 
                 session = contract.SessionContext(
                     connection=connection,
                     console=self._console,
-                    files=client_runtime.client_files,
+                    files=plugin_runtime.client_files,
                 )
 
-                presentation.PromptCLI(
+                prompt = presentation.PromptCLI(
                     config.Settings.PROJECT_NAME,
                     router=self._router,
                     session=session,
-                ).run()
+                )
+
+                prompt.run()
 
     def _connect_routes(self) -> None:
         """Register built-in command routes on the application router."""
@@ -120,6 +121,6 @@ def create_application(search_dirs: Sequence[Path] | None = None) -> Application
         Fully composed application ready to execute parsed options.
     """
 
-    manager = core.ClientPluginManager().discover(search_dirs)
+    manager = core.PluginManager().discover(search_dirs)
 
     return Application(manager)

@@ -49,7 +49,7 @@ def test_build_runtime_renders_configured_client_script(tmp_path: Path) -> None:
 
     client_path = tmp_path / "client.sh"
     client_path.write_text("connect $HOST:$PORT ack=$ACKNOWLEDGE", encoding="utf-8")
-    client_config = contract.ClientConfig(
+    client_config = contract.PluginConfig(
         kind=shell_socket.ShellSocketPlugin.name,
         host="127.0.0.1",
         port=9000,
@@ -69,7 +69,7 @@ def test_build_runtime_creates_shell_socket_connection(tmp_path: Path) -> None:
 
     client_path = tmp_path / "client.sh"
     client_path.write_text("$HOST:$PORT", encoding="utf-8")
-    client_config = contract.ClientConfig(
+    client_config = contract.PluginConfig(
         kind=shell_socket.ShellSocketPlugin.name,
         host="127.0.0.1",
         port=9000,

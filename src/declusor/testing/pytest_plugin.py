@@ -94,10 +94,13 @@ def dummy_socket() -> DummySocket:
 
 
 @pytest.fixture
-def dummy_client_config() -> contract.ClientConfig:
-    """Provide a standard test ClientConfig."""
+def dummy_client_config() -> contract.PluginConfig:
+    """Provide a standard test PluginConfig."""
 
     return create_dummy_client_config()
+
+
+dummy_plugin_config = dummy_client_config
 
 
 @pytest.fixture

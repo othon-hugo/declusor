@@ -53,7 +53,7 @@ def test_base_path_contains_only_application_and_plugin_directories() -> None:
     assert not hasattr(config.BasePath, "USER_DATA_PATHS")
 
 
-class DummyPathClientPlugin(contract.IClientPlugin):
+class DummyPathClientPlugin(contract.IPlugin):
     """Dummy client plugin for testing data path derivation."""
 
     name = "dummy_path_client"
@@ -64,13 +64,13 @@ class DummyPathClientPlugin(contract.IClientPlugin):
         pass
 
     @classmethod
-    def build_config(cls, args: util.Namespace, data_paths: config.DataPaths | None = None, /) -> contract.ClientConfig:
+    def build_config(cls, args: util.Namespace, data_paths: config.DataPaths | None = None, /) -> contract.PluginConfig:
         assert data_paths is not None
 
         client_paths = data_paths.for_client(cls.name)
         launcher = client_paths.launcher / "client.sh"
 
-        return contract.ClientConfig(
+        return contract.PluginConfig(
             kind=cls.name,
             host=getattr(args, "host", "127.0.0.1"),
             port=getattr(args, "port", 9000),
@@ -79,11 +79,11 @@ class DummyPathClientPlugin(contract.IClientPlugin):
         )
 
     @classmethod
-    def validate(cls, client_config: contract.ClientConfig, /) -> None:
+    def validate(cls, client_config: contract.PluginConfig, /) -> None:
         pass
 
     @classmethod
-    def build_runtime(cls, client_config: contract.ClientConfig, /) -> contract.IClientRuntime:
+    def build_runtime(cls, client_config: contract.PluginConfig, /) -> contract.IPluginRuntime:
         return testing.DummyClientRuntime()
 
 
@@ -95,13 +95,13 @@ def test_parser_builds_client_paths_from_data_root(tmp_path: Path) -> None:
     launcher_file = launcher_dir / "client.sh"
     launcher_file.write_text("", encoding="utf-8")
 
-    manager = core.ClientPluginManager()
+    manager = core.PluginManager()
     manager.register(DummyPathClientPlugin)
 
     options = core.DeclusorParser(manager, name="declusor").parse(
         ("127.0.0.1", "9000", "--client", "dummy_path_client", "--data-root", str(tmp_path)),
     )
 
-    data_paths = options["client"].data_paths
+    data_paths = options["plugin"].data_paths
     assert data_paths == config.DataPaths.from_root(tmp_path)
-    assert options["client"].options["launcher_path"] == launcher_file
+    assert options["plugin"].options["launcher_path"] == launcher_file

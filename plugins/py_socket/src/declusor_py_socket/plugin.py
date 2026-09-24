@@ -10,7 +10,7 @@ _PACKAGE_ASSETS_DIR = Path(__file__).resolve().parent / "assets"
 ASSETS_DIR = _REPO_ASSETS_DIR if _REPO_ASSETS_DIR.exists() else _PACKAGE_ASSETS_DIR
 
 
-class PySocketPlugin(contract.IClientPlugin):
+class PySocketPlugin(contract.IPlugin):
     """Plugin that configures the Python reverse-shell client.
 
     Registers the ``py_socket`` client, which deploys a self-contained Python
@@ -42,7 +42,7 @@ class PySocketPlugin(contract.IClientPlugin):
         return None
 
     @classmethod
-    def build_config(cls, args: util.Namespace, data_paths: config.DataPaths | None = None, /) -> contract.ClientConfig:
+    def build_config(cls, args: util.Namespace, data_paths: config.DataPaths | None = None, /) -> contract.PluginConfig:
         """Build the py_socket client configuration."""
 
         if data_paths is not None:
@@ -55,7 +55,7 @@ class PySocketPlugin(contract.IClientPlugin):
             helpers_dir = ASSETS_DIR / "helpers"
             modules_dir = ASSETS_DIR / "modules"
 
-        return contract.ClientConfig(
+        return contract.PluginConfig(
             kind=cls.name,
             host=args.host,
             port=args.port,
@@ -68,7 +68,7 @@ class PySocketPlugin(contract.IClientPlugin):
         )
 
     @classmethod
-    def validate(cls, client_config: contract.ClientConfig, /) -> None:
+    def validate(cls, client_config: contract.PluginConfig, /) -> None:
         """Validate the py_socket client configuration."""
 
         launcher_path = client_config.options.get("launcher_path")
@@ -82,16 +82,16 @@ class PySocketPlugin(contract.IClientPlugin):
             raise config.ParserError(f"Client launcher file does not exist: {launcher_path}")
 
     @classmethod
-    def build_runtime(cls, client_config: contract.ClientConfig, /) -> contract.IClientRuntime:
+    def build_runtime(cls, client_config: contract.PluginConfig, /) -> contract.IPluginRuntime:
         """Build the py_socket runtime from client configuration."""
 
         return PySocketRuntime(client_config)
 
 
-class PySocketRuntime(contract.IClientRuntime):
+class PySocketRuntime(contract.IPluginRuntime):
     """Runtime adapter between Python client configuration and its transport."""
 
-    def __init__(self, client_config: contract.ClientConfig, /) -> None:
+    def __init__(self, client_config: contract.PluginConfig, /) -> None:
         self._client_config = client_config
 
         self._profile = PySocketProfile(
@@ -113,7 +113,7 @@ class PySocketRuntime(contract.IClientRuntime):
         )
 
     @property
-    def client_files(self) -> contract.IClientFileStore:
+    def client_files(self) -> contract.IPluginFileStore:
         """The Python client file store."""
 
         return self._files

@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 @dataclass(frozen=True)
-class ClientConfig:
+class PluginConfig:
     """Configuration produced by a client plugin.
 
     Stores the common server connection parameters and the client-specific
@@ -34,7 +34,7 @@ class ClientConfig:
     """Client-specific configuration options."""
 
 
-class IClientRuntime(ABC):
+class IPluginRuntime(ABC):
     """Runtime used by the service to operate a configured client.
 
     A runtime hides client-specific bootstrap and connection construction from
@@ -43,7 +43,7 @@ class IClientRuntime(ABC):
 
     @property
     @abstractmethod
-    def client_files(self) -> "IClientFileStore":
+    def client_files(self) -> "IPluginFileStore":
         """[...]"""
 
         raise NotImplementedError
@@ -69,11 +69,11 @@ class IClientRuntime(ABC):
         raise NotImplementedError
 
 
-class IClientPlugin(ABC):
+class IPlugin(ABC):
     """Extension point for registering configurable client implementations.
 
     Implementations define how their command-line arguments are registered,
-    converted into a ``ClientConfig``, and validated.
+    converted into a ``PluginConfig``, and validated.
     """
 
     name: str
@@ -101,7 +101,7 @@ class IClientPlugin(ABC):
 
     @classmethod
     @abstractmethod
-    def build_config(cls, args: util.Namespace, data_paths: DataPaths | None = None, /) -> ClientConfig:
+    def build_config(cls, args: util.Namespace, data_paths: DataPaths | None = None, /) -> PluginConfig:
         """Build a client configuration from parsed arguments and data paths.
 
         Args:
@@ -116,7 +116,7 @@ class IClientPlugin(ABC):
 
     @classmethod
     @abstractmethod
-    def validate(cls, client_config: ClientConfig, /) -> None:
+    def validate(cls, client_config: PluginConfig, /) -> None:
         """Validate a client configuration.
 
         Args:
@@ -130,7 +130,7 @@ class IClientPlugin(ABC):
 
     @classmethod
     @abstractmethod
-    def build_runtime(cls, client_config: ClientConfig, /) -> IClientRuntime:
+    def build_runtime(cls, client_config: PluginConfig, /) -> IPluginRuntime:
         """Build the runtime for a validated client configuration.
 
         Args:
@@ -143,7 +143,7 @@ class IClientPlugin(ABC):
         raise NotImplementedError
 
 
-class IClientFileStore(ABC):
+class IPluginFileStore(ABC):
     """Provides client bootstrap, library and module file operations.
 
     Libraries are loaded automatically during session initialization, while

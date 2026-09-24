@@ -175,7 +175,7 @@ def test_dummy_client_runtime() -> None:
     conn = testing.DummyConnection()
     runtime = testing.DummyClientRuntime(client_script="echo test", connection_to_return=conn)
 
-    assert isinstance(runtime.client_files, contract.IClientFileStore)
+    assert isinstance(runtime.client_files, contract.IPluginFileStore)
     assert runtime.client_script == "echo test"
 
     dummy_socket = testing.DummySocket()
@@ -208,7 +208,7 @@ def test_dummy_client_plugin() -> None:
         testing.DummyClientPlugin.validate(cfg)
 
     runtime = testing.DummyClientPlugin.build_runtime(cfg)
-    assert isinstance(runtime, contract.IClientRuntime)
+    assert isinstance(runtime, contract.IPluginRuntime)
 
     testing.DummyClientPlugin.reset()
     assert len(testing.DummyClientPlugin.configured_parsers) == 0
