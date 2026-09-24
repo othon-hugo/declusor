@@ -7,7 +7,7 @@ from declusor import config, contract, util
 from plugins import shell_socket
 
 
-def _create_connection(tmp_path: Path, socket_connection: MagicMock, ack: bytes = b"ack") -> ShellSocketConnection:
+def _create_connection(tmp_path: Path, socket_connection: MagicMock, ack: bytes = b"ack") -> shell_socket.ShellSocketConnection:
     launcher = tmp_path / "client.sh"
     launcher.write_text("$HOST:$PORT", encoding="utf-8")
     helpers = tmp_path / "helpers"
@@ -16,9 +16,9 @@ def _create_connection(tmp_path: Path, socket_connection: MagicMock, ack: bytes 
     modules.mkdir(exist_ok=True)
 
     socket_connection.getpeername.return_value = ("127.0.0.1", 9000)
-    profile = ShellSocketProfile(name="test", ack_server_raw=b"\x00", ack_client_raw=ack)
-    files = ShellSocketFileStore(launcher, helpers, modules, (".sh",), (".sh",))
-    return ShellSocketConnection(socket_connection, profile, files)
+    profile = shell_socket.ShellSocketProfile(name="test", ack_server_raw=b"\x00", ack_client_raw=ack)
+    files = shell_socket.ShellSocketFileStore(launcher, helpers, modules, (".sh",), (".sh",))
+    return shell_socket.ShellSocketConnection(socket_connection, profile, files)
 
 
 # ---------------------------------------------------------------------------
@@ -27,9 +27,9 @@ def _create_connection(tmp_path: Path, socket_connection: MagicMock, ack: bytes 
 
 
 def test_profile_supported_functions_are_immutable() -> None:
-    """Verify supported functions mapping in ShellSocketProfile cannot be modified."""
+    """Verify supported functions mapping in shell_socket.ShellSocketProfile cannot be modified."""
 
-    profile = ShellSocketProfile(name="test", ack_server_raw=b"\x00", ack_client_raw=b"ack")
+    profile = shell_socket.ShellSocketProfile(name="test", ack_server_raw=b"\x00", ack_client_raw=b"ack")
     with pytest.raises(TypeError):
         profile._supported_functions[config.OperationCode.EXEC_FILE] = "changed"  # type: ignore[index]
 
@@ -37,7 +37,7 @@ def test_profile_supported_functions_are_immutable() -> None:
 def test_profile_render_operation_command() -> None:
     """Verify render_operation_command produces correct shell function invocations."""
 
-    profile = DEFAULT_SHELL_SOCKET
+    profile = shell_socket.DEFAULT_SHELL_SOCKET
     rendered_exec = profile.render_operation_command(config.OperationCode.EXEC_FILE, "payload==")
     assert rendered_exec is not None
     assert "execute_base64_encoded_value payload==" in rendered_exec
@@ -59,7 +59,7 @@ def test_load_library_reports_read_errors(tmp_path: Path, monkeypatch: pytest.Mo
     helpers.mkdir(parents=True)
     (helpers / "common.sh").write_bytes(b"echo common")
 
-    store = ShellSocketFileStore(tmp_path / "client.sh", helpers, tmp_path / "modules")
+    store = shell_socket.ShellSocketFileStore(tmp_path / "client.sh", helpers, tmp_path / "modules")
 
     def fail_load_file(filepath: str | Path, /) -> bytes:
         raise config.InvalidOperation(f"cannot read {filepath}")
@@ -77,7 +77,7 @@ def test_load_library_returns_non_empty_scripts(tmp_path: Path) -> None:
     helpers.mkdir(parents=True)
     (helpers / "common.sh").write_bytes(b"echo common")
 
-    store = ShellSocketFileStore(tmp_path / "client.sh", helpers, tmp_path / "modules")
+    store = shell_socket.ShellSocketFileStore(tmp_path / "client.sh", helpers, tmp_path / "modules")
     assert store.load_library() == b"echo common"
 
 
@@ -88,7 +88,7 @@ def test_load_module_reads_only_from_modules_directory(tmp_path: Path) -> None:
     modules.mkdir(parents=True)
     (modules / "example.sh").write_bytes(b"echo module")
 
-    store = ShellSocketFileStore(tmp_path / "client.sh", tmp_path / "helpers", modules)
+    store = shell_socket.ShellSocketFileStore(tmp_path / "client.sh", tmp_path / "helpers", modules)
     assert store.load_module("example.sh") == b"echo module"
 
 
@@ -99,7 +99,7 @@ def test_load_module_rejects_traversal_and_wrong_extension(tmp_path: Path) -> No
     modules.mkdir(parents=True)
     (tmp_path / "outside.txt").write_bytes(b"outside")
 
-    store = ShellSocketFileStore(tmp_path / "client.sh", tmp_path / "helpers", modules)
+    store = shell_socket.ShellSocketFileStore(tmp_path / "client.sh", tmp_path / "helpers", modules)
 
     with pytest.raises(config.InvalidOperation):
         store.load_module("../outside.txt")
@@ -191,20 +191,20 @@ def test_write_translates_transport_errors(tmp_path: Path, error: BaseException)
 
 
 def test_shell_socket_plugin_metadata() -> None:
-    """Verify ShellSocketPlugin metadata properties (name, description, version)."""
+    """Verify shell_socket.ShellSocketPlugin metadata properties (name, description, version)."""
 
-    assert ShellSocketPlugin.name == "shell_socket"
-    assert ShellSocketPlugin.description != ""
-    assert ShellSocketPlugin.version == "1.0.0"
+    assert shell_socket.ShellSocketPlugin.name == "shell_socket"
+    assert shell_socket.shell_socket.ShellSocketPlugin.description != ""
+    assert shell_socket.ShellSocketPlugin.version == "1.0.0"
 
 
 def test_build_runtime_renders_configured_client_script(tmp_path: Path) -> None:
-    """Verify ShellSocketPlugin.build_runtime renders client script with substituted parameters."""
+    """Verify shell_socket.ShellSocketPlugin.build_runtime renders client script with substituted parameters."""
 
     client_path = tmp_path / "client.sh"
     client_path.write_text("connect $HOST:$PORT ack=$ACKNOWLEDGE", encoding="utf-8")
     client_config = contract.ClientConfig(
-        kind=ShellSocketPlugin.name,
+        kind=shell_socket.ShellSocketPlugin.name,
         host="127.0.0.1",
         port=9000,
         options={
@@ -214,17 +214,17 @@ def test_build_runtime_renders_configured_client_script(tmp_path: Path) -> None:
         },
     )
 
-    runtime = ShellSocketPlugin.build_runtime(client_config)
+    runtime = shell_socket.ShellSocketPlugin.build_runtime(client_config)
     assert runtime.client_script.startswith("connect 127.0.0.1:9000 ack=\\x")
 
 
 def test_build_runtime_creates_shell_socket_connection(tmp_path: Path) -> None:
-    """Verify runtime creates a valid ShellSocketConnection instance."""
+    """Verify runtime creates a valid shell_socket.ShellSocketConnection instance."""
 
     client_path = tmp_path / "client.sh"
     client_path.write_text("$HOST:$PORT", encoding="utf-8")
     client_config = contract.ClientConfig(
-        kind=ShellSocketPlugin.name,
+        kind=shell_socket.ShellSocketPlugin.name,
         host="127.0.0.1",
         port=9000,
         options={
@@ -236,7 +236,7 @@ def test_build_runtime_creates_shell_socket_connection(tmp_path: Path) -> None:
     socket_connection = MagicMock()
     socket_connection.getpeername.return_value = ("127.0.0.1", 9000)
 
-    runtime = ShellSocketPlugin.build_runtime(client_config)
+    runtime = shell_socket.ShellSocketPlugin.build_runtime(client_config)
     client_connection = runtime.create_connection(socket_connection)
 
-    assert isinstance(client_connection, ShellSocketConnection)
+    assert isinstance(client_connection, shell_socket.ShellSocketConnection)

@@ -47,8 +47,8 @@ class FakePlugin(contract.IClientPlugin):
 def test_registries_are_isolated() -> None:
     """Registering a plugin must not affect another registry instance."""
 
-    first = ClientRegistry()
-    second = ClientRegistry()
+    first = core.ClientRegistry()
+    second = core.ClientRegistry()
 
     first.register(FakePlugin)
 
