@@ -1,197 +1,223 @@
 # Declusor Architecture
 
-Declusor is an interactive post-exploitation and command-and-control (C2) framework built with clean architecture principles, emphasizing separation of concerns, dependency inversion, and extensible modularity. Dependencies flow inward toward domain abstractions (`contract`), ensuring testability and runtime flexibility.
+Declusor is an interactive post-exploitation and command-and-control (C2) framework designed with clean architecture principles. It emphasizes modularity, separation of concerns, and strict dependency inversion. Dependencies flow strictly downward and inward toward domain abstractions, ensuring testability, runtime safety, and seamless extensibility across an autonomous plugin ecosystem.
 
-## Architectural Principles
+---
 
-### 1. Dependency Inversion
+## 1. Architectural Principles
 
-- High-level modules and framework infrastructure depend on domain abstractions, not concrete implementations.
-- The `contract` package defines strict contracts (`IClientPlugin`, `IClientRuntime`, `IConnection`, `ConnectionState`, `ICommand`, etc.).
-- Concrete plugins implement these abstractions without coupling the core engine to any specific transport.
+### 1.1. Dependency Inversion & Contract-First Design
 
-### 2. Autonomous Plugin Self-Contention (Colocation)
+- Higher-level layers and core infrastructure depend strictly on abstract domain contracts, never on concrete implementations.
+- The domain layer defines formal interfaces, transport state machines, and session coordinators without framework or transport-specific logic.
+- Transport mechanisms and agent runtimes implement these abstractions externally, preventing any coupling between the host engine and concrete protocols.
 
-- Plugins are fully self-contained packages located outside `src/` under `plugins/` or distributed as standalone pip packages.
-- Each plugin bundles its own plugin class, runtime adapter, connection state machine, profile, and embedded assets (`launchers/`, `helpers/`, `modules/`).
-- No concrete client logic or hardcoded client files exist in the core `src/declusor/` codebase.
+### 1.2. Autonomous Plugin Self-Contention
 
-### 3. Multi-Tier Dynamic Discovery
+- Plugins are fully autonomous packages maintained in independent source trees with individual packaging manifests, assets, and test suites.
+- Each plugin encapsulates its own transport implementation, protocol profile, and bundled client assets (stagers, helpers, and payloads).
+- **Isolation Invariant**: Core framework code and host unit tests never import concrete plugin packages directly. All coupling is mediated through domain contracts and discovery mechanisms.
 
-- `PluginManager` discovers and registers client plugins across three tiers:
-  1. **Built-in / Repository plugins** (`plugins/` directory).
-  2. **Python Entry Points** (`group="declusor.plugins"` via PEP 621 / pip).
-  3. **Drop-in / User directories** (`~/.declusor/plugins/` or CLI `--plugin-dir`).
-- Strict contract validation barriers ensure only well-formed plugins are registered.
+### 1.3. Multi-Tier Dynamic Discovery & Validation Barriers
 
-## Layer Architecture
+- The system discovers plugins dynamically at runtime across multiple source tiers:
+  1. **Built-in Plugins**: Shipped repository packages located in the plugins workspace.
+  2. **Python Entry Points**: Standard distribution packages registered via entry points (`declusor.plugins`).
+  3. **Operator Directories**: Custom drop-in directories specified via configuration or CLI parameters.
+- A strict validation barrier verifies candidate plugins against domain contracts prior to registration, preventing faulty third-party code from compromising runtime stability.
+
+### 1.4. Declarative Signal-Driven Flow Control
+
+- Application controllers return explicit lifecycle signals (`CONTINUE`, `TERMINATE`) wrapped in structured result objects.
+- Normal control flow is never driven by exceptions; domain exceptions represent exceptional errors and propagate to central handlers for deterministic reporting and process exit codes.
+
+### 1.5. First-Class Testing SDK & Mock-Free Verification
+
+- Reusable test infrastructure is shipped as a first-class package within the project.
+- Tests rely on deterministic, fully-typed test doubles and automated contract conformance suites rather than fragile, untyped mock monkeypatching.
+
+---
+
+## 2. Layer Architecture & Dependency Model
 
 ```mermaid
 graph TB
-    subgraph "Foundation Layer (src/declusor/)"
-        CONFIG[config<br/>Settings, BasePath & Exceptions]
-        UTIL[util<br/>Stateless Utilities: network, encoding, storage]
-        CONTRACT[contract<br/>Rigid Abstractions & Lifecycle Invariants]
+    subgraph "Application Composition"
+        MAIN[Main Package<br/>Composition Root & Process Lifecycle]
     end
 
-    subgraph "Core & Presentation Layer (src/declusor/)"
-        CORE[core<br/>Router, Parser, PluginManager]
-        PRESENTATION[presentation<br/>Console & PromptCLI REPL]
-        COMMAND[command<br/>Stateless Command Objects & DTOs]
-        CONTROLLER[controller<br/>Request Handlers & Route Dispatch]
+    subgraph "Application & Infrastructure"
+        CONTROLLER[Controller Package<br/>Request Handlers & Action Signals]
+        COMMAND[Command Package<br/>Encapsulated Operations & Immutable DTOs]
+        CORE[Core Package<br/>Routing, Parser & Plugin Discovery Engine]
+        PRESENTATION[Presentation Package<br/>Terminal REPL & Console View]
     end
 
-    subgraph "Application Composition (src/declusor/)"
-        MAIN[main<br/>Composition Root & Dynamic Discovery DI]
+    subgraph "Domain & Foundation"
+        CONTRACT[Contract Package<br/>Domain Abstractions & Transport State Machines]
+        UTIL[Util Package<br/>Stateless Primitives & Security Guards]
+        CONFIG[Config Package<br/>Central Settings, Enums & Exceptions]
     end
 
-    subgraph "Extensible Plugins Layer (plugins/ or External Packages)"
-        SHELL[plugins/shell_socket<br/>Bash /dev/tcp Client & Assets]
-        PYTHON[plugins/py_socket<br/>Python Agent Client & Assets]
-        EXTERNAL[External / Drop-in Plugins<br/>pip entry-points & custom dirs]
+    subgraph "Public Testing SDK"
+        TESTING[Testing Package<br/>Typed Doubles, Conformance Suites & Fixtures]
     end
 
-    %% Dependencies
-    UTIL -->|uses| CONFIG
-    CONTRACT -->|uses| CONFIG
-    CONTRACT -->|uses| UTIL
+    subgraph "Autonomous Plugins Ecosystem"
+        NATIVE_PLUGINS[Native Plugins<br/>Self-Contained Packages & Bundled Assets]
+        EXTERNAL_PLUGINS[External Plugins<br/>PEP 621 Entry-Points & Drop-in Directories]
+    end
 
-    CORE -->|implements/manages| CONTRACT
-    CORE -->|uses| CONFIG
-    CORE -->|uses| UTIL
+    %% Dependency Flows
+    MAIN --> CORE
+    MAIN --> CONTROLLER
+    MAIN --> PRESENTATION
 
-    PRESENTATION -->|implements| CONTRACT
-    PRESENTATION -->|uses| CONFIG
-    PRESENTATION -->|uses| UTIL
+    CONTROLLER --> COMMAND
+    CONTROLLER --> CONTRACT
 
-    COMMAND -->|implements| CONTRACT
-    COMMAND -->|uses| CONFIG
-    COMMAND -->|uses| UTIL
+    COMMAND --> CONTRACT
 
-    CONTROLLER -->|depends on| CONTRACT
-    CONTROLLER -->|uses| COMMAND
-    CONTROLLER -->|uses| CONFIG
+    CORE --> CONTRACT
 
-    MAIN -->|wires| PRESENTATION
-    MAIN -->|wires| CONTROLLER
-    MAIN -->|wires| CORE
+    PRESENTATION --> CONTRACT
 
-    SHELL -->|implements| CONTRACT
-    SHELL -->|uses| CONFIG
-    SHELL -->|uses| UTIL
+    CONTRACT --> UTIL
+    CONTRACT --> CONFIG
 
-    PYTHON -->|implements| CONTRACT
-    PYTHON -->|uses| CONFIG
-    PYTHON -->|uses| UTIL
+    UTIL --> CONFIG
 
-    EXTERNAL -->|implements| CONTRACT
-    EXTERNAL -->|uses| CONFIG
-    EXTERNAL -->|uses| UTIL
+    TESTING --> CONTRACT
+    TESTING --> CONFIG
 
-    MAIN -.->|discovers via PluginManager| SHELL
-    MAIN -.->|discovers via PluginManager| PYTHON
-    MAIN -.->|discovers via PluginManager| EXTERNAL
+    NATIVE_PLUGINS --> CONTRACT
+    NATIVE_PLUGINS --> CONFIG
+    NATIVE_PLUGINS --> UTIL
+
+    EXTERNAL_PLUGINS --> CONTRACT
+
+    MAIN -.->|discovers via dynamic registry| NATIVE_PLUGINS
+    MAIN -.->|discovers via dynamic registry| EXTERNAL_PLUGINS
 ```
 
-## Package Responsibilities
+### Dependency Rules & Directional Invariants
 
-### Foundation Layer (`src/declusor/`)
+| Relationship                                                     | Permitted? | Rule / Architectural Invariant                                                |
+| :--------------------------------------------------------------- | :--------: | :---------------------------------------------------------------------------- |
+| `main` $\to$ `core`, `controller`, `presentation`                |  **Yes**   | Composition root wires concrete components and starts execution.              |
+| `controller` $\to$ `command`, `contract`                         |  **Yes**   | Controllers translate requests into commands and dispatch via domain session. |
+| `command`, `core`, `presentation` $\to$ `contract`               |  **Yes**   | Components implement or consume domain interfaces.                            |
+| `contract` $\to$ `config`, `util`                                |  **Yes**   | Domain interfaces rely only on foundation primitives.                         |
+| `util` $\to$ `config`                                            |  **Yes**   | Pure utilities depend only on base exceptions and constants.                  |
+| `contract` $\to$ `core`, `command`, `controller`, `presentation` |   **NO**   | Domain abstractions must never depend on implementation layers.               |
+| `src/declusor/` $\to$ concrete plugins                           |   **NO**   | Host code must never import specific plugin packages directly.                |
+| Production code $\to$ `testing`                                  |   **NO**   | Production packages must never depend on test infrastructure.                 |
 
-#### `contract` (Domain Layer)
+---
 
-Defines abstract contracts for all system components. Level 2 abstraction with zero dependencies on concrete implementations.
+## 3. High-Level Layer Responsibilities
 
-| Interface / Type     | Role                                                                                |
-| -------------------- | ----------------------------------------------------------------------------------- |
-| `IClientPlugin`      | Contract for client plugins (CLI flags, configuration, validation, runtime factory) |
-| `IClientRuntime`     | Adapter rendering client stager and creating active `IConnection` instances         |
-| `IConnection`        | Network session contract with lifecycle state machine and framed read/write         |
-| `ConnectionState`    | Explicit lifecycle state machine (`CREATED`, `INITIALIZING`, `CONNECTED`, `CLOSED`) |
-| `IClientFileStore`   | Asset resolution contract for launchers, helpers, and payload modules               |
-| `IConnectionProfile` | Protocol metadata, buffer sizes, timeouts, and operation call templates             |
-| `ICommand`           | Stateless executable action within a `SessionContext` (`send_request` -> `read`)    |
-| `SessionContext`     | Coordinates active session (`connection`, `console`, `files`) and executes commands |
-| `IRouter`            | Route-to-controller mapping, dispatch, and documentation                            |
-| `IConsole`           | Presentation terminal I/O (messages, binary data, errors, warnings)                 |
-| `IPrompt`            | Interactive command loop                                                            |
-| `IParser[T]`         | Generic command-line argument parser                                                |
-| `ControllerAction`   | Lifecycle signals (`CONTINUE`, `TERMINATE`)                                         |
-| `ControllerResult`   | Result wrapper with action and optional message                                     |
-| `Controller`         | Type alias: `(SessionContext, ControllerRequest) -> ControllerResult`               |
+### 3.1. Foundation Layer (`config`, `util`)
 
-#### `config`
+- **Configuration Base**: Sits at the root of the dependency tree with zero internal dependencies. Centralizes domain exceptions, operational enums, and base filesystem paths.
+- **Stateless Primitives**: Provides pure, defensive helpers for encoding, hashing, path sandboxing, cooperative thread pooling, socket listeners, and file storage validation. Uses structural generics to avoid importing domain contracts.
 
-Centralized settings, base directory paths, and exception hierarchy. Level 0 foundation with zero internal dependencies.
+### 3.2. Domain Layer (`contract`)
 
-| Module          | Contents                                                                                                                                 |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `settings.py`   | `Settings` (project metadata, default ACKs), `BasePath` (`ROOT_DIR`, `PLUGINS_DIR`, `USER_PLUGINS_DIR`, `DATA_PATHS`), `ClientDataPaths` |
-| `enums.py`      | `OperationCode` (e.g. `STORE_FILE`, `EXEC_FILE`)                                                                                         |
-| `exceptions.py` | Exception hierarchy rooted at `DeclusorException`                                                                                        |
+- **Domain Abstractions**: Defines rigid interfaces for clients, runtimes, connections, commands, controllers, routers, consoles, and parsers.
+- **State Machine Invariants**: Enforces strict lifecycle transitions (`CREATED` $\to$ `CONNECTED` $\to$ `CLOSED`) and framed streaming rules for remote transport sessions.
+- **Session Coordinator**: Encapsulates active session dependencies (transport connection, operator console, asset file store) and coordinates command execution.
 
-#### `util`
+### 3.3. Command & Application Layer (`command`, `controller`)
 
-Stateless utility functions. Level 1 foundation depending only on `config`.
+- **Command Operations**: Encapsulates discrete remote tasks (command execution, script execution, file transfer, modular payload loading, interactive shell spawning) using immutable parameter objects with fail-fast validation.
+- **Application Controllers**: Serves as the application orchestration layer. Parses user arguments, constructs commands, coordinates execution through the active session, and signals declarative lifecycle actions back to the view loop.
 
-| Module           | Purpose                                                        |
-| ---------------- | -------------------------------------------------------------- |
-| `encoding.py`    | Base64, hex, hashing (MD5, SHA-256/384/512), shell quoting     |
-| `storage.py`     | File loading, path validation                                  |
-| `security.py`    | File extension and path-relative sandbox validation            |
-| `network.py`     | Socket connection context manager with timeout support         |
-| `parsing.py`     | Command argument parsing (`Parser`, `parse_command_arguments`) |
-| `concurrency.py` | Thread pool and cooperative task management (`TaskPool`)       |
+### 3.4. Infrastructure & Presentation Layer (`core`, `presentation`)
 
-### Implementation Layer (`src/declusor/`)
+- **Infrastructure Services**: Manages route registration, command usage documentation, command-line argument mapping, and the multi-tier dynamic plugin discovery engine.
+- **Presentation (View Layer)**: Handles operator interaction, readline history, autocomplete, stream formatting, and the interactive REPL execution loop. Operates exclusively through domain contracts and controller action signals.
 
-#### `core`
+### 3.5. Composition Root (`main`)
 
-Infrastructure services implementing routing, parsing, and dynamic plugin discovery.
+- **Application Bootstrap**: Initializes the client registry, discovers plugins across all configured tiers, wires application routes, and executes the active session.
+- **Top-Level Error Barrier**: Handles process arguments, captures domain exceptions, prints user-friendly diagnostic messages, and translates results into deterministic operating system exit codes.
 
-| Class            | Implements                 | Role                                                                                            |
-| ---------------- | -------------------------- | ----------------------------------------------------------------------------------------------- |
-| `Router`         | `IRouter`                  | Route table with registration guards and documentation                                          |
-| `PluginManager`  | `ClientRegistry`           | Multi-tier dynamic discovery engine (built-ins, entry-points, drop-ins) with validation barrier |
-| `DeclusorParser` | `IParser[DeclusorOptions]` | CLI parser with dynamic client choices and `--plugin-dir` support                               |
+### 3.6. Public Testing SDK (`testing`)
 
-#### `presentation` (View Layer)
+- **Contract-Compliant Test Doubles**: Supplies mock-free, deterministic doubles for all domain abstractions, enabling comprehensive testing without physical operating system sockets or external network dependencies.
+- **Conformance Harness**: Provides reusable test suites that verify third-party and native plugins against host contract requirements.
 
-User interface and operator interaction components.
+---
 
-| Class       | Implements | Role                                                               |
-| ----------- | ---------- | ------------------------------------------------------------------ |
-| `Console`   | `IConsole` | Readline-based terminal I/O with autocomplete, history and streams |
-| `PromptCLI` | `IPrompt`  | Interactive REPL view loop coordinating controller action signals  |
+## 4. Extensible Plugin Ecosystem
 
-#### `command`
+Declusor treats client transports as autonomous, independently versionable packages.
 
-Stateless command pattern operations holding validated parameter DTOs.
+### 4.1. Autonomous Plugin Package Structure
 
-| DTO                 | Invariant Validation                     | Purpose                                      |
-| ------------------- | ---------------------------------------- | -------------------------------------------- |
-| `ExecuteCommandDTO` | Non-empty command line string            | Parameters for remote command execution      |
-| `ExecuteFileDTO`    | Validated local script file `Path`       | Parameters for script upload and execution   |
-| `UploadFileDTO`     | Validated local file `Path`              | Parameters for file upload without execution |
-| `LoadModuleDTO`     | Non-empty, no traversal (`..`, `/`, `\`) | Parameters for remote module loading         |
-| `LaunchShellDTO`    | Optional shell banner message            | Interactive shell configuration              |
+Plugins follow a standard source layout:
 
-### Extensible Plugins Layer (`plugins/` & External Packages)
+- **Package Manifest**: Standalone configuration declaring package metadata, dependencies, and entry-point registration.
+- **Source Tree**: Implements the plugin contract, runtime adapter, transport state machine, protocol profile, and asset file store.
+- **Bundled Assets**: Embedded launchers (stagers), initialization libraries (helpers), and on-demand payloads (modules).
+- **Test Suite**: Dedicated unit and conformance tests isolated within the plugin directory.
 
-Each plugin is an autonomous package holding its plugin descriptor, runtime adapter, transport connection, and embedded assets.
+### 4.2. Asset Overlay Architecture
 
-#### Built-in Plugins
+Plugins bundle default assets within their own directories. Operators can overlay custom stagers, helpers, or modular payloads at runtime without modifying plugin source code:
 
-| Plugin         | Identifier     | Target OS      | Engine                                     | Assets Location                |
-| -------------- | -------------- | -------------- | ------------------------------------------ | ------------------------------ |
-| `shell_socket` | `shell_socket` | Linux / POSIX  | Native Bash `/dev/tcp`                     | `plugins/shell_socket/assets/` |
-| `py_socket`    | `py_socket`    | Cross-platform | In-memory `exec()` + `subprocess` fallback | `plugins/py_socket/assets/`    |
+1. **Launchers**: One-line stager scripts rendered dynamically with connection host, port, and security tokens.
+2. **Helpers**: Library scripts concatenated and evaluated in-memory during session initialization.
+3. **Modules**: On-demand operational scripts loaded dynamically during post-exploitation.
 
-#### Asset Overlay Architecture
+---
 
-Plugins bundle default assets under their `assets/` subdirectory:
+## 5. System Execution Flows
 
-- `launchers/`: Stager templates substituted at runtime (`$HOST`, `$PORT`, `$ACKNOWLEDGE`).
-- `helpers/`: Libraries transmitted and evaluated during session initialization.
-- `modules/`: On-demand reconnaissance and discovery modules.
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Operator
+    participant Main as Composition Root (main)
+    participant Core as Discovery & Parser (core)
+    participant Plugin as Client Plugin (plugins/)
+    participant View as Presentation REPL (presentation)
+    participant Controller as Controller & Command
+    participant Remote as Remote Client Agent
 
-Operators can overlay custom modules or helpers without modifying the plugin code by passing `--data-root <path>`.
+    Operator->>Main: Launch CLI arguments
+    Main->>Core: Parse options & discover plugins
+    Core->>Plugin: Validate contract & load plugin
+    Core-->>Main: Configured client runtime
+    Main->>Main: Await incoming connection on listener socket
+    Remote->>Main: Connect TCP socket
+    Main->>Plugin: Wrap socket in transport connection
+    Plugin->>Remote: Initialize session & negotiate helpers
+    Remote-->>Plugin: Acknowledge handshake (ACK sentinel)
+    Main->>View: Start interactive REPL with SessionContext
+
+    loop Interactive Session
+        Operator->>View: Enter command line
+        View->>Core: Lookup route in table
+        Core-->>View: Controller handler
+        View->>Controller: Dispatch request with SessionContext
+        Controller->>Remote: Send framed command payload
+        Remote-->>Controller: Stream chunked output
+        Controller->>View: Output chunks to operator console
+        Controller-->>View: Return ControllerResult(CONTINUE | TERMINATE)
+    end
+
+    View-->>Main: Exit requested or connection closed
+    Main->>Plugin: Close transport connection
+    Main-->>Operator: Exit process with status code
+```
+
+---
+
+## 6. Architecture Quality & Safety Invariants
+
+1. **Strict Type Safety**: The entire codebase (core framework, native plugins, and test suites) is verified under strict static type checking with zero untyped public APIs.
+2. **Mock-Free Testing**: Internal and external tests use typed test doubles and conformance suites, preventing test fragility caused by mock drift.
+3. **Fail-Fast Validation**: Inputs, file paths, and plugin descriptors are validated at system boundaries before entering core execution paths.
+4. **Sandboxed File Operations**: All filesystem interactions enforce path-traversal safeguards and extension constraints.

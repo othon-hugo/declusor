@@ -83,10 +83,10 @@ class PluginConformanceTestSuite:
 
     Example::
 
-        class TestMyPluginConformance(PluginConformanceTestSuite):
+        class TestDeclusorPluginConformance(PluginConformanceTestSuite):
             @pytest.fixture
             def plugin_class(self) -> type[contract.IClientPlugin]:
-                return MyPlugin
+                return DeclusorPlugin
     """
 
     @pytest.fixture

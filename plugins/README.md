@@ -28,7 +28,7 @@ Declusor discovers plugins at runtime across **three tiers**:
 
    ```toml
    [project.entry-points."declusor.plugins"]
-   my_plugin = "my_plugin_package:MyPluginClass"
+   declusor_plugin = "declusor_plugin:DeclusorPlugin"
    ```
 
 3. **Drop-in Directories**:
