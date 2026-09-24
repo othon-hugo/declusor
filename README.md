@@ -29,15 +29,15 @@
 
 ## Why Declusor?
 
-Catching a reverse shell during a CTF or engagement shouldn't feel like an emotional hostage negotiation:
+Catching a reverse shell during a CTF or penetration test shouldn't feel like walking a tightrope:
 
-- **Netcat has trust issues**: You spent three hours chaining an impossible exploit, finally pop a shell, instinctively hit `Up-Arrow` to fix a typo, and watch your connection evaporate into the digital void. Then you frantically Google `python -c 'import pty; pty.spawn("/bin/bash")'` for the 500th time while copy-pasting base64 chunks like it's 1995.
-- **Enterprise C2s are absurd overkill**: Nobody needs twelve Docker containers, a Postgres cluster, and a team server just to run `id` and `cat /etc/passwd` on a weekend CTF box. Your laptop fans deserve peace.
-- **Custom scripts panic easily**: Raw sockets and unchecked binary streams love crashing ad-hoc listeners the exact moment you need stability.
+- **Netcat is a little too minimal**: You get your shell, hit `Ctrl+C` by accident, and suddenly you're back to Googling PTY one-liners and pasting base64 blobs like it's 1995.
+- **C2 frameworks are a bit much**: Sometimes you just want to catch a shell and run `id`. You don't need twelve containers, a database, and a team server for that.
+- **Raw sockets don't handle drama well**: A few lines of socket code work great — until the connection drops, binary data shows up, or the shell does something you didn't expect.
 
-I built **Declusor** because I was tired of weeping into my keyboard. It delivers the instant, zero-setup speed of netcat with the dignity of a modern interactive CLI: persistent readline history (_yes, your `Up-Arrow` and `Ctrl+C` are safe here_), tab-completion for remote and local paths, in-memory script staging, and typed transport plugins that don't panic when an unexpected byte looks at them funny.
+So I built **Declusor**: the simplicity of a raw listener, with the interactive features you'd actually want — history, completion, script staging, and an extensible transport layer without turning the whole thing into a science experiment.
 
-## Visual Overview & Interactive Demo
+## See It in Action
 
 <!--
   ASSET PLACEHOLDER:
@@ -58,9 +58,6 @@ I built **Declusor** because I was tired of weeping into my keyboard. It deliver
   <br>
   <em>Declusor in action: Catching an incoming reverse shell, using tab-completion, streaming command output, and loading on-demand reconnaissance modules.</em>
 </p>
-
-> [!WARNING]
-> **Legal Disclaimer**: Declusor is intended solely for educational purposes and authorized security research. The authors assume no liability for misuse. Executing this software against systems without explicit, prior written authorization is strictly prohibited.
 
 ## Key Capabilities
 
@@ -243,3 +240,8 @@ make check-plugin PLUGIN=py_socket
 ## License
 
 This project is open-source software licensed under the [MIT License](LICENSE).
+
+---
+
+> [!WARNING]
+> **Legal Disclaimer**: Declusor is intended solely for educational purposes and authorized security research. The authors assume no liability for misuse. Executing this software against systems without explicit, prior written authorization is strictly prohibited.
