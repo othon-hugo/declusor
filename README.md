@@ -29,13 +29,13 @@
 
 ## Why Declusor?
 
-Catching a reverse shell during a CTF or penetration test shouldn't feel like walking a tightrope:
+Catching a reverse shell during a CTF or engagement shouldn't feel like an emotional hostage negotiation:
 
-- **Netcat is too fragile**: One accidental `Ctrl+C` kills your session. PTY stabilization and base64 transfers are tedious gymnastics.
-- **Heavy C2s are overkill**: Multi-container Docker setups and database configs are unnecessary when you just need fast, reliable remote interaction.
-- **Ad-hoc scripts break**: Unchecked binary bytes and socket drops easily crash fragile custom listeners.
+- **Netcat has trust issues**: You spent three hours chaining an impossible exploit, finally pop a shell, instinctively hit `Up-Arrow` to fix a typo, and watch your connection evaporate into the digital void. Then you frantically Google `python -c 'import pty; pty.spawn("/bin/bash")'` for the 500th time while copy-pasting base64 chunks like it's 1995.
+- **Enterprise C2s are absurd overkill**: Nobody needs twelve Docker containers, a Postgres cluster, and a team server just to run `id` and `cat /etc/passwd` on a weekend CTF box. Your laptop fans deserve peace.
+- **Custom scripts panic easily**: Raw sockets and unchecked binary streams love crashing ad-hoc listeners the exact moment you need stability.
 
-I built **Declusor** to bridge that gap: the single-command simplicity of netcat with the ergonomics of a modern interactive CLI — readline history, tab-completion, in-memory script staging, and swappable transport plugins that never crash mid-engagement.
+I built **Declusor** because I was tired of weeping into my keyboard. It delivers the instant, zero-setup speed of netcat with the dignity of a modern interactive CLI: persistent readline history (_yes, your `Up-Arrow` and `Ctrl+C` are safe here_), tab-completion for remote and local paths, in-memory script staging, and typed transport plugins that don't panic when an unexpected byte looks at them funny.
 
 ## Visual Overview & Interactive Demo
 
@@ -64,7 +64,7 @@ I built **Declusor** to bridge that gap: the single-command simplicity of netcat
 
 ## Key Capabilities
 
-### 🎮 Operator Experience
+### Operator Experience 🎮
 
 - **Smart Interactive REPL**: Built-in tab-completion for commands, target arguments, and local files.
 - **Persistent Command History**: Maintains command recall across operations, eliminating accidental disconnections from `Up-Arrow` or unhandled key sequences.
