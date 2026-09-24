@@ -6,7 +6,6 @@ from socket import socket
 from types import MappingProxyType
 
 from declusor import config, contract, util
-from declusor.contract import ConnectionState
 
 
 @dataclass(frozen=True)
@@ -82,7 +81,7 @@ class ShellSocketProfile(contract.IConnectionProfile):
         return function_name + (" " + " ".join(util.quote(a) for a in args) if args else "")
 
 
-class ShellSocketFileStore(contract.IClientFileStore):
+class ShellSocketFileStore(contract.IPluginFileStore):
     """Filesystem adapter for shell client templates, libraries and payloads.
 
     Resolves launchers, helpers and modules from the plugin's own self-contained
@@ -157,18 +156,18 @@ class ShellSocketFileStore(contract.IClientFileStore):
 class ShellSocketConnection(contract.IConnection):
     """``IConnection`` implementation for a Bash-over-TCP reverse-shell client."""
 
-    def __init__(self, connection: socket, profile: ShellSocketProfile, files: contract.IClientFileStore, /) -> None:
+    def __init__(self, connection: socket, profile: ShellSocketProfile, files: contract.IPluginFileStore, /) -> None:
         self._profile = profile
         self._files = files
         self._connection = connection
         self._timeout = profile.default_timeout
-        self._state = ConnectionState.CREATED
+        self._state = contract.ConnectionState.CREATED
 
         if self._timeout is not None:
             self._connection.settimeout(self._timeout)
 
     @property
-    def state(self) -> ConnectionState:
+    def state(self) -> contract.ConnectionState:
         """Current lifecycle state of the connection."""
 
         return self._state
@@ -193,10 +192,13 @@ class ShellSocketConnection(contract.IConnection):
     def initialize(self) -> None:
         """Perform the client initialization handshake."""
 
-        if self._state == ConnectionState.CLOSED:
+        if self._state != contract.ConnectionState.CREATED:
+            pass  # TODO
+
+        if self._state == contract.ConnectionState.CLOSED:
             raise config.ConnectionError("Cannot initialize a closed connection.")
 
-        self._state = ConnectionState.INITIALIZING
+        self._state = contract.ConnectionState.INITIALIZING
         self.write(self._files.load_library())
 
         expected_ack = self._profile.ack_client_raw
@@ -219,12 +221,12 @@ class ShellSocketConnection(contract.IConnection):
         except (OSError, TimeoutError) as error:
             raise config.ConnectionError("Failed waiting for client ACK during session initialization.") from error
 
-        self._state = ConnectionState.CONNECTED
+        self._state = contract.ConnectionState.CONNECTED
 
     def write(self, data: bytes, /) -> None:
         """Send data to the remote client."""
 
-        if self._state == ConnectionState.CLOSED:
+        if self._state == contract.ConnectionState.CLOSED:
             raise config.ConnectionClosed("Connection is closed.")
 
         try:
@@ -275,10 +277,10 @@ class ShellSocketConnection(contract.IConnection):
     def close(self) -> None:
         """Close the underlying socket idempotently."""
 
-        if self._state == ConnectionState.CLOSED:
+        if self._state == contract.ConnectionState.CLOSED:
             return
 
-        self._state = ConnectionState.CLOSED
+        self._state = contract.ConnectionState.CLOSED
 
         with suppress(OSError):
             self._connection.close()

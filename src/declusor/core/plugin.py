@@ -6,10 +6,10 @@ from typing import TypeAlias
 
 from declusor import config, contract, util
 
-ClientPluginType: TypeAlias = type[contract.IClientPlugin]
+PluginType: TypeAlias = type[contract.IPlugin]
 
 
-class ClientPluginRegistry:
+class PluginRegistry:
     """Registry of client plugins available to the application.
 
     The registry maps a stable client identifier to its plugin implementation.
@@ -19,9 +19,9 @@ class ClientPluginRegistry:
     def __init__(self) -> None:
         """Create an empty client registry."""
 
-        self._plugins: dict[str, ClientPluginType] = {}
+        self._plugins: dict[str, PluginType] = {}
 
-    def register(self, plugin: ClientPluginType, /) -> None:
+    def register(self, plugin: PluginType, /) -> None:
         """Register a client plugin.
 
         Args:
@@ -36,7 +36,7 @@ class ClientPluginRegistry:
 
         self._plugins[plugin.name] = plugin
 
-    def get(self, name: str, /) -> ClientPluginType:
+    def get(self, name: str, /) -> PluginType:
         """Retrieve a registered client plugin.
 
         Args:
@@ -65,7 +65,7 @@ class ClientPluginRegistry:
         return tuple(sorted(self._plugins))
 
 
-class ClientPluginManager(ClientPluginRegistry):
+class PluginManager(PluginRegistry):
     """Dynamic discovery and lifecycle registry for Declusor client plugins.
 
     Discovers and registers client plugins across three tiers:
@@ -87,21 +87,21 @@ class ClientPluginManager(ClientPluginRegistry):
         self._sources: dict[str, str] = {}
 
     def validate_plugin(self, candidate: type, /) -> None:
-        """Validate that a candidate class conforms strictly to ``IClientPlugin``.
+        """Validate that a candidate class conforms strictly to ``IPlugin``.
 
         Args:
             candidate: Class to inspect and validate.
 
         Raises:
-            PluginValidationError: If the candidate does not subclass ``IClientPlugin``,
+            PluginValidationError: If the candidate does not subclass ``IPlugin``,
                 lacks a valid name, or has unimplemented abstract methods.
         """
 
         if not inspect.isclass(candidate):
             raise config.PluginValidationError(f"Plugin candidate {candidate!r} must be a class.")
 
-        if not issubclass(candidate, contract.IClientPlugin):
-            raise config.PluginValidationError(f"Plugin class {candidate.__name__!r} must implement 'IClientPlugin'.")
+        if not issubclass(candidate, contract.IPlugin):
+            raise config.PluginValidationError(f"Plugin class {candidate.__name__!r} must implement 'IPlugin'.")
 
         name = getattr(candidate, "name", None)
 
@@ -116,7 +116,7 @@ class ClientPluginManager(ClientPluginRegistry):
                 f"Plugin class {candidate.__name__!r} has unimplemented abstract methods: {', '.join(sorted(abstract_methods))}"
             )
 
-    def register(self, plugin: ClientPluginType, /, *, source: str = "manual", allow_override: bool = False) -> None:
+    def register(self, plugin: PluginType, /, *, source: str = "manual", allow_override: bool = False) -> None:
         """Register a validated client plugin.
 
         Args:
@@ -147,7 +147,7 @@ class ClientPluginManager(ClientPluginRegistry):
         """Scan a directory for plugin packages and load any valid plugins found.
 
         A valid plugin folder contains an ``__init__.py`` or ``plugin.py`` that defines
-        one or more subclasses of ``IClientPlugin``.
+        one or more subclasses of ``IPlugin``.
 
         Args:
             directory: Directory containing plugin subdirectories.
@@ -175,7 +175,7 @@ class ClientPluginManager(ClientPluginRegistry):
             plugin_class = util.import_plugin_from_file(
                 item.name,
                 plugin_file,
-                contract.IClientPlugin,  # type: ignore[type-abstract]
+                contract.IPlugin,  # type: ignore[type-abstract]
             )
 
             if plugin_class:
@@ -221,7 +221,7 @@ class ClientPluginManager(ClientPluginRegistry):
         /,
         *,
         enable_entry_points: bool = True,
-    ) -> "ClientPluginManager":
+    ) -> "PluginManager":
         """Run the multi-tier plugin discovery engine.
 
         Precedence order (later overrides earlier):

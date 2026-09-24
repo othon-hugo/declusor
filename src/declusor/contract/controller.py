@@ -6,10 +6,10 @@ from typing import TYPE_CHECKING, Any
 from declusor import util
 
 if TYPE_CHECKING:
-    from declusor.contract.client import IClientFileStore
     from declusor.contract.command import ICommand
     from declusor.contract.connection import IConnection
     from declusor.contract.console import IConsole
+    from declusor.contract.plugin import IPluginFileStore
 
 
 class ControllerAction(StrEnum):
@@ -38,7 +38,7 @@ class SessionContext:
         self,
         connection: "IConnection",
         console: "IConsole",
-        files: "IClientFileStore",
+        files: "IPluginFileStore",
     ) -> None:
         """Initialize the active session context.
 
@@ -47,6 +47,7 @@ class SessionContext:
             console: Console interface for operator input/output.
             files: Client file store for module/library loading.
         """
+
         self._connection = connection
         self._console = console
         self._files = files
@@ -64,7 +65,7 @@ class SessionContext:
         return self._console
 
     @property
-    def files(self) -> "IClientFileStore":
+    def files(self) -> "IPluginFileStore":
         """Client file store for module/library loading."""
 
         return self._files
@@ -96,19 +97,22 @@ class SessionContext:
         return 3
 
 
-ControllerDependencies = SessionContext
-"""Backward compatibility alias for SessionContext."""
-
-
-class ControllerRequest(str):
+@dataclass(frozen=True)
+class ControllerRequest:
     """Encapsulates raw command line request text with parsing utilities."""
+
+    request_line: str = ""
 
     def parse_arguments(
         self,
         definitions: util.ArgumentDefinitions,
         allow_unknown: bool = False,
     ) -> tuple[util.ParsedArguments, list[str]]:
-        return util.parse_command_arguments(self, definitions, allow_unknown=allow_unknown)
+        return util.parse_command_arguments(
+            line=self.request_line,
+            definitions=definitions,
+            allow_unknown=allow_unknown,
+        )
 
 
 Controller = Callable[[SessionContext, ControllerRequest], ControllerResult | None]

@@ -6,7 +6,7 @@ from declusor import core, testing
 def test_parser_parse_is_idempotent(tmp_path: Path) -> None:
     """Calling parse() multiple times on the same DeclusorParser must not error."""
 
-    manager = core.ClientPluginManager()
+    manager = core.PluginManager()
     manager.register(testing.DummyClientPlugin)
 
     argv = ["127.0.0.1", "8080", "--client", testing.DummyClientPlugin.name, "--data-root", str(tmp_path)]

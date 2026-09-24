@@ -43,7 +43,7 @@ def test_build_runtime_renders_configured_client_script(tmp_path: Path) -> None:
     launcher = tmp_path / "py_socket_client.py"
     launcher.write_text("HOST = '$HOST'\nPORT = int('$PORT')\nACK = bytes.fromhex('$ACKNOWLEDGE')")
 
-    client_config = contract.ClientConfig(
+    client_config = contract.PluginConfig(
         kind=py_socket.PySocketPlugin.name,
         host="127.0.0.1",
         port=9000,
@@ -65,7 +65,7 @@ def test_build_runtime_creates_py_socket_connection(tmp_path: Path) -> None:
     launcher = tmp_path / "py_socket_client.py"
     launcher.write_text("HOST = '$HOST'\nPORT = int('$PORT')\nACK = bytes.fromhex('$ACKNOWLEDGE')")
 
-    client_config = contract.ClientConfig(
+    client_config = contract.PluginConfig(
         kind=py_socket.PySocketPlugin.name,
         host="127.0.0.1",
         port=9000,
@@ -88,7 +88,7 @@ def test_validate_passes_when_launcher_exists(tmp_path: Path) -> None:
     launcher = tmp_path / "py_socket_client.py"
     launcher.write_text("# launcher")
 
-    client_config = contract.ClientConfig(
+    client_config = contract.PluginConfig(
         kind=py_socket.PySocketPlugin.name,
         host="127.0.0.1",
         port=9000,
@@ -101,7 +101,7 @@ def test_validate_passes_when_launcher_exists(tmp_path: Path) -> None:
 def test_validate_raises_when_launcher_missing(tmp_path: Path) -> None:
     """Verify plugin configuration validation raises ParserError when launcher file is missing."""
 
-    client_config = contract.ClientConfig(
+    client_config = contract.PluginConfig(
         kind=py_socket.PySocketPlugin.name,
         host="127.0.0.1",
         port=9000,

@@ -9,7 +9,7 @@ from declusor.testing.doubles.filestore import DummyClientFileStore
 def create_test_session(
     connection: contract.IConnection | None = None,
     console: contract.IConsole | None = None,
-    files: contract.IClientFileStore | None = None,
+    files: contract.IPluginFileStore | None = None,
 ) -> contract.SessionContext:
     """Create a SessionContext populated with test doubles by default.
 
@@ -35,8 +35,8 @@ def create_dummy_client_config(
     port: int = 9000,
     data_paths: config.DataPaths | None = None,
     options: dict[str, Any] | None = None,
-) -> contract.ClientConfig:
-    """Create a ClientConfig instance for testing.
+) -> contract.PluginConfig:
+    """Create a PluginConfig instance for testing.
 
     Args:
         kind: Client implementation identifier. Defaults to "dummy".
@@ -46,10 +46,10 @@ def create_dummy_client_config(
         options: Plugin options dictionary. Defaults to empty dict.
 
     Returns:
-        An immutable ClientConfig dataclass instance.
+        An immutable PluginConfig dataclass instance.
     """
 
-    return contract.ClientConfig(
+    return contract.PluginConfig(
         kind=kind,
         host=host,
         port=port,
@@ -74,14 +74,14 @@ def create_dummy_controller_request(text: str = "") -> contract.ControllerReques
 def create_dummy_options(
     host: str = "127.0.0.1",
     port: int = 9000,
-    client: contract.ClientConfig | None = None,
+    client: contract.PluginConfig | None = None,
 ) -> core.DeclusorOptions:
     """Create a fully-formed DeclusorOptions TypedDict for testing.
 
     Args:
         host: Target host. Defaults to '127.0.0.1'.
         port: Target port. Defaults to 9000.
-        client: ClientConfig instance. Defaults to dummy config.
+        client: PluginConfig instance. Defaults to dummy config.
 
     Returns:
         A valid DeclusorOptions TypedDict mapping.
@@ -90,5 +90,5 @@ def create_dummy_options(
     return {
         "host": host,
         "port": port,
-        "client": client or create_dummy_client_config(host=host, port=port),
+        "plugin": client or create_dummy_client_config(host=host, port=port),
     }

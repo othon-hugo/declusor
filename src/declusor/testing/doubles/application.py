@@ -18,7 +18,7 @@ class DummyApplication:
             else {
                 "host": "127.0.0.1",
                 "port": 9000,
-                "client": contract.ClientConfig(
+                "plugin": contract.PluginConfig(
                     kind="dummy",
                     host="127.0.0.1",
                     port=9000,

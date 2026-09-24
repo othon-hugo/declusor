@@ -79,7 +79,7 @@ class PySocketProfile(contract.IConnectionProfile):
         return f"{function_name}()"
 
 
-class PySocketFileStore(contract.IClientFileStore):
+class PySocketFileStore(contract.IPluginFileStore):
     """Filesystem adapter for Python client templates, libraries and payloads.
 
     Resolves launchers, helpers and modules from the plugin's own self-contained
@@ -154,7 +154,7 @@ class PySocketFileStore(contract.IClientFileStore):
 class PySocketConnection(contract.IConnection):
     """``IConnection`` implementation for a Python-socket reverse-shell client."""
 
-    def __init__(self, connection: socket, profile: PySocketProfile, files: contract.IClientFileStore, /) -> None:
+    def __init__(self, connection: socket, profile: PySocketProfile, files: contract.IPluginFileStore, /) -> None:
         self._profile = profile
         self._files = files
         self._connection = connection
@@ -167,11 +167,13 @@ class PySocketConnection(contract.IConnection):
     @property
     def state(self) -> contract.ConnectionState:
         """Current lifecycle state of the connection."""
+
         return self._state
 
     @property
     def client(self) -> PySocketProfile:
         """The connection profile."""
+
         return self._profile
 
     @property

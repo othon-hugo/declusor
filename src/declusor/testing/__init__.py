@@ -4,6 +4,7 @@ from . import (
 from .conformance import (
     PluginConformanceTestSuite,
     assert_conforms_to_client_plugin,
+    assert_conforms_to_plugin,
 )
 from .doubles import (
     DummyApplication,
@@ -14,6 +15,9 @@ from .doubles import (
     DummyConnection,
     DummyConnectionProfile,
     DummyConsole,
+    DummyPlugin,
+    DummyPluginFileStore,
+    DummyPluginRuntime,
     DummyRouter,
     DummySocket,
 )
@@ -26,6 +30,7 @@ from .factories import (
 
 __all__ = [
     "assert_conforms_to_client_plugin",
+    "assert_conforms_to_plugin",
     "create_dummy_client_config",
     "create_dummy_controller_request",
     "create_dummy_options",
@@ -38,6 +43,9 @@ __all__ = [
     "DummyConnection",
     "DummyConnectionProfile",
     "DummyConsole",
+    "DummyPlugin",
+    "DummyPluginFileStore",
+    "DummyPluginRuntime",
     "DummyRouter",
     "DummySocket",
     "PluginConformanceTestSuite",

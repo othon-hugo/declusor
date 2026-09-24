@@ -1,7 +1,7 @@
 from declusor import contract
 
 
-class DummyClientFileStore(contract.IClientFileStore):
+class DummyClientFileStore(contract.IPluginFileStore):
     """Fully-typed in-memory file store for client scripts, libraries, and modules."""
 
     def __init__(
@@ -57,3 +57,6 @@ class DummyClientFileStore(contract.IClientFileStore):
             return self.modules[module_name]
 
         return f"module_bytes:{module_name}".encode()
+
+
+DummyPluginFileStore = DummyClientFileStore
