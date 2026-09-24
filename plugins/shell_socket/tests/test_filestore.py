@@ -8,6 +8,7 @@ from declusor import config, util
 
 def test_load_library_reports_read_errors(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Verify load_library wraps file reading errors into ConnectionError."""
+
     helpers = tmp_path / "helpers"
     helpers.mkdir(parents=True)
     (helpers / "common.sh").write_bytes(b"echo common")
@@ -25,6 +26,7 @@ def test_load_library_reports_read_errors(tmp_path: Path, monkeypatch: pytest.Mo
 
 def test_load_library_returns_non_empty_scripts(tmp_path: Path) -> None:
     """Verify load_library concatenates valid shell scripts from helpers directory."""
+
     helpers = tmp_path / "helpers"
     helpers.mkdir(parents=True)
     (helpers / "common.sh").write_bytes(b"echo common")
@@ -35,6 +37,7 @@ def test_load_library_returns_non_empty_scripts(tmp_path: Path) -> None:
 
 def test_load_module_reads_only_from_modules_directory(tmp_path: Path) -> None:
     """Verify load_module reads modules from the designated modules directory."""
+
     modules = tmp_path / "modules"
     modules.mkdir(parents=True)
     (modules / "example.sh").write_bytes(b"echo module")
@@ -45,6 +48,7 @@ def test_load_module_reads_only_from_modules_directory(tmp_path: Path) -> None:
 
 def test_load_module_rejects_traversal_and_wrong_extension(tmp_path: Path) -> None:
     """Verify load_module rejects path traversal escapes and unauthorized file extensions."""
+
     modules = tmp_path / "modules"
     modules.mkdir(parents=True)
     (tmp_path / "outside.txt").write_bytes(b"outside")

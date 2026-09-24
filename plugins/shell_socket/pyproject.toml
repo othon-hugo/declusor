@@ -1,5 +1,5 @@
 [project]
-name = "declusor-plugin-shell-socket"
+name = "declusor-shell-socket"
 version = "0.1.0"
 description = "POSIX shell socket transport client plugin for Declusor."
 readme = "README.md"

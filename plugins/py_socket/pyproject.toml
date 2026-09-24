@@ -1,5 +1,5 @@
 [project]
-name = "declusor-plugin-py-socket"
+name = "declusor-py-socket"
 version = "0.1.0"
 description = "Cross-platform Python socket transport client plugin for Declusor."
 readme = "README.md"

@@ -11,6 +11,7 @@ from declusor.testing import DummySocket
 
 def test_build_runtime_renders_configured_client_script(tmp_path: Path) -> None:
     """Verify PySocketPlugin.build_runtime renders launcher script with host, port, and ACK."""
+
     launcher = tmp_path / "py_socket_client.py"
     launcher.write_text("HOST = '$HOST'\nPORT = int('$PORT')\nACK = bytes.fromhex('$ACKNOWLEDGE')")
 
@@ -32,6 +33,7 @@ def test_build_runtime_renders_configured_client_script(tmp_path: Path) -> None:
 
 def test_build_runtime_creates_py_socket_connection(tmp_path: Path) -> None:
     """Verify runtime creates a valid PySocketConnection instance for connected sockets."""
+
     launcher = tmp_path / "py_socket_client.py"
     launcher.write_text("HOST = '$HOST'\nPORT = int('$PORT')\nACK = bytes.fromhex('$ACKNOWLEDGE')")
 
@@ -54,6 +56,7 @@ def test_build_runtime_creates_py_socket_connection(tmp_path: Path) -> None:
 
 def test_validate_passes_when_launcher_exists(tmp_path: Path) -> None:
     """Verify plugin configuration validation succeeds when launcher file exists."""
+
     launcher = tmp_path / "py_socket_client.py"
     launcher.write_text("# launcher")
 
@@ -69,6 +72,7 @@ def test_validate_passes_when_launcher_exists(tmp_path: Path) -> None:
 
 def test_validate_raises_when_launcher_missing(tmp_path: Path) -> None:
     """Verify plugin configuration validation raises ParserError when launcher file is missing."""
+
     client_config = contract.ClientConfig(
         kind=py_socket.PySocketPlugin.name,
         host="127.0.0.1",

@@ -10,6 +10,7 @@ from declusor.testing import DummySocket
 
 def test_shell_socket_plugin_metadata() -> None:
     """Verify shell_socket.ShellSocketPlugin metadata properties (name, description, version)."""
+
     assert shell_socket.ShellSocketPlugin.name == "shell_socket"
     assert shell_socket.ShellSocketPlugin.description != ""
     assert shell_socket.ShellSocketPlugin.version == "1.0.0"
@@ -17,6 +18,7 @@ def test_shell_socket_plugin_metadata() -> None:
 
 def test_build_runtime_renders_configured_client_script(tmp_path: Path) -> None:
     """Verify shell_socket.ShellSocketPlugin.build_runtime renders client script with substituted parameters."""
+
     client_path = tmp_path / "client.sh"
     client_path.write_text("connect $HOST:$PORT ack=$ACKNOWLEDGE", encoding="utf-8")
     client_config = contract.ClientConfig(
@@ -36,6 +38,7 @@ def test_build_runtime_renders_configured_client_script(tmp_path: Path) -> None:
 
 def test_build_runtime_creates_shell_socket_connection(tmp_path: Path) -> None:
     """Verify runtime creates a valid shell_socket.ShellSocketConnection instance."""
+
     client_path = tmp_path / "client.sh"
     client_path.write_text("$HOST:$PORT", encoding="utf-8")
     client_config = contract.ClientConfig(
