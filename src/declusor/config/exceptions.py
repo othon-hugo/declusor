@@ -68,7 +68,6 @@ class ControllerError(DeclusorException):
 
     def __init__(self, description: str, /) -> None:
         self.description = description
-
         super().__init__(f"controller error: {self.description}")
 
 

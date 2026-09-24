@@ -172,10 +172,10 @@ Start Declusor by specifying your local listening IP and port:
 declusor 0.0.0.0 4444
 
 # Select the cross-platform Python client
-declusor 0.0.0.0 4444 --client py_socket
+declusor 0.0.0.0 4444 --plugin py_socket
 
 # Load external custom plugins from an operator directory
-declusor 0.0.0.0 4444 --plugin-dir ~/custom_plugins --client my_agent
+declusor 0.0.0.0 4444 --plugin-dir ~/custom_plugins --plugin my_agent
 ```
 
 On startup, Declusor initializes the listener and **prints the exact one-liner launcher command** to run on your target.

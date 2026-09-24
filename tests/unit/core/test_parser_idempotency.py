@@ -9,7 +9,7 @@ def test_parser_parse_is_idempotent(tmp_path: Path) -> None:
     manager = core.PluginManager()
     manager.register(testing.DummyPlugin)
 
-    argv = ["127.0.0.1", "8080", "--client", testing.DummyPlugin.name, "--data-root", str(tmp_path)]
+    argv = ["127.0.0.1", "8080", "--plugin", testing.DummyPlugin.name, "--data-root", str(tmp_path)]
 
     parser = core.DeclusorParser(manager, name="test_app", description="test description")
     options1 = parser.parse(argv)

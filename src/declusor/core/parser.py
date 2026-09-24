@@ -97,7 +97,7 @@ class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
         if plugin_dir:
             self._manager.load_from_directory(plugin_dir, source_label="cli-plugin-dir", allow_override=True)
 
-        Plugin = self._manager.get(preliminary_args.client)
+        Plugin = self._manager.get(preliminary_args.plugin)
         Plugin.configure_parser(self)
 
         args = self.parse_args(argv)

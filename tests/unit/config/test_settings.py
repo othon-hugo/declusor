@@ -56,7 +56,7 @@ def test_base_path_contains_only_application_and_plugin_directories() -> None:
 class DummyPathClientPlugin(contract.IPlugin):
     """Dummy client plugin for testing data path derivation."""
 
-    name = "dummy_path_client"
+    name = "dummy_path_plugin"
     description = "Dummy path client"
 
     @classmethod
@@ -90,7 +90,7 @@ class DummyPathClientPlugin(contract.IPlugin):
 def test_parser_builds_client_paths_from_data_root(tmp_path: Path) -> None:
     """Client configuration must derive all data paths from ``--data-root``."""
 
-    launcher_dir = tmp_path / "dummy_path_client" / "launchers"
+    launcher_dir = tmp_path / "dummy_path_plugin" / "launchers"
     launcher_dir.mkdir(parents=True)
     launcher_file = launcher_dir / "client.sh"
     launcher_file.write_text("", encoding="utf-8")
@@ -99,7 +99,7 @@ def test_parser_builds_client_paths_from_data_root(tmp_path: Path) -> None:
     manager.register(DummyPathClientPlugin)
 
     options = core.DeclusorParser(manager, name="declusor").parse(
-        ("127.0.0.1", "9000", "--client", "dummy_path_client", "--data-root", str(tmp_path)),
+        ("127.0.0.1", "9000", "--plugin", "dummy_path_plugin", "--data-root", str(tmp_path)),
     )
 
     data_paths = options["plugin"].data_paths

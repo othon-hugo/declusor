@@ -348,5 +348,5 @@ def test_factories() -> None:
     assert cfg.options == {"opt": "val"}
 
     req = testing.create_dummy_controller_request("hello world")
-    assert req == "hello world"
+    assert req.request_line == "hello world"
     assert isinstance(req, contract.ControllerRequest)

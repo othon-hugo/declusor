@@ -132,5 +132,5 @@ make test-plugin PLUGIN=my_client
 Run Declusor pointing to your plugin directory:
 
 ```bash
-declusor 0.0.0.0 9000 --client my_client --plugin-dir /path/to/my_client_parent_dir
+declusor 0.0.0.0 9000 --plugin my_client --plugin-dir /path/to/my_client_parent_dir
 ```
