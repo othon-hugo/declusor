@@ -1,3 +1,7 @@
+from declusor.config import (
+    PromptError,
+)
+
 from .console import (
     Console,
 )
@@ -8,4 +12,5 @@ from .prompt import (
 __all__ = [
     "Console",
     "PromptCLI",
+    "PromptError",
 ]

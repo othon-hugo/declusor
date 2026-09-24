@@ -1,3 +1,10 @@
+from declusor.config import (
+    ParserError,
+    PluginError,
+    PluginValidationError,
+    RouterError,
+)
+
 from .parser import (
     DeclusorOptions,
     DeclusorParser,
@@ -18,8 +25,12 @@ __all__ = [
     "ClientRegistry",
     "DeclusorOptions",
     "DeclusorParser",
+    "ParserError",
+    "PluginError",
     "PluginManager",
     "PluginRegistry",
     "PluginType",
+    "PluginValidationError",
     "Router",
+    "RouterError",
 ]

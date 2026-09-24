@@ -1,3 +1,7 @@
+from declusor.config import (
+    ControllerError,
+)
+
 from .command import (
     call_command,
 )
@@ -27,5 +31,6 @@ __all__ = [
     "call_load",
     "call_shell",
     "call_upload",
+    "ControllerError",
     "create_help_controller",
 ]
