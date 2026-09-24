@@ -1,8 +1,8 @@
 from socket import socket
 
 from declusor import config, contract, util
-from declusor.core.clients import ClientRegistry
 from declusor.core.parser import DeclusorParser
+from declusor.core.plugin import ClientRegistry
 
 
 class FakeRuntime(contract.IClientRuntime):

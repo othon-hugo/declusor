@@ -1,17 +1,18 @@
 from pathlib import Path
 
-from declusor import core, plugin
+from declusor import core
+from plugins.shell_socket import ShellSocketPlugin
 
 
 def test_parser_parse_is_idempotent(tmp_path: Path) -> None:
     """Calling parse() multiple times on the same DeclusorParser must not error."""
 
     registry = core.ClientRegistry()
-    registry.register(plugin.ShellSocketPlugin)
+    registry.register(ShellSocketPlugin)
 
     launcher_dir = tmp_path / "shell_socket" / "launchers"
     launcher_dir.mkdir(parents=True)
-    (launcher_dir / "shell_socket.sh").write_text("test client", encoding="utf-8")
+    (launcher_dir / "shell_socket_client.sh").write_text("test client", encoding="utf-8")
 
     argv = ["127.0.0.1", "8080", "--data-root", str(tmp_path)]
 

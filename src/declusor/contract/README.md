@@ -1,31 +1,26 @@
-# Interface Package (Domain Layer)
+# Contract Package (Domain Layer)
 
-The **interface** package defines the abstract contracts that establish the boundaries between system components. This is the **domain layer** — pure abstractions with no implementation logic.
+The **contract** package defines the abstract contracts that establish the boundaries between system components. This is the **domain layer** — pure abstractions and lifecycle state machines with no framework implementation logic.
 
 > [!NOTE]
-> This package depends only on foundation layers (`config` and `util`). It has zero dependencies on concrete implementation packages (`core`, `connection`, `command`, `controller`, `presentation`, `plugin`, or `main`).
+> This package depends only on foundation layers (`config` and `util`). It has zero dependencies on concrete implementation packages (`core`, `command`, `controller`, `presentation`, `main`, or external `plugins`).
 
-## Modules
+## Modules & Contracts
 
-| Module          | Interface     | Purpose                                                                       |
-| --------------- | ------------- | ----------------------------------------------------------------------------- |
-| `command.py`    | `ICommand`    | Contract for executable command objects                                       |
-| `connection.py` | `IConnection` | Contract for session I/O (read/write/initialize) with context-manager support |
-| `console.py`    | `IConsole`    | Contract for console I/O (messages, binary data, errors, warnings)            |
-| `parser.py`     | `IParser`     | Contract for argument parsing                                                 |
-| `profile.py`    | `IProfile`    | Contract for immutable connection configuration (host, port, client script)   |
-| `prompt.py`     | `IPrompt`     | Contract for the interactive command loop                                     |
-| `router.py`     | `IRouter`     | Contract for route registration, lookup, and documentation                    |
+| Module          | Contract / Invariant                                                   | Purpose                                                                                                          |
+| --------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `client.py`     | `IClientPlugin`, `IClientRuntime`, `IClientFileStore`, `ClientConfig`  | Configuration, lifecycle adapter, and file store contracts for client plugins                                    |
+| `connection.py` | `IConnection`, `IConnectionProfile`, `ConnectionState`                 | Transport session contract with lifecycle state machine (`CREATED` -> `INITIALIZING` -> `CONNECTED` -> `CLOSED`) |
+| `command.py`    | `ICommand`                                                             | Stateless contract for executable command objects (`execute(session)`)                                           |
+| `controller.py` | `SessionContext`, `Controller`, `ControllerAction`, `ControllerResult` | Controller handlers, execution result wrappers, and the domain Session coordinator                               |
+| `console.py`    | `IConsole`                                                             | Contract for presentation console I/O                                                                            |
+| `parser.py`     | `IParser`                                                              | Contract for command-line argument parsing                                                                       |
+| `prompt.py`     | `IPrompt`                                                              | Contract for the interactive command prompt loop                                                                 |
+| `router.py`     | `IRouter`                                                              | Contract for route registration, dispatch, and documentation                                                     |
 
 ## Design Principles
 
-1. **Pure Abstractions** — interfaces contain only `@abstractmethod` signatures and docstrings.
-2. **Single Responsibility** — each interface defines exactly one concern.
-3. **Minimal Surface** — only methods required by consumers are exposed.
-4. **Liskov Substitution** — any implementation must be drop-in replaceable.
-
-## Usage
-
-- Concrete implementations reside in `core` (console, router, parser, prompt) and `connection` (session I/O).
-- Type hints throughout the codebase reference interfaces, not concrete classes.
-- Controllers and commands depend exclusively on interface types.
+1. **Pure Abstractions** — interfaces contain only `@abstractmethod` signatures, invariant state machines, and docstrings.
+2. **Single Responsibility** — each contract defines exactly one concern.
+3. **Rigid Interface / Extensible Implementation** — client plugins implemented in the external `plugins/` hierarchy or third-party packages strictly adhere to `IClientPlugin` and `IConnection`.
+4. **Liskov Substitution** — any plugin conforming to `IClientPlugin` is drop-in replaceable and discoverable at runtime.

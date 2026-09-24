@@ -47,6 +47,7 @@ class DataPaths:
         """
 
         normalized_root = root.expanduser().resolve()
+
         return cls(
             root=normalized_root,
             clients=normalized_root / "clients",
@@ -67,6 +68,7 @@ class DataPaths:
             Immutable client-scoped paths derived from the root data directory.
         """
         client_root = self.root / client_name
+
         return ClientDataPaths(
             root=client_root,
             launcher=client_root / "launchers",
@@ -102,6 +104,12 @@ class BasePath:
 
     ROOT_DIR = Path(__file__).resolve().parents[3]
     """Normalized root directory of the project."""
+
+    PLUGINS_DIR = (ROOT_DIR / "plugins").resolve()
+    """Root plugins directory for built-in and repository-level plugins."""
+
+    USER_PLUGINS_DIR = (Path.home() / ".declusor" / "plugins").resolve()
+    """Default user-level plugins directory for drop-in extensions."""
 
     DATA_DIR = (ROOT_DIR / "data").resolve()
     """Normalized data directory path."""

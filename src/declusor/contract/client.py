@@ -79,6 +79,15 @@ class IClientPlugin(ABC):
     name: str
     """Unique identifier used to select the client from the command line."""
 
+    description: str = ""
+    """Brief human-readable description shown in CLI help."""
+
+    version: str = "1.0.0"
+    """Semantic version of the client plugin."""
+
+    author: str = ""
+    """Author or maintainer of the client plugin."""
+
     @classmethod
     @abstractmethod
     def configure_parser(cls, parser: util.Parser, /) -> None:

@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Final, TypedDict
 
 from declusor import config, contract, util
-from declusor.core.clients import ClientRegistry
+from declusor.core.plugin import PluginRegistry
 
 
 class DeclusorOptions(TypedDict):
@@ -23,7 +23,7 @@ class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
         "client": "agent responsible for handling requests",
     }
 
-    def __init__(self, registry: ClientRegistry, /, name: str, description: str = "") -> None:
+    def __init__(self, registry: PluginRegistry, /, name: str, description: str = "") -> None:
         """Create a parser backed by a specific client registry.
 
         Args:
@@ -62,19 +62,33 @@ class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
         )
 
         self.add_argument(
+            "--plugin-dir",
+            help="additional directory to discover custom drop-in plugins",
+            type=Path,
+            default=None,
+        )
+
+        available_clients = self._registry.names()
+        default_client = "shell_socket" if "shell_socket" in available_clients else (available_clients[0] if available_clients else None)
+
+        self.add_argument(
             "-c",
             "--client",
             help=self.flags["client"],
             type=str,
-            choices=self._registry.names(),
-            default=str(config.ClientFile.SHELL_SOCKET),
+            choices=available_clients if available_clients else None,
+            default=default_client,
         )
 
         self._configured = True
 
     def parse(self, argv: Sequence[str] | None = None, /) -> DeclusorOptions:
-
         preliminary_args, _ = self.parse_known_args(argv)
+
+        plugin_dir = getattr(preliminary_args, "plugin_dir", None)
+        if plugin_dir and hasattr(self._registry, "load_from_directory"):
+            self._registry.load_from_directory(plugin_dir, source_label="cli-plugin-dir", allow_override=True)
+
         plugin = self._registry.get(preliminary_args.client)
         plugin.configure_parser(self)
 

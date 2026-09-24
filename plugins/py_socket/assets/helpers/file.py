@@ -7,6 +7,7 @@ Once loaded, all functions are available to any subsequent module or command.
 All functions use only the Python standard library to maintain zero-dependency
 compatibility with any Python 3.6+ environment.
 """
+
 import base64
 import hashlib
 import os
@@ -24,8 +25,10 @@ def hash_value(data: str | bytes) -> str:
     Returns:
         Lowercase hexadecimal SHA-256 digest string.
     """
+
     if isinstance(data, str):
         data = data.encode()
+
     return hashlib.sha256(data).hexdigest()
 
 
@@ -45,6 +48,7 @@ def store_base64_encoded_value(data_b64: str, target_path: str = "") -> str:
         ValueError: If ``data_b64`` is empty or cannot be decoded.
         OSError: If the file cannot be written to the target location.
     """
+
     if not data_b64:
         raise ValueError("data_b64 must not be empty.")
 
@@ -81,6 +85,7 @@ def execute_base64_encoded_value(data_b64: str, *args: str) -> None:
         ValueError: If ``data_b64`` is empty.
         OSError: If a temporary file cannot be created or executed.
     """
+
     if not data_b64:
         raise ValueError("data_b64 must not be empty.")
 
@@ -103,6 +108,7 @@ def execute_base64_encoded_value(data_b64: str, *args: str) -> None:
 
 def _is_python_payload(raw_bytes: bytes) -> bool:
     """Return True if the decoded payload appears to be Python source code."""
+
     try:
         first_line = raw_bytes.lstrip().split(b"\n", 1)[0].strip().lower()
     except Exception:  # noqa: BLE001

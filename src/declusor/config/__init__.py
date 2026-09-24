@@ -1,17 +1,24 @@
-from .enums import ClientFile, OperationCode
+from .enums import (
+    ClientFile,
+    OperationCode,
+)
 from .exceptions import (
     CommandError,
     ConnectionFailure,
     ControllerError,
     DeclusorException,
     DeclusorWarning,
-    ExitRequest,
     InvalidOperation,
     ParserError,
     PromptError,
     RouterError,
 )
-from .settings import BasePath, ClientDataPaths, DataPaths, Settings
+from .settings import (
+    BasePath,
+    ClientDataPaths,
+    DataPaths,
+    Settings,
+)
 
 __all__ = [
     "BasePath",
@@ -23,7 +30,6 @@ __all__ = [
     "CommandError",
     "DeclusorException",
     "DeclusorWarning",
-    "ExitRequest",
     "InvalidOperation",
     "OperationCode",
     "ParserError",
