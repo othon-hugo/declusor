@@ -13,7 +13,7 @@ The **util** package provides stateless helper functions consumed across every l
 | `encoding`    | Data encoding, hashing, shell quoting, and template formatting    |
 | `network`     | Context-manager socket listener with user-friendly error mapping  |
 | `parsing`     | Custom `argparse` subclass and type-aware argument parsing        |
-| `plugins`     | Dynamic entry discovery and module loading for autonomous plugins |
+| `plugin`      | Dynamic entry discovery and module loading for autonomous plugins |
 | `security`    | Path-traversal and file-extension guards                          |
 | `storage`     | File loading and existence validation                             |
 

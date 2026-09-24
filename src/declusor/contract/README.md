@@ -5,18 +5,18 @@ The **contract** package defines the abstract contracts that establish the bound
 > [!NOTE]
 > This package depends only on foundation layers (`config` and `util`). It has zero dependencies on concrete implementation packages (`core`, `command`, `controller`, `presentation`, `main`, or external `plugins`).
 
-## Modules & Contracts
+## Modules
 
-| Module        | Responsability |
-| ------------- | -------------- |
-| `client`      |                |
-| `connection.` |                |
-| `command.`    |                |
-| `controller.` |                |
-| `console.`    |                |
-| `parser.`     |                |
-| `prompt.`     |                |
-| `router.`     |                |
+| Module       | Responsibility                                                                |
+| ------------ | ----------------------------------------------------------------------------- |
+| `client`     | Abstractions for client plugins, runtimes, and client file stores             |
+| `command`    | Execution lifecycle contract for encapsulated command operations              |
+| `connection` | State machine contract and protocol profile interfaces for network transports |
+| `console`    | Terminal input and output presentation contract                               |
+| `controller` | Controller signatures, request/result types, and `SessionContext` coordinator |
+| `parser`     | Interface for CLI argument parsing and options mapping                        |
+| `prompt`     | Contract for interactive terminal REPL execution loops                        |
+| `router`     | Route registration, lookup, and documentation contract                        |
 
 ## Design Principles
 

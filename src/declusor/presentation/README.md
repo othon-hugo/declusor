@@ -4,10 +4,10 @@ The **presentation** package implements the operator user interface and interact
 
 ## Modules
 
-| Module    | Responsability |
-| --------- | -------------- |
-| `console` |                |
-| `prompt`  |                |
+| Module    | Responsibility                                                                |
+| --------- | ----------------------------------------------------------------------------- |
+| `console` | Standard I/O streams, binary data flushing, line reading, and terminal errors |
+| `prompt`  | Interactive REPL execution loop, command dispatching, and signal handling     |
 
 ## Design Principles
 

@@ -15,7 +15,7 @@ class Settings:
     DEFAULT_SERVER_ACK: Final[bytes] = b"\x00"
     """Default server acknowledgment byte sequence."""
 
-    DEFAULT_CLIENT_ACK_SEED: Final[bytes] = b"\xba\xdc\x00\xff\xee"
+    DEFAULT_CLIENT_ACK_SEED: Final[bytes] = b"declusor"
     """Default client acknowledgment seed used for SHA-256 calculation."""
 
 
@@ -67,6 +67,7 @@ class DataPaths:
         Returns:
             Immutable client-scoped paths derived from the root data directory.
         """
+
         client_root = self.root / client_name
 
         return ClientDataPaths(
