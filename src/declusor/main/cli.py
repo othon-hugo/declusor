@@ -1,5 +1,5 @@
+import sys
 from collections.abc import Sequence
-from sys import stderr
 
 from declusor import config
 from declusor.main.app import create_application
@@ -24,10 +24,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     except KeyboardInterrupt:
         print()
     except config.ParserError as error:
-        print(f"parser error: {error}", file=stderr)
+        print(f"parser error: {error}", file=sys.stderr)
         return 2
     except config.DeclusorException as error:
-        print(f"declusor error: {error}", file=stderr)
+        print(f"declusor error: {error}", file=sys.stderr)
         return 1
 
     return 0
