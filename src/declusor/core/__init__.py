@@ -10,26 +10,24 @@ from .parser import (
     DeclusorParser,
 )
 from .plugin import (
-    ClientPlugin,
-    ClientRegistry,
-    PluginManager,
-    PluginRegistry,
-    PluginType,
+    ClientPluginManager,
+    ClientPluginRegistry,
+    ClientPluginType,
 )
 from .router import (
     Router,
 )
 
 __all__ = [
-    "ClientPlugin",
-    "ClientRegistry",
+    "ClientPluginType",
+    "ClientPluginRegistry",
     "DeclusorOptions",
     "DeclusorParser",
     "ParserError",
     "PluginError",
-    "PluginManager",
-    "PluginRegistry",
-    "PluginType",
+    "ClientPluginManager",
+    "ClientPluginRegistry",
+    "ClientPluginType",
     "PluginValidationError",
     "Router",
     "RouterError",

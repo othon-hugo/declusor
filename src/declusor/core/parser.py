@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Final, TypedDict
 
 from declusor import config, contract, util
-from declusor.core.plugin import PluginRegistry
+from declusor.core.plugin import ClientPluginRegistry
 
 
 class DeclusorOptions(TypedDict):
@@ -23,7 +23,7 @@ class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
         "client": "agent responsible for handling requests",
     }
 
-    def __init__(self, registry: PluginRegistry, /, name: str, description: str = "") -> None:
+    def __init__(self, registry: ClientPluginRegistry, /, name: str, description: str = "") -> None:
         """Create a parser backed by a specific client registry.
 
         Args:

@@ -17,7 +17,7 @@ def test_create_application_initializes_plugins() -> None:
 def test_application_connect_routes() -> None:
     """Verify application registers core routes on its router."""
 
-    registry = core.ClientRegistry()
+    registry = core.ClientPluginRegistry()
     app = main.Application(registry)
     app._connect_routes()
 
@@ -33,7 +33,7 @@ def test_application_run_lifecycle() -> None:
     testing.DummyClientPlugin.reset()
     testing.DummyClientPlugin.runtime_instance = dummy_runtime
 
-    registry = core.ClientRegistry()
+    registry = core.ClientPluginRegistry()
     registry.register(testing.DummyClientPlugin)
 
     app = main.Application(registry)

@@ -72,7 +72,7 @@ def test_parser_builds_client_paths_from_data_root(tmp_path: Path) -> None:
     launcher_file = launcher_dir / "client.sh"
     launcher_file.write_text("", encoding="utf-8")
 
-    registry = core.ClientRegistry()
+    registry = core.ClientPluginRegistry()
     registry.register(DummyPathClientPlugin)
 
     options = core.DeclusorParser(registry, name="declusor").parse(

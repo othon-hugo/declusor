@@ -194,3 +194,4 @@ pyrightconfig.json
 .trash
 .temp
 .journal
+.agents/

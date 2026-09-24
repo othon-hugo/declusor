@@ -8,7 +8,7 @@ from declusor import config, core, testing
 def test_declusor_parser_initialization_with_registry() -> None:
     """Verify parser configures common arguments based on registry plugins."""
 
-    registry = core.ClientRegistry()
+    registry = core.ClientPluginRegistry()
     registry.register(testing.DummyClientPlugin)
 
     parser = core.DeclusorParser(registry, name="test_app")
@@ -19,7 +19,7 @@ def test_declusor_parser_parse_success(tmp_path: Path) -> None:
     """Verify parser parses argv and builds validated ClientConfig."""
 
     testing.DummyClientPlugin.reset()
-    registry = core.ClientRegistry()
+    registry = core.ClientPluginRegistry()
     registry.register(testing.DummyClientPlugin)
 
     parser = core.DeclusorParser(registry, name="test_app")
@@ -35,7 +35,7 @@ def test_declusor_parser_parse_success(tmp_path: Path) -> None:
 def test_declusor_parser_parse_missing_positional_raises() -> None:
     """Verify parser raises ParserError when required positional args are missing."""
 
-    registry = core.ClientRegistry()
+    registry = core.ClientPluginRegistry()
     parser = core.DeclusorParser(registry, name="test_app")
 
     with pytest.raises(config.ParserError):

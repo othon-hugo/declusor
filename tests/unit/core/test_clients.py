@@ -6,8 +6,8 @@ from declusor import core, testing
 def test_registries_are_isolated() -> None:
     """Registering a plugin must not affect another registry instance."""
 
-    first = core.ClientRegistry()
-    second = core.ClientRegistry()
+    first = core.ClientPluginRegistry()
+    second = core.ClientPluginRegistry()
 
     first.register(testing.DummyClientPlugin)
 
@@ -18,7 +18,7 @@ def test_registries_are_isolated() -> None:
 def test_parser_uses_injected_registry(monkeypatch: pytest.MonkeyPatch) -> None:
     """The parser must resolve clients only from its injected registry."""
 
-    registry = core.ClientRegistry()
+    registry = core.ClientPluginRegistry()
     registry.register(testing.DummyClientPlugin)
     monkeypatch.setattr(
         "sys.argv",

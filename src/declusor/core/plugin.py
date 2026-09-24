@@ -6,11 +6,10 @@ from typing import TypeAlias
 
 from declusor import config, contract, util
 
-PluginType: TypeAlias = type[contract.IClientPlugin]
-ClientPlugin: TypeAlias = PluginType
+ClientPluginType: TypeAlias = type[contract.IClientPlugin]
 
 
-class PluginRegistry:
+class ClientPluginRegistry:
     """Registry of client plugins available to the application.
 
     The registry maps a stable client identifier to its plugin implementation.
@@ -20,9 +19,9 @@ class PluginRegistry:
     def __init__(self) -> None:
         """Create an empty client registry."""
 
-        self._plugins: dict[str, PluginType] = {}
+        self._plugins: dict[str, ClientPluginType] = {}
 
-    def register(self, plugin: PluginType, /) -> None:
+    def register(self, plugin: ClientPluginType, /) -> None:
         """Register a client plugin.
 
         Args:
@@ -37,7 +36,7 @@ class PluginRegistry:
 
         self._plugins[plugin.name] = plugin
 
-    def get(self, name: str, /) -> PluginType:
+    def get(self, name: str, /) -> ClientPluginType:
         """Retrieve a registered client plugin.
 
         Args:
@@ -66,10 +65,7 @@ class PluginRegistry:
         return tuple(sorted(self._plugins))
 
 
-ClientRegistry: TypeAlias = PluginRegistry
-
-
-class PluginManager(PluginRegistry):
+class ClientPluginManager(ClientPluginRegistry):
     """Dynamic discovery and lifecycle registry for Declusor client plugins.
 
     Discovers and registers client plugins across three tiers:
@@ -120,7 +116,7 @@ class PluginManager(PluginRegistry):
                 f"Plugin class {candidate.__name__!r} has unimplemented abstract methods: {', '.join(sorted(abstract_methods))}"
             )
 
-    def register(self, plugin: PluginType, /, *, source: str = "manual", allow_override: bool = False) -> None:
+    def register(self, plugin: ClientPluginType, /, *, source: str = "manual", allow_override: bool = False) -> None:
         """Register a validated client plugin.
 
         Args:
@@ -225,7 +221,7 @@ class PluginManager(PluginRegistry):
         /,
         *,
         enable_entry_points: bool = True,
-    ) -> "PluginManager":
+    ) -> "ClientPluginManager":
         """Run the multi-tier plugin discovery engine.
 
         Precedence order (later overrides earlier):

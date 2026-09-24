@@ -11,7 +11,7 @@ class Application:
     details behind the selected client plugin runtime.
     """
 
-    def __init__(self, registry: core.ClientRegistry, /) -> None:
+    def __init__(self, registry: core.ClientPluginRegistry, /) -> None:
         """Create an application using a configured client registry.
 
         Args:
@@ -121,6 +121,6 @@ def create_application(search_dirs: Sequence[Path] | None = None) -> Application
         Fully composed application ready to execute parsed options.
     """
 
-    manager = core.PluginManager().discover(search_dirs)
+    manager = core.ClientPluginManager().discover(search_dirs)
 
     return Application(manager)
