@@ -132,12 +132,14 @@ class ShellSocketFileStore(contract.IClientFileStore):
     def load_library(self) -> bytes:
         """Load and concatenate valid shell libraries."""
 
-        if not self._data_paths.library.exists():
+        helpers_dir = self._client_path.parent.parent / "helpers"
+
+        if not helpers_dir.exists():
             return b""
 
         modules: list[bytes] = []
 
-        for file in self._data_paths.library.iterdir():
+        for file in helpers_dir.iterdir():
             if not file.is_file() or not util.validate_file_extension(file, self._library_extensions):
                 continue
 
@@ -155,7 +157,7 @@ class ShellSocketFileStore(contract.IClientFileStore):
         """Load one operator-selected module from the modules directory.
 
         Args:
-            module_name: Module filename relative to ``data/modules``.
+            module_name: Module filename relative to the client modules directory.
 
         Returns:
             Raw module contents.
@@ -165,9 +167,10 @@ class ShellSocketFileStore(contract.IClientFileStore):
                 an unsupported extension, or is not a readable file.
         """
 
-        module_path = (self._data_paths.modules / module_name).resolve()
+        modules_dir = self._client_path.parent.parent / "modules"
+        module_path = (modules_dir / module_name).resolve()
 
-        if not util.validate_file_relative(module_path, self._data_paths.modules):
+        if not util.validate_file_relative(module_path, modules_dir):
             raise config.InvalidOperation(f"module path {module_path} is not relative to the module root directory")
 
         if not util.validate_file_extension(module_path, self._module_extensions):

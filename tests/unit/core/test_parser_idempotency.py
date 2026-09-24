@@ -9,10 +9,9 @@ def test_parser_parse_is_idempotent(tmp_path: Path) -> None:
     registry = core.ClientRegistry()
     registry.register(plugin.ShellSocketPlugin)
 
-    clients_dir = tmp_path / "clients"
-    clients_dir.mkdir(parents=True)
-    client_file = clients_dir / "shell_socket.sh"
-    client_file.write_text("test client", encoding="utf-8")
+    launcher_dir = tmp_path / "shell_socket" / "launchers"
+    launcher_dir.mkdir(parents=True)
+    (launcher_dir / "shell_socket.sh").write_text("test client", encoding="utf-8")
 
     argv = ["127.0.0.1", "8080", "--data-root", str(tmp_path)]
 

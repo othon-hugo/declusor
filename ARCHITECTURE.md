@@ -91,7 +91,7 @@ graph TB
 Defines abstract contracts for all system components. Depends only on foundation utilities and configuration.
 
 | Interface            | Role                                                                           |
-| -------------------- | ------------------------------------------------------------------------------ | ----- |
+| -------------------- | ------------------------------------------------------------------------------ |
 | `IConnection`        | Network connection lifecycle state machine and framed read/write               |
 | `IConnectionProfile` | Client configuration data and shell command formatting                         |
 | `ICommand`           | Executable action within a session context (`send_request` -> `read`)          |
@@ -102,7 +102,7 @@ Defines abstract contracts for all system components. Depends only on foundation
 | `ControllerAction`   | Lifecycle signals (`CONTINUE`, `TERMINATE`)                                    |
 | `ControllerResult`   | Action and optional message returned to the presentation loop                  |
 | `SessionContext`     | Encapsulates active session (connection, console, files) and executes commands |
-| `Controller`         | Type alias: `(SessionContext, ControllerRequest) -> ControllerResult           | None` |
+| `Controller`         | Type alias: `(SessionContext, ControllerRequest) -> ControllerResult`          |
 
 #### `config`
 
