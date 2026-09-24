@@ -42,6 +42,14 @@ declusor = "declusor.main:main"
 shell_socket = "plugins.shell_socket:ShellSocketPlugin"
 py_socket = "plugins.py_socket:PySocketPlugin"
 
+[project.entry-points.pytest11]
+declusor_testing = "declusor.testing.pytest_plugin"
+
+[project.optional-dependencies]
+testing = [
+    "pytest>=8.3.4,<9",
+]
+
 [dependency-groups]
 dev = [
     "mypy>=1.18.2,<2",
@@ -84,6 +92,7 @@ indent-style = "space"
 [tool.mypy]
 python_version = "3.12"
 mypy_path = "src:."
+exclude = ["plugins/.*/assets/.*"]
 pretty = true
 strict = true
 disallow_any_expr = false
@@ -93,7 +102,7 @@ disallow_subclassing_any = false
 [tool.pytest.ini_options]
 addopts = "-ra --strict-markers --tb=short -v"
 pythonpath = ["src", "."]
-testpaths = ["tests"]
+testpaths = ["tests", "plugins"]
 norecursedirs = [
     ".vscode",
     "__pycache__",

@@ -7,7 +7,7 @@ from typing import cast
 import pytest
 
 from declusor import config, contract, util
-from tests.testing import (
+from declusor.testing import (
     DummyApplication,
     DummyClientFileStore,
     DummyClientPlugin,

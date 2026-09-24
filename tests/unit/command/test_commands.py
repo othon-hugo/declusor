@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from declusor import command, config, contract
-from tests.testing import (
+from declusor.testing import (
     DummyClientFileStore,
     DummyConnection,
     DummyConnectionProfile,

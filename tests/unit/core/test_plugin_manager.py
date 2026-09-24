@@ -4,7 +4,7 @@ from unittest.mock import patch
 import pytest
 
 from declusor import config, contract, core, util
-from tests.testing import DummyClientRuntime
+from declusor.testing import DummyClientRuntime
 
 
 class DummyValidPlugin(contract.IClientPlugin):

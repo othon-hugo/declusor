@@ -82,7 +82,30 @@ class MyClientPlugin(contract.IClientPlugin):
         return MyClientRuntime(client_config)
 ```
 
-### 3. Test with Declusor
+### 3. Verify Contract Conformance with `declusor.testing`
+
+Plugin authors can use Declusor's built-in testing SDK to verify compliance:
+
+```python
+import pytest
+from declusor import contract
+from declusor.testing import PluginConformanceTestSuite
+from my_client.plugin import MyClientPlugin
+
+
+class TestMyClientConformance(PluginConformanceTestSuite):
+    @pytest.fixture
+    def plugin_class(self) -> type[contract.IClientPlugin]:
+        return MyClientPlugin
+```
+
+Execute with `pytest`:
+
+```bash
+pytest my_client/tests/ -v
+```
+
+### 4. Test Live with Declusor
 
 Run Declusor pointing to your plugin directory:
 

@@ -1,9 +1,9 @@
-"""Factory functions and builders for setting up Declusor test fixtures."""
-
 from typing import Any
 
 from declusor import config, contract, core
-from tests.testing.doubles import DummyClientFileStore, DummyConnection, DummyConsole
+from declusor.testing.doubles.connection import DummyConnection
+from declusor.testing.doubles.console import DummyConsole
+from declusor.testing.doubles.filestore import DummyClientFileStore
 
 
 def create_test_session(

@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from declusor import config, core
-from tests.testing import DummyClientPlugin
+from declusor.testing import DummyClientPlugin
 
 
 def test_declusor_parser_initialization_with_registry() -> None:

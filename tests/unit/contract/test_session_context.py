@@ -1,7 +1,7 @@
 """Unit tests for SessionContext coordination and backward-compatible interface."""
 
 from declusor import contract
-from tests.testing import (
+from declusor.testing import (
     DummyClientFileStore,
     DummyCommand,
     DummyConnection,

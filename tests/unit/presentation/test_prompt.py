@@ -4,7 +4,7 @@ import pytest
 
 from declusor import config, contract
 from declusor.presentation import PromptCLI
-from tests.testing import (
+from declusor.testing import (
     DummyClientFileStore,
     DummyConnection,
     DummyConsole,

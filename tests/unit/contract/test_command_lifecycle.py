@@ -1,7 +1,7 @@
 """Unit tests for ICommand execution lifecycle."""
 
 from declusor import contract
-from tests.testing import DummyCommand
+from declusor.testing import DummyCommand
 
 
 def test_command_execute_runs_send_request_before_read_response(

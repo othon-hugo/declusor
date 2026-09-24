@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from declusor import core
 from declusor.main.app import Application, create_application
-from tests.testing import (
+from declusor.testing import (
     DummyClientPlugin,
     DummyClientRuntime,
     DummyConnection,

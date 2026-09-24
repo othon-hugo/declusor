@@ -1,7 +1,7 @@
 """Unit tests for Controller types and dependency unpacking."""
 
 from declusor import contract
-from tests.testing import DummyClientFileStore, DummyConnection, DummyConsole
+from declusor.testing import DummyClientFileStore, DummyConnection, DummyConsole
 
 
 def test_controller_dependencies_extract_order(
