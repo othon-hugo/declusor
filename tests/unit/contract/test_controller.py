@@ -1,18 +1,18 @@
-from unittest.mock import MagicMock
+"""Unit tests for Controller types and dependency unpacking."""
 
 from declusor import contract
+from tests.testing import DummyClientFileStore, DummyConnection, DummyConsole
 
 
-def test_controller_dependencies_extract_order() -> None:
+def test_controller_dependencies_extract_order(
+    dummy_connection: DummyConnection,
+    dummy_console: DummyConsole,
+    dummy_file_store: DummyClientFileStore,
+) -> None:
     """ControllerDependencies unpacking order must preserve connection, console, files."""
-
-    connection = MagicMock(spec=contract.IConnection)
-    console = MagicMock(spec=contract.IConsole)
-    files = MagicMock(spec=contract.IClientFileStore)
-
-    deps = contract.ControllerDependencies(connection, console, files)
+    deps = contract.ControllerDependencies(dummy_connection, dummy_console, dummy_file_store)
 
     conn_out, console_out, files_out = deps
-    assert conn_out is connection
-    assert console_out is console
-    assert files_out is files
+    assert conn_out is dummy_connection
+    assert console_out is dummy_console
+    assert files_out is dummy_file_store

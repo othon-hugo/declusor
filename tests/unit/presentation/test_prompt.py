@@ -1,126 +1,144 @@
-from unittest.mock import MagicMock
+"""Unit tests for PromptCLI interactive execution loop using typed test doubles."""
 
 import pytest
 
 from declusor import config, contract
 from declusor.presentation import PromptCLI
+from tests.testing import (
+    DummyClientFileStore,
+    DummyConnection,
+    DummyConsole,
+    DummyRouter,
+)
 
 
-def test_prompt_terminates_on_controller_terminate_action() -> None:
+def test_prompt_terminates_on_controller_terminate_action(
+    dummy_router: DummyRouter,
+    dummy_connection: DummyConnection,
+    dummy_console: DummyConsole,
+    dummy_file_store: DummyClientFileStore,
+) -> None:
     """PromptCLI must stop cleanly when a controller signals ControllerAction.TERMINATE."""
+    dummy_console.feed_inputs("exit")
 
-    mock_router = MagicMock(spec=contract.IRouter)
-    mock_connection = MagicMock(spec=contract.IConnection)
-    mock_console = MagicMock(spec=contract.IConsole)
-    mock_files = MagicMock(spec=contract.IClientFileStore)
+    def exit_controller(
+        session: contract.SessionContext,
+        req: contract.ControllerRequest,
+    ) -> contract.ControllerResult:
+        return contract.ControllerResult(action=contract.ControllerAction.TERMINATE)
 
-    mock_console.read_stripped_line.return_value = "exit"
-    mock_controller = MagicMock(return_value=contract.ControllerResult(action=contract.ControllerAction.TERMINATE))
-    mock_router.locate.return_value = mock_controller
+    dummy_router.connect("exit", exit_controller)
 
     prompt = PromptCLI(
         "test_cli",
-        router=mock_router,
-        connection=mock_connection,
-        console=mock_console,
-        files=mock_files,
+        router=dummy_router,
+        connection=dummy_connection,
+        console=dummy_console,
+        files=dummy_file_store,
     )
 
     prompt.run()
 
-    mock_router.locate.assert_called_once_with("exit")
-    assert mock_controller.called
+    assert dummy_router.locate_calls == ["exit"]
 
 
-def test_prompt_init_missing_dependencies_raises() -> None:
+def test_prompt_init_missing_dependencies_raises(dummy_router: DummyRouter) -> None:
     """Verify PromptCLI raises InvalidOperation when dependencies are incomplete."""
-
-    mock_router = MagicMock(spec=contract.IRouter)
-
     with pytest.raises(config.InvalidOperation):
-        PromptCLI("test_cli", router=mock_router)
+        PromptCLI("test_cli", router=dummy_router)
 
 
-def test_prompt_handles_keyboard_interrupt_on_input() -> None:
+def test_prompt_handles_keyboard_interrupt_on_input(
+    dummy_router: DummyRouter,
+    dummy_connection: DummyConnection,
+    dummy_console: DummyConsole,
+    dummy_file_store: DummyClientFileStore,
+) -> None:
     """PromptCLI must terminate loop gracefully on KeyboardInterrupt during input."""
-
-    mock_router = MagicMock(spec=contract.IRouter)
-    mock_console = MagicMock(spec=contract.IConsole)
-    mock_connection = MagicMock(spec=contract.IConnection)
-    mock_files = MagicMock(spec=contract.IClientFileStore)
-
-    mock_console.read_stripped_line.side_effect = KeyboardInterrupt
+    dummy_console.input_exception = KeyboardInterrupt()
 
     prompt = PromptCLI(
         "test_cli",
-        router=mock_router,
-        connection=mock_connection,
-        console=mock_console,
-        files=mock_files,
+        router=dummy_router,
+        connection=dummy_connection,
+        console=dummy_console,
+        files=dummy_file_store,
     )
 
     prompt.run()  # Must not raise
 
 
-def test_prompt_handles_keyboard_interrupt_during_execution() -> None:
+def test_prompt_handles_keyboard_interrupt_during_execution(
+    dummy_router: DummyRouter,
+    dummy_connection: DummyConnection,
+    dummy_console: DummyConsole,
+    dummy_file_store: DummyClientFileStore,
+) -> None:
     """PromptCLI catches KeyboardInterrupt during command execution and continues."""
+    dummy_console.feed_inputs("long_cmd", "exit")
 
-    mock_router = MagicMock(spec=contract.IRouter)
-    mock_console = MagicMock(spec=contract.IConsole)
-    mock_connection = MagicMock(spec=contract.IConnection)
-    mock_files = MagicMock(spec=contract.IClientFileStore)
+    def interrupt_controller(
+        session: contract.SessionContext,
+        req: contract.ControllerRequest,
+    ) -> contract.ControllerResult:
+        raise KeyboardInterrupt()
 
-    mock_console.read_stripped_line.side_effect = ["long_cmd", "exit"]
-    mock_controller_interrupt = MagicMock(side_effect=KeyboardInterrupt)
-    mock_controller_exit = MagicMock(return_value=contract.ControllerResult(action=contract.ControllerAction.TERMINATE))
+    def exit_controller(
+        session: contract.SessionContext,
+        req: contract.ControllerRequest,
+    ) -> contract.ControllerResult:
+        return contract.ControllerResult(action=contract.ControllerAction.TERMINATE)
 
-    def locate_fn(route: str):
-        if route == "long_cmd":
-            return mock_controller_interrupt
-        return mock_controller_exit
-
-    mock_router.locate.side_effect = locate_fn
+    dummy_router.connect("long_cmd", interrupt_controller)
+    dummy_router.connect("exit", exit_controller)
 
     prompt = PromptCLI(
         "test_cli",
-        router=mock_router,
-        connection=mock_connection,
-        console=mock_console,
-        files=mock_files,
+        router=dummy_router,
+        connection=dummy_connection,
+        console=dummy_console,
+        files=dummy_file_store,
     )
 
     prompt.run()
-    assert mock_controller_interrupt.called
-    assert mock_controller_exit.called
+
+    assert dummy_router.locate_calls == ["long_cmd", "exit"]
 
 
-def test_prompt_handles_declusor_exception() -> None:
+def test_prompt_handles_declusor_exception(
+    dummy_router: DummyRouter,
+    dummy_connection: DummyConnection,
+    dummy_console: DummyConsole,
+    dummy_file_store: DummyClientFileStore,
+) -> None:
     """PromptCLI catches DeclusorException and prints error without terminating loop."""
-
-    mock_router = MagicMock(spec=contract.IRouter)
-    mock_console = MagicMock(spec=contract.IConsole)
-    mock_connection = MagicMock(spec=contract.IConnection)
-    mock_files = MagicMock(spec=contract.IClientFileStore)
-
-    mock_console.read_stripped_line.side_effect = ["fail_cmd", "exit"]
+    dummy_console.feed_inputs("fail_cmd", "exit")
     exc = config.CommandError("failed")
-    mock_controller_fail = MagicMock(side_effect=exc)
-    mock_controller_exit = MagicMock(return_value=contract.ControllerResult(action=contract.ControllerAction.TERMINATE))
 
-    def locate_fn(route: str):
-        if route == "fail_cmd":
-            return mock_controller_fail
-        return mock_controller_exit
+    def fail_controller(
+        session: contract.SessionContext,
+        req: contract.ControllerRequest,
+    ) -> contract.ControllerResult:
+        raise exc
 
-    mock_router.locate.side_effect = locate_fn
+    def exit_controller(
+        session: contract.SessionContext,
+        req: contract.ControllerRequest,
+    ) -> contract.ControllerResult:
+        return contract.ControllerResult(action=contract.ControllerAction.TERMINATE)
+
+    dummy_router.connect("fail_cmd", fail_controller)
+    dummy_router.connect("exit", exit_controller)
 
     prompt = PromptCLI(
         "test_cli",
-        router=mock_router,
-        connection=mock_connection,
-        console=mock_console,
-        files=mock_files,
+        router=dummy_router,
+        connection=dummy_connection,
+        console=dummy_console,
+        files=dummy_file_store,
     )
 
     prompt.run()
-    mock_console.write_error_message.assert_called_once_with(exc)
+
+    assert exc in dummy_console.errors
+    assert dummy_router.locate_calls == ["fail_cmd", "exit"]

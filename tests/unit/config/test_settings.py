@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from declusor import config, core, main
 from plugins import shell_socket
 
@@ -41,7 +43,7 @@ def test_parser_builds_client_paths_from_data_root(tmp_path: Path) -> None:
     launcher_file.write_text("", encoding="utf-8")
 
     registry = core.ClientRegistry()
-    registry.register(ShellSocketPlugin)
+    registry.register(shell_socket.ShellSocketPlugin)
 
     options = core.DeclusorParser(registry, name="declusor").parse(
         ("127.0.0.1", "9000", "--data-root", str(tmp_path)),
@@ -52,7 +54,7 @@ def test_parser_builds_client_paths_from_data_root(tmp_path: Path) -> None:
     assert options["client"].options["launcher_path"] == launcher_file
 
 
-def test_application_directory_validation_does_not_change_cwd(tmp_path: Path, monkeypatch) -> None:
+def test_application_directory_validation_does_not_change_cwd(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Validating data paths must not mutate the process working directory."""
 
     for directory in ("clients", "modules", "library"):
@@ -62,6 +64,6 @@ def test_application_directory_validation_does_not_change_cwd(tmp_path: Path, mo
     working_directory.mkdir()
     monkeypatch.chdir(working_directory)
 
-    Application._validate_directories(config.DataPaths.from_root(tmp_path))
+    main.Application._validate_directories(config.DataPaths.from_root(tmp_path))
 
     assert Path.cwd() == working_directory

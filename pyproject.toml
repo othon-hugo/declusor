@@ -83,8 +83,7 @@ indent-style = "space"
 
 [tool.mypy]
 python_version = "3.12"
-mypy_path = "src"
-exclude = ["tests/*"]
+mypy_path = "src:."
 pretty = true
 strict = true
 disallow_any_expr = false

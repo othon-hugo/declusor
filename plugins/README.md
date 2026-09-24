@@ -6,13 +6,13 @@ This directory houses the built-in client plugins distributed with Declusor. Bec
 
 Every plugin is an autonomous package that implements the contracts defined in `declusor.contract`:
 
-| Contract             | Purpose                   | Responsibility                                                                          |
-| -------------------- | ------------------------- | --------------------------------------------------------------------------------------- |
-| `IClientPlugin`      | Configuration & CLI entry | Registers CLI flags, parses options, validates configuration, and builds the runtime.   |
-| `IClientRuntime`     | Lifecycle adapter         | Renders the bootstrap script and instantiates the `IConnection` for an accepted socket. |
-| `IConnection`        | Network session           | Manages the framed read/write protocol and lifecycle state (`ConnectionState`).         |
-| `IClientFileStore`   | Asset manager             | Loads initialization helpers, bootstrap scripts, and on-demand discovery modules.       |
-| `IConnectionProfile` | Protocol metadata         | Holds timeouts, buffer sizes, and operation templates (`EXEC_FILE`, `STORE_FILE`).      |
+| Contract             | Responsibility                                                                          |
+| -------------------- | --------------------------------------------------------------------------------------- |
+| `IClientPlugin`      | Registers CLI flags, parses options, validates configuration, and builds the runtime.   |
+| `IClientRuntime`     | Renders the bootstrap script and instantiates the `IConnection` for an accepted socket. |
+| `IConnection`        | Manages the framed read/write protocol and lifecycle state (`ConnectionState`).         |
+| `IClientFileStore`   | Loads initialization helpers, bootstrap scripts, and on-demand discovery modules.       |
+| `IConnectionProfile` | Holds timeouts, buffer sizes, and operation templates (`EXEC_FILE`, `STORE_FILE`).      |
 
 ## How Plugins are Discovered
 

@@ -1,9 +1,10 @@
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
-from declusor import config, contract, core
+from declusor import config, contract, core, util
+from tests.testing import DummyClientRuntime
 
 
 class DummyValidPlugin(contract.IClientPlugin):
@@ -13,20 +14,20 @@ class DummyValidPlugin(contract.IClientPlugin):
     description = "A dummy plugin for unit tests"
 
     @classmethod
-    def configure_parser(cls, parser, /) -> None:
+    def configure_parser(cls, parser: util.Parser, /) -> None:
         pass
 
     @classmethod
-    def build_config(cls, args, data_paths=None, /):
-        return MagicMock()
+    def build_config(cls, args: util.Namespace, data_paths: config.DataPaths, /) -> contract.ClientConfig:
+        return contract.ClientConfig(kind=cls.name, host="127.0.0.1", port=9000, data_paths=data_paths)
 
     @classmethod
-    def validate(cls, client_config, /) -> None:
+    def validate(cls, client_config: contract.ClientConfig, /) -> None:
         pass
 
     @classmethod
-    def build_runtime(cls, client_config, /):
-        return MagicMock()
+    def build_runtime(cls, client_config: contract.ClientConfig, /) -> contract.IClientRuntime:
+        return DummyClientRuntime()
 
 
 class NotAPlugin:
@@ -48,28 +49,28 @@ class MissingAbstractMethods(contract.IClientPlugin):
 
 def test_validation_accepts_valid_plugin() -> None:
     """Verify that a compliant IClientPlugin subclass passes contract validation."""
-    manager = PluginManager()
+    manager = core.PluginManager()
     manager.validate_plugin(DummyValidPlugin)
 
 
 def test_validation_rejects_non_class() -> None:
     """Verify that validating a non-class object raises PluginValidationError."""
-    manager = PluginManager()
-    with pytest.raises(PluginValidationError, match="must be a class"):
+    manager = core.PluginManager()
+    with pytest.raises(config.PluginValidationError, match="must be a class"):
         manager.validate_plugin("not_a_class")  # type: ignore[arg-type]
 
 
 def test_validation_rejects_non_subclass() -> None:
     """Verify that classes not inheriting from IClientPlugin are rejected."""
-    manager = PluginManager()
-    with pytest.raises(PluginValidationError, match="must implement 'IClientPlugin'"):
+    manager = core.PluginManager()
+    with pytest.raises(config.PluginValidationError, match="must implement 'IClientPlugin'"):
         manager.validate_plugin(NotAPlugin)
 
 
 def test_validation_rejects_unimplemented_abstract_methods() -> None:
     """Verify that plugins with unimplemented abstract methods raise PluginValidationError."""
-    manager = PluginManager()
-    with pytest.raises(PluginValidationError, match="unimplemented abstract methods"):
+    manager = core.PluginManager()
+    with pytest.raises(config.PluginValidationError, match="unimplemented abstract methods"):
         manager.validate_plugin(MissingAbstractMethods)
 
 
@@ -79,8 +80,8 @@ def test_validation_rejects_empty_name() -> None:
     class EmptyNamePlugin(DummyValidPlugin):
         name = "   "
 
-    manager = PluginManager()
-    with pytest.raises(PluginValidationError, match="must define a non-empty string 'name'"):
+    manager = core.PluginManager()
+    with pytest.raises(config.PluginValidationError, match="must define a non-empty string 'name'"):
         manager.validate_plugin(EmptyNamePlugin)
 
 
@@ -91,7 +92,7 @@ def test_validation_rejects_empty_name() -> None:
 
 def test_register_and_get() -> None:
     """Verify registering a valid plugin and retrieving it by name."""
-    manager = PluginManager()
+    manager = core.PluginManager()
     manager.register(DummyValidPlugin)
 
     assert manager.get("dummy_test") is DummyValidPlugin
@@ -100,7 +101,7 @@ def test_register_and_get() -> None:
 
 def test_register_duplicate_without_override_raises() -> None:
     """Verify that registering a duplicate plugin without allow_override raises ValueError."""
-    manager = PluginManager()
+    manager = core.PluginManager()
     manager.register(DummyValidPlugin, source="first")
 
     with pytest.raises(ValueError, match="already registered"):
@@ -113,7 +114,7 @@ def test_register_duplicate_with_override_replaces() -> None:
     class ReplacementPlugin(DummyValidPlugin):
         description = "Replaced version"
 
-    manager = PluginManager()
+    manager = core.PluginManager()
     manager.register(DummyValidPlugin, source="original")
     manager.register(ReplacementPlugin, source="override", allow_override=True)
 
@@ -123,7 +124,7 @@ def test_register_duplicate_with_override_replaces() -> None:
 
 def test_get_unknown_plugin_raises_parser_error() -> None:
     """Verify that retrieving an unregistered plugin name raises ParserError."""
-    manager = PluginManager()
+    manager = core.PluginManager()
     with pytest.raises(config.ParserError, match="Unknown client 'unknown'"):
         manager.get("unknown")
 
@@ -135,7 +136,7 @@ def test_get_unknown_plugin_raises_parser_error() -> None:
 
 def test_discover_builtins() -> None:
     """Verify automatic discovery of built-in plugins (shell_socket and py_socket)."""
-    manager = PluginManager()
+    manager = core.PluginManager()
     manager.discover(enable_entry_points=False)
 
     available = manager.names()
@@ -173,7 +174,7 @@ class CustomAgentPlugin(contract.IClientPlugin):
 """
     (plugin_dir / "plugin.py").write_text(plugin_code, encoding="utf-8")
 
-    manager = PluginManager()
+    manager = core.PluginManager()
     loaded = manager.load_from_directory(tmp_path)
 
     assert "custom_agent" in loaded
@@ -182,12 +183,19 @@ class CustomAgentPlugin(contract.IClientPlugin):
 
 def test_discover_from_entry_points() -> None:
     """Verify plugin discovery via Python entry points ('declusor.plugins')."""
-    mock_ep = MagicMock()
-    mock_ep.name = "mock_plugin"
-    mock_ep.load.return_value = DummyValidPlugin
 
-    with patch("importlib.metadata.entry_points", return_value=[mock_ep]):
-        manager = PluginManager()
+    class DummyEntryPoint:
+        def __init__(self, name: str, plugin_cls: type[contract.IClientPlugin]) -> None:
+            self.name = name
+            self._plugin_cls = plugin_cls
+
+        def load(self) -> type[contract.IClientPlugin]:
+            return self._plugin_cls
+
+    ep = DummyEntryPoint(name="mock_plugin", plugin_cls=DummyValidPlugin)
+
+    with patch("importlib.metadata.entry_points", return_value=[ep]):
+        manager = core.PluginManager()
         loaded = manager.load_from_entry_points()
 
         assert "dummy_test" in loaded
