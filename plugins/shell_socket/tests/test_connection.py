@@ -1,7 +1,7 @@
 from collections.abc import Callable
 
+import declusor_shell_socket as shell_socket
 import pytest
-import shell_socket
 
 from declusor import config, contract
 from declusor.testing import DummySocket

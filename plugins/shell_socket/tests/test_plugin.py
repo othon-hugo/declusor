@@ -2,7 +2,7 @@ from pathlib import Path
 from socket import socket
 from typing import cast
 
-import shell_socket
+import declusor_shell_socket as shell_socket
 
 from declusor import contract
 from declusor.testing import DummySocket

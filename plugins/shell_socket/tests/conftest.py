@@ -3,8 +3,8 @@ from pathlib import Path
 from socket import socket
 from typing import cast
 
+import declusor_shell_socket as shell_socket
 import pytest
-import shell_socket
 
 from declusor.testing import DummySocket
 

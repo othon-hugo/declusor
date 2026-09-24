@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from py_socket import PySocketPlugin
+from declusor_py_socket import PySocketPlugin
 
 from declusor import contract
 from declusor.testing import PluginConformanceTestSuite

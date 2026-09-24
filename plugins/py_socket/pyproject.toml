@@ -9,7 +9,7 @@ dependencies = [
 ]
 
 [project.entry-points."declusor.plugins"]
-py_socket = "py_socket:PySocketPlugin"
+py_socket = "declusor_py_socket:PySocketPlugin"
 
 [project.optional-dependencies]
 testing = [

@@ -17,7 +17,7 @@ plugins/<plugin_name>/
 ├── pyproject.toml         # Standalone package definition
 ├── README.md              # Documentation with ## Modules and ## Design Principles
 ├── src/
-│   └── <plugin_name>/
+│   └── declusor_<plugin_name>/
 │       ├── __init__.py    # Public exports (__all__ = ["<PluginClass>"])
 │       ├── plugin.py      # Implements IClientPlugin & IClientRuntime
 │       └── connection.py  # Implements IConnection, IConnectionProfile, IClientFileStore
@@ -46,7 +46,7 @@ dependencies = [
 ]
 
 [project.entry-points."declusor.plugins"]
-<plugin_name> = "<plugin_name>:<PluginClass>"
+<plugin_name> = "declusor_<plugin_name>:<PluginClass>"
 ```
 
 ## 3. Implementing Core Interfaces

@@ -229,18 +229,18 @@ Declusor was architected from day one as an extensible engine. Transport plugins
 
 ```text
 plugins/<plugin_name>/
-├── pyproject.toml          # Standalone package metadata & entry-point declaration
-├── README.md               # Documentation (## Modules and ## Design Principles)
-├── src/<plugin_name>/      # Core transport and runtime implementation
-│   ├── __init__.py         # Public exports (__all__ = ["<PluginClass>"])
-│   ├── plugin.py           # Implements IClientPlugin & IClientRuntime
-│   └── connection.py       # Implements IConnection, IConnectionProfile, IClientFileStore
-├── assets/                 # Bundled stagers and operational payloads
-│   ├── launchers/          # Client bootstrap templates (e.g. client.sh, client.py)
-│   ├── helpers/            # In-memory initialization libraries (sent during handshake)
-│   └── modules/            # On-demand reconnaissance and post-exploitation payloads
-└── tests/                  # Dedicated unit & contract conformance test suite
-    └── test_conformance.py # Inherits from PluginConformanceTestSuite
+├── pyproject.toml                # Standalone package metadata & entry-point declaration
+├── README.md                     # Documentation (## Modules and ## Design Principles)
+├── src/declusor_<plugin_name>/   # Core transport and runtime implementation
+│   ├── __init__.py               # Public exports (__all__ = ["<PluginClass>"])
+│   ├── plugin.py                 # Implements IClientPlugin & IClientRuntime
+│   └── connection.py             # Implements IConnection, IConnectionProfile, IClientFileStore
+├── assets/                       # Bundled stagers and operational payloads
+│   ├── launchers/                # Client bootstrap templates (e.g. client.sh, client.py)
+│   ├── helpers/                  # In-memory initialization libraries (sent during handshake)
+│   └── modules/                  # On-demand reconnaissance and post-exploitation payloads
+└── tests/                        # Dedicated unit & contract conformance test suite
+    └── test_conformance.py       # Inherits from PluginConformanceTestSuite
 ```
 
 ### Multi-Tier Dynamic Discovery
@@ -257,11 +257,11 @@ Every plugin can verify its compliance against Declusor's contracts using the bu
 
 ```python
 from declusor import testing
-from my_plugin import MyPlugin
+from declusor_plugin import DeclusorPlugin
 
 
-class TestMyPluginConformance(testing.PluginConformanceTestSuite):
-    plugin_class = MyPlugin
+class TestDeclusorPluginConformance(testing.PluginConformanceTestSuite):
+    plugin_class = DeclusorPlugin
 ```
 
 Execute plugin tests and quality checks via `make`:

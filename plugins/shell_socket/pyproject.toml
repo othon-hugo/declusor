@@ -9,7 +9,7 @@ dependencies = [
 ]
 
 [project.entry-points."declusor.plugins"]
-shell_socket = "shell_socket:ShellSocketPlugin"
+shell_socket = "declusor_shell_socket:ShellSocketPlugin"
 
 [project.optional-dependencies]
 testing = [

@@ -192,7 +192,7 @@ plugins/<plugin_name>/
 ├── pyproject.toml         # Standalone package metadata & entry point
 ├── README.md              # Plugin documentation with ## Modules and ## Design Principles
 ├── src/
-│   └── <plugin_name>/
+│   └── declusor_<plugin_name>/
 │       ├── __init__.py    # Exports: __all__ = ["<PluginClass>"]
 │       ├── plugin.py      # Implements IClientPlugin & IClientRuntime
 │       └── connection.py  # Implements IConnection, IConnectionProfile & IClientFileStore
@@ -216,7 +216,7 @@ version = "0.1.0"
 dependencies = ["declusor>=0.3.1"]
 
 [project.entry-points."declusor.plugins"]
-<plugin_name> = "<plugin_name>:<PluginClass>"
+<plugin_name> = "declusor_<plugin_name>:<PluginClass>"
 ```
 
 ## 6. Verification & Quality Gates

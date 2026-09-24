@@ -4,7 +4,10 @@ from .connection import (
     ShellSocketFileStore,
     ShellSocketProfile,
 )
-from .plugin import ShellSocketPlugin, ShellSocketRuntime
+from .plugin import (
+    ShellSocketPlugin,
+    ShellSocketRuntime,
+)
 
 __all__ = [
     "DEFAULT_SHELL_SOCKET",

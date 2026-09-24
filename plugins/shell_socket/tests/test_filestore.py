@@ -1,7 +1,7 @@
 from pathlib import Path
 
+import declusor_shell_socket as shell_socket
 import pytest
-import shell_socket
 
 from declusor import config, util
 

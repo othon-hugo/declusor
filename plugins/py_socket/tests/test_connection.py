@@ -1,7 +1,7 @@
 from socket import socket
 from typing import cast
 
-import py_socket
+import declusor_py_socket as py_socket
 
 from declusor.testing import DummyClientFileStore, DummySocket
 
