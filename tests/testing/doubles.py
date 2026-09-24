@@ -10,29 +10,15 @@ from pathlib import Path
 from socket import socket
 from typing import Self
 
-from declusor import config, util
-from declusor.config import DataPaths, OperationCode
-from declusor.contract import (
-    ClientConfig,
-    ConnectionState,
-    Controller,
-    IClientFileStore,
-    IClientPlugin,
-    IClientRuntime,
-    ICommand,
-    IConnection,
-    IConnectionProfile,
-    IConsole,
-    IRouter,
-    SessionContext,
-)
+from declusor import config, contract, core, util
 
 
-class DummyConsole(IConsole):
+class DummyConsole(contract.IConsole):
     """Fully-typed in-memory console capturing all output and simulating input."""
 
     def __init__(self, inputs: Sequence[str] | None = None) -> None:
         self._inputs: list[str] = list(inputs) if inputs is not None else []
+
         self.input_exception: BaseException | None = None
         self.messages: list[str] = []
         self.binary_data: list[bytes] = []
@@ -44,57 +30,74 @@ class DummyConsole(IConsole):
 
     def feed_inputs(self, *lines: str) -> None:
         """Enqueue simulated input lines for read_line and read_stripped_line."""
+
         self._inputs.extend(lines)
 
     def setup_completer(self, commands: Sequence[str], /) -> None:
         """Capture registered completion commands."""
+
         self.configured_completers.append(list(commands))
 
     def enable_history(self, history_file: Path, /) -> None:
         """Record the configured history file path."""
+
         self.history_files.append(history_file)
 
     def read_line(self, prompt: str = "", /) -> str:
         """Return the next queued input line or newline if queue is empty."""
+
         self.prompts.append(prompt)
+
         if self.input_exception is not None:
             exc = self.input_exception
             self.input_exception = None
+
             raise exc
+
         if not self._inputs:
             return "\n"
+
         line = self._inputs.pop(0)
+
         return line if line.endswith("\n") else f"{line}\n"
 
     def read_stripped_line(self, prompt: str = "", /) -> str:
         """Return the next queued stripped input line or empty string if queue is empty."""
+
         self.prompts.append(prompt)
+
         if self.input_exception is not None:
             exc = self.input_exception
             self.input_exception = None
             raise exc
+
         if not self._inputs:
             return ""
+
         return self._inputs.pop(0).strip()
 
     def write_message(self, message: str, /) -> None:
         """Capture plain text output message."""
+
         self.messages.append(message)
 
     def write_binary_data(self, message: bytes, /) -> None:
         """Capture raw binary output payload."""
+
         self.binary_data.append(message)
 
     def write_error_message(self, message: str | BaseException, /) -> None:
         """Capture error output message or exception."""
+
         self.errors.append(message)
 
     def write_warning_message(self, message: str | BaseException, /) -> None:
         """Capture warning output message or exception."""
+
         self.warnings.append(message)
 
 
-class DummyConnectionProfile(IConnectionProfile):
+class DummyConnectionProfile(contract.IConnectionProfile):
     """Fully-typed in-memory connection profile with configurable operation command rendering."""
 
     def __init__(
@@ -102,13 +105,14 @@ class DummyConnectionProfile(IConnectionProfile):
         name: str = "dummy_profile",
         buffer_size: int = 4096,
         timeout: float | None = 5.0,
-        rendered_commands: dict[OperationCode, str | None] | None = None,
+        rendered_commands: dict[config.OperationCode, str | None] | None = None,
     ) -> None:
         self._name = name
         self._buffer_size = buffer_size
         self._timeout = timeout
-        self.rendered_commands: dict[OperationCode, str | None] = dict(rendered_commands) if rendered_commands is not None else {}
-        self.render_calls: list[tuple[OperationCode, tuple[str, ...]]] = []
+
+        self.rendered_commands: dict[config.OperationCode, str | None] = dict(rendered_commands) if rendered_commands is not None else {}
+        self.render_calls: list[tuple[config.OperationCode, tuple[str, ...]]] = []
 
     @property
     def default_buffer_size(self) -> int:
@@ -118,31 +122,36 @@ class DummyConnectionProfile(IConnectionProfile):
     def default_timeout(self) -> float | None:
         return self._timeout
 
-    def set_rendered_command(self, opcode: OperationCode, rendered: str | None) -> None:
+    def set_rendered_command(self, opcode: config.OperationCode, rendered: str | None) -> None:
         """Configure the returned rendered command string for an operation code."""
+
         self.rendered_commands[opcode] = rendered
 
-    def render_operation_command(self, opcode: OperationCode, /, *args: str) -> str | None:
+    def render_operation_command(self, opcode: config.OperationCode, /, *args: str) -> str | None:
         """Return configured rendered command or a deterministic default string."""
         self.render_calls.append((opcode, args))
+
         if opcode in self.rendered_commands:
             return self.rendered_commands[opcode]
+
         args_str = f" {' '.join(args)}" if args else ""
+
         return f"{opcode.value}{args_str}"
 
 
-class DummyConnection(IConnection):
+class DummyConnection(contract.IConnection):
     """Fully-typed test double for active client network connections."""
 
     def __init__(
         self,
-        client: IConnectionProfile | None = None,
+        client: contract.IConnectionProfile | None = None,
         incoming_chunks: Sequence[bytes] | None = None,
-        initial_state: ConnectionState = ConnectionState.CONNECTED,
+        initial_state: contract.ConnectionState = contract.ConnectionState.CONNECTED,
     ) -> None:
-        self._client: IConnectionProfile = client or DummyConnectionProfile()
-        self._state: ConnectionState = initial_state
+        self._client: contract.IConnectionProfile = client or DummyConnectionProfile()
+        self._state: contract.ConnectionState = initial_state
         self._timeout: float | None = None
+
         self.written: list[bytes] = []
         self.incoming_chunks: list[bytes] = list(incoming_chunks) if incoming_chunks is not None else [b"chunk1\n", b"chunk2\n"]
         self.initialize_called: bool = False
@@ -152,15 +161,15 @@ class DummyConnection(IConnection):
         self.read_error: BaseException | None = None
 
     @property
-    def state(self) -> ConnectionState:
+    def state(self) -> contract.ConnectionState:
         return self._state
 
     @state.setter
-    def state(self, value: ConnectionState) -> None:
+    def state(self, value: contract.ConnectionState) -> None:
         self._state = value
 
     @property
-    def client(self) -> IConnectionProfile:
+    def client(self) -> contract.IConnectionProfile:
         return self._client
 
     @property
@@ -173,27 +182,41 @@ class DummyConnection(IConnection):
 
     def initialize(self) -> None:
         """Simulate protocol handshake."""
+
         self.initialize_called = True
+
+        if self._state == contract.ConnectionState.CLOSED:
+            raise config.ConnectionError("Cannot initialize a closed connection.")
+
         if self.initialize_error is not None:
             raise self.initialize_error
-        self._state = ConnectionState.CONNECTED
+
+        self._state = contract.ConnectionState.CONNECTED
 
     def read(self) -> Generator[bytes, None, None]:
         """Yield simulated incoming bytes chunks."""
+
         if self.read_error is not None:
             raise self.read_error
+
         yield from self.incoming_chunks
 
     def write(self, content: bytes, /) -> None:
         """Record transmitted bytes."""
+
+        if self._state != contract.ConnectionState.CONNECTED:
+            raise config.ConnectionError("Connection is not open.")
+
         if self.write_error is not None:
             raise self.write_error
+
         self.written.append(content)
 
     def close(self) -> None:
         """Simulate closing transport resources."""
+
         self.closed = True
-        self._state = ConnectionState.CLOSED
+        self._state = contract.ConnectionState.CLOSED
 
     def __enter__(self) -> Self:
         return self
@@ -207,7 +230,7 @@ class DummyConnection(IConnection):
         self.close()
 
 
-class DummyClientFileStore(IClientFileStore):
+class DummyClientFileStore(contract.IClientFileStore):
     """Fully-typed in-memory file store for client scripts, libraries, and modules."""
 
     def __init__(
@@ -222,59 +245,82 @@ class DummyClientFileStore(IClientFileStore):
         self.load_module_calls: list[str] = []
         self.load_library_calls: int = 0
         self.render_calls: list[tuple[str, int, bytes]] = []
+        self.load_library_error: BaseException | None = None
+        self.load_module_error: BaseException | None = None
+        self.render_error: BaseException | None = None
 
     def set_module(self, name: str, content: bytes) -> None:
         """Register a module name and content payload."""
+
         self.modules[name] = content
 
     def render_client_script(self, host: str, port: int, acknowledge: bytes, /) -> str:
         """Render client script from configured template."""
+
+        if self.render_error is not None:
+            raise self.render_error
+
         self.render_calls.append((host, port, acknowledge))
+
         return self.script_template.format(host=host, port=port, acknowledge=acknowledge.hex())
 
     def load_library(self) -> bytes:
         """Return configured library payload."""
+
+        if self.load_library_error is not None:
+            raise self.load_library_error
+
         self.load_library_calls += 1
+
         return self.library_bytes
 
     def load_module(self, module_name: str, /) -> bytes:
         """Return configured or synthesised module payload."""
+
+        if self.load_module_error is not None:
+            raise self.load_module_error
+
         self.load_module_calls.append(module_name)
+
         if module_name in self.modules:
             return self.modules[module_name]
+
         return f"module_bytes:{module_name}".encode()
 
 
-class DummyClientRuntime(IClientRuntime):
+class DummyClientRuntime(contract.IClientRuntime):
     """Fully-typed client runtime producing configured connections and scripts."""
 
     def __init__(
         self,
-        file_store: IClientFileStore | None = None,
+        file_store: contract.IClientFileStore | None = None,
         client_script: str = "#!/bin/sh\necho dummy",
-        connection_to_return: IConnection | None = None,
+        connection_to_return: contract.IConnection | None = None,
     ) -> None:
-        self._file_store: IClientFileStore = file_store or DummyClientFileStore()
+        self._file_store: contract.IClientFileStore = file_store or DummyClientFileStore()
         self._client_script: str = client_script
-        self.connection_to_return: IConnection | None = connection_to_return
-        self.created_connections: list[IConnection] = []
+
+        self.connection_to_return: contract.IConnection | None = connection_to_return
+        self.created_connections: list[contract.IConnection] = []
 
     @property
-    def client_files(self) -> IClientFileStore:
+    def client_files(self) -> contract.IClientFileStore:
         return self._file_store
 
     @property
     def client_script(self) -> str:
         return self._client_script
 
-    def create_connection(self, connection: socket, /) -> IConnection:
+    def create_connection(self, connection: socket, /) -> contract.IConnection:
         """Return configured connection or new DummyConnection instance."""
+
         conn = self.connection_to_return or DummyConnection()
         self.created_connections.append(conn)
+
         return conn
 
 
-class DummyClientPlugin(IClientPlugin):
+class DummyClientPlugin(contract.IClientPlugin):
     """Fully-typed client plugin implementing the IClientPlugin extension point."""
 
     name: str = "dummy"
@@ -283,12 +329,13 @@ class DummyClientPlugin(IClientPlugin):
     author: str = "Test Suite"
 
     configured_parsers: list[util.Parser] = []
-    runtime_instance: IClientRuntime | None = None
+    runtime_instance: contract.IClientRuntime | None = None
     validation_error: BaseException | None = None
 
     @classmethod
     def reset(cls) -> None:
         """Reset static test tracking state."""
+
         cls.configured_parsers.clear()
         cls.runtime_instance = None
         cls.validation_error = None
@@ -298,8 +345,8 @@ class DummyClientPlugin(IClientPlugin):
         cls.configured_parsers.append(parser)
 
     @classmethod
-    def build_config(cls, args: util.Namespace, data_paths: DataPaths, /) -> ClientConfig:
-        return ClientConfig(
+    def build_config(cls, args: util.Namespace, data_paths: config.DataPaths, /) -> contract.ClientConfig:
+        return contract.ClientConfig(
             kind=cls.name,
             host=getattr(args, "host", "127.0.0.1"),
             port=getattr(args, "port", 9000),
@@ -307,21 +354,22 @@ class DummyClientPlugin(IClientPlugin):
         )
 
     @classmethod
-    def validate(cls, client_config: ClientConfig, /) -> None:
+    def validate(cls, client_config: contract.ClientConfig, /) -> None:
         if cls.validation_error is not None:
             raise cls.validation_error
 
     @classmethod
-    def build_runtime(cls, client_config: ClientConfig, /) -> IClientRuntime:
+    def build_runtime(cls, client_config: contract.ClientConfig, /) -> contract.IClientRuntime:
         return cls.runtime_instance or DummyClientRuntime()
 
 
-class DummyRouter(IRouter):
+class DummyRouter(contract.IRouter):
     """Fully-typed router supporting deterministic route registration and dispatch."""
 
     def __init__(self) -> None:
-        self._routes: dict[str, Controller] = {}
+        self._routes: dict[str, contract.Controller] = {}
         self._usage: dict[str, str] = {}
+
         self.locate_calls: list[str] = []
 
     @property
@@ -334,29 +382,39 @@ class DummyRouter(IRouter):
 
     def get_route_usage(self, route: str, /) -> str:
         r = route.strip()
+
         if r in self._usage:
             return self._usage[r]
+
         if r in self._routes:
             doc = getattr(self._routes[r], "__doc__", None)
+
             if isinstance(doc, str) and doc.strip():
                 return str(doc.strip().splitlines()[0])
+
         return ""
 
     def set_route_usage(self, route: str, usage: str) -> None:
         """Override the usage string for a specific route."""
+
         self._usage[route.strip()] = usage
 
-    def connect(self, route: str, controller: Controller, /) -> None:
+    def connect(self, route: str, controller: contract.Controller, /) -> None:
         r = route.strip()
+
         if r in self._routes:
             raise ValueError(f"route already exists: {r}")
+
         self._routes[r] = controller
 
-    def locate(self, route: str, /) -> Controller:
+    def locate(self, route: str, /) -> contract.Controller:
         r = route.strip()
+
         self.locate_calls.append(r)
+
         if r not in self._routes:
             raise config.RouterError(r, "unknown route")
+
         return self._routes[r]
 
 
@@ -371,49 +429,93 @@ class DummySocket:
     ) -> None:
         self._incoming: bytearray = bytearray(incoming_bytes)
         self._sent: bytearray = bytearray()
+
         self.peer_name: tuple[str, int] = peer_name
         self.fileno_val: int = fileno_val
         self.closed: bool = False
         self.timeout: float | None = None
+        self.recv_chunks: list[bytes] = []
+        self.recv_calls: list[int] = []
+        self.sendall_calls: list[bytes] = []
+        self.send_calls: list[bytes] = []
+        self.close_calls: int = 0
+        self.settimeout_calls: list[float | None] = []
+        self.sendall_error: BaseException | None = None
+        self.send_error: BaseException | None = None
+        self.recv_error: BaseException | None = None
 
     @property
     def sent_bytes(self) -> bytes:
         """Read-only view of bytes sent through this socket."""
+
         return bytes(self._sent)
 
     def feed_bytes(self, data: bytes) -> None:
         """Enqueue simulated incoming data to be read via recv."""
+
         self._incoming.extend(data)
 
+    def feed_recv_chunks(self, *chunks: bytes) -> None:
+        """Enqueue individual chunk frames to be returned by successive recv() calls."""
+
+        self.recv_chunks.extend(chunks)
+
     def recv(self, bufsize: int, /) -> bytes:
-        """Read up to bufsize bytes from incoming buffer."""
+        """Read up to bufsize bytes from incoming buffer or pop pre-staged chunk."""
+        self.recv_calls.append(bufsize)
+
+        if self.recv_error is not None:
+            raise self.recv_error
+
+        if self.recv_chunks:
+            return self.recv_chunks.pop(0)
+
         chunk = bytes(self._incoming[:bufsize])
+
         del self._incoming[:bufsize]
+
         return chunk
 
     def sendall(self, data: bytes, /) -> None:
-        """Record all sent bytes."""
+        """Record all sent bytes and transmit to sent buffer."""
+
+        if self.sendall_error is not None:
+            raise self.sendall_error
+
+        self.sendall_calls.append(data)
         self._sent.extend(data)
 
     def send(self, data: bytes, /) -> int:
         """Record all sent bytes and return count."""
+
+        if self.send_error is not None:
+            raise self.send_error
+
+        self.send_calls.append(data)
         self._sent.extend(data)
+
         return len(data)
 
     def getpeername(self) -> tuple[str, int]:
         """Return configured peer address tuple."""
+
         return self.peer_name
 
     def settimeout(self, timeout: float | None, /) -> None:
-        """Set timeout value."""
+        """Set timeout value and record call."""
+
         self.timeout = timeout
+        self.settimeout_calls.append(timeout)
 
     def close(self) -> None:
-        """Mark socket as closed."""
+        """Mark socket as closed and record invocation."""
+
+        self.close_calls += 1
         self.closed = True
 
     def fileno(self) -> int:
         """Return configured file descriptor number."""
+
         return self.fileno_val
 
     def __enter__(self) -> Self:
@@ -428,20 +530,71 @@ class DummySocket:
         self.close()
 
 
+class DummyApplication:
+    """Fully-typed test double for Application lifecycle in CLI and integration tests."""
+
+    def __init__(
+        self,
+        parse_result: core.DeclusorOptions | None = None,
+        parse_error: BaseException | None = None,
+        run_error: BaseException | None = None,
+    ) -> None:
+        self.parse_result: core.DeclusorOptions = (
+            parse_result
+            if parse_result is not None
+            else {
+                "host": "127.0.0.1",
+                "port": 9000,
+                "client": contract.ClientConfig(
+                    kind="dummy",
+                    host="127.0.0.1",
+                    port=9000,
+                    data_paths=config.BasePath.DATA_PATHS,
+                    options={},
+                ),
+            }
+        )
+
+        self.parse_error: BaseException | None = parse_error
+        self.run_error: BaseException | None = run_error
+        self.parse_calls: list[Sequence[str] | None] = []
+        self.run_calls: list[core.DeclusorOptions] = []
+
+    def parse(self, argv: Sequence[str] | None = None, /) -> core.DeclusorOptions:
+        """Simulate parsing command-line options."""
+
+        self.parse_calls.append(argv)
+
+        if self.parse_error is not None:
+            raise self.parse_error
+
+        return self.parse_result
+
+    def run(self, options: core.DeclusorOptions, /) -> None:
+        """Simulate running the application lifecycle."""
+
+        self.run_calls.append(options)
+
+        if self.run_error is not None:
+            raise self.run_error
+
+
 @dataclass
-class DummyCommand(ICommand):
+class DummyCommand(contract.ICommand):
     """Command double tracking execution sequencing for lifecycle testing."""
 
     call_sequence: list[str] = field(default_factory=list)
     send_request_error: BaseException | None = None
     read_response_error: BaseException | None = None
 
-    def send_request(self, session: SessionContext) -> None:
+    def send_request(self, session: contract.SessionContext) -> None:
         self.call_sequence.append("send_request")
+
         if self.send_request_error is not None:
             raise self.send_request_error
 
-    def read_response(self, session: SessionContext) -> None:
+    def read_response(self, session: contract.SessionContext) -> None:
         self.call_sequence.append("read_response")
+
         if self.read_response_error is not None:
             raise self.read_response_error

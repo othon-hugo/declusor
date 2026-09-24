@@ -47,6 +47,7 @@ The `tests.testing` package provides contracts implementations ready for pytest 
 | `DummyClientPlugin`      | `contract.IClientPlugin`      | Self-contained plugin for testing discovery, parser configuration, and runtime instantiations.                       |
 | `DummyRouter`            | `contract.IRouter`            | Dynamic controller registration, route inspection, usage documentation, `RouterError` dispatch.                      |
 | `DummySocket`            | OS Socket Interface           | In-memory socket buffer simulation (`recv`, `send`, `sendall`, `close`) without OS network ports.                    |
+| `DummyApplication`       | `main.Application`            | In-memory CLI execution double tracking parse/run calls and simulating parser and runtime errors.                    |
 
 ## 4. Running the Tests and Quality Checks
 

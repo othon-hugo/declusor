@@ -1,11 +1,14 @@
 """Unit tests for the testing support package doubles and factories."""
 
 from pathlib import Path
+from socket import socket
+from typing import cast
 
 import pytest
 
 from declusor import config, contract, util
 from tests.testing import (
+    DummyApplication,
     DummyClientFileStore,
     DummyClientPlugin,
     DummyClientRuntime,
@@ -17,6 +20,7 @@ from tests.testing import (
     DummySocket,
     create_dummy_client_config,
     create_dummy_controller_request,
+    create_dummy_options,
     create_test_session,
 )
 
@@ -129,6 +133,14 @@ def test_dummy_connection_errors() -> None:
     with pytest.raises(config.ConnectionError, match="read fail"):
         list(conn.read())
 
+    # Invariant: closed connection rejects initialize and write
+    conn.close()
+    with pytest.raises(config.ConnectionError, match="Cannot initialize a closed connection"):
+        conn.initialize()
+
+    with pytest.raises(config.ConnectionError, match="Connection is not open"):
+        conn.write(b"data")
+
 
 def test_dummy_client_file_store() -> None:
     """DummyClientFileStore renders scripts, returns library payloads, and tracks module loading."""
@@ -148,6 +160,19 @@ def test_dummy_client_file_store() -> None:
     assert store.load_module("custom_mod") == b"custom_content"
     assert store.load_module_calls == ["default_mod", "custom_mod"]
 
+    # Error simulation
+    store.load_library_error = config.ConnectionError("library load fail")
+    with pytest.raises(config.ConnectionError, match="library load fail"):
+        store.load_library()
+
+    store.load_module_error = config.InvalidOperation("module load fail")
+    with pytest.raises(config.InvalidOperation, match="module load fail"):
+        store.load_module("bad_mod")
+
+    store.render_error = config.InvalidOperation("render fail")
+    with pytest.raises(config.InvalidOperation, match="render fail"):
+        store.render_client_script("1.1.1.1", 1234, b"ack")
+
 
 def test_dummy_client_runtime() -> None:
     """DummyClientRuntime exposes client script and creates dummy connections."""
@@ -158,7 +183,7 @@ def test_dummy_client_runtime() -> None:
     assert runtime.client_script == "echo test"
 
     dummy_socket = DummySocket()
-    created = runtime.create_connection(dummy_socket)  # type: ignore[arg-type]
+    created = runtime.create_connection(cast(socket, dummy_socket))
     assert created is conn
     assert runtime.created_connections == [conn]
 
@@ -223,29 +248,71 @@ def test_dummy_router() -> None:
 
 
 def test_dummy_socket() -> None:
-    """DummySocket simulates network I/O, byte buffers, peer names, and context manager."""
+    """DummySocket simulates network I/O, byte buffers, peer names, chunks, and context manager."""
     sock = DummySocket(incoming_bytes=b"hello world", peer_name=("1.2.3.4", 8080), fileno_val=99)
     assert sock.getpeername() == ("1.2.3.4", 8080)
     assert sock.fileno() == 99
 
     sock.settimeout(3.0)
     assert sock.timeout == 3.0
+    assert sock.settimeout_calls == [3.0]
 
     chunk = sock.recv(5)
     assert chunk == b"hello"
     assert sock.recv(10) == b" world"
+    assert sock.recv_calls == [5, 10]
 
     sock.feed_bytes(b"more")
     assert sock.recv(10) == b"more"
 
+    # Discrete chunk streaming
+    sock.feed_recv_chunks(b"frame1", b"frame2")
+    assert sock.recv(100) == b"frame1"
+    assert sock.recv(100) == b"frame2"
+
     sent_len = sock.send(b"sent1")
     assert sent_len == 5
+    assert sock.send_calls == [b"sent1"]
     sock.sendall(b"sent2")
+    assert sock.sendall_calls == [b"sent2"]
     assert sock.sent_bytes == b"sent1sent2"
 
     with sock:
         assert not sock.closed
     assert sock.closed
+    assert sock.close_calls == 1
+
+    # Error simulation
+    sock.sendall_error = OSError("sendall fail")
+    with pytest.raises(OSError, match="sendall fail"):
+        sock.sendall(b"fail")
+
+    sock.send_error = OSError("send fail")
+    with pytest.raises(OSError, match="send fail"):
+        sock.send(b"fail")
+
+    sock.recv_error = TimeoutError("recv timeout")
+    with pytest.raises(TimeoutError, match="recv timeout"):
+        sock.recv(10)
+
+
+def test_dummy_application() -> None:
+    """DummyApplication records parse and run calls and propagates configured errors."""
+    opts = create_dummy_options()
+    app = DummyApplication(parse_result=opts)
+    assert app.parse(["--flag"]) == opts
+    assert app.parse_calls == [["--flag"]]
+
+    app.run(opts)
+    assert app.run_calls == [opts]
+
+    app.parse_error = config.ParserError("parse fail")
+    with pytest.raises(config.ParserError, match="parse fail"):
+        app.parse([])
+
+    app.run_error = config.ConnectionError("run fail")
+    with pytest.raises(config.ConnectionError, match="run fail"):
+        app.run(opts)
 
 
 def test_dummy_command_and_errors(test_session: contract.SessionContext) -> None:

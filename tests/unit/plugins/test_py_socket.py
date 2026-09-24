@@ -1,10 +1,12 @@
 from pathlib import Path
-from unittest.mock import MagicMock
+from socket import socket
+from typing import cast
 
 import pytest
 
 from declusor import config, contract
 from plugins import py_socket
+from tests.testing import DummyClientFileStore, DummySocket
 
 # ---------------------------------------------------------------------------
 # Profile Tests
@@ -91,32 +93,33 @@ def test_py_socket_file_store_load_module_rejects_traversal_and_wrong_extension(
 # ---------------------------------------------------------------------------
 
 
-def test_py_socket_connection_write_sends_null_delimited_frame() -> None:
+def test_py_socket_connection_write_sends_null_delimited_frame(
+    dummy_file_store: DummyClientFileStore,
+) -> None:
     """Verify PySocketConnection transmits data with null byte framing."""
-
-    mock_socket = MagicMock()
+    dummy_sock = DummySocket(incoming_bytes=b"\x00")
     profile = py_socket.PySocketProfile(name="test", ack_server_raw=b"\x00", ack_client_raw=b"\xab" * 32)
-    mock_files = MagicMock()
 
-    conn = py_socket.PySocketConnection(mock_socket, profile, mock_files)
+    conn = py_socket.PySocketConnection(cast(socket, dummy_sock), profile, dummy_file_store)
     conn.write(b"data")
 
-    mock_socket.sendall.assert_called_once_with(b"data\x00")
-    mock_socket.recv.assert_called_once_with(len(b"\x00"))
+    assert dummy_sock.sendall_calls == [b"data\x00"]
+    assert dummy_sock.recv_calls == [len(b"\x00")]
 
 
-def test_py_socket_connection_close_is_idempotent() -> None:
+def test_py_socket_connection_close_is_idempotent(
+    dummy_file_store: DummyClientFileStore,
+) -> None:
     """Verify closing PySocketConnection multiple times is idempotent."""
-
-    mock_socket = MagicMock()
+    dummy_sock = DummySocket()
     profile = py_socket.PySocketProfile(name="test", ack_server_raw=b"\x00", ack_client_raw=b"\xab" * 32)
-    mock_files = MagicMock()
 
-    conn = py_socket.PySocketConnection(mock_socket, profile, mock_files)
+    conn = py_socket.PySocketConnection(cast(socket, dummy_sock), profile, dummy_file_store)
     conn.close()
     conn.close()
 
-    mock_socket.close.assert_called_once()
+    assert dummy_sock.close_calls == 1
+    assert dummy_sock.closed is True
 
 
 # ---------------------------------------------------------------------------
@@ -164,7 +167,8 @@ def test_build_runtime_creates_py_socket_connection(tmp_path: Path) -> None:
     )
 
     runtime = py_socket.PySocketPlugin.build_runtime(client_config)
-    conn = runtime.create_connection(MagicMock())
+    dummy_sock = DummySocket()
+    conn = runtime.create_connection(cast(socket, dummy_sock))
     assert isinstance(conn, py_socket.PySocketConnection)
 
 

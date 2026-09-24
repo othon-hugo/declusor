@@ -2,24 +2,15 @@
 
 from typing import Any
 
-from declusor import config
-from declusor.config import DataPaths
-from declusor.contract import (
-    ClientConfig,
-    ControllerRequest,
-    IClientFileStore,
-    IConnection,
-    IConsole,
-    SessionContext,
-)
+from declusor import config, contract, core
 from tests.testing.doubles import DummyClientFileStore, DummyConnection, DummyConsole
 
 
 def create_test_session(
-    connection: IConnection | None = None,
-    console: IConsole | None = None,
-    files: IClientFileStore | None = None,
-) -> SessionContext:
+    connection: contract.IConnection | None = None,
+    console: contract.IConsole | None = None,
+    files: contract.IClientFileStore | None = None,
+) -> contract.SessionContext:
     """Create a SessionContext populated with test doubles by default.
 
     Args:
@@ -30,7 +21,8 @@ def create_test_session(
     Returns:
         A ready-to-use SessionContext instance.
     """
-    return SessionContext(
+
+    return contract.SessionContext(
         connection=connection or DummyConnection(),
         console=console or DummyConsole(),
         files=files or DummyClientFileStore(),
@@ -41,9 +33,9 @@ def create_dummy_client_config(
     kind: str = "dummy",
     host: str = "127.0.0.1",
     port: int = 9000,
-    data_paths: DataPaths | None = None,
+    data_paths: config.DataPaths | None = None,
     options: dict[str, Any] | None = None,
-) -> ClientConfig:
+) -> contract.ClientConfig:
     """Create a ClientConfig instance for testing.
 
     Args:
@@ -56,7 +48,8 @@ def create_dummy_client_config(
     Returns:
         An immutable ClientConfig dataclass instance.
     """
-    return ClientConfig(
+
+    return contract.ClientConfig(
         kind=kind,
         host=host,
         port=port,
@@ -65,7 +58,7 @@ def create_dummy_client_config(
     )
 
 
-def create_dummy_controller_request(text: str = "") -> ControllerRequest:
+def create_dummy_controller_request(text: str = "") -> contract.ControllerRequest:
     """Create a ControllerRequest instance wrapping command text.
 
     Args:
@@ -74,4 +67,28 @@ def create_dummy_controller_request(text: str = "") -> ControllerRequest:
     Returns:
         A ControllerRequest instance.
     """
-    return ControllerRequest(text)
+
+    return contract.ControllerRequest(text)
+
+
+def create_dummy_options(
+    host: str = "127.0.0.1",
+    port: int = 9000,
+    client: contract.ClientConfig | None = None,
+) -> core.DeclusorOptions:
+    """Create a fully-formed DeclusorOptions TypedDict for testing.
+
+    Args:
+        host: Target host. Defaults to '127.0.0.1'.
+        port: Target port. Defaults to 9000.
+        client: ClientConfig instance. Defaults to dummy config.
+
+    Returns:
+        A valid DeclusorOptions TypedDict mapping.
+    """
+
+    return {
+        "host": host,
+        "port": port,
+        "client": client or create_dummy_client_config(host=host, port=port),
+    }

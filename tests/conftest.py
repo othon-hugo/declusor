@@ -4,8 +4,9 @@ from collections.abc import Generator
 
 import pytest
 
-from declusor.contract import ClientConfig, SessionContext
+from declusor import contract
 from tests.testing import (
+    DummyApplication,
     DummyClientFileStore,
     DummyClientPlugin,
     DummyClientRuntime,
@@ -48,7 +49,7 @@ def test_session(
     dummy_connection: DummyConnection,
     dummy_console: DummyConsole,
     dummy_file_store: DummyClientFileStore,
-) -> SessionContext:
+) -> contract.SessionContext:
     """Provide a SessionContext wired to isolated test doubles."""
     return create_test_session(
         connection=dummy_connection,
@@ -84,6 +85,12 @@ def dummy_socket() -> DummySocket:
 
 
 @pytest.fixture
-def dummy_client_config() -> ClientConfig:
+def dummy_client_config() -> contract.ClientConfig:
     """Provide a standard test ClientConfig."""
     return create_dummy_client_config()
+
+
+@pytest.fixture
+def dummy_app() -> DummyApplication:
+    """Provide a fresh DummyApplication."""
+    return DummyApplication()

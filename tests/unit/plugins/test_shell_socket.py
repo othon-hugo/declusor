@@ -1,13 +1,19 @@
 from pathlib import Path
-from unittest.mock import MagicMock
+from socket import socket
+from typing import cast
 
 import pytest
 
 from declusor import config, contract, util
 from plugins import shell_socket
+from tests.testing import DummySocket
 
 
-def _create_connection(tmp_path: Path, socket_connection: MagicMock, ack: bytes = b"ack") -> shell_socket.ShellSocketConnection:
+def _create_connection(
+    tmp_path: Path,
+    socket_connection: DummySocket | None = None,
+    ack: bytes = b"ack",
+) -> tuple[shell_socket.ShellSocketConnection, DummySocket]:
     launcher = tmp_path / "client.sh"
     launcher.write_text("$HOST:$PORT", encoding="utf-8")
     helpers = tmp_path / "helpers"
@@ -15,10 +21,10 @@ def _create_connection(tmp_path: Path, socket_connection: MagicMock, ack: bytes 
     modules = tmp_path / "modules"
     modules.mkdir(exist_ok=True)
 
-    socket_connection.getpeername.return_value = ("127.0.0.1", 9000)
+    sock = socket_connection or DummySocket(peer_name=("127.0.0.1", 9000))
     profile = shell_socket.ShellSocketProfile(name="test", ack_server_raw=b"\x00", ack_client_raw=ack)
     files = shell_socket.ShellSocketFileStore(launcher, helpers, modules, (".sh",), (".sh",))
-    return shell_socket.ShellSocketConnection(socket_connection, profile, files)
+    return shell_socket.ShellSocketConnection(cast(socket, sock), profile, files), sock
 
 
 # ---------------------------------------------------------------------------
@@ -115,11 +121,9 @@ def test_load_module_rejects_traversal_and_wrong_extension(tmp_path: Path) -> No
 
 def test_connection_state_lifecycle_transitions(tmp_path: Path) -> None:
     """Verify connection lifecycle transitions: CREATED -> CONNECTED -> CLOSED."""
+    sock = DummySocket(incoming_bytes=b"\x00" + b"valid_ack_32_bytes_long_sentinel")
 
-    mock_socket = MagicMock()
-    mock_socket.recv.return_value = b"valid_ack_32_bytes_long_sentinel"
-
-    conn = _create_connection(tmp_path, mock_socket, ack=b"valid_ack_32_bytes_long_sentinel")
+    conn, _ = _create_connection(tmp_path, sock, ack=b"valid_ack_32_bytes_long_sentinel")
     state: contract.ConnectionState = conn.state
     assert state == contract.ConnectionState.CREATED
 
@@ -139,25 +143,22 @@ def test_connection_state_lifecycle_transitions(tmp_path: Path) -> None:
 
 def test_connection_segmented_ack_streaming(tmp_path: Path) -> None:
     """Verify ACK validation handles segmented byte streaming properly."""
-
-    mock_socket = MagicMock()
-    mock_socket.recv.side_effect = [
+    sock = DummySocket()
+    sock.feed_recv_chunks(
         b"\x00",
         b"valid_ack_",
         b"32_bytes_",
         b"long_sentinel",
-    ]
+    )
 
-    conn = _create_connection(tmp_path, mock_socket, ack=b"valid_ack_32_bytes_long_sentinel")
+    conn, _ = _create_connection(tmp_path, sock, ack=b"valid_ack_32_bytes_long_sentinel")
     conn.initialize()
     assert conn.state == contract.ConnectionState.CONNECTED
 
 
 def test_initialize_fails_on_closed_connection(tmp_path: Path) -> None:
     """Verify initialize raises ConnectionError when connection is already closed."""
-
-    mock_socket = MagicMock()
-    conn = _create_connection(tmp_path, mock_socket)
+    conn, _ = _create_connection(tmp_path)
     conn.close()
 
     with pytest.raises(config.ConnectionError, match="Cannot initialize a closed connection"):
@@ -166,22 +167,19 @@ def test_initialize_fails_on_closed_connection(tmp_path: Path) -> None:
 
 def test_write_uses_sendall_for_payload_and_ack(tmp_path: Path) -> None:
     """Verify write uses sendall to transmit payload followed by null byte framing."""
-
-    socket_connection = MagicMock()
-    connection = _create_connection(tmp_path, socket_connection)
+    connection, sock = _create_connection(tmp_path)
 
     connection.write(b"command")
-    assert socket_connection.sendall.call_args_list == [((b"command",),), ((b"\x00",),)]
+    assert sock.sendall_calls == [b"command", b"\x00"]
 
 
 @pytest.mark.parametrize("error", [OSError("broken pipe"), TimeoutError("timed out")])
 def test_write_translates_transport_errors(tmp_path: Path, error: BaseException) -> None:
     """Verify write translates socket transport errors into domain ConnectionError."""
+    sock = DummySocket()
+    sock.sendall_error = error
 
-    socket_connection = MagicMock()
-    socket_connection.sendall.side_effect = error
-
-    connection = _create_connection(tmp_path, socket_connection)
+    connection, _ = _create_connection(tmp_path, sock)
 
     with pytest.raises(config.ConnectionError) as raised:
         connection.write(b"command")
@@ -237,10 +235,9 @@ def test_build_runtime_creates_shell_socket_connection(tmp_path: Path) -> None:
             "modules_dir": tmp_path / "modules",
         },
     )
-    socket_connection = MagicMock()
-    socket_connection.getpeername.return_value = ("127.0.0.1", 9000)
+    dummy_sock = DummySocket(peer_name=("127.0.0.1", 9000))
 
     runtime = shell_socket.ShellSocketPlugin.build_runtime(client_config)
-    client_connection = runtime.create_connection(socket_connection)
+    client_connection = runtime.create_connection(cast(socket, dummy_sock))
 
     assert isinstance(client_connection, shell_socket.ShellSocketConnection)

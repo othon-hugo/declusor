@@ -1,9 +1,10 @@
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
 from declusor import config, contract, core, util
+from tests.testing import DummyClientRuntime
 
 
 class DummyValidPlugin(contract.IClientPlugin):
@@ -26,7 +27,7 @@ class DummyValidPlugin(contract.IClientPlugin):
 
     @classmethod
     def build_runtime(cls, client_config: contract.ClientConfig, /) -> contract.IClientRuntime:
-        return MagicMock(spec=contract.IClientRuntime)
+        return DummyClientRuntime()
 
 
 class NotAPlugin:
@@ -182,11 +183,18 @@ class CustomAgentPlugin(contract.IClientPlugin):
 
 def test_discover_from_entry_points() -> None:
     """Verify plugin discovery via Python entry points ('declusor.plugins')."""
-    mock_ep = MagicMock()
-    mock_ep.name = "mock_plugin"
-    mock_ep.load.return_value = DummyValidPlugin
 
-    with patch("importlib.metadata.entry_points", return_value=[mock_ep]):
+    class DummyEntryPoint:
+        def __init__(self, name: str, plugin_cls: type[contract.IClientPlugin]) -> None:
+            self.name = name
+            self._plugin_cls = plugin_cls
+
+        def load(self) -> type[contract.IClientPlugin]:
+            return self._plugin_cls
+
+    ep = DummyEntryPoint(name="mock_plugin", plugin_cls=DummyValidPlugin)
+
+    with patch("importlib.metadata.entry_points", return_value=[ep]):
         manager = core.PluginManager()
         loaded = manager.load_from_entry_points()
 

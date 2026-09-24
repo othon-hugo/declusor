@@ -1,13 +1,13 @@
 """Unit tests for controller handlers using typed fixtures and test doubles."""
 
 from pathlib import Path
-from unittest.mock import patch
 
 from declusor import config, contract, controller
 from tests.testing import (
     DummyClientFileStore,
     DummyConnection,
     DummyConnectionProfile,
+    DummyConsole,
     create_dummy_controller_request,
 )
 
@@ -86,14 +86,13 @@ def test_call_load_module_with_dto(
 
 def test_call_shell_executes_and_returns_continue(
     test_session: contract.SessionContext,
+    dummy_console: DummyConsole,
 ) -> None:
-    """call_shell must execute LaunchShell via session."""
+    """call_shell must execute LaunchShell via session and return CONTINUE."""
     req = create_dummy_controller_request()
+    dummy_console.input_exception = KeyboardInterrupt()
 
-    with patch("declusor.command.LaunchShell") as mock_shell_cls:
-        mock_instance = mock_shell_cls.return_value
-        result = controller.call_shell(test_session, req)
+    result = controller.call_shell(test_session, req)
 
-        mock_shell_cls.assert_called_once_with()
-        mock_instance.execute.assert_called_once_with(test_session)
-        assert result.action == contract.ControllerAction.CONTINUE
+    assert result.action == contract.ControllerAction.CONTINUE
+    assert "[keyboard interrupt received]" in dummy_console.messages

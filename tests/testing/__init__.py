@@ -1,6 +1,5 @@
-"""Test support package defining reusable, fully-typed test doubles and fixtures."""
-
 from tests.testing.doubles import (
+    DummyApplication,
     DummyClientFileStore,
     DummyClientPlugin,
     DummyClientRuntime,
@@ -14,10 +13,12 @@ from tests.testing.doubles import (
 from tests.testing.factories import (
     create_dummy_client_config,
     create_dummy_controller_request,
+    create_dummy_options,
     create_test_session,
 )
 
 __all__ = [
+    "DummyApplication",
     "DummyClientFileStore",
     "DummyClientPlugin",
     "DummyClientRuntime",
@@ -29,5 +30,6 @@ __all__ = [
     "DummySocket",
     "create_dummy_client_config",
     "create_dummy_controller_request",
+    "create_dummy_options",
     "create_test_session",
 ]
