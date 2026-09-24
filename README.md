@@ -102,21 +102,28 @@ When an operator launches Declusor, the entire engagement workflow is automated 
 
 ### Prerequisites
 
-| Environment | Requirement | Notes |
-| :--- | :--- | :--- |
-| **Operator Machine** | Python 3.11+ | Linux, macOS, or Windows |
+| Environment                 | Requirement          | Notes                                                         |
+| :-------------------------- | :------------------- | :------------------------------------------------------------ |
+| **Operator Machine**        | Python 3.11+         | Linux, macOS, or Windows                                      |
 | **Target (`shell_socket`)** | Bash with `/dev/tcp` | Standard on almost all Linux distributions; zero dependencies |
-| **Target (`py_socket`)** | Python 3.6+ | Cross-platform (Linux, macOS, Windows); in-memory execution |
+| **Target (`py_socket`)**    | Python 3.6+          | Cross-platform (Linux, macOS, Windows); in-memory execution   |
 
 ### Installation
 
 #### Option A: Isolated CLI Install (Recommended for Operators)
 
-Install directly into an isolated environment using [pipx](https://pypa.github.io/pipx/) or standard `pip`:
+Install directly into an isolated environment using [uv](https://github.com/astral-sh/uv), [pipx](https://pypa.github.io/pipx/), or standard `pip`:
 
 ```bash
+# Using uv (fastest)
+uv tool install declusor
+# or run ephemerally without installing
+uvx declusor 0.0.0.0 4444
+
+# Using pipx
 pipx install declusor
-# or
+
+# Using pip
 pip install declusor
 ```
 
@@ -128,8 +135,13 @@ Clone the repository and let `make install` configure your virtual environment, 
 git clone https://github.com/othonhugo/declusor.git
 cd declusor
 
-# Automatically syncs dependencies and links plugins
+# Option B1: Using Make (recommended, runs uv sync + installs editable plugins)
 make install
+
+# Option B2: Using uv directly
+uv sync
+make install-plugins
+# (or: uv pip install -e plugins/shell_socket -e plugins/py_socket)
 ```
 
 #### Option C: Standard Virtualenv Setup with `pip`
@@ -138,9 +150,15 @@ make install
 git clone https://github.com/othonhugo/declusor.git
 cd declusor
 
+# Create and activate virtual environment
 python3 -m venv .venv && source .venv/bin/activate
+
+# Install host package and development tools
 pip install -e ".[dev,testing]"
+
+# Install native plugins in editable mode
 make install-plugins
+# (or: pip install -e plugins/shell_socket -e plugins/py_socket)
 ```
 
 ## Real-World Workflow & Usage
@@ -210,13 +228,28 @@ User: dev
 Declusor was architected from day one as an extensible engine. Transport plugins are fully autonomous packages with their own manifests, assets, and tests:
 
 ```text
-plugins/<plugin>/
-├── pyproject.toml          # Declares entry point under [project.entry-points."declusor.plugins"]
-├── README.md               # Documentation with ## Modules and ## Design Principles
-├── src/declusor_<plugin>/  # Implements IClientPlugin, IClientRuntime, and IConnection
-├── assets/                 # Launchers, initialization helpers, and post-exploitation modules
-└── tests/                  # Unit and contract conformance tests
+plugins/<plugin_name>/
+├── pyproject.toml          # Standalone package metadata & entry-point declaration
+├── README.md               # Documentation (## Modules and ## Design Principles)
+├── src/<plugin_name>/      # Core transport and runtime implementation
+│   ├── __init__.py         # Public exports (__all__ = ["<PluginClass>"])
+│   ├── plugin.py           # Implements IClientPlugin & IClientRuntime
+│   └── connection.py       # Implements IConnection, IConnectionProfile, IClientFileStore
+├── assets/                 # Bundled stagers and operational payloads
+│   ├── launchers/          # Client bootstrap templates (e.g. client.sh, client.py)
+│   ├── helpers/            # In-memory initialization libraries (sent during handshake)
+│   └── modules/            # On-demand reconnaissance and post-exploitation payloads
+└── tests/                  # Dedicated unit & contract conformance test suite
+    └── test_conformance.py # Inherits from PluginConformanceTestSuite
 ```
+
+### Multi-Tier Dynamic Discovery
+
+Declusor discovers plugins at runtime across three distinct source tiers with zero hardcoded coupling:
+
+1. **Built-in Plugins**: Shipped repository packages located in `plugins/` (`shell_socket`, `py_socket`).
+2. **Python Entry Points**: Standard distribution packages registered via PEP 621 entry points (`[project.entry-points."declusor.plugins"]`).
+3. **Operator Drop-in Folders**: Custom plugin directories loaded dynamically on the fly via `--plugin-dir <path>`.
 
 ### Verifying Conformance in Seconds
 
@@ -224,11 +257,21 @@ Every plugin can verify its compliance against Declusor's contracts using the bu
 
 ```python
 from declusor import testing
-from declusor_plugin import DeclusorPlugin
+from my_plugin import MyPlugin
 
 
-class TestDeclusorPluginConformance(testing.PluginConformanceTestSuite):
-    plugin_class = DeclusorPlugin
+class TestMyPluginConformance(testing.PluginConformanceTestSuite):
+    plugin_class = MyPlugin
+```
+
+Execute plugin tests and quality checks via `make`:
+
+```bash
+# Run unit and conformance tests for a specific plugin
+make test-plugin PLUGIN=py_socket
+
+# Run full quality check (format-check, lint, strict type-check, tests)
+make check-plugin PLUGIN=py_socket
 ```
 
 For complete packaging tutorials, asset overlay mechanics, and step-by-step guides, check out the [Plugins Developer Guide](plugins/README.md).
