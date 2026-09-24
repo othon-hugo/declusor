@@ -4,7 +4,7 @@ Declusor maintains an automated test suite organized by architectural layer and 
 
 ## Test Principles and Conventions
 
-1. **Typed Test Doubles over Fragile Mocks**: Contract boundaries (`IConsole`, `IConnection`, `IClientFileStore`, `IClientRuntime`, `IClientPlugin`, `IRouter`) are fulfilled by deterministic in-memory test doubles in `declusor.testing`. Unconstrained `MagicMock` setups and monkeypatching are eliminated.
+1. **Typed Test Doubles over Fragile Mocks**: Contract boundaries (`IConsole`, `IConnection`, `IClientFileStore`, `IPluginRuntime`, `IPlugin`, `IRouter`) are fulfilled by deterministic in-memory test doubles in `declusor.testing`. Unconstrained `MagicMock` setups and monkeypatching are eliminated.
 2. **Autonomous Plugin Colocation**: Native plugin tests live directly inside `plugins/<plugin>/tests/`, ensuring that plugins remain autonomous and cleanly extractable into independent repositories.
 3. **Contract Conformance Verification**: Every plugin (native or third-party) verifies adherence to framework invariants by subclassing `declusor.testing.PluginConformanceTestSuite`.
 4. **Defensive Testing & Invariant Validation**: Invariant violations (empty commands, path traversal, unsupported opcodes, invalid arguments) must explicitly assert raised domain exceptions (`config.InvalidOperation`, `config.ParserError`, `config.RouterError`, `config.ConnectionError`).

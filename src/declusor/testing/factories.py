@@ -3,20 +3,20 @@ from typing import Any
 from declusor import config, contract, core
 from declusor.testing.doubles.connection import DummyConnection
 from declusor.testing.doubles.console import DummyConsole
-from declusor.testing.doubles.filestore import DummyClientFileStore
+from declusor.testing.doubles.filestore import DummyPluginFileStore
 
 
 def create_test_session(
     connection: contract.IConnection | None = None,
     console: contract.IConsole | None = None,
-    files: contract.IPluginFileStore | None = None,
+    files: contract.IClientFileStore | None = None,
 ) -> contract.SessionContext:
     """Create a SessionContext populated with test doubles by default.
 
     Args:
         connection: Connection double to inject. Defaults to DummyConnection.
         console: Console double to inject. Defaults to DummyConsole.
-        files: File store double to inject. Defaults to DummyClientFileStore.
+        files: File store double to inject. Defaults to DummyPluginFileStore.
 
     Returns:
         A ready-to-use SessionContext instance.
@@ -25,11 +25,11 @@ def create_test_session(
     return contract.SessionContext(
         connection=connection or DummyConnection(),
         console=console or DummyConsole(),
-        files=files or DummyClientFileStore(),
+        files=files or DummyPluginFileStore(),
     )
 
 
-def create_dummy_client_config(
+def create_dummy_plugin_config(
     kind: str = "dummy",
     host: str = "127.0.0.1",
     port: int = 9000,
@@ -90,5 +90,5 @@ def create_dummy_options(
     return {
         "host": host,
         "port": port,
-        "plugin": client or create_dummy_client_config(host=host, port=port),
+        "plugin": client or create_dummy_plugin_config(host=host, port=port),
     }

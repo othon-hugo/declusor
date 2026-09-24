@@ -10,19 +10,19 @@ PluginType: TypeAlias = type[contract.IPlugin]
 
 
 class PluginRegistry:
-    """Registry of client plugins available to the application.
+    """Registry of plugins available to the application.
 
-    The registry maps a stable client identifier to its plugin implementation.
-    It prevents the application parser from depending on concrete clients.
+    The registry maps a stable plugin identifier to its plugin implementation.
+    It prevents the application parser from depending on concrete plugins.
     """
 
     def __init__(self) -> None:
-        """Create an empty client registry."""
+        """Create an empty plugin registry."""
 
         self._plugins: dict[str, PluginType] = {}
 
     def register(self, plugin: PluginType, /) -> None:
-        """Register a client plugin.
+        """Register a plugin.
 
         Args:
             plugin: Plugin class to register.
@@ -32,15 +32,15 @@ class PluginRegistry:
         """
 
         if plugin.name in self._plugins:
-            raise ValueError(f"Client already registered: {plugin.name}")
+            raise ValueError(f"Plugin already registered: {plugin.name}")
 
         self._plugins[plugin.name] = plugin
 
     def get(self, name: str, /) -> PluginType:
-        """Retrieve a registered client plugin.
+        """Retrieve a registered plugin.
 
         Args:
-            name: Registered client identifier.
+            name: Registered plugin identifier.
 
         Returns:
             Plugin associated with ``name``.
@@ -66,9 +66,9 @@ class PluginRegistry:
 
 
 class PluginManager(PluginRegistry):
-    """Dynamic discovery and lifecycle registry for Declusor client plugins.
+    """Dynamic discovery and lifecycle registry for Declusor plugins.
 
-    Discovers and registers client plugins across three tiers:
+    Discovers and registers plugins across three tiers:
     1. **Built-in / Repository plugins directory** (e.g. ``<root>/plugins/``).
     2. **Python Entry Points** (``group="declusor.plugins"`` via PEP 621 / pip).
     3. **Drop-in / User directories** (e.g. ``~/.declusor/plugins/`` or custom CLI path).
@@ -117,7 +117,7 @@ class PluginManager(PluginRegistry):
             )
 
     def register(self, plugin: PluginType, /, *, source: str = "manual", allow_override: bool = False) -> None:
-        """Register a validated client plugin.
+        """Register a validated plugin.
 
         Args:
             plugin: Plugin class to register.
@@ -133,7 +133,7 @@ class PluginManager(PluginRegistry):
 
         if plugin.name in self._plugins and not allow_override:
             existing_source = self._sources.get(plugin.name, "unknown")
-            raise ValueError(f"Client plugin '{plugin.name}' already registered from {existing_source}.")
+            raise ValueError(f"Plugin '{plugin.name}' already registered from {existing_source}.")
 
         self._plugins[plugin.name] = plugin
         self._sources[plugin.name] = source
@@ -188,7 +188,7 @@ class PluginManager(PluginRegistry):
         return loaded_names
 
     def load_from_entry_points(self, *, group: str = ENTRY_POINT_GROUP, allow_override: bool = True) -> list[str]:
-        """Discover and load client plugins registered via Python Entry Points.
+        """Discover and load plugins registered via Python Entry Points.
 
         Args:
             group: Entry point group to query (default: ``declusor.plugins``).

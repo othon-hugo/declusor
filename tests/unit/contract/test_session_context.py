@@ -4,7 +4,7 @@ from declusor import contract, testing
 def test_session_context_initialization_and_properties(
     dummy_connection: testing.DummyConnection,
     dummy_console: testing.DummyConsole,
-    dummy_file_store: testing.DummyClientFileStore,
+    dummy_file_store: testing.DummyPluginFileStore,
 ) -> None:
     """SessionContext should properly hold and expose connection, console, and files."""
 
@@ -33,7 +33,7 @@ def test_session_context_execute_invokes_command_execute(
 def test_session_context_backward_compatibility_tuple_unpacking(
     dummy_connection: testing.DummyConnection,
     dummy_console: testing.DummyConsole,
-    dummy_file_store: testing.DummyClientFileStore,
+    dummy_file_store: testing.DummyPluginFileStore,
 ) -> None:
     """SessionContext must support tuple indexing, unpacking, and len for backward compatibility."""
 

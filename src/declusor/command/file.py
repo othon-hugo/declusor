@@ -131,7 +131,7 @@ class _BaseFileCommand(contract.ICommand):
         file_content = util.load_file(self._filepath)
         file_base64 = util.convert_to_base64(file_content)
 
-        script_data = session.connection.client.render_operation_command(
+        script_data = session.connection.profile.render_operation_command(
             self._OPCODE,
             file_base64,
         )

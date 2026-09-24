@@ -68,7 +68,6 @@ class ControllerError(DeclusorException):
 
     def __init__(self, description: str, /) -> None:
         self.description = description
-
         super().__init__(f"controller error: {self.description}")
 
 
@@ -89,7 +88,7 @@ class RouterError(DeclusorException):
 
 
 class PluginError(DeclusorException):
-    """Base exception for client plugin discovery, loading, and runtime errors."""
+    """Base exception for plugin discovery, loading, and runtime errors."""
 
 
 class PluginValidationError(PluginError):

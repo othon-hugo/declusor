@@ -11,12 +11,9 @@ from declusor.testing.doubles.console import (
     DummyConsole,
 )
 from declusor.testing.doubles.filestore import (
-    DummyClientFileStore,
     DummyPluginFileStore,
 )
 from declusor.testing.doubles.plugins import (
-    DummyClientPlugin,
-    DummyClientRuntime,
     DummyPlugin,
     DummyPluginRuntime,
 )
@@ -32,9 +29,9 @@ from declusor.testing.doubles.socket import (
 
 __all__ = [
     "DummyApplication",
-    "DummyClientFileStore",
-    "DummyClientPlugin",
-    "DummyClientRuntime",
+    "DummyPluginFileStore",
+    "DummyPlugin",
+    "DummyPluginRuntime",
     "DummyCommand",
     "DummyConnection",
     "DummyConnectionProfile",

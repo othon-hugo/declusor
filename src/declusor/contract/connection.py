@@ -79,7 +79,7 @@ class IConnection(ABC):
 
     @property
     @abstractmethod
-    def client(self) -> "IConnectionProfile":
+    def profile(self) -> "IConnectionProfile":
         """The configuration profile for the connected client.
 
         Returns:

@@ -49,7 +49,7 @@ def test_build_runtime_renders_configured_client_script(tmp_path: Path) -> None:
 
     client_path = tmp_path / "client.sh"
     client_path.write_text("connect $HOST:$PORT ack=$ACKNOWLEDGE", encoding="utf-8")
-    client_config = contract.PluginConfig(
+    plugin_config = contract.PluginConfig(
         kind=shell_socket.ShellSocketPlugin.name,
         host="127.0.0.1",
         port=9000,
@@ -60,7 +60,7 @@ def test_build_runtime_renders_configured_client_script(tmp_path: Path) -> None:
         },
     )
 
-    runtime = shell_socket.ShellSocketPlugin.build_runtime(client_config)
+    runtime = shell_socket.ShellSocketPlugin.build_runtime(plugin_config)
     assert runtime.client_script.startswith("connect 127.0.0.1:9000 ack=\\x")
 
 
@@ -69,7 +69,7 @@ def test_build_runtime_creates_shell_socket_connection(tmp_path: Path) -> None:
 
     client_path = tmp_path / "client.sh"
     client_path.write_text("$HOST:$PORT", encoding="utf-8")
-    client_config = contract.PluginConfig(
+    plugin_config = contract.PluginConfig(
         kind=shell_socket.ShellSocketPlugin.name,
         host="127.0.0.1",
         port=9000,
@@ -81,7 +81,7 @@ def test_build_runtime_creates_shell_socket_connection(tmp_path: Path) -> None:
     )
     dummy_sock = testing.DummySocket(peer_name=("127.0.0.1", 9000))
 
-    runtime = shell_socket.ShellSocketPlugin.build_runtime(client_config)
+    runtime = shell_socket.ShellSocketPlugin.build_runtime(plugin_config)
     client_connection = runtime.create_connection(cast(socket, dummy_sock))
 
     assert isinstance(client_connection, shell_socket.ShellSocketConnection)

@@ -1,10 +1,10 @@
 from .connection import (
     DEFAULT_SHELL_SOCKET,
     ShellSocketConnection,
-    ShellSocketFileStore,
     ShellSocketProfile,
 )
 from .plugin import (
+    ShellSocketFileStore,
     ShellSocketPlugin,
     ShellSocketRuntime,
 )

@@ -7,7 +7,7 @@ from declusor import contract, testing
 
 
 class TestPySocketConformance(testing.PluginConformanceTestSuite):
-    """Verify PySocketPlugin strictly complies with the IClientPlugin contract."""
+    """Verify PySocketPlugin strictly complies with the IPlugin contract."""
 
     @pytest.fixture
     def plugin_class(self) -> type[contract.IPlugin]:

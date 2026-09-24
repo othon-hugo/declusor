@@ -8,14 +8,14 @@ class Application:
     """Compose and execute one Declusor server connection.
 
     The application owns concrete dependencies and keeps protocol-specific
-    details behind the selected client plugin runtime.
+    details behind the selected plugin runtime.
     """
 
     def __init__(self, manager: core.PluginManager, /) -> None:
-        """Create an application using a configured client plugin manager.
+        """Create an application using a configured plugin manager.
 
         Args:
-            manager: Plugin manager containing the available client plugins.
+            manager: Plugin manager containing the available plugins.
         """
 
         self._manager = manager
@@ -25,12 +25,12 @@ class Application:
 
     @property
     def manager(self) -> core.PluginManager:
-        """Client plugin manager containing registered and discovered plugins."""
+        """Plugin manager containing registered and discovered plugins."""
 
         return self._manager
 
     def register_plugin(self, plugin: type[contract.IPlugin], /) -> None:
-        """Register a client plugin at runtime.
+        """Register a plugin at runtime.
 
         Args:
             plugin: Plugin class implementing ``IPlugin``.
@@ -109,7 +109,7 @@ class Application:
 
 
 def create_application(search_dirs: Sequence[Path] | None = None) -> Application:
-    """Create the application with all discovered client plugins registered.
+    """Create the application with all discovered plugins registered.
 
     Runs the multi-tier discovery engine (built-in plugins/, entry points,
     and user drop-in directory) to populate the registry dynamically.
