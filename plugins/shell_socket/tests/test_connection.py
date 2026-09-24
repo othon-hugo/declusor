@@ -1,5 +1,3 @@
-"""Unit tests for ShellSocketConnection."""
-
 from collections.abc import Callable
 
 import pytest

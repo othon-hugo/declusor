@@ -5,6 +5,7 @@ from declusor import core, testing
 
 def test_parser_parse_is_idempotent(tmp_path: Path) -> None:
     """Calling parse() multiple times on the same DeclusorParser must not error."""
+
     registry = core.ClientRegistry()
     registry.register(testing.DummyClientPlugin)
 

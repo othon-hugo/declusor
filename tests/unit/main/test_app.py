@@ -7,6 +7,7 @@ from declusor import core, main, testing
 
 def test_create_application_initializes_plugins() -> None:
     """Verify create_application loads built-in plugins into registry."""
+
     app = main.create_application()
     assert isinstance(app, main.Application)
     assert "shell_socket" in app._registry.names()
@@ -15,6 +16,7 @@ def test_create_application_initializes_plugins() -> None:
 
 def test_application_connect_routes() -> None:
     """Verify application registers core routes on its router."""
+
     registry = core.ClientRegistry()
     app = main.Application(registry)
     app._connect_routes()
@@ -25,6 +27,7 @@ def test_application_connect_routes() -> None:
 
 def test_application_run_lifecycle() -> None:
     """Verify Application.run lifecycle from validation to prompt execution."""
+
     dummy_conn = testing.DummyConnection()
     dummy_runtime = testing.DummyClientRuntime(connection_to_return=dummy_conn)
     testing.DummyClientPlugin.reset()

@@ -1,5 +1,3 @@
-"""Unit tests for ShellSocketProfile."""
-
 import pytest
 import shell_socket
 

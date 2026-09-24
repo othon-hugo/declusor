@@ -99,6 +99,7 @@ def test_validation_rejects_empty_name() -> None:
 
 def test_register_and_get() -> None:
     """Verify registering a valid plugin and retrieving it by name."""
+
     manager = core.PluginManager()
     manager.register(DummyValidPlugin)
 

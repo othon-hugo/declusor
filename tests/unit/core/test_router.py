@@ -60,6 +60,7 @@ def test_router_get_route_usage_and_documentation() -> None:
         argument: contract.ControllerRequest,
     ) -> contract.ControllerResult:
         """First command description."""
+
         return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
 
     def cmd_b(
@@ -69,6 +70,7 @@ def test_router_get_route_usage_and_documentation() -> None:
         """Second command
         with multiple lines.
         """
+
         return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
 
     router.connect("alpha", cmd_a)

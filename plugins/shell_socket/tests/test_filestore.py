@@ -1,5 +1,3 @@
-"""Unit tests for ShellSocketFileStore."""
-
 from pathlib import Path
 
 import pytest

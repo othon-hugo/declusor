@@ -9,6 +9,7 @@ from declusor import presentation
 
 def test_console_write_message(capsys: pytest.CaptureFixture[str]) -> None:
     """Verify write_message outputs to stdout with newline."""
+
     console = presentation.Console()
 
     console.write_message("hello world")

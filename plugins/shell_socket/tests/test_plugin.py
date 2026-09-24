@@ -1,5 +1,3 @@
-"""Unit tests for ShellSocketPlugin."""
-
 from pathlib import Path
 from socket import socket
 from typing import cast

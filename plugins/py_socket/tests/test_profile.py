@@ -1,5 +1,3 @@
-"""Unit tests for PySocketProfile."""
-
 import py_socket
 import pytest
 

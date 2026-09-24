@@ -1,5 +1,3 @@
-"""Unit tests for PySocketFileStore."""
-
 from pathlib import Path
 
 import py_socket

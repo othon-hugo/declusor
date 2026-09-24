@@ -1,5 +1,3 @@
-"""Fixtures and test helpers for shell_socket plugin tests."""
-
 from collections.abc import Callable
 from pathlib import Path
 from socket import socket

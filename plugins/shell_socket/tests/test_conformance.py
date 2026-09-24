@@ -1,5 +1,3 @@
-"""Contract conformance test for ShellSocketPlugin."""
-
 from pathlib import Path
 from typing import Any
 

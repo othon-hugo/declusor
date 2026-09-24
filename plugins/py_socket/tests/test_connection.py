@@ -1,5 +1,3 @@
-"""Unit tests for PySocketConnection."""
-
 from socket import socket
 from typing import cast
 
