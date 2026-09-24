@@ -1,48 +1,54 @@
 # Declusor Architecture
 
-Declusor is a command-and-control (C2) framework built with clean architecture principles, emphasizing separation of concerns, dependency inversion, and modularity. The architecture follows a layered approach where dependencies flow inward toward domain abstractions, ensuring maintainability and testability.
+Declusor is an interactive post-exploitation and command-and-control (C2) framework built with clean architecture principles, emphasizing separation of concerns, dependency inversion, and extensible modularity. Dependencies flow inward toward domain abstractions (`contract`), ensuring testability and runtime flexibility.
 
 ## Architectural Principles
 
 ### 1. Dependency Inversion
 
-- High-level modules depend on abstractions, not concrete implementations
-- The `interface` package defines domain contracts that all implementations must follow
-- Core infrastructure implements these abstractions without coupling to application logic
+- High-level modules and framework infrastructure depend on domain abstractions, not concrete implementations.
+- The `contract` package defines strict contracts (`IClientPlugin`, `IClientRuntime`, `IConnection`, `ConnectionState`, `ICommand`, etc.).
+- Concrete plugins implement these abstractions without coupling the core engine to any specific transport.
 
-### 2. Separation of Concerns
+### 2. Autonomous Plugin Self-Contention (Colocation)
 
-- Each package has a single, well-defined responsibility
-- Business logic is isolated from infrastructure concerns
-- Application orchestration is separated from implementation details
+- Plugins are fully self-contained packages located outside `src/` under `plugins/` or distributed as standalone pip packages.
+- Each plugin bundles its own plugin class, runtime adapter, connection state machine, profile, and embedded assets (`launchers/`, `helpers/`, `modules/`).
+- No concrete client logic or hardcoded client files exist in the core `src/declusor/` codebase.
 
-### 3. Dependency Injection
+### 3. Multi-Tier Dynamic Discovery
 
-- The `main` package acts as the composition root
-- Dependencies are injected at runtime, not hardcoded
-- Controllers receive all required dependencies as parameters
+- `PluginManager` discovers and registers client plugins across three tiers:
+  1. **Built-in / Repository plugins** (`plugins/` directory).
+  2. **Python Entry Points** (`group="declusor.plugins"` via PEP 621 / pip).
+  3. **Drop-in / User directories** (`~/.declusor/plugins/` or CLI `--plugin-dir`).
+- Strict contract validation barriers ensure only well-formed plugins are registered.
 
 ## Layer Architecture
 
 ```mermaid
 graph TB
-    subgraph "Foundation Layer"
-        CONFIG[config<br/>Configuration & Exceptions]
-        UTIL[util<br/>Shared Utilities]
-        CONTRACT[contract<br/>Domain Abstractions & Contracts]
+    subgraph "Foundation Layer (src/declusor/)"
+        CONFIG[config<br/>Settings, BasePath & Exceptions]
+        UTIL[util<br/>Stateless Utilities: network, encoding, storage]
+        CONTRACT[contract<br/>Rigid Abstractions & Lifecycle Invariants]
     end
 
-    subgraph "Implementation Layer"
-        CORE[core<br/>Infrastructure: Router, Registry, Parser]
-        PRESENTATION[presentation<br/>View Layer: Console, PromptCLI]
-        CONTROLLER[controller<br/>Request Handlers]
-        COMMAND[command<br/>Operation Implementations]
-        CONNECTION[connection<br/>Transport State Machine]
-        PLUGIN[plugin<br/>Client Plugins & Runtimes]
+    subgraph "Core & Presentation Layer (src/declusor/)"
+        CORE[core<br/>Router, Parser, PluginManager]
+        PRESENTATION[presentation<br/>Console & PromptCLI REPL]
+        COMMAND[command<br/>Stateless Command Objects & DTOs]
+        CONTROLLER[controller<br/>Request Handlers & Route Dispatch]
     end
 
-    subgraph "Application Layer"
-        MAIN[main<br/>Composition Root & DI]
+    subgraph "Application Composition (src/declusor/)"
+        MAIN[main<br/>Composition Root & Dynamic Discovery DI]
+    end
+
+    subgraph "Extensible Plugins Layer (plugins/ or External Packages)"
+        SHELL[plugins/shell_socket<br/>Bash /dev/tcp Client & Assets]
+        PYTHON[plugins/py_socket<br/>Python Agent Client & Assets]
+        EXTERNAL[External / Drop-in Plugins<br/>pip entry-points & custom dirs]
     end
 
     %% Dependencies
@@ -50,17 +56,13 @@ graph TB
     CONTRACT -->|uses| CONFIG
     CONTRACT -->|uses| UTIL
 
-    CORE -->|implements| CONTRACT
+    CORE -->|implements/manages| CONTRACT
     CORE -->|uses| CONFIG
     CORE -->|uses| UTIL
 
     PRESENTATION -->|implements| CONTRACT
     PRESENTATION -->|uses| CONFIG
     PRESENTATION -->|uses| UTIL
-
-    CONNECTION -->|implements| CONTRACT
-    CONNECTION -->|uses| CONFIG
-    CONNECTION -->|uses| UTIL
 
     COMMAND -->|implements| CONTRACT
     COMMAND -->|uses| CONFIG
@@ -70,53 +72,66 @@ graph TB
     CONTROLLER -->|uses| COMMAND
     CONTROLLER -->|uses| CONFIG
 
-    PLUGIN -->|implements| CONTRACT
-    PLUGIN -->|uses| CONNECTION
-    PLUGIN -->|uses| CONFIG
-    PLUGIN -->|uses| UTIL
-
     MAIN -->|wires| PRESENTATION
     MAIN -->|wires| CONTROLLER
     MAIN -->|wires| CORE
-    MAIN -->|wires| PLUGIN
-    MAIN -->|wires| CONNECTION
+
+    SHELL -->|implements| CONTRACT
+    SHELL -->|uses| CONFIG
+    SHELL -->|uses| UTIL
+
+    PYTHON -->|implements| CONTRACT
+    PYTHON -->|uses| CONFIG
+    PYTHON -->|uses| UTIL
+
+    EXTERNAL -->|implements| CONTRACT
+    EXTERNAL -->|uses| CONFIG
+    EXTERNAL -->|uses| UTIL
+
+    MAIN -.->|discovers via PluginManager| SHELL
+    MAIN -.->|discovers via PluginManager| PYTHON
+    MAIN -.->|discovers via PluginManager| EXTERNAL
 ```
 
 ## Package Responsibilities
 
-### Foundation Layer
+### Foundation Layer (`src/declusor/`)
 
 #### `contract` (Domain Layer)
 
-Defines abstract contracts for all system components. Depends only on foundation utilities and configuration.
+Defines abstract contracts for all system components. Level 2 abstraction with zero dependencies on concrete implementations.
 
-| Interface            | Role                                                                           |
-| -------------------- | ------------------------------------------------------------------------------ |
-| `IConnection`        | Network connection lifecycle state machine and framed read/write               |
-| `IConnectionProfile` | Client configuration data and shell command formatting                         |
-| `ICommand`           | Executable action within a session context (`send_request` -> `read`)          |
-| `IRouter`            | Route-to-controller mapping and dispatch                                       |
-| `IConsole`           | All console I/O (input, output, errors) — fully abstract                       |
-| `IPrompt`            | Interactive command loop                                                       |
-| `IParser[T]`         | Generic command-line argument parser                                           |
-| `ControllerAction`   | Lifecycle signals (`CONTINUE`, `TERMINATE`)                                    |
-| `ControllerResult`   | Action and optional message returned to the presentation loop                  |
-| `SessionContext`     | Encapsulates active session (connection, console, files) and executes commands |
-| `Controller`         | Type alias: `(SessionContext, ControllerRequest) -> ControllerResult`          |
+| Interface / Type     | Role                                                                                |
+| -------------------- | ----------------------------------------------------------------------------------- |
+| `IClientPlugin`      | Contract for client plugins (CLI flags, configuration, validation, runtime factory) |
+| `IClientRuntime`     | Adapter rendering client stager and creating active `IConnection` instances         |
+| `IConnection`        | Network session contract with lifecycle state machine and framed read/write         |
+| `ConnectionState`    | Explicit lifecycle state machine (`CREATED`, `INITIALIZING`, `CONNECTED`, `CLOSED`) |
+| `IClientFileStore`   | Asset resolution contract for launchers, helpers, and payload modules               |
+| `IConnectionProfile` | Protocol metadata, buffer sizes, timeouts, and operation call templates             |
+| `ICommand`           | Stateless executable action within a `SessionContext` (`send_request` -> `read`)    |
+| `SessionContext`     | Coordinates active session (`connection`, `console`, `files`) and executes commands |
+| `IRouter`            | Route-to-controller mapping, dispatch, and documentation                            |
+| `IConsole`           | Presentation terminal I/O (messages, binary data, errors, warnings)                 |
+| `IPrompt`            | Interactive command loop                                                            |
+| `IParser[T]`         | Generic command-line argument parser                                                |
+| `ControllerAction`   | Lifecycle signals (`CONTINUE`, `TERMINATE`)                                         |
+| `ControllerResult`   | Result wrapper with action and optional message                                     |
+| `Controller`         | Type alias: `(SessionContext, ControllerRequest) -> ControllerResult`               |
 
 #### `config`
 
-Centralized configuration, constants, and exception hierarchy. Level 0 foundation with zero internal dependencies.
+Centralized settings, base directory paths, and exception hierarchy. Level 0 foundation with zero internal dependencies.
 
-| Module          | Contents                                                             |
-| --------------- | -------------------------------------------------------------------- |
-| `settings.py`   | `Settings` (project metadata, default ACKs), `BasePath`, `DataPaths` |
-| `enums.py`      | `ClientFile`, `OperationCode`                                        |
-| `exceptions.py` | Exception hierarchy rooted at `DeclusorException`                    |
+| Module          | Contents                                                                                                                                 |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `settings.py`   | `Settings` (project metadata, default ACKs), `BasePath` (`ROOT_DIR`, `PLUGINS_DIR`, `USER_PLUGINS_DIR`, `DATA_PATHS`), `ClientDataPaths` |
+| `enums.py`      | `OperationCode` (e.g. `STORE_FILE`, `EXEC_FILE`)                                                                                         |
+| `exceptions.py` | Exception hierarchy rooted at `DeclusorException`                                                                                        |
 
 #### `util`
 
-Stateless utility functions used across all layers. Depends only on `config`.
+Stateless utility functions. Level 1 foundation depending only on `config`.
 
 | Module           | Purpose                                                        |
 | ---------------- | -------------------------------------------------------------- |
@@ -127,7 +142,17 @@ Stateless utility functions used across all layers. Depends only on `config`.
 | `parsing.py`     | Command argument parsing (`Parser`, `parse_command_arguments`) |
 | `concurrency.py` | Thread pool and cooperative task management (`TaskPool`)       |
 
-### Implementation Layer
+### Implementation Layer (`src/declusor/`)
+
+#### `core`
+
+Infrastructure services implementing routing, parsing, and dynamic plugin discovery.
+
+| Class            | Implements                 | Role                                                                                            |
+| ---------------- | -------------------------- | ----------------------------------------------------------------------------------------------- |
+| `Router`         | `IRouter`                  | Route table with registration guards and documentation                                          |
+| `PluginManager`  | `ClientRegistry`           | Multi-tier dynamic discovery engine (built-ins, entry-points, drop-ins) with validation barrier |
+| `DeclusorParser` | `IParser[DeclusorOptions]` | CLI parser with dynamic client choices and `--plugin-dir` support                               |
 
 #### `presentation` (View Layer)
 
@@ -138,123 +163,35 @@ User interface and operator interaction components.
 | `Console`   | `IConsole` | Readline-based terminal I/O with autocomplete, history and streams |
 | `PromptCLI` | `IPrompt`  | Interactive REPL view loop coordinating controller action signals  |
 
-#### `core`
-
-Application infrastructure services.
-
-| Class            | Implements                 | Role                                                   |
-| ---------------- | -------------------------- | ------------------------------------------------------ |
-| `Router`         | `IRouter`                  | Route table with registration guards and documentation |
-| `ClientRegistry` | N/A                        | Dynamic registry of available client plugins           |
-| `DeclusorParser` | `IParser[DeclusorOptions]` | CLI argument parser for host, port, and client options |
-
-#### `connection`
-
-Transport-layer implementations and network lifecycle management.
-
-| Class                   | Role                                                                                                              |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `ConnectionState`       | Explicit lifecycle state machine (`CREATED`, `INITIALIZING`, `CONNECTED`, `CLOSED`)                               |
-| `ShellSocketProfile`    | Frozen dataclass holding client protocol parameters and operation mappings                                        |
-| `ShellSocketConnection` | Implements `IConnection`. Handles TCP socket read/write with ACK framing, stream-safe handshake, and lifecycle.   |
-| `ShellSocketFileStore`  | Implements `IClientFileStore`. Reads client bootstrap scripts, loads libraries and validates payload containment. |
-
 #### `command`
 
-Executable operations using the Command design pattern. Commands are pure, stateless operation objects holding only their validated input parameters.
+Stateless command pattern operations holding validated parameter DTOs.
 
-##### Command DTOs
+| DTO                 | Invariant Validation                     | Purpose                                      |
+| ------------------- | ---------------------------------------- | -------------------------------------------- |
+| `ExecuteCommandDTO` | Non-empty command line string            | Parameters for remote command execution      |
+| `ExecuteFileDTO`    | Validated local script file `Path`       | Parameters for script upload and execution   |
+| `UploadFileDTO`     | Validated local file `Path`              | Parameters for file upload without execution |
+| `LoadModuleDTO`     | Non-empty, no traversal (`..`, `/`, `\`) | Parameters for remote module loading         |
+| `ShellDTO`          | Optional shell banner message            | Interactive shell configuration              |
 
-| DTO                 | Invariant Validation                     | Purpose                                           |
-| ------------------- | ---------------------------------------- | ------------------------------------------------- |
-| `ExecuteCommandDTO` | Non-empty command line string            | Parameters for remote command execution           |
-| `ExecuteFileDTO`    | Validated local script file `Path`       | Parameters for script upload and remote execution |
-| `UploadFileDTO`     | Validated local file `Path`              | Parameters for file upload without execution      |
-| `LoadModuleDTO`     | Non-empty, no traversal (`..`, `/`, `\`) | Parameters for remote module loading              |
-| `ShellDTO`          | Optional shell banner message            | Interactive shell configuration                   |
+### Extensible Plugins Layer (`plugins/` & External Packages)
 
-##### Command Classes
+Each plugin is an autonomous package holding its plugin descriptor, runtime adapter, transport connection, and embedded assets.
 
-| Class            | Accepts DTO         | Implements | Purpose                                                                      |
-| ---------------- | ------------------- | ---------- | ---------------------------------------------------------------------------- |
-| `ExecuteFile`    | `ExecuteFileDTO`    | `ICommand` | Execute a local script on the remote system                                  |
-| `UploadFile`     | `UploadFileDTO`     | `ICommand` | Upload a file to the remote system without executing it                      |
-| `LoadModule`     | `LoadModuleDTO`     | `ICommand` | Load and transmit an operator module from `data/modules`                     |
-| `ExecuteCommand` | `ExecuteCommandDTO` | `ICommand` | Execute a single remote shell command string                                 |
-| `LaunchShell`    | `ShellDTO` (opt)    | `ICommand` | Interactive bidirectional shell session with cooperative thread coordination |
+#### Built-in Plugins
 
-#### `controller`
+| Plugin         | Identifier     | Target OS      | Engine                                     | Assets Location                |
+| -------------- | -------------- | -------------- | ------------------------------------------ | ------------------------------ |
+| `shell_socket` | `shell_socket` | Linux / POSIX  | Native Bash `/dev/tcp`                     | `plugins/shell_socket/assets/` |
+| `py_socket`    | `py_socket`    | Cross-platform | In-memory `exec()` + `subprocess` fallback | `plugins/py_socket/assets/`    |
 
-Request handlers converting user input into command execution and returning presentation signals.
+#### Asset Overlay Architecture
 
-| Function                 | Route     | Purpose                                                                 |
-| ------------------------ | --------- | ----------------------------------------------------------------------- |
-| `call_execute`           | `execute` | Parse filepath, execute on remote, return `ControllerAction.CONTINUE`   |
-| `call_upload`            | `upload`  | Parse filepath, upload to remote, return `ControllerAction.CONTINUE`    |
-| `call_load`              | `load`    | Parse module name, load module, return `ControllerAction.CONTINUE`      |
-| `call_command`           | `command` | Parse command string, run on remote, return `ControllerAction.CONTINUE` |
-| `call_shell`             | `shell`   | Launch interactive shell, return `ControllerAction.CONTINUE`            |
-| `call_exit`              | `exit`    | Cleanly return `ControllerAction.TERMINATE` to stop prompt loop         |
-| `create_help_controller` | `help`    | Factory returning help controller with route documentation              |
+Plugins bundle default assets under their `assets/` subdirectory:
 
-Shared via `_helpers.py`: the `_execute_and_read` helper eliminates the duplicated execute → read → display loop across file-based controllers.
+- `launchers/`: Stager templates substituted at runtime (`$HOST`, `$PORT`, `$ACKNOWLEDGE`).
+- `helpers/`: Libraries transmitted and evaluated during session initialization.
+- `modules/`: On-demand reconnaissance and discovery modules.
 
-### Application Layer
-
-#### `main`
-
-Application bootstrap and dependency injection, split into focused modules.
-
-| Module         | Role                                                                                     |
-| -------------- | ---------------------------------------------------------------------------------------- |
-| `__init__.py`  | Composition root — creates top-level deps (router, parser, console), calls `run_service` |
-| `service.py`   | Service orchestration — directory validation, route wiring, connection lifecycle         |
-| `exception.py` | Exception-to-`SystemExit` mapping for clean CLI error messages                           |
-
-## Design Decisions
-
-### Why `connection` is separate from `core`?
-
-- `core` implements general infrastructure interfaces (router, console, prompt, parser)
-- `connection` is transport-specific — it knows about sockets, ACK protocols, and client profiles
-- Keeping them separate allows adding new transport types (HTTP, WebSocket) without touching `core`
-
-### Why `ShellSocketProfile` is a frozen dataclass?
-
-- Profiles are **immutable configuration** — once created, they shouldn't change
-- Frozen dataclasses enforce this at runtime
-- The profile is pure data — all I/O operations live on `ShellSocketConnection`
-
-### Why `IConsole` is fully abstract?
-
-- All I/O methods (`read_line`, `write_message`, etc.) are abstract
-- Prevents mock consoles in tests from accidentally writing to `sys.stdout`
-- The concrete `Console` in `core` provides the real `sys.stdout`/`input()` implementations
-
-### Why controllers depend on `interface` instead of `core`?
-
-- Controllers don't need to know about concrete implementations
-- Enables dependency injection of any implementation
-- Improves testability and flexibility
-
-### Why separate `command` from `controller`?
-
-- Commands encapsulate operations (what to do)
-- Controllers handle requests (when to do it)
-- Separation allows command reuse across different controllers
-
-### Why `IConnection` supports context manager protocol?
-
-- Ensures `close()` is always called, even on exceptions
-- Eliminates `try/finally` boilerplate in `service.py`
-- The protocol is concrete on the ABC — subclasses only need to implement `close()`
-
-## Extension Points
-
-To extend the system:
-
-1. **Add a new command**: Create a class implementing `ICommand` in the `command` package
-2. **Add a new controller**: Create a function with the `Controller` signature in the `controller` package
-3. **Add a new transport**: Create a new module in the `connection` package implementing `IConnection` and `IProfile`
-4. **Add a new interface**: Define an abstract base class in the `interface` package
-5. **Register the route**: Wire the controller in `main/service.py` via `_set_routes`
+Operators can overlay custom modules or helpers without modifying the plugin code by passing `--data-root <path>`.

@@ -38,6 +38,10 @@ Issues = "https://github.com/othonhugo/declusor/issues"
 [project.scripts]
 declusor = "declusor.main:main"
 
+[project.entry-points."declusor.plugins"]
+shell_socket = "plugins.shell_socket:ShellSocketPlugin"
+py_socket = "plugins.py_socket:PySocketPlugin"
+
 [dependency-groups]
 dev = [
     "mypy>=1.18.2,<2",
@@ -56,6 +60,10 @@ link-mode = "copy"
 [tool.ruff]
 line-length = 150
 target-version = "py311"
+exclude = [
+    "plugins/*/assets/*",
+    "data/*",
+]
 
 [tool.ruff.lint]
 ignore = ["SIM117"]
@@ -85,7 +93,7 @@ disallow_subclassing_any = false
 
 [tool.pytest.ini_options]
 addopts = "-ra --strict-markers --tb=short -v"
-pythonpath = ["src"]
+pythonpath = ["src", "."]
 testpaths = ["tests"]
 norecursedirs = [
     ".vscode",

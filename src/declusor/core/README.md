@@ -4,17 +4,19 @@ The **core** package provides infrastructure services implementing domain contra
 
 ## Modules
 
-| Module       | Class                      | Implements                                                            |
-| ------------ | -------------------------- | --------------------------------------------------------------------- |
-| `router.py`  | `Router`                   | `IRouter` — route-table management, controller lookup, and usage text |
-| `parser.py`  | `DeclusorParser`           | `IParser[DeclusorOptions]` — command-line option parser               |
-| `clients.py` | `ClientRegistry`, `Plugin` | Plugin registry for client transports and runtimes                    |
+| Module              | Class            | Implements                                                                                                               |
+| ------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `router.py`         | `Router`         | `IRouter` — route-table management, controller lookup, and usage text                                                    |
+| `parser.py`         | `DeclusorParser` | `IParser[DeclusorOptions]` — command-line option parser with dynamic client discovery                                    |
+| `plugin_manager.py` | `PluginManager`  | Multi-tier plugin discovery engine (built-in directories, entry points, drop-in folders) with strict contract validation |
+| `clients.py`        | `ClientRegistry` | Base registry mapping client identifiers to their plugin classes                                                         |
 
 > [!NOTE]
-> Interactive terminal components (console I/O and prompt loops) live in the `presentation` package. Transport state machines live in `connection`.
+> Interactive terminal components (console I/O and prompt loops) live in `presentation`. Concrete client plugins live in the external `plugins/` directory and third-party packages.
 
 ## Design Principles
 
 1. **Contract Compliance** — classes implement abstractions defined in `contract`.
-2. **Infrastructure Decoupling** — routing and parsing are decoupled from specific transport or presentation mechanics.
-3. **Registry Isolation** — client registries support dependency injection for clean testing.
+2. **Infrastructure Decoupling** — routing and parsing are completely decoupled from concrete client implementations.
+3. **Multi-Tier Discovery & Precedence** — `PluginManager` discovers plugins dynamically at runtime across built-ins, PEP 621 entry points, and drop-in folders.
+4. **Validation Barrier** — `PluginManager` validates plugin classes prior to registration, preventing faulty third-party code from compromising runtime stability.

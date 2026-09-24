@@ -1,7 +1,20 @@
-from .client import ClientConfig, IClientFileStore, IClientPlugin, IClientRuntime
-from .command import ICommand
-from .connection import IConnection, IConnectionProfile
-from .console import IConsole
+from .client import (
+    ClientConfig,
+    IClientFileStore,
+    IClientPlugin,
+    IClientRuntime,
+)
+from .command import (
+    ICommand,
+)
+from .connection import (
+    ConnectionState,
+    IConnection,
+    IConnectionProfile,
+)
+from .console import (
+    IConsole,
+)
 from .controller import (
     Controller,
     ControllerAction,
@@ -10,12 +23,19 @@ from .controller import (
     ControllerResult,
     SessionContext,
 )
-from .parser import IParser
-from .prompt import IPrompt
-from .router import IRouter
+from .parser import (
+    IParser,
+)
+from .prompt import (
+    IPrompt,
+)
+from .router import (
+    IRouter,
+)
 
 __all__ = [
     "ClientConfig",
+    "ConnectionState",
     "Controller",
     "ControllerAction",
     "ControllerDependencies",

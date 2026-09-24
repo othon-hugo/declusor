@@ -133,12 +133,3 @@ class CommandError(DeclusorException):
         self.description = description
 
         super().__init__(f"command error: {self.description}")
-
-
-class ExitRequest(DeclusorException):
-    """Signals a request to exit the application.
-
-    Deprecated: Controllers now return ``ControllerResult(action=ControllerAction.TERMINATE)``
-    directly to the presentation layer without relying on exceptions for control flow.
-    Retained for backwards compatibility.
-    """

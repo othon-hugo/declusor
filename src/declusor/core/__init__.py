@@ -1,5 +1,12 @@
-from .clients import ClientPlugin, ClientRegistry
 from .parser import DeclusorOptions, DeclusorParser
+from .plugin import (
+    ClientPlugin,
+    ClientRegistry,
+    PluginManager,
+    PluginRegistry,
+    PluginType,
+    PluginValidationError,
+)
 from .router import Router
 
 __all__ = [
@@ -7,5 +14,9 @@ __all__ = [
     "ClientRegistry",
     "DeclusorOptions",
     "DeclusorParser",
+    "PluginManager",
+    "PluginRegistry",
+    "PluginType",
+    "PluginValidationError",
     "Router",
 ]

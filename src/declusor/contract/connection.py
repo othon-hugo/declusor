@@ -1,9 +1,23 @@
 from abc import ABC, abstractmethod
 from collections.abc import Generator
+from enum import StrEnum
 from typing import TYPE_CHECKING, Self
 
 if TYPE_CHECKING:
     from declusor.config import OperationCode
+
+
+class ConnectionState(StrEnum):
+    """Lifecycle state machine for a client connection.
+
+    States transition deterministically:
+    ``CREATED`` -> ``INITIALIZING`` -> ``CONNECTED`` -> ``CLOSED``.
+    """
+
+    CREATED = "CREATED"
+    INITIALIZING = "INITIALIZING"
+    CONNECTED = "CONNECTED"
+    CLOSED = "CLOSED"
 
 
 class IConnectionProfile(ABC):
@@ -55,6 +69,13 @@ class IConnection(ABC):
     Supports the context manager protocol — ``close()`` is called automatically
     on exit.
     """
+
+    @property
+    @abstractmethod
+    def state(self) -> ConnectionState:
+        """Current lifecycle state of the connection."""
+
+        raise NotImplementedError
 
     @property
     @abstractmethod

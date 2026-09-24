@@ -1,6 +1,7 @@
 from collections.abc import Sequence
+from pathlib import Path
 
-from declusor import config, contract, controller, core, plugin, presentation, util
+from declusor import config, contract, controller, core, presentation, util
 
 
 class Application:
@@ -78,8 +79,7 @@ class Application:
 
     @staticmethod
     def _validate_directories(data_paths: config.DataPaths, /) -> None:
-        """Validate the data directories required by the selected client."""
-
+        """Validate optional data directories if specified."""
         directories = (
             data_paths.clients,
             data_paths.modules,
@@ -87,10 +87,7 @@ class Application:
         )
 
         for directory in directories:
-            if not directory.exists():
-                raise FileNotFoundError(directory)
-
-            if not directory.is_dir():
+            if directory.exists() and not directory.is_dir():
                 raise NotADirectoryError(directory)
 
     def _connect_routes(self) -> None:
@@ -110,15 +107,19 @@ class Application:
         self._router.connect("exit", controller.call_exit)
 
 
-def create_application() -> Application:
-    """Create the application with all built-in client plugins registered.
+def create_application(search_dirs: Sequence[Path] | None = None) -> Application:
+    """Create the application with all discovered client plugins registered.
+
+    Runs the multi-tier discovery engine (built-in plugins/, entry points,
+    and user drop-in directory) to populate the registry dynamically.
+
+    Args:
+        search_dirs: Optional sequence of paths to search for plugins.
 
     Returns:
         Fully composed application ready to execute parsed options.
     """
 
-    registry = core.ClientRegistry()
-    registry.register(plugin.ShellSocketPlugin)
-    registry.register(plugin.PySocketPlugin)
+    manager = core.PluginManager().discover(search_dirs)
 
-    return Application(registry)
+    return Application(manager)
