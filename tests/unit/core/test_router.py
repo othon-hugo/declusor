@@ -1,5 +1,3 @@
-"""Unit tests for Router registration, lookup, and documentation."""
-
 import pytest
 
 from declusor import config, contract, core

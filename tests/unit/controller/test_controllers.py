@@ -3,7 +3,7 @@
 from pathlib import Path
 
 from declusor import config, contract, controller
-from tests.testing import (
+from declusor.testing import (
     DummyClientFileStore,
     DummyConnection,
     DummyConnectionProfile,

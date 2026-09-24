@@ -1,7 +1,8 @@
 from pathlib import Path
 
+import shell_socket
+
 from declusor import core
-from plugins import shell_socket
 
 
 def test_parser_parse_is_idempotent(tmp_path: Path) -> None:

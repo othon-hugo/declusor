@@ -6,7 +6,7 @@ import pytest
 
 from declusor import config
 from declusor.main.cli import main
-from tests.testing import DummyApplication, create_dummy_options
+from declusor.testing import DummyApplication, create_dummy_options
 
 
 def test_main_success(dummy_app: DummyApplication) -> None:

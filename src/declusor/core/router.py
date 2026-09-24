@@ -83,4 +83,5 @@ class Router(contract.IRouter):
             documentation += f"{self.get_route_usage(route)}\n"
 
         self._documentation_cache = documentation.rstrip()
+
         return self._documentation_cache

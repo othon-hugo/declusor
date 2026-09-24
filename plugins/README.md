@@ -39,16 +39,38 @@ Declusor discovers plugins at runtime across **three tiers**:
 
 ## Creating a Custom Plugin
 
-### 1. Create a Package Directory
+### 1. Create the Plugin Structure
 
 ```bash
+mkdir -p my_client/src/my_client
 mkdir -p my_client/assets/{launchers,helpers,modules}
-touch my_client/{__init__.py,plugin.py,connection.py,README.md}
+mkdir -p my_client/tests
+touch my_client/pyproject.toml my_client/README.md
+touch my_client/src/my_client/{__init__.py,plugin.py,connection.py}
+```
+
+Canonical layout:
+
+```text
+my_client/
+├── pyproject.toml     # Standalone package metadata & entry point
+├── README.md          # Plugin documentation
+├── src/
+│   └── my_client/
+│       ├── __init__.py    # Exports
+│       ├── plugin.py      # IClientPlugin implementation
+│       └── connection.py  # IConnection & IClientFileStore implementation
+├── assets/            # Bundled stagers and libraries
+│   ├── launchers/
+│   ├── helpers/
+│   └── modules/
+└── tests/             # Contract conformance and unit tests
+    └── test_conformance.py
 ```
 
 ### 2. Implement the Contracts
 
-In `my_client/plugin.py`:
+In `my_client/src/my_client/plugin.py`:
 
 ```python
 from pathlib import Path
@@ -82,7 +104,30 @@ class MyClientPlugin(contract.IClientPlugin):
         return MyClientRuntime(client_config)
 ```
 
-### 3. Test with Declusor
+### 3. Verify Contract Conformance with `declusor.testing`
+
+Plugin authors can use Declusor's built-in testing SDK to verify compliance:
+
+```python
+import pytest
+from declusor import contract
+from declusor.testing import PluginConformanceTestSuite
+from my_client.plugin import MyClientPlugin
+
+
+class TestMyClientConformance(PluginConformanceTestSuite):
+    @pytest.fixture
+    def plugin_class(self) -> type[contract.IClientPlugin]:
+        return MyClientPlugin
+```
+
+Execute with `pytest`:
+
+```bash
+pytest my_client/tests/ -v
+```
+
+### 4. Test Live with Declusor
 
 Run Declusor pointing to your plugin directory:
 

@@ -1,9 +1,7 @@
-"""Unit tests for ClientRegistry isolation and DeclusorParser client selection."""
-
 import pytest
 
 from declusor import core
-from tests.testing import DummyClientPlugin
+from declusor.testing import DummyClientPlugin
 
 
 def test_registries_are_isolated() -> None:
