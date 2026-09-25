@@ -53,8 +53,8 @@ def test_base_path_contains_only_application_and_plugin_directories() -> None:
     assert not hasattr(config.BasePath, "USER_DATA_PATHS")
 
 
-class DummyPathClientPlugin(contract.IPlugin):
-    """Dummy client plugin for testing data path derivation."""
+class DummyPathPlugin(contract.IPlugin):
+    """Dummy plugin for testing data path derivation."""
 
     name = "dummy_path_plugin"
     description = "Dummy path client"
@@ -96,7 +96,7 @@ def test_parser_builds_client_paths_from_data_root(tmp_path: Path) -> None:
     launcher_file.write_text("", encoding="utf-8")
 
     manager = core.PluginManager()
-    manager.register(DummyPathClientPlugin)
+    manager.register(DummyPathPlugin)
 
     options = core.DeclusorParser(manager, name="declusor").parse(
         ("127.0.0.1", "9000", "--plugin", "dummy_path_plugin", "--data-root", str(tmp_path)),

@@ -161,7 +161,7 @@ Do **not** use unconstrained `unittest.mock.MagicMock` or fragile monkeypatching
 - `testing.DummyConnectionProfile`: Script rendering and command formatting.
 - `testing.DummyPluginFileStore`: In-memory file, library, and module streaming.
 - `testing.DummyPluginRuntime`: Deterministic connection creation.
-- `testing.DummyPlugin`: Self-contained client plugin for discovery and registration tests.
+- `testing.DummyPlugin`: Self-contained plugin for discovery and registration tests.
 - `testing.DummyRouter`: Route inspection, usage docs, and deterministic dispatching.
 - `testing.DummySocket`: In-memory byte buffers simulating socket send/recv without OS network binding.
 - `testing.DummyApplication`: In-memory CLI execution double tracking `parse` and `run` calls.
@@ -172,7 +172,7 @@ Standard pytest fixtures are pre-registered via `pytest_plugins = ["declusor.tes
 ### 4.2. Colocated Plugin Tests & Conformance
 
 - Native plugin tests live inside `plugins/<plugin_name>/tests/`.
-- Every client plugin must implement contract conformance tests by inheriting from `testing.PluginConformanceTestSuite`:
+- Every plugin must implement contract conformance tests by inheriting from `testing.PluginConformanceTestSuite`:
 
   ```python
   from declusor import testing

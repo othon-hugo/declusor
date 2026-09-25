@@ -6,7 +6,7 @@ from declusor import config, core, testing
 
 
 def test_declusor_parser_initialization_with_manager() -> None:
-    """Verify parser binds a ClientPluginManager directly."""
+    """Verify parser binds a PluginManager directly."""
 
     manager = core.PluginManager()
     manager.register(testing.DummyPlugin)

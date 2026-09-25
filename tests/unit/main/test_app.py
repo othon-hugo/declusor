@@ -25,7 +25,7 @@ def test_application_connect_routes() -> None:
 
 
 def test_application_register_plugin_at_runtime() -> None:
-    """Verify application allows registering client plugins at runtime."""
+    """Verify application allows registering plugins at runtime."""
 
     manager = core.PluginManager()
     app = main.Application(manager)

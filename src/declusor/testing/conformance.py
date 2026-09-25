@@ -76,7 +76,7 @@ def assert_conforms_to_client_plugin(
 
 
 class PluginConformanceTestSuite:
-    """Base pytest test suite for verifying full contract conformance of a client plugin.
+    """Base pytest test suite for verifying full contract conformance of a plugin.
 
     Plugin authors can simply subclass this in their test suite and define the
     ``plugin_class`` fixture.

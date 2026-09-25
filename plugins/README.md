@@ -1,6 +1,6 @@
 # Declusor Plugins
 
-This directory houses the built-in client plugins distributed with Declusor. Because Declusor employs a dynamic, multi-tier discovery architecture, third-party developers can create, test, and distribute custom plugins using the exact same structure.
+This directory houses the built-in plugins distributed with Declusor. Because Declusor employs a dynamic, multi-tier discovery architecture, third-party developers can create, test, and distribute custom plugins using the exact same structure.
 
 ## Plugin Architecture & Contracts
 
@@ -42,21 +42,21 @@ Declusor discovers plugins at runtime across **three tiers**:
 ### 1. Create the Plugin Structure
 
 ```bash
-mkdir -p my_client/src/declusor_my_client
-mkdir -p my_client/assets/{launchers,helpers,modules}
-mkdir -p my_client/tests
-touch my_client/pyproject.toml my_client/README.md
-touch my_client/src/declusor_my_client/{__init__.py,plugin.py,connection.py}
+mkdir -p declusor_plugin/src/declusor_my_plugin
+mkdir -p my_plugin/assets/{launchers,helpers,modules}
+mkdir -p my_plugin/tests
+touch my_plugin/pyproject.toml my_plugin/README.md
+touch my_plugin/src/declusor_my_plugin/{__init__.py,plugin.py,connection.py}
 ```
 
 Canonical layout:
 
 ```text
-my_client/
+my_plugin/
 ├── pyproject.toml     # Standalone package metadata & entry point
 ├── README.md          # Plugin documentation
 ├── src/
-│   └── declusor_my_client/
+│   └── declusor_my_plugin/
 │       ├── __init__.py    # Exports
 │       ├── plugin.py      # IPlugin implementation
 │       └── connection.py  # IConnection & IClientFileStore implementation
@@ -70,25 +70,25 @@ my_client/
 
 ### 2. Implement the Contracts
 
-In `my_client/src/declusor_my_client/plugin.py`:
+In `my_plugin/src/declusor_my_plugin/plugin.py`:
 
 ```python
 from pathlib import Path
 from declusor import contract, util, config
 
 
-class MyClientPlugin(contract.IPlugin):
-    name = "my_client"
-    description = "Description of my custom client"
+class MyPlugin(contract.IPlugin):
+    name = "my_plugin"
+    description = "Description of my custom transport plugin"
     version = "1.0.0"
 
     @classmethod
     def configure_parser(cls, parser: util.Parser, /) -> None:
-        parser.add_argument("--my-option", help="Custom option for this client")
+        parser.add_argument("--my-option", help="Custom option for this plugin")
 
     @classmethod
-    def build_config(cls, args: util.Namespace, data_paths: config.DataPaths | None = None, /) -> contract.ClientConfig:
-        return contract.ClientConfig(
+    def build_config(cls, args: util.Namespace, data_paths: config.DataPaths | None = None, /) -> contract.PluginConfig:
+        return contract.PluginConfig(
             kind=cls.name,
             host=args.host,
             port=args.port,
@@ -96,12 +96,12 @@ class MyClientPlugin(contract.IPlugin):
         )
 
     @classmethod
-    def validate(cls, plugin_config: contract.ClientConfig, /) -> None:
+    def validate(cls, plugin_config: contract.PluginConfig, /) -> None:
         pass
 
     @classmethod
-    def build_runtime(cls, plugin_config: contract.ClientConfig, /) -> contract.IPluginRuntime:
-        return MyClientRuntime(plugin_config)
+    def build_runtime(cls, plugin_config: contract.PluginConfig, /) -> contract.IPluginRuntime:
+        return MyPluginRuntime(plugin_config)
 ```
 
 ### 3. Verify Contract Conformance with `declusor.testing`
@@ -112,19 +112,19 @@ Plugin authors can use Declusor's built-in testing SDK to verify compliance:
 import pytest
 from declusor import contract
 from declusor.testing import PluginConformanceTestSuite
-from declusor_my_client.plugin import MyClientPlugin
+from declusor_my_plugin.plugin import MyPlugin
 
 
-class TestMyClientConformance(PluginConformanceTestSuite):
+class TestMyPluginConformance(PluginConformanceTestSuite):
     @pytest.fixture
     def plugin_class(self) -> type[contract.IPlugin]:
-        return MyClientPlugin
+        return MyPlugin
 ```
 
 Execute verification using `make`:
 
 ```bash
-make test-plugin PLUGIN=my_client
+make test-plugin PLUGIN=my_plugin
 ```
 
 ### 4. Test Live with Declusor
@@ -132,5 +132,5 @@ make test-plugin PLUGIN=my_client
 Run Declusor pointing to your plugin directory:
 
 ```bash
-declusor 0.0.0.0 9000 --plugin my_client --plugin-dir /path/to/my_client_parent_dir
+declusor 0.0.0.0 9000 --plugin my_plugin --plugin-dir /path/to/my_plugin_parent_dir
 ```

@@ -16,7 +16,7 @@ def test_registries_are_isolated() -> None:
 
 
 def test_parser_uses_injected_manager(monkeypatch: pytest.MonkeyPatch) -> None:
-    """The parser must resolve clients only from its injected manager."""
+    """The parser must resolve plugins only from its injected manager."""
 
     manager = core.PluginManager()
     manager.register(testing.DummyPlugin)
