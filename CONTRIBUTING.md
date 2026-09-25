@@ -2,56 +2,111 @@
 
 Thank you for your interest in contributing to **Declusor**! This document provides the architectural principles, quality standards, coding invariants, and workflows required to contribute effectively to this repository.
 
-## 1. Architectural Overview & Boundaries
+## Architectural Overview & Boundaries
 
 Declusor is architected around clean, decoupled layers with strict unidirectional dependency flow:
 
-```text
-main (Composition Root)
-  ├── core (Infrastructure, Registries, Routing, Parser)
-  ├── controller (Application Handlers & Flow Control)
-  ├── command (Encapsulated Operations & Immutable DTOs)
-  ├── presentation (Terminal REPL & Console View)
-  └── contract (Domain Interfaces & State Machines)
-        ├── util (Stateless Primitives & Helpers)
-        └── config (Constants, Enums, Settings, Exceptions)
+```mermaid
+flowchart TD
+    subgraph CompositionRoot["Composition Root"]
+        Main["main<br/>CLI bootstrap, registry wiring, dependency injection"]
+    end
+
+    subgraph AppInfra["Application & Infrastructure"]
+        Presentation["presentation<br/>Terminal REPL & formatters"]
+        Controller["controller<br/>Flow dispatch & signal emit"]
+        Command["command<br/>Immutable DTOs & operations"]
+        Core["core<br/>Discovery, CLI parser, router"]
+    end
+
+    subgraph Domain["Domain Layer"]
+        Contract["contract<br/>Abstract interfaces (ABC), state machines, session"]
+    end
+
+    subgraph Foundations["Foundations"]
+        Util["util<br/>Stateless primitives & generic helpers"]
+        Config["config<br/>Exceptions, settings, constants & enums"]
+    end
+
+    subgraph Ecosystem["Ecosystem & Verification"]
+        Plugins["plugins<br/>Autonomous transports"]
+        Testing["testing<br/>Public test SDK & conformance suites"]
+    end
+
+    Main --> Presentation
+    Main --> Controller
+    Main --> Core
+
+    Presentation --> Contract
+    Controller --> Command
+    Command --> Contract
+    Core --> Contract
+
+    Contract --> Util
+    Util --> Config
+
+    Plugins -.->|implements| Contract
+    Testing -.->|verifies| Contract
 ```
 
-### Layer Rules & Invariants
+### Foundations
 
 1. **`config` (Foundation Base)**:
-   - **Zero dependencies** on any other package in `declusor`.
-   - Centralizes domain exceptions (`DeclusorException`), operational enums (`OperationCode`, `ConnectionState`, `ControllerAction`), and path settings (`DataPaths`).
+   - Depends strictly on the standard library.
+   - Centralizes domain exceptions, configuration constants, settings, and enums.
 2. **`util` (Stateless Primitives)**:
-   - Depends **only** on `config`. Zero cyclic dependencies.
-   - Functions are pure, stateless, or defensive.
-   - When functions handle abstractions from higher layers (e.g. `import_plugin_from_file`), they **must use generic `TypeVar`** rather than importing contracts directly.
-3. **`contract` (Domain Layer)**:
-   - Depends **only** on `config` and `util`.
-   - Pure interfaces (`@abstractmethod`), state machines (`IConnection`), and data coordinators (`SessionContext`).
-   - Must have **zero dependencies** on concrete implementation packages (`core`, `command`, `controller`, `presentation`, `main`, or external `plugins`).
-4. **`command` (Command Pattern)**:
-   - Encapsulates single operations (`ExecuteCommand`, `ExecuteFile`, `UploadFile`, `LoadModule`, `LaunchShell`).
-   - Uses immutable DTOs (`ExecuteCommandDTO`, etc.) with fail-fast invariant validation.
-5. **`controller` (Application Handlers)**:
-   - Thin handlers that parse requests, construct command DTOs, and dispatch via `SessionContext.execute()`.
-   - Returns structured `ControllerResult(action=ControllerAction.CONTINUE | TERMINATE)` lifecycle signals instead of control-flow exceptions.
-6. **`core` (Infrastructure Services)**:
-   - Implements `IRouter` (`Router`), `IParser` (`DeclusorParser`), and `PluginManager`.
-   - Decoupled from concrete client implementations.
-7. **`presentation` (View Layer)**:
-   - Manages readline terminal I/O (`Console`) and the interactive prompt execution loop (`PromptCLI`).
-   - Interacts with controllers exclusively via route dispatching and `ControllerResult` signals.
-8. **`main` (Composition Root)**:
-   - Bootstraps registries, discovers plugins, wires core routes, and runs the application.
-   - Entrypoint function `main(argv)` catches all exceptions, prints user-friendly messages, and maps to deterministic exit codes (`0`, `1`, `2`).
-9. **`testing` (Public Testing SDK)**:
-   - Ships deterministic, fully-typed test doubles (`DummyConsole`, `DummyConnection`, `DummyPluginFileStore`, `DummyPluginRuntime`, etc.) and reusable conformance suites (`PluginConformanceTestSuite`).
-10. **`plugins/` (Autonomous Packages)**:
-    - Native client transports (`plugins/shell_socket/`, `plugins/py_socket/`) are standalone packages with their own `pyproject.toml`, `src-layout`, `assets/`, and `tests/`.
-    - **Isolation Invariant**: Core code (`src/declusor/`) and host unit tests (`tests/`) **MUST NEVER** import concrete plugins directly.
+   - Depends only on `config` and standard library primitives.
+   - Pure, stateless helpers (encoding, network, concurrency) with zero domain knowledge.
+   - Uses generic `TypeVar` annotations instead of importing contracts from higher layers.
 
-## 2. Development Setup
+### Domain
+
+3. **`contract` (Domain Layer)**:
+   - Depends strictly on foundation layers (`config`, `util`).
+   - Defines pure abstractions (`ABC`), protocol state machines, and session context boundaries.
+   - Zero dependencies on concrete implementation packages, presentation, or external plugins.
+
+### Application
+
+4. **`command` (Command Operations)**:
+   - Depends on `contract` and foundation layers.
+   - Encapsulates discrete executable operations via immutable, self-validating DTOs.
+   - Fully decoupled from runtime transport mechanics and operator terminal I/O.
+5. **`controller` (Application Handlers)**:
+   - Depends on `contract` and `command`.
+   - Thin application handlers that parse requests, construct command DTOs, and coordinate dispatching.
+   - Emits structured lifecycle signals (`ControllerAction`) instead of control-flow exceptions.
+
+### Infrastructure
+
+6. **`core` (Infrastructure Services)**:
+   - Implements infrastructure contracts defined in `contract` (CLI parser, routing, plugin registry).
+   - Manages dynamic multi-tier plugin discovery and enforces contract validation barriers.
+   - Operates strictly on plugin abstractions with zero knowledge of concrete transport packages.
+7. **`presentation` (View Layer)**:
+   - Depends on `contract` and foundation layers.
+   - Manages interactive terminal REPL loops, readline history, and stream formatting.
+   - Communicates with the application layer exclusively through route dispatching and lifecycle signals.
+
+### Composition Root
+
+8. **`main` (Composition Root)**:
+   - The sole layer aware of all system components.
+   - Discovers plugins, wires routers, injects dependencies, and bootstraps application lifecycles.
+   - Traps unhandled errors, displays user-friendly diagnostics, and maps to deterministic exit codes.
+
+### Ecosystem & Verification
+
+9. **`testing` (Public Testing SDK)**:
+   - Published test harness supplying deterministic, fully-typed test doubles and fixtures.
+   - Provides reusable conformance suites (`PluginConformanceTestSuite`) to verify contract invariants.
+   - Replaces unconstrained `MagicMock` sprawl with contract-compliant in-memory implementations.
+10. **`plugins` (Autonomous Packages)**:
+    - Independent, self-contained packages residing outside the core application loop.
+    - Strictly implement `IPlugin`, `IPluginRuntime`, and `IConnection` domain contracts.
+    - Bundle their own isolated stager templates, helper libraries, and colocated test suites.
+
+## Development Setup
 
 ### Prerequisites
 
@@ -81,9 +136,9 @@ pip install -e plugins/shell_socket
 pip install -e plugins/py_socket
 ```
 
-## 3. Coding Standards & Invariants
+## Coding Standards & Invariants
 
-### 3.1. Namespace Imports
+### Namespace Imports
 
 Always import the package namespace directly rather than destructuring separated symbols from deep modules:
 
