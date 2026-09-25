@@ -75,11 +75,11 @@ Always inherit from `PluginConformanceTestSuite` to automatically verify all con
 
 ```python
 from declusor import testing
-from declusor_plugin import DeclusorPlugin
+from declusor_my_plugin import MyPlugin
 
 
-class TestDeclusorPluginConformance(testing.PluginConformanceTestSuite):
-    plugin_class = DeclusorPlugin
+class TestMyPluginConformance(testing.PluginConformanceTestSuite):
+    plugin_class = MyPlugin
 ```
 
 ## 5. Verification Commands

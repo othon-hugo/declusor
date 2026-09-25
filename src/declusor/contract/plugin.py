@@ -1,13 +1,15 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from socket import socket
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeVar
 
-from declusor import util
-from declusor.config import DataPaths
+from declusor import config
 
 if TYPE_CHECKING:
     from declusor.contract.connection import IConnection
+    from declusor.contract.parser import IParser
+
+T = TypeVar("T")
 
 
 @dataclass(frozen=True)
@@ -27,14 +29,14 @@ class PluginConfig:
     port: int
     """Port used by the server."""
 
-    data_paths: DataPaths | None = None
+    data_paths: config.DataPaths | None = None
     """Optional filesystem paths used by the selected client runtime."""
 
     options: dict[str, Any] = field(default_factory=dict)
     """Client-specific configuration options."""
 
 
-class IPluginRuntime(ABC):
+class IPluginRuntime[T](ABC):
     """Runtime used by the service to operate a configured client.
 
     A runtime hides client-specific bootstrap and connection construction from
@@ -69,7 +71,7 @@ class IPluginRuntime(ABC):
         raise NotImplementedError
 
 
-class IPlugin(ABC):
+class IPlugin[T](ABC):
     """Extension point for registering configurable client implementations.
 
     Implementations define how their command-line arguments are registered,
@@ -90,7 +92,7 @@ class IPlugin(ABC):
 
     @classmethod
     @abstractmethod
-    def configure_parser(cls, parser: util.Parser, /) -> None:
+    def configure_parser(cls, parser: "IParser[T]", /) -> None:
         """Register client-specific command-line arguments.
 
         Args:
@@ -101,7 +103,7 @@ class IPlugin(ABC):
 
     @classmethod
     @abstractmethod
-    def build_config(cls, args: util.Namespace, data_paths: DataPaths | None = None, /) -> PluginConfig:
+    def build_config(cls, args: T, data_paths: config.DataPaths | None = None, /) -> PluginConfig:
         """Build a client configuration from parsed arguments and data paths.
 
         Args:

@@ -122,7 +122,7 @@ from .session import SessionContext
 # FORBIDDEN: Importing own package namespace from within that package
 # (e.g. inside src/declusor/contract/plugin.py)
 from declusor import contract
-class DeclusorPlugin(contract.IPlugin): ...
+class MyPlugin(contract.IPlugin): ...
 
 # FORBIDDEN: Destructuring separated symbols across external layers
 from declusor.testing import DummyConsole, DummyConnection
@@ -199,11 +199,11 @@ Every client plugin must implement contract conformance tests by inheriting from
 
 ```python
 from declusor import testing
-from declusor_plugin import DeclusorPlugin
+from declusor_my_plugin import MyPlugin
 
 
-class TestDeclusorPluginConformance(testing.PluginConformanceTestSuite):
-    plugin_class = DeclusorPlugin
+class TestMyPluginConformance(testing.PluginConformanceTestSuite):
+    plugin_class = MyPlugin
 ```
 
 ## Plugin Authoring Guide
