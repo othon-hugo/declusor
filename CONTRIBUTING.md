@@ -12,10 +12,16 @@ flowchart TD
         Main["main<br/>CLI bootstrap, registry wiring, dependency injection"]
     end
 
-    subgraph AppInfra["Application & Infrastructure"]
-        Presentation["presentation<br/>Terminal REPL & formatters"]
+    subgraph PresentationLayer["Presentation"]
+        Presentation["presentation<br/>Terminal REPL, readline & formatters"]
+    end
+
+    subgraph ApplicationLayer["Application"]
         Controller["controller<br/>Flow dispatch & signal emit"]
         Command["command<br/>Immutable DTOs & operations"]
+    end
+
+    subgraph InfrastructureLayer["Infrastructure"]
         Core["core<br/>Discovery, CLI parser, router"]
     end
 
@@ -83,7 +89,10 @@ flowchart TD
    - Implements infrastructure contracts defined in `contract` (CLI parser, routing, plugin registry).
    - Manages dynamic multi-tier plugin discovery and enforces contract validation barriers.
    - Operates strictly on plugin abstractions with zero knowledge of concrete transport packages.
-7. **`presentation` (View Layer)**:
+
+### Presentation
+
+7. **`presentation` (User Interface & Delivery)**:
    - Depends on `contract` and foundation layers.
    - Manages interactive terminal REPL loops, readline history, and stream formatting.
    - Communicates with the application layer exclusively through route dispatching and lifecycle signals.
@@ -97,14 +106,14 @@ flowchart TD
 
 ### Ecosystem & Verification
 
-9. **`testing` (Public Testing SDK)**:
-   - Published test harness supplying deterministic, fully-typed test doubles and fixtures.
-   - Provides reusable conformance suites (`PluginConformanceTestSuite`) to verify contract invariants.
-   - Replaces unconstrained `MagicMock` sprawl with contract-compliant in-memory implementations.
-10. **`plugins` (Autonomous Packages)**:
-    - Independent, self-contained packages residing outside the core application loop.
-    - Strictly implement `IPlugin`, `IPluginRuntime`, and `IConnection` domain contracts.
-    - Bundle their own isolated stager templates, helper libraries, and colocated test suites.
+9. **`plugins` (Autonomous Packages)**:
+   - Independent, self-contained packages residing outside the core application loop.
+   - Strictly implement `IPlugin`, `IPluginRuntime`, and `IConnection` domain contracts.
+   - Bundle their own isolated stager templates, helper libraries, and colocated test suites.
+10. **`testing` (Public Testing SDK)**:
+    - Published test harness supplying deterministic, fully-typed test doubles and fixtures.
+    - Provides reusable conformance suites (`PluginConformanceTestSuite`) to verify contract invariants.
+    - Replaces unconstrained `MagicMock` sprawl with contract-compliant in-memory implementations.
 
 ## Development Setup
 
