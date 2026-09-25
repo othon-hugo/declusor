@@ -22,7 +22,7 @@ def test_create_application_discovers_custom_plugins_via_search_dirs(tmp_path: P
     plugin_code = """
 from declusor import contract
 
-class ExtraPlugin(contract.IPlugin):
+class ExtraClientPlugin(contract.IPlugin):
     name = "extra_client"
     description = "Extra client loaded via custom search path"
 

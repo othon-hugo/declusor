@@ -1,12 +1,12 @@
 ---
 name: declusor-plugin-development
 description: >-
-  Guide for developing, structuring, configuring, and verifying autonomous transport plugins for Declusor. Use when creating a new plugin, refactoring existing plugins, or adding conformance tests.
+  Guide for developing, structuring, configuring, and verifying autonomous client transport plugins for Declusor. Use when creating a new plugin, refactoring existing plugins, or adding conformance tests.
 ---
 
 # Declusor Plugin Development Guide
 
-This skill details how to author, package, and verify autonomous plugins for Declusor.
+This skill details how to author, package, and verify autonomous client plugins for Declusor.
 
 ## 1. Plugin Directory Layout
 
@@ -57,9 +57,9 @@ Plugins implement contracts defined in `declusor.contract`:
    - `name: str`: Unique identifier matching the entry point key.
    - `description: str`, `version: str`: Metadata.
    - `configure_parser(parser: IParser) -> None`: Registers plugin-specific CLI flags.
-   - `build_config(args: Namespace, data_paths: DataPaths) -> PluginConfig`: Constructs validated configuration.
-   - `validate(plugin_config: PluginConfig) -> None`: Validates assets and pre-conditions.
-   - `build_runtime(plugin_config: PluginConfig) -> IPluginRuntime`: Instantiates runtime.
+   - `build_config(args: Namespace, data_paths: DataPaths) -> ClientConfig`: Constructs validated configuration.
+   - `validate(plugin_config: ClientConfig) -> None`: Validates assets and pre-conditions.
+   - `build_runtime(plugin_config: ClientConfig) -> IPluginRuntime`: Instantiates runtime.
 2. **`IPluginRuntime`**:
    - `client_files: IClientFileStore`: Exposes file store.
    - `client_script: str`: Returns rendered stager code.

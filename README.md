@@ -168,10 +168,10 @@ make install-plugins
 Start Declusor by specifying your local listening IP and port:
 
 ```bash
-# Default listener (uses native shell_socket transport)
+# Default listener (uses native shell_socket client)
 declusor 0.0.0.0 4444
 
-# Select the cross-platform Python transport
+# Select the cross-platform Python client
 declusor 0.0.0.0 4444 --plugin py_socket
 
 # Load external custom plugins from an operator directory
@@ -180,12 +180,12 @@ declusor 0.0.0.0 4444 --plugin-dir ~/custom_plugins --plugin my_agent
 
 On startup, Declusor initializes the listener and **prints the exact one-liner launcher command** to run on your target.
 
-### 2. Built-in Transport Plugins
+### 2. Built-in Client Transports
 
-| Plugin            | Flag                  | Target OS             | Execution Mechanism                                                    |
-| :---------------- | :-------------------- | :-------------------- | :--------------------------------------------------------------------- |
-| **Shell Socket**  | `--plugin shell_socket` | Linux / POSIX         | Native `/dev/tcp` file descriptor; zero external dependencies          |
-| **Python Socket** | `--plugin py_socket`    | Linux, macOS, Windows | In-memory `exec()` with persistent session scope & subprocess fallback |
+| Client Plugin     | Flag              | Target OS             | Execution Mechanism                                                    |
+| :---------------- | :---------------- | :-------------------- | :--------------------------------------------------------------------- |
+| **Shell Socket**  | `-c shell_socket` | Linux / POSIX         | Native `/dev/tcp` file descriptor; zero external dependencies          |
+| **Python Socket** | `-c py_socket`    | Linux, macOS, Windows | In-memory `exec()` with persistent session scope & subprocess fallback |
 
 ### 3. Interact with the Session
 

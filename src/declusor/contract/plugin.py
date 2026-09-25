@@ -12,14 +12,14 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True)
 class PluginConfig:
-    """Configuration produced by a plugin.
+    """Configuration produced by a client plugin.
 
-    Stores the common server connection parameters and the plugin-specific
+    Stores the common server connection parameters and the client-specific
     options produced during command-line parsing.
     """
 
     kind: str
-    """Registered identifier of the plugin implementation."""
+    """Registered identifier of the client implementation."""
 
     host: str
     """Host address used by the server."""
@@ -28,10 +28,10 @@ class PluginConfig:
     """Port used by the server."""
 
     data_paths: DataPaths | None = None
-    """Optional filesystem paths used by the selected plugin runtime."""
+    """Optional filesystem paths used by the selected client runtime."""
 
     options: dict[str, Any] = field(default_factory=dict)
-    """Plugin-specific configuration options."""
+    """Client-specific configuration options."""
 
 
 class IPluginRuntime(ABC):
@@ -70,31 +70,31 @@ class IPluginRuntime(ABC):
 
 
 class IPlugin(ABC):
-    """Extension point for registering configurable transport plugins.
+    """Extension point for registering configurable client implementations.
 
     Implementations define how their command-line arguments are registered,
     converted into a ``PluginConfig``, and validated.
     """
 
     name: str
-    """Unique identifier used to select the plugin from the command line."""
+    """Unique identifier used to select the client from the command line."""
 
     description: str = ""
     """Brief human-readable description shown in CLI help."""
 
     version: str = "1.0.0"
-    """Semantic version of the plugin."""
+    """Semantic version of the client plugin."""
 
     author: str = ""
-    """Author or maintainer of the plugin."""
+    """Author or maintainer of the client plugin."""
 
     @classmethod
     @abstractmethod
     def configure_parser(cls, parser: util.Parser, /) -> None:
-        """Register plugin-specific command-line arguments.
+        """Register client-specific command-line arguments.
 
         Args:
-            parser: Argument parser that receives the plugin-specific options.
+            parser: Argument parser that receives the client-specific options.
         """
 
         raise NotImplementedError
@@ -102,14 +102,14 @@ class IPlugin(ABC):
     @classmethod
     @abstractmethod
     def build_config(cls, args: util.Namespace, data_paths: DataPaths | None = None, /) -> PluginConfig:
-        """Build a plugin configuration from parsed arguments and data paths.
+        """Build a client configuration from parsed arguments and data paths.
 
         Args:
-            args: Namespace containing common and plugin-specific arguments.
+            args: Namespace containing common and client-specific arguments.
             data_paths: Resolved filesystem paths for the application, or None to use bundled assets.
 
         Returns:
-            Configuration object for the selected plugin.
+            Configuration object for the selected client.
         """
 
         raise NotImplementedError
@@ -117,7 +117,7 @@ class IPlugin(ABC):
     @classmethod
     @abstractmethod
     def validate(cls, plugin_config: PluginConfig, /) -> None:
-        """Validate a plugin configuration.
+        """Validate a client configuration.
 
         Args:
             plugin_config: Configuration produced by ``build_config``.
@@ -131,7 +131,7 @@ class IPlugin(ABC):
     @classmethod
     @abstractmethod
     def build_runtime(cls, plugin_config: PluginConfig, /) -> IPluginRuntime:
-        """Build the runtime for a validated plugin configuration.
+        """Build the runtime for a validated client configuration.
 
         Args:
             plugin_config: Configuration produced by ``build_config``.

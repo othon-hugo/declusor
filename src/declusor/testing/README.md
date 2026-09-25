@@ -9,7 +9,7 @@ The **testing** package provides reusable, fully-typed test infrastructure, doub
 
 | Module          | Responsibility                                                                       |
 | --------------- | ------------------------------------------------------------------------------------ |
-| `conformance`   | Conformance test harness and assertion suites for validating plugin contracts        |
+| `conformance`   | Conformance test harness and assertion suites for validating client plugin contracts |
 | `doubles`       | Deterministic, fully-typed test doubles implementing all Declusor domain contracts   |
 | `factories`     | Factory functions generating test sessions, configurations, and controller requests  |
 | `pytest_plugin` | Pytest fixture definitions providing plug-and-play typed doubles for test suites     |

@@ -40,7 +40,7 @@ class DummyPlugin(contract.IPlugin):
     """Fully-typed plugin implementing the IPlugin extension point."""
 
     name: str = "dummy"
-    description: str = "Dummy plugin for unit tests"
+    description: str = "Dummy client plugin for unit tests"
     version: str = "1.0.0"
     author: str = "Test Suite"
 

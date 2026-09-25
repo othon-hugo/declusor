@@ -171,7 +171,7 @@ sequenceDiagram
     actor Operator
     participant Main as Composition Root (main)
     participant Core as Discovery & Parser (core)
-    participant Plugin as Plugin (plugins/)
+    participant Plugin as Client Plugin (plugins/)
     participant View as Presentation REPL (presentation)
     participant Controller as Controller & Command
     participant Remote as Remote Client Agent
@@ -179,7 +179,7 @@ sequenceDiagram
     Operator->>Main: Launch CLI arguments
     Main->>Core: Parse options & discover plugins
     Core->>Plugin: Validate contract & load plugin
-    Core-->>Main: Configured plugin runtime
+    Core-->>Main: Configured client runtime
     Main->>Main: Await incoming connection on listener socket
     Remote->>Main: Connect TCP socket
     Main->>Plugin: Wrap socket in transport connection

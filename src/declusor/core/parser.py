@@ -24,10 +24,10 @@ class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
     }
 
     def __init__(self, manager: PluginManager, /, name: str, description: str = "") -> None:
-        """Create a parser backed by a specific plugin manager.
+        """Create a parser backed by a specific client plugin manager.
 
         Args:
-            manager: Plugin manager containing the plugins available to the application.
+            manager: Plugin manager containing the clients available to the application.
             name: Program name.
             description: Short description of the application.
         """
@@ -41,7 +41,7 @@ class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
 
     @property
     def manager(self) -> PluginManager:
-        """The plugin manager backing this parser."""
+        """The client plugin manager backing this parser."""
 
         return self._manager
 
