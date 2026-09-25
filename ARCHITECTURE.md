@@ -126,7 +126,7 @@ Declusor treats client transports as autonomous, independently versionable packa
 Plugins follow a standard source layout:
 
 - **Package Manifest (`pyproject.toml`)**: Standalone configuration declaring package metadata, dependencies, and entry-point registration.
-- **Source Tree (`src/declusor_<plugin-name>`)**: Implements the plugin contract, runtime adapter, transport state machine, protocol profile, and asset file store.
+- **Source Tree (`src/declusor_<plugin_name>`)**: Implements the plugin contract, runtime adapter, transport state machine, protocol profile, and asset file store.
 - **Bundled Assets (`assets/{launchers,helpers,modules}`)**: Embedded launchers (stagers), initialization libraries (helpers), and on-demand payloads (modules).
 - **Test Suite (`tests/`)**: Dedicated unit and conformance tests isolated within the plugin directory.
 

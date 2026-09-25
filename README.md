@@ -139,9 +139,7 @@ $ declusor 127.0.0.1 4444
 
 ### Prerequisites
 
-| Requirement  | Notes                    |
-| :----------- | :----------------------- |
-| Python 3.11+ | Linux, macOS, or Windows |
+Declusor requires **Python 3.11+** and runs natively on Linux, macOS, and Windows. Package management requires **pip** or optionally—and recommended—[**uv**](https://github.com/astral-sh/uv) and **GNU Make** for fast and standardized workflows.
 
 ### Installation
 
@@ -282,32 +280,9 @@ plugins/<plugin_name>/
 
 Declusor discovers plugins at runtime across three distinct source tiers with zero hardcoded coupling:
 
-1. **Built-in Plugins**: Shipped repository packages located in `plugins/` (`shell_socket`, `py_socket`).
+1. **Built-in Plugins**: Shipped repository packages located in `plugins/`.
 2. **Python Entry Points**: Standard distribution packages registered via PEP 621 entry points (`[project.entry-points."declusor.plugins"]`).
 3. **Operator Drop-in Folders**: Custom plugin directories loaded dynamically on the fly via `--plugin-dir <path>`.
-
-### Verifying Conformance in Seconds
-
-Every plugin can verify its compliance against Declusor's contracts using the built-in testing SDK:
-
-```python
-from declusor import testing
-from declusor_plugin import DeclusorPlugin
-
-
-class TestDeclusorPluginConformance(testing.PluginConformanceTestSuite):
-    plugin_class = DeclusorPlugin
-```
-
-Execute plugin tests and quality checks via `make`:
-
-```bash
-# Run unit and conformance tests for a specific plugin
-make test-plugin PLUGIN=py_socket
-
-# Run full quality check (format-check, lint, strict type-check, tests)
-make check-plugin PLUGIN=py_socket
-```
 
 For complete packaging tutorials, asset overlay mechanics, and step-by-step guides, check out the [Plugins Developer Guide](plugins/README.md).
 
@@ -325,19 +300,6 @@ Read the complete architectural specification in [ARCHITECTURE.md](ARCHITECTURE.
 ## Contributing & Quality Gates
 
 Contributions from both humans and autonomous agents are warmly welcomed! Please read our [CONTRIBUTING.md](CONTRIBUTING.md) guide before opening a pull request.
-
-Before committing, ensure that all quality gates pass:
-
-```bash
-# Run full test suite, linter, formatter, and strict type-checks
-make check
-
-# Run all plugin test suites
-make test-plugins
-
-# Check a specific plugin
-make check-plugin PLUGIN=py_socket
-```
 
 ## License
 
