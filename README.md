@@ -35,6 +35,34 @@ Catching a reverse shell during a penetration test, CTF, or security assessment 
 - **Many C2 frameworks are a bit much**: Sometimes you just want to catch a shell and run `id`. You don't need twelve containers, a database, and a team server for that.
 - **Raw sockets don't handle drama well**: A few lines of socket code work great — until the connection drops, binary data shows up, or the shell does something you didn't expect.
 
+### Declusor solves this with quiet elegances
+
+It keeps the zero-infrastructure, instant startup of a standard netcat listener while wrapping the session in a structured, framed transport protocol.
+
+It generates purpose-built stagers, negotiates an in-memory handshake with explicit acknowledgments, and provides a readline-powered REPL on top. The result is a session that doesn't require manual PTY gymnastics or leave you debugging socket desynchronization when things get messy — all from a single lightweight command.
+
+## See It in Action
+
+<p align="center">
+  <img src="docs/assets/demo.gif" alt="Declusor Interactive Demo" width="900" onerror="this.onerror=null;this.src='https://i.imgur.com/Wsw2l90.gif';"/>
+  <br>
+  <em>From listener startup to remote execution in seconds: Catching a reverse shell, navigating with tab-completion, and staging modules in-memory.</em>
+</p>
+
+When an operator launches Declusor, the entire engagement workflow is automated:
+
+1. Starts the listener and immediately displays ready-to-inject launcher commands for the target environment.
+2. Upon connection, the framework verifies the remote transport, transmits helper libraries in-memory, and negotiates framed communication with sentinel ACKs to prevent socket desynchronization.
+3. Provides full command recall (`Up`/`Down`), history search (`Ctrl+R`), and tab-completion for remote executables and local paths.
+4. Modules and post-exploitation scripts are staged directly into remote process memory, eliminating temporary files in `/tmp` and minimizing disk forensics.
+
+| Step | Phase             | Your Experience                              | Target Impact                         |
+| ---: | :---------------- | :------------------------------------------- | :------------------------------------ |
+|    1 | Listener Launch   | Single CLI command (`declusor 0.0.0.0 4444`) | Prints pre-formatted stager one-liner |
+|    2 | Session Ingress   | Automatic connection detection & handshake   | Zero manual PTY stabilization needed  |
+|    3 | Command Dispatch  | Framed streaming with tab-completion         | Output streamed back chunk-by-chunk   |
+|    4 | Post-Exploitation | In-memory module loading (`load ...`)        | Execution memory-resident; clean exit |
+
 ## Practical Usage & Attack Vectors
 
 Declusor is purpose-built to turn unauthenticated Remote Code Execution (RCE) and Command Injection vulnerabilities into stable, feature-rich operator sessions.
@@ -78,30 +106,6 @@ When exploiting Python environments (Jinja2 SSTI, unsafe `pickle.loads`, or arbi
    declusor 10.10.14.5 4444 --plugin py_socket
    ```
 2. **Execute Cross-Platform Agent**: Declusor outputs a pure standard-library Python client (`py_socket_client.py`) that operates identically on Linux, macOS, and Windows without external dependencies (`bash` or `nc` are not needed).
-
----
-
-## See It in Action
-
-<p align="center">
-  <img src="docs/assets/demo.gif" alt="Declusor Interactive Demo" width="900" onerror="this.onerror=null;this.src='https://i.imgur.com/Wsw2l90.gif';"/>
-  <br>
-  <em>From listener startup to remote execution in seconds: Catching a reverse shell, navigating with tab-completion, and staging modules in-memory.</em>
-</p>
-
-When an operator launches Declusor, the entire engagement workflow is automated:
-
-1. **Automatic Stager Generation**: Starts the listener and immediately displays ready-to-inject launcher commands for the target environment.
-2. **Deterministic Handshake & Sentinel ACK**: Upon connection, the framework verifies the remote transport, transmits helper libraries in-memory, and negotiates framed communication with sentinel ACKs to prevent socket desynchronization.
-3. **Interactive Readline Environment**: Provides full command recall (`Up`/`Down`), history search (`Ctrl+R`), and tab-completion for remote executables and local paths.
-4. **Clean In-Memory Payload Execution**: Modules and post-exploitation scripts are staged directly into remote process memory, eliminating temporary files in `/tmp` and minimizing disk forensics.
-
-| Operational Phase        | Operator Experience                          | Target Impact                         |
-| :----------------------- | :------------------------------------------- | :------------------------------------ |
-| **1. Listener Launch**   | Single CLI command (`declusor 0.0.0.0 4444`) | Prints pre-formatted stager one-liner |
-| **2. Session Ingress**   | Automatic connection detection & handshake   | Zero manual PTY stabilization needed  |
-| **3. Command Dispatch**  | Framed streaming with tab-completion         | Output streamed back chunk-by-chunk   |
-| **4. Post-Exploitation** | In-memory module loading (`load ...`)        | Execution memory-resident; clean exit |
 
 ## Key Capabilities
 
