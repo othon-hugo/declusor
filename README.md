@@ -39,27 +39,11 @@ So I built **Declusor**: the simplicity of a raw listener, with the interactive 
 
 ## See It in Action
 
-<!--
-  ASSET PLACEHOLDER:
-  Replace the image below with your high-resolution terminal screenshot at 'docs/assets/overview.png'.
-  See docs/assets/README.md for instructions and recommended dimensions.
--->
-<p align="center">
-  <img src="docs/assets/overview.png" alt="Declusor Overview" width="900" onerror="this.style.display='none'"/>
-</p>
-
-<!--
-  ASSET PLACEHOLDER:
-  Replace the GIF below with your custom recording at 'docs/assets/demo.gif'.
-  Follow the VHS tape script in docs/assets/README.md to record an animated terminal walkthrough.
--->
 <p align="center">
   <img src="docs/assets/demo.gif" alt="Declusor Interactive Demo" width="900" onerror="this.onerror=null;this.src='https://i.imgur.com/Wsw2l90.gif';"/>
   <br>
   <em>From listener startup to remote execution in seconds: Catching a reverse shell, navigating with tab-completion, and loading modules in-memory.</em>
 </p>
-
-### What's Happening in the Demo?
 
 When an operator launches Declusor, the entire engagement workflow is automated and streamlined:
 
