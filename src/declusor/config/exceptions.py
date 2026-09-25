@@ -88,7 +88,7 @@ class RouterError(DeclusorException):
 
 
 class PluginError(DeclusorException):
-    """Base exception for plugin discovery, loading, and runtime errors."""
+    """Base exception for client plugin discovery, loading, and runtime errors."""
 
 
 class PluginValidationError(PluginError):

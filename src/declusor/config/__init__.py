@@ -23,7 +23,6 @@ from .settings import (
     BasePath,
     ClientDataPaths,
     DataPaths,
-    PluginDataPaths,
     Settings,
 )
 
@@ -40,11 +39,12 @@ __all__ = [
     "ControllerError",
     "DataPaths",
     "DeclusorException",
+    "DeclusorException",
+    "DeclusorWarning",
     "DeclusorWarning",
     "InvalidOperation",
     "OperationCode",
     "ParserError",
-    "PluginDataPaths",
     "PluginError",
     "PluginValidationError",
     "PromptError",

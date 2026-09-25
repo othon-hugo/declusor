@@ -2,56 +2,72 @@
 
 Thank you for your interest in contributing to **Declusor**! This document provides the architectural principles, quality standards, coding invariants, and workflows required to contribute effectively to this repository.
 
-## 1. Architectural Overview & Boundaries
+## Architectural Overview & Boundaries
 
 Declusor is architected around clean, decoupled layers with strict unidirectional dependency flow:
 
-```text
-main (Composition Root)
-  ├── core (Infrastructure, Registries, Routing, Parser)
-  ├── controller (Application Handlers & Flow Control)
-  ├── command (Encapsulated Operations & Immutable DTOs)
-  ├── presentation (Terminal REPL & Console View)
-  └── contract (Domain Interfaces & State Machines)
-        ├── util (Stateless Primitives & Helpers)
-        └── config (Constants, Enums, Settings, Exceptions)
-```
-
-### Layer Rules & Invariants
+### Foundations
 
 1. **`config` (Foundation Base)**:
-   - **Zero dependencies** on any other package in `declusor`.
-   - Centralizes domain exceptions (`DeclusorException`), operational enums (`OperationCode`, `ConnectionState`, `ControllerAction`), and path settings (`DataPaths`).
+   - Depends strictly on the standard library.
+   - Centralizes domain exceptions, configuration constants, settings, and enums.
 2. **`util` (Stateless Primitives)**:
-   - Depends **only** on `config`. Zero cyclic dependencies.
-   - Functions are pure, stateless, or defensive.
-   - When functions handle abstractions from higher layers (e.g. `import_plugin_from_file`), they **must use generic `TypeVar`** rather than importing contracts directly.
-3. **`contract` (Domain Layer)**:
-   - Depends **only** on `config` and `util`.
-   - Pure interfaces (`@abstractmethod`), state machines (`IConnection`), and data coordinators (`SessionContext`).
-   - Must have **zero dependencies** on concrete implementation packages (`core`, `command`, `controller`, `presentation`, `main`, or external `plugins`).
-4. **`command` (Command Pattern)**:
-   - Encapsulates single operations (`ExecuteCommand`, `ExecuteFile`, `UploadFile`, `LoadModule`, `LaunchShell`).
-   - Uses immutable DTOs (`ExecuteCommandDTO`, etc.) with fail-fast invariant validation.
-5. **`controller` (Application Handlers)**:
-   - Thin handlers that parse requests, construct command DTOs, and dispatch via `SessionContext.execute()`.
-   - Returns structured `ControllerResult(action=ControllerAction.CONTINUE | TERMINATE)` lifecycle signals instead of control-flow exceptions.
-6. **`core` (Infrastructure Services)**:
-   - Implements `IRouter` (`Router`), `IParser` (`DeclusorParser`), and `PluginManager`.
-   - Decoupled from concrete client implementations.
-7. **`presentation` (View Layer)**:
-   - Manages readline terminal I/O (`Console`) and the interactive prompt execution loop (`PromptCLI`).
-   - Interacts with controllers exclusively via route dispatching and `ControllerResult` signals.
-8. **`main` (Composition Root)**:
-   - Bootstraps registries, discovers plugins, wires core routes, and runs the application.
-   - Entrypoint function `main(argv)` catches all exceptions, prints user-friendly messages, and maps to deterministic exit codes (`0`, `1`, `2`).
-9. **`testing` (Public Testing SDK)**:
-   - Ships deterministic, fully-typed test doubles (`DummyConsole`, `DummyConnection`, `DummyPluginFileStore`, `DummyPluginRuntime`, etc.) and reusable conformance suites (`PluginConformanceTestSuite`).
-10. **`plugins/` (Autonomous Packages)**:
-    - Native client transports (`plugins/shell_socket/`, `plugins/py_socket/`) are standalone packages with their own `pyproject.toml`, `src-layout`, `assets/`, and `tests/`.
-    - **Isolation Invariant**: Core code (`src/declusor/`) and host unit tests (`tests/`) **MUST NEVER** import concrete plugins directly.
+   - Depends only on `config` and standard library primitives.
+   - Pure, stateless helpers (encoding, network, concurrency) with zero domain knowledge.
+   - Used by infrastructure, presentation, commands, and plugins; never imported or depended upon by `contract`.
+   - Uses generic `TypeVar` annotations instead of importing contracts from higher layers.
 
-## 2. Development Setup
+### Domain
+
+3. **`contract` (Domain Layer)**:
+   - Depends strictly on `config` (exceptions, settings, enums) and standard library primitives (`abc`, `typing`).
+   - Defines pure abstractions (`ABC`), protocol state machines, and session context boundaries.
+   - Zero dependencies on `util`, concrete implementation packages, presentation, or external plugins.
+
+### Application
+
+4. **`command` (Command Operations)**:
+   - Depends on `contract` and foundation layers.
+   - Encapsulates discrete executable operations via immutable, self-validating DTOs.
+   - Fully decoupled from runtime transport mechanics and operator terminal I/O.
+5. **`controller` (Application Handlers)**:
+   - Depends on `contract` and `command`.
+   - Thin application handlers that parse requests, construct command DTOs, and coordinate dispatching.
+   - Emits structured lifecycle signals instead of control-flow exceptions.
+
+### Infrastructure
+
+6. **`core` (Infrastructure Services)**:
+   - Implements infrastructure contracts defined in `contract` (CLI parser, routing, plugin registry).
+   - Manages dynamic multi-tier plugin discovery and enforces contract validation barriers.
+   - Operates strictly on plugin abstractions with zero knowledge of concrete transport packages.
+
+### Presentation
+
+7. **`presentation` (User Interface & Delivery)**:
+   - Depends on `contract` and foundation layers.
+   - Manages interactive terminal REPL loops, readline history, and stream formatting.
+   - Communicates with the application layer exclusively through route dispatching and lifecycle signals.
+
+### Composition Root
+
+8. **`main` (Composition Root)**:
+   - The sole layer aware of all system components.
+   - Discovers plugins, wires routers, injects dependencies, and bootstraps application lifecycles.
+   - Traps unhandled errors, displays user-friendly diagnostics, and maps to deterministic exit codes.
+
+### Ecosystem & Verification
+
+9. **`plugins` (Autonomous Packages)**:
+   - Independent, self-contained packages residing outside the core application loop.
+   - Strictly implement domain contracts.
+   - Bundle their own isolated stager templates, helper libraries, and colocated test suites.
+10. **`testing` (Public Testing SDK)**:
+    - Published test harness supplying deterministic, fully-typed test doubles and fixtures.
+    - Provides reusable conformance suites to verify contract invariants.
+    - Replaces unconstrained `MagicMock` sprawl with contract-compliant in-memory implementations.
+
+## Development Setup
 
 ### Prerequisites
 
@@ -71,53 +87,73 @@ cd declusor
 
 # Option A: Fast setup using uv (Recommended)
 make install
-# This syncs dependencies via uv and automatically installs all plugins in editable mode.
 
 # Option B: Manual setup using python3 venv + pip
 python3 -m venv .venv
+
 source .venv/bin/activate
+
 pip install -e ".[dev,testing]"
 pip install -e plugins/shell_socket
 pip install -e plugins/py_socket
 ```
 
-## 3. Coding Standards & Invariants
+## Coding Standards & Invariants
 
-### 3.1. Namespace Imports
+### Namespace Imports & Typing Discipline
 
-Always import the package namespace directly rather than destructuring separated symbols from deep modules:
+Always import external package namespaces directly rather than destructuring individual symbols across layers.
+
+However, never import the namespace of the package the code itself resides in—within the same package, deconstruct internal modules using relative imports:
 
 ```python
-# CORRECT: Clean namespace qualification
-from declusor import command, config, contract, core, presentation, testing, util
+# CORRECT: Clean namespace qualification for external packages
+from declusor import command, config, contract, core, presentation, util
 
 session = contract.SessionContext(...)
-console = testing.DummyConsole()
 cmd = command.ExecuteCommand(dto)
+
+# CORRECT: Deconstruct when inside the same package (e.g. inside declusor/contract/)
+from .state import ConnectionState
+from .session import SessionContext
 ```
 
 ```python
-# FORBIDDEN: Destructuring separated symbols across layers
+# FORBIDDEN: Importing own package namespace from within that package
+# (e.g. inside src/declusor/contract/plugin.py)
+from declusor import contract
+
+
+class MyPlugin(contract.IPlugin): ...
+
+
+# FORBIDDEN: Destructuring separated symbols across external layers
 from declusor.testing import DummyConsole, DummyConnection
 from declusor.presentation import PromptCLI
 from declusor.main.app import Application
 ```
 
-### 3.2. Exception Re-exports
+#### Type Hints & `TYPE_CHECKING`
 
-Each subpackage re-exports its respective domain exceptions from `declusor.config` within its `__init__.py` and in `__all__`:
+Always guard imports under `if TYPE_CHECKING:` when symbols or types are required **exclusively for type annotations/hints** to prevent circular dependencies and unnecessary runtime overhead:
 
-- `command`: `CommandError`, `CommandValidationError`, `InvalidOperation`
-- `contract`: `ConnectionClosed`, `ConnectionError`, `ConnectionHandshakeError`, `ConnectionTimeoutError`, `InvalidOperation`
-- `controller`: `ControllerError`
-- `core`: `ParserError`, `PluginError`, `PluginValidationError`, `RouterError`
-- `presentation`: `PromptError`
+```python
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import argparse
+    from declusor import contract
+```
+
+### Exception Re-exports
+
+Each subpackage re-exports its respective domain exceptions from `declusor.config` within its `__init__.py` and in `__all__`.
 
 When handling or raising layer-specific errors, consumers can import them directly from the relevant package namespace (e.g. `core.ParserError`, `command.CommandError`).
 
-### 3.3. Docstring Rhythm (Blank Line Separation)
+### Docstring Rhythm (Blank Line Separation)
 
-**Never glue docstrings directly to executable code.** Always insert exactly one blank line between the closing triple quotes (`"""`) of a docstring and the first line of code inside functions, methods, and nested controllers:
+Never glue docstrings directly to executable code. Always insert exactly one blank line between the closing triple quotes (`"""`) of a docstring and the first line of code inside functions, methods, and nested controllers:
 
 ```python
 # CORRECT
@@ -136,7 +172,7 @@ def test_something() -> None:
     assert result is True
 ```
 
-### 3.4. Package README Documentation
+### Package README Documentation
 
 Every package directory must maintain a `README.md` containing at least:
 
@@ -144,63 +180,53 @@ Every package directory must maintain a `README.md` containing at least:
 2. `## Modules`: A markdown table with columns `Module` and `Responsibility` documenting every module in the package without empty rows.
 3. `## Design Principles`: A numbered list detailing the design rationale and architectural guarantees of that layer.
 
-### 3.5. Strict Static Typing
+### Strict Static Typing
 
 - All production and test code must carry complete, precise type annotations.
 - `mypy src plugins tests` must pass with zero errors under `--strict`.
 - Never use untyped `Any` where a generic `TypeVar`, `Protocol`, or explicit union can be defined.
 
-## 4. Testing Guidelines
+## Testing Guidelines
 
-### 4.1. Mock-Free Deterministic Test Doubles
+### Mock-Free Deterministic Test Doubles
 
-Do **not** use unconstrained `unittest.mock.MagicMock` or fragile monkeypatching to satisfy core contracts. Use the typed doubles provided by `declusor.testing`:
+Do **not** use unconstrained `unittest.mock.MagicMock` or fragile monkeypatching to satisfy core contracts. Use the typed doubles provided by `declusor.testing`.
 
-- `testing.DummyConsole`: Simulates I/O, error logging, and input queues.
-- `testing.DummyConnection`: Full state machine (`CREATED` -> `CONNECTED` -> `CLOSED`), frame recording, and chunk streaming.
-- `testing.DummyConnectionProfile`: Script rendering and command formatting.
-- `testing.DummyPluginFileStore`: In-memory file, library, and module streaming.
-- `testing.DummyPluginRuntime`: Deterministic connection creation.
-- `testing.DummyPlugin`: Self-contained plugin for discovery and registration tests.
-- `testing.DummyRouter`: Route inspection, usage docs, and deterministic dispatching.
-- `testing.DummySocket`: In-memory byte buffers simulating socket send/recv without OS network binding.
-- `testing.DummyApplication`: In-memory CLI execution double tracking `parse` and `run` calls.
+Standard pytest fixtures are pre-registered via `pytest_plugins = ["declusor.testing.pytest_plugin"]`.
 
-Standard pytest fixtures are pre-registered via `pytest_plugins = ["declusor.testing.pytest_plugin"]`:
-`dummy_console`, `dummy_connection`, `dummy_file_store`, `dummy_router`, `dummy_profile`, `test_session`, `dummy_app`.
+### Colocated Plugin Tests & Conformance
 
-### 4.2. Colocated Plugin Tests & Conformance
+Native plugin tests live inside `plugins/<plugin_name>/tests/`.
 
-- Native plugin tests live inside `plugins/<plugin_name>/tests/`.
-- Every plugin must implement contract conformance tests by inheriting from `testing.PluginConformanceTestSuite`:
+Every client plugin must implement contract conformance tests by inheriting from `testing.PluginConformanceTestSuite`:
 
-  ```python
-  from declusor import testing
-  from declusor_plugin import DeclusorPlugin
+```python
+from declusor import testing
+from declusor_my_plugin import MyPlugin
 
 
-  class TestDeclusorPluginConformance(testing.PluginConformanceTestSuite):
-      plugin_class = DeclusorPlugin
-  ```
+class TestMyPluginConformance(testing.PluginConformanceTestSuite):
+    plugin_class = MyPlugin
+```
 
-## 5. Plugin Authoring Guide
+## Plugin Authoring Guide
 
 All plugins must follow the autonomous package layout:
 
 ```text
 plugins/<plugin_name>/
-├── pyproject.toml         # Standalone package metadata & entry point
-├── README.md              # Plugin documentation with ## Modules and ## Design Principles
+├── pyproject.toml               # Standalone package metadata & entry point
+├── README.md                    # Plugin documentation
 ├── src/
 │   └── declusor_<plugin_name>/
-│       ├── __init__.py    # Exports: __all__ = ["<PluginClass>"]
-│       ├── plugin.py      # Implements IPlugin & IPluginRuntime
-│       └── connection.py  # Implements IConnection, IConnectionProfile & IClientFileStore
-├── assets/                # Bundled stagers and libraries
-│   ├── launchers/         # Bootstrap stagers (e.g. client.py, client.sh)
-│   ├── helpers/           # Library files sent during session handshake
-│   └── modules/           # On-demand discovery/execution modules
-└── tests/                 # Dedicated unit & conformance test suite
+│       ├── __init__.py          # Exports: __all__ = ["<PluginClass>"]
+│       ├── plugin.py            # Implements IPlugin & IPluginRuntime
+│       └── connection.py        # Implements IConnection, IConnectionProfile & IClientFileStore
+├── assets/                      # Bundled stagers and libraries
+│   ├── launchers/               # Bootstrap stagers
+│   ├── helpers/                 # Library files sent during session handshake
+│   └── modules/                 # On-demand discovery/execution modules
+└── tests/                       # Dedicated unit & conformance test suite
     ├── conftest.py
     └── test_conformance.py
 ```
@@ -212,14 +238,14 @@ Register the plugin in `plugins/<plugin_name>/pyproject.toml`:
 ```toml
 [project]
 name = "declusor-<plugin_name>"
-version = "0.1.0"
+version = "<major>.<minor>.<patch>"
 dependencies = ["declusor>=0.3.1"]
 
 [project.entry-points."declusor.plugins"]
 <plugin_name> = "declusor_<plugin_name>:<PluginClass>"
 ```
 
-## 6. Verification & Quality Gates
+## Verification & Quality Gates
 
 Before opening a pull request or submitting code, ensure that all quality gates pass using the project `Makefile`:
 
@@ -228,12 +254,12 @@ Before opening a pull request or submitting code, ensure that all quality gates 
 make check
 
 # Granular verification targets
-make format-check       # Verify code formatting with Ruff
-make format             # Automatically format code and apply safe fixes
-make lint               # Run Ruff linter checks
-make type-check         # Run Mypy strict type analysis across host and plugins
-make test               # Run all unit, integration, and conformance tests
-make compile            # Verify bytecode compilation across src, tests, and plugins
+make format-check                       # Verify code formatting with Ruff
+make format                             # Automatically format code and apply safe fixes
+make lint                               # Run Ruff linter checks
+make type-check                         # Run Mypy strict type analysis across host and plugins
+make test                               # Run all unit, integration, and conformance tests
+make compile                            # Verify bytecode compilation across src, tests, and plugins
 
 # Plugin verification targets
 make check-plugin PLUGIN=<plugin_name>  # Full check for a specific plugin
@@ -241,18 +267,70 @@ make test-plugin PLUGIN=<plugin_name>   # Run tests for a specific plugin
 make test-plugins                       # Run tests across all plugins
 ```
 
-## 7. Git Workflow & Commit Guidelines
+## Git Workflow & Commit Guidelines
 
-- **Branch Naming**: Use descriptive prefixes: `feat/<name>`, `fix/<name>`, `refactor/<name>`, `docs/<name>`, `test/<name>`.
-- **Commit Messages**: Follow [Conventional Commits](https://www.conventionalcommits.org/):
+### Branching Strategy
 
-  ```text
-  <type>(<scope>): <short summary>
+Create dedicated topic branches from `main` using descriptive prefix naming:
 
-  - Detailed bullet points describing non-obvious architectural choices or rationale.
-  ```
+- `feat/<feature-name>`: New capabilities or functional additions
+- `fix/<bug-name>`: Defect repairs or bug resolutions
+- `refactor/<target>`: Structural code improvements preserving behavior
+- `test/<target>`: Test doubles, conformance suites, or coverage additions
+- `docs/<topic>`: Documentation, architectural guides, or specification updates
 
-  Examples:
-  - `feat(plugins): standardize autonomous plugin packages with src-layout and individual pyproject manifests`
-  - `refactor(main,testing): standardize namespace imports and relative package exports`
-  - `docs(readme): add modules table and design principles across all packages`
+### Conventional Commits
+
+Commit messages must follow the [Conventional Commits](https://www.conventionalcommits.org/) specification:
+
+```text
+<type>(<scope>): <summary in imperative mood, lower-case>
+
+[optional body explaining non-obvious architectural choices or rationale]
+
+[optional footer(s), e.g. BREAKING CHANGE or issue references]
+```
+
+- **Types**: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`
+- **Scopes**: Must align with architectural boundaries: `contract`, `core`, `presentation`, `controller`, `command`, `config`, `util`, `plugins`, `testing`, `main`
+- **Summary**: Concise, imperative, present-tense without trailing periods (e.g. "add", "refactor", "enforce", not "added" or "adds")
+
+#### Examples
+
+- `feat(plugins): standardize autonomous plugin packages with src-layout and entry points`
+- `refactor(contract): decouple domain interfaces from stateless util primitives`
+- `fix(core): reject unregistered plugin commands during CLI parse phase`
+- `test(py_socket): add conformance suite verification against IPlugin contracts`
+- `docs(contributing): clarify namespace import invariants and TYPE_CHECKING guardrails`
+
+### Pull Request Expectations
+
+Every pull request submitted to Declusor must adhere to the following principles:
+
+1. **Focused Scope & Atomic Changes**:
+   - Keep pull requests small and focused on a single concern, feature, or bug fix.
+   - Avoid bundling unrelated refactorings or cosmetic cleanups into feature branches.
+
+2. **Architectural & Invariant Compliance**:
+   - Respect strict unidirectional dependency flow across all architectural boundaries (`Foundations`, `Domain`, `Application`, `Infrastructure`, `Presentation`, `Composition Root`).
+   - Honor namespace import rules: never import the package's own namespace internally, and guard hint-only dependencies with `if TYPE_CHECKING:`.
+
+3. **Rigorous Test Coverage & Quality Gates**:
+   - Accompany new features, bug fixes, and plugin additions with dedicated tests.
+   - Use reusable test doubles from `testing` rather than uncontrolled `MagicMock` patches.
+   - For transport plugins, implement and pass the `PluginConformanceTestSuite`.
+   - Ensure the entire verification gate (`make check`) passes with zero warnings or errors.
+
+4. **Self-Documenting Context & Clarity**:
+   - Provide a clear PR description explaining the **why** behind changes, architectural trade-offs, and verification commands executed.
+   - Update relevant documentation (`README.md`, layer guides, or API docstrings) in lockstep with code modifications.
+
+### Pre-Submission Checklist
+
+Before opening or requesting review on a pull request:
+
+- [ ] `make check` executes cleanly (code formatting, Ruff linting, strict Mypy, and 100% test suite pass).
+- [ ] New components strictly conform to their layer's dependency and import invariants.
+- [ ] Any added or modified plugin passes `PluginConformanceTestSuite`.
+- [ ] Commit history is cleanly rebased against `main` and strictly follows Conventional Commits.
+- [ ] Documentation and inline docstrings (with proper blank line rhythm) are updated.

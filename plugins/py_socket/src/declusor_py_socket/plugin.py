@@ -36,13 +36,13 @@ class PySocketPlugin(contract.IPlugin):
     """Path to bundled assets."""
 
     @classmethod
-    def configure_parser(cls, parser: util.Parser, /) -> None:
+    def configure_parser(cls, parser: contract.IArgumentParser, /) -> None:
         """Register py_socket-specific command-line arguments."""
 
         return None
 
     @classmethod
-    def build_config(cls, args: util.Namespace, data_paths: config.DataPaths | None = None, /) -> contract.PluginConfig:
+    def build_config(cls, args: contract.PluginArguments, data_paths: config.DataPaths | None = None, /) -> contract.PluginConfig:
         """Build the py_socket client configuration."""
 
         if data_paths is not None:

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from declusor import config, contract, core, testing, util
+from declusor import config, contract, core, testing
 
 
 def test_settings_constants() -> None:
@@ -53,18 +53,18 @@ def test_base_path_contains_only_application_and_plugin_directories() -> None:
     assert not hasattr(config.BasePath, "USER_DATA_PATHS")
 
 
-class DummyPathPlugin(contract.IPlugin):
-    """Dummy plugin for testing data path derivation."""
+class DummyPathClientPlugin(contract.IPlugin):
+    """Dummy client plugin for testing data path derivation."""
 
     name = "dummy_path_plugin"
     description = "Dummy path client"
 
     @classmethod
-    def configure_parser(cls, parser: util.Parser, /) -> None:
+    def configure_parser(cls, parser: contract.IArgumentParser, /) -> None:
         pass
 
     @classmethod
-    def build_config(cls, args: util.Namespace, data_paths: config.DataPaths | None = None, /) -> contract.PluginConfig:
+    def build_config(cls, args: contract.PluginArguments, data_paths: config.DataPaths | None = None, /) -> contract.PluginConfig:
         assert data_paths is not None
 
         client_paths = data_paths.for_client(cls.name)
@@ -96,7 +96,7 @@ def test_parser_builds_client_paths_from_data_root(tmp_path: Path) -> None:
     launcher_file.write_text("", encoding="utf-8")
 
     manager = core.PluginManager()
-    manager.register(DummyPathPlugin)
+    manager.register(DummyPathClientPlugin)
 
     options = core.DeclusorParser(manager, name="declusor").parse(
         ("127.0.0.1", "9000", "--plugin", "dummy_path_plugin", "--data-root", str(tmp_path)),

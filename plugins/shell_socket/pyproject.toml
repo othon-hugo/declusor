@@ -1,7 +1,7 @@
 [project]
 name = "declusor-shell-socket"
 version = "0.1.0"
-description = "POSIX shell socket transport plugin for Declusor."
+description = "POSIX shell socket transport client plugin for Declusor."
 readme = "README.md"
 requires-python = ">=3.11,<4.0"
 dependencies = [

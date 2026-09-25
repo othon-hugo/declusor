@@ -68,16 +68,16 @@ class DataPaths:
         return self.helpers
 
     def for_client(self, client_name: str, /) -> "ClientDataPaths":
-        """Derive namespaced data paths for a specific plugin.
+        """Derive namespaced data paths for a specific client plugin.
 
         Resolves paths under ``data/<client_name>/`` in the namespaced
-        hierarchy introduced to support multiple plugin runtimes.
+        hierarchy introduced to support multiple client plugin runtimes.
 
         Args:
-            client_name: The registered name of the plugin (e.g. ``py_socket``).
+            client_name: The registered name of the client plugin (e.g. ``py_socket``).
 
         Returns:
-            Immutable plugin-scoped paths derived from the root data directory.
+            Immutable client-scoped paths derived from the root data directory.
         """
 
         client_root = self.root / client_name
@@ -89,32 +89,27 @@ class DataPaths:
             modules=client_root / "modules",
         )
 
-    for_plugin = for_client
-
 
 @dataclass(frozen=True)
 class ClientDataPaths:
-    """Namespaced filesystem paths for a specific plugin.
+    """Namespaced filesystem paths for a specific client plugin.
 
     Provides access to the launcher script, helper libraries, and module
-    payloads scoped to a single plugin under the namespaced data hierarchy
+    payloads scoped to a single client under the namespaced data hierarchy
     (e.g. ``data/py_socket/launchers/``, ``data/py_socket/helpers/``).
     """
 
     root: Path
-    """Root directory of the plugin data namespace (e.g. ``data/py_socket/``)."""
+    """Root directory of the client data namespace (e.g. ``data/py_socket/``)."""
 
     launcher: Path
-    """Directory containing the plugin launcher scripts."""
+    """Directory containing the client launcher scripts."""
 
     helpers: Path
     """Directory containing helper library scripts loaded at session init."""
 
     modules: Path
     """Directory containing on-demand payload modules."""
-
-
-PluginDataPaths = ClientDataPaths
 
 
 class BasePath:

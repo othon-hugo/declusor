@@ -1,6 +1,6 @@
 # Declusor Plugins
 
-This directory houses the built-in plugins distributed with Declusor. Because Declusor employs a dynamic, multi-tier discovery architecture, third-party developers can create, test, and distribute custom plugins using the exact same structure.
+This directory houses the built-in client plugins distributed with Declusor. Because Declusor employs a dynamic, multi-tier discovery architecture, third-party developers can create, test, and distribute custom plugins using the exact same structure.
 
 ## Plugin Architecture & Contracts
 
@@ -28,7 +28,7 @@ Declusor discovers plugins at runtime across **three tiers**:
 
    ```toml
    [project.entry-points."declusor.plugins"]
-   declusor_plugin = "declusor_plugin:DeclusorPlugin"
+   my_plugin = "declusor_my_plugin:MyPluginPlugin"
    ```
 
 3. **Drop-in Directories**:
@@ -42,7 +42,7 @@ Declusor discovers plugins at runtime across **three tiers**:
 ### 1. Create the Plugin Structure
 
 ```bash
-mkdir -p declusor_plugin/src/declusor_my_plugin
+mkdir -p my_plugin/src/declusor_my_plugin
 mkdir -p my_plugin/assets/{launchers,helpers,modules}
 mkdir -p my_plugin/tests
 touch my_plugin/pyproject.toml my_plugin/README.md
@@ -53,18 +53,18 @@ Canonical layout:
 
 ```text
 my_plugin/
-├── pyproject.toml     # Standalone package metadata & entry point
-├── README.md          # Plugin documentation
+├── pyproject.toml            # Standalone package metadata & entry point
+├── README.md                 # Plugin documentation
 ├── src/
 │   └── declusor_my_plugin/
-│       ├── __init__.py    # Exports
-│       ├── plugin.py      # IPlugin implementation
-│       └── connection.py  # IConnection & IClientFileStore implementation
-├── assets/            # Bundled stagers and libraries
+│       ├── __init__.py       # Exports
+│       ├── plugin.py         # IPlugin implementation
+│       └── connection.py     # IConnection & IClientFileStore implementation
+├── assets/                   # Bundled stagers and libraries
 │   ├── launchers/
 │   ├── helpers/
 │   └── modules/
-└── tests/             # Contract conformance and unit tests
+└── tests/                    # Contract conformance and unit tests
     └── test_conformance.py
 ```
 
@@ -79,15 +79,15 @@ from declusor import contract, util, config
 
 class MyPlugin(contract.IPlugin):
     name = "my_plugin"
-    description = "Description of my custom transport plugin"
+    description = "Description of my custom client"
     version = "1.0.0"
 
     @classmethod
-    def configure_parser(cls, parser: util.Parser, /) -> None:
-        parser.add_argument("--my-option", help="Custom option for this plugin")
+    def configure_parser(cls, parser: contract.IArgumentParser, /) -> None:
+        parser.add_argument("--my-option", help="Custom option for this client")
 
     @classmethod
-    def build_config(cls, args: util.Namespace, data_paths: config.DataPaths | None = None, /) -> contract.PluginConfig:
+    def build_config(cls, args: contract.PluginArguments, data_paths: config.DataPaths | None = None, /) -> contract.PluginConfig:
         return contract.PluginConfig(
             kind=cls.name,
             host=args.host,
@@ -101,7 +101,7 @@ class MyPlugin(contract.IPlugin):
 
     @classmethod
     def build_runtime(cls, plugin_config: contract.PluginConfig, /) -> contract.IPluginRuntime:
-        return MyPluginRuntime(plugin_config)
+        return DeclusorRuntime(plugin_config)
 ```
 
 ### 3. Verify Contract Conformance with `declusor.testing`
@@ -132,5 +132,5 @@ make test-plugin PLUGIN=my_plugin
 Run Declusor pointing to your plugin directory:
 
 ```bash
-declusor 0.0.0.0 9000 --plugin my_plugin --plugin-dir /path/to/my_plugin_parent_dir
+declusor 0.0.0.0 9000 --plugin my_plugin --plugin-dir /path/to/my_plugin
 ```

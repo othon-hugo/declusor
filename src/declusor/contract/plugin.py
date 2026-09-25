@@ -1,25 +1,26 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from pathlib import Path
 from socket import socket
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
-from declusor import util
-from declusor.config import DataPaths
+from declusor import config
 
 if TYPE_CHECKING:
     from declusor.contract.connection import IConnection
+    from declusor.contract.parser import IArgumentParser
 
 
 @dataclass(frozen=True)
 class PluginConfig:
-    """Configuration produced by a plugin.
+    """Configuration produced by a client plugin.
 
-    Stores the common server connection parameters and the plugin-specific
+    Stores the common server connection parameters and the client-specific
     options produced during command-line parsing.
     """
 
     kind: str
-    """Registered identifier of the plugin implementation."""
+    """Registered identifier of the client implementation."""
 
     host: str
     """Host address used by the server."""
@@ -27,11 +28,49 @@ class PluginConfig:
     port: int
     """Port used by the server."""
 
-    data_paths: DataPaths | None = None
-    """Optional filesystem paths used by the selected plugin runtime."""
+    data_paths: config.DataPaths | None = None
+    """Optional filesystem paths used by the selected client runtime."""
 
     options: dict[str, Any] = field(default_factory=dict)
-    """Plugin-specific configuration options."""
+    """Client-specific configuration options."""
+
+
+@runtime_checkable
+class PluginArguments(Protocol):
+    """Protocol for command-line arguments consumed by client plugins.
+
+    Guarantees typed access to standard server network parameters (host, port)
+    configured at the application level.
+    """
+
+    host: str
+    port: int
+
+
+class PluginNamespace:
+    """Pre-configured argument namespace satisfying PluginArguments.
+
+    Provides explicit typed attributes for standard options (host, port)
+    and dynamic attribute access for plugin-specific options.
+    """
+
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        data_root: Path | None = None,
+        plugin: str = "",
+        plugin_dir: Path | None = None,
+        **extra: Any,
+    ) -> None:
+        self.host = host
+        self.port = port
+        self.data_root = data_root
+        self.plugin = plugin
+        self.plugin_dir = plugin_dir
+
+        for key, value in extra.items():
+            setattr(self, key, value)
 
 
 class IPluginRuntime(ABC):
@@ -44,7 +83,7 @@ class IPluginRuntime(ABC):
     @property
     @abstractmethod
     def client_files(self) -> "IClientFileStore":
-        """[...]"""
+        """Client file store for module and library loading."""
 
         raise NotImplementedError
 
@@ -70,46 +109,51 @@ class IPluginRuntime(ABC):
 
 
 class IPlugin(ABC):
-    """Extension point for registering configurable transport plugins.
+    """Extension point for registering configurable client implementations.
 
     Implementations define how their command-line arguments are registered,
     converted into a ``PluginConfig``, and validated.
     """
 
     name: str
-    """Unique identifier used to select the plugin from the command line."""
+    """Unique identifier used to select the client from the command line."""
 
     description: str = ""
     """Brief human-readable description shown in CLI help."""
 
     version: str = "1.0.0"
-    """Semantic version of the plugin."""
+    """Semantic version of the client plugin."""
 
     author: str = ""
-    """Author or maintainer of the plugin."""
+    """Author or maintainer of the client plugin."""
 
     @classmethod
     @abstractmethod
-    def configure_parser(cls, parser: util.Parser, /) -> None:
-        """Register plugin-specific command-line arguments.
+    def configure_parser(cls, parser: "IArgumentParser", /) -> None:
+        """Register client-specific command-line arguments.
 
         Args:
-            parser: Argument parser that receives the plugin-specific options.
+            parser: Argument parser that receives the client-specific options.
         """
 
         raise NotImplementedError
 
     @classmethod
     @abstractmethod
-    def build_config(cls, args: util.Namespace, data_paths: DataPaths | None = None, /) -> PluginConfig:
-        """Build a plugin configuration from parsed arguments and data paths.
+    def build_config(
+        cls,
+        args: PluginArguments,
+        data_paths: config.DataPaths | None = None,
+        /,
+    ) -> PluginConfig:
+        """Build a client configuration from parsed arguments and data paths.
 
         Args:
-            args: Namespace containing common and plugin-specific arguments.
+            args: Pre-configured namespace or protocol containing common and client-specific arguments.
             data_paths: Resolved filesystem paths for the application, or None to use bundled assets.
 
         Returns:
-            Configuration object for the selected plugin.
+            Configuration object for the selected client.
         """
 
         raise NotImplementedError
@@ -117,7 +161,7 @@ class IPlugin(ABC):
     @classmethod
     @abstractmethod
     def validate(cls, plugin_config: PluginConfig, /) -> None:
-        """Validate a plugin configuration.
+        """Validate a client configuration.
 
         Args:
             plugin_config: Configuration produced by ``build_config``.
@@ -131,7 +175,7 @@ class IPlugin(ABC):
     @classmethod
     @abstractmethod
     def build_runtime(cls, plugin_config: PluginConfig, /) -> IPluginRuntime:
-        """Build the runtime for a validated plugin configuration.
+        """Build the runtime for a validated client configuration.
 
         Args:
             plugin_config: Configuration produced by ``build_config``.

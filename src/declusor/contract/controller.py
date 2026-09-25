@@ -1,15 +1,19 @@
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any
-
-from declusor import util
+from typing import TYPE_CHECKING, Any, TypeAlias
 
 if TYPE_CHECKING:
     from declusor.contract.command import ICommand
     from declusor.contract.connection import IConnection
     from declusor.contract.console import IConsole
     from declusor.contract.plugin import IClientFileStore
+
+ArgumentDefinitions: TypeAlias = Mapping[str, Any]
+"""Mapping of argument names to expected argument types."""
+
+ParsedArguments: TypeAlias = dict[str, Any]
+"""Extracted argument-value pairs resulting from parsing."""
 
 
 class ControllerAction(StrEnum):
@@ -105,10 +109,12 @@ class ControllerRequest:
 
     def parse_arguments(
         self,
-        definitions: util.ArgumentDefinitions,
+        definitions: ArgumentDefinitions,
         allow_unknown: bool = False,
-    ) -> tuple[util.ParsedArguments, list[str]]:
-        return util.parse_command_arguments(
+    ) -> tuple[ParsedArguments, list[str]]:
+        from declusor.util.parsing import parse_command_arguments
+
+        return parse_command_arguments(
             line=self.request_line,
             definitions=definitions,
             allow_unknown=allow_unknown,

