@@ -31,7 +31,7 @@
 
 Catching a reverse shell during a penetration test, CTF, or security assessment shouldn't feel like walking a tightrope:
 
-- **Netcat is a little too minimal**: You get your shell, hit `Ctrl+C` by accident, and suddenly you're back to Googling PTY one-liners. Stabilizing requires Googling PTY one-liners (`python -c 'import pty; ...'`), running `stty raw -echo`, and hoping binary transfers don't corrupt the socket.
+- **Netcat is a little too minimal**: You get your shell, hit `Ctrl+C` by accident, and suddenly you're back to Googling PTY one-liners, running `stty raw -echo`, and hoping your next binary transfer doesn't eat the connection.
 - **Many C2 frameworks are a bit much**: Sometimes you just want to catch a shell and run `id`. You don't need twelve containers, a database, and a team server for that.
 - **Raw sockets don't handle drama well**: A few lines of socket code work great — until the connection drops, binary data shows up, or the shell does something you didn't expect.
 
