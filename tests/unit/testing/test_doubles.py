@@ -308,23 +308,21 @@ def test_dummy_socket() -> None:
 
 
 def test_dummy_application() -> None:
-    """DummyApplication records parse and run calls and propagates configured errors."""
+    """DummyApplication records run calls, provides manager, and propagates configured errors."""
 
-    opts = testing.create_dummy_options()
-    app = testing.DummyApplication(parse_result=opts)
-    assert app.parse(["--flag"]) == opts
-    assert app.parse_calls == [["--flag"]]
+    cfg = testing.create_dummy_options()
+    app = testing.DummyApplication()
+    assert isinstance(app.manager, core.PluginManager)
 
-    app.run(opts)
-    assert app.run_calls == [opts]
+    app.register_plugin(testing.DummyPlugin)
+    assert testing.DummyPlugin.name in app.manager.names()
 
-    app.parse_error = config.ParserError("parse fail")
-    with pytest.raises(config.ParserError, match="parse fail"):
-        app.parse([])
+    app.run(cfg)
+    assert app.run_calls == [cfg]
 
     app.run_error = config.ConnectionError("run fail")
     with pytest.raises(config.ConnectionError, match="run fail"):
-        app.run(opts)
+        app.run(cfg)
 
 
 def test_dummy_command_and_errors(test_session: contract.SessionContext) -> None:
@@ -367,3 +365,21 @@ def test_factories() -> None:
     assert args.port == 7777
     assert args.extra_flag is True
     assert isinstance(args, contract.PluginArguments)
+
+
+def test_dummy_session_runner(
+    test_session: contract.SessionContext,
+    dummy_router: testing.DummyRouter,
+) -> None:
+    """DummySessionRunner records invocations and raises configured error."""
+
+    runner = testing.DummySessionRunner()
+    runner.run(test_session, dummy_router)
+
+    assert len(runner.run_calls) == 1
+    assert runner.run_calls[0] == (test_session, dummy_router)
+
+    error_runner = testing.DummySessionRunner(run_error=config.DeclusorException("runner failed"))
+    with pytest.raises(config.DeclusorException, match="runner failed"):
+        error_runner.run(test_session, dummy_router)
+

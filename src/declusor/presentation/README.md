@@ -7,7 +7,7 @@ The **presentation** package implements the operator user interface and interact
 | Module         | Responsibility                                                                           |
 | -------------- | ---------------------------------------------------------------------------------------- |
 | `input_source` | Terminal input reading via readline with history and autocompletion (`TerminalInputSource`) |
-| `prompt`       | Interactive command loop, command routing, and signal handling (`PromptLoop`)            |
+| `prompt`       | Interactive command loop and session runner (`PromptLoop` implements `ISessionRunner`) |
 | `view`         | Standard output streams, binary data flushing, and semantic levels (`TerminalView`)      |
 
 ## Design Principles

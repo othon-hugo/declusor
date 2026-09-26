@@ -1,6 +1,5 @@
-from collections.abc import Sequence
-
 from declusor import contract, core
+from declusor.testing.doubles.plugins import DummyPlugin
 
 
 class DummyApplication:
@@ -8,44 +7,27 @@ class DummyApplication:
 
     def __init__(
         self,
-        parse_result: core.DeclusorOptions | None = None,
-        parse_error: BaseException | None = None,
+        manager: core.PluginManager | None = None,
         run_error: BaseException | None = None,
     ) -> None:
-        self.parse_result: core.DeclusorOptions = (
-            parse_result
-            if parse_result is not None
-            else {
-                "host": "127.0.0.1",
-                "port": 9000,
-                "plugin": contract.PluginConfig(
-                    kind="dummy",
-                    host="127.0.0.1",
-                    port=9000,
-                    data_paths=None,
-                    options={},
-                ),
-            }
-        )
-        self.parse_error: BaseException | None = parse_error
+        if manager is None:
+            self.manager: core.PluginManager = core.PluginManager()
+            self.manager.register(DummyPlugin)
+        else:
+            self.manager = manager
+
         self.run_error: BaseException | None = run_error
-        self.parse_calls: list[Sequence[str] | None] = []
-        self.run_calls: list[core.DeclusorOptions] = []
+        self.run_calls: list[contract.PluginConfig] = []
 
-    def parse(self, argv: Sequence[str] | None = None, /) -> core.DeclusorOptions:
-        """Simulate parsing command-line options."""
+    def register_plugin(self, plugin: type[contract.IPlugin], /) -> None:
+        """Register a client plugin in the manager."""
 
-        self.parse_calls.append(argv)
+        self.manager.register(plugin)
 
-        if self.parse_error is not None:
-            raise self.parse_error
-
-        return self.parse_result
-
-    def run(self, options: core.DeclusorOptions, /) -> None:
+    def run(self, config: contract.PluginConfig, /) -> None:
         """Simulate running the application lifecycle."""
 
-        self.run_calls.append(options)
+        self.run_calls.append(config)
 
         if self.run_error is not None:
             raise self.run_error

@@ -118,3 +118,28 @@ def test_prompt_handles_declusor_exception(
 
     assert exc in dummy_view.errors
     assert dummy_router.locate_calls == ["fail_cmd", "exit"]
+
+
+def test_prompt_loop_as_session_runner(
+    dummy_router: testing.DummyRouter,
+    test_session: contract.SessionContext,
+    dummy_input_source: testing.DummyInputSource,
+) -> None:
+    """PromptLoop can be instantiated standalone and executed via ISessionRunner.run(session, router)."""
+
+    runner: contract.ISessionRunner = presentation.PromptLoop("test_cli")
+
+    dummy_input_source.feed_inputs("quit")
+
+    def quit_controller(
+        session: contract.SessionContext,
+        req: contract.ControllerRequest,
+    ) -> contract.ControllerResult:
+        return contract.ControllerResult(action=contract.ControllerAction.TERMINATE)
+
+    dummy_router.connect("quit", quit_controller)
+
+    runner.run(test_session, dummy_router)
+
+    assert dummy_router.locate_calls == ["quit"]
+

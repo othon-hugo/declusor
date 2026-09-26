@@ -1,16 +1,30 @@
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 from pathlib import Path
+from typing import Protocol, runtime_checkable
 
 from declusor import config, contract, controller, core, presentation, util
 
-SetupCompleter = Callable[[tuple[str, ...]], None]
+
+@runtime_checkable
+class ApplicationProtocol(Protocol):
+    """Protocol defining the interface required by the CLI to run an application."""
+
+    @property
+    def manager(self) -> core.PluginManager:
+        """Client plugin manager containing registered plugins."""
+        ...
+
+    def run(self, config: contract.PluginConfig, /) -> None:
+        """Execute the application lifecycle for a given plugin configuration."""
+        ...
 
 
-class Application:
+class Application(ApplicationProtocol):
     """Compose and execute one Declusor server connection.
 
-    The application owns concrete dependencies and keeps protocol-specific
-    details behind the selected client plugin runtime.
+    Coordinates plugin discovery, route registration, and transport connection
+    lifecycle, delegating session interaction to an injected or configured
+    ``ISessionRunner``.
     """
 
     def __init__(
@@ -18,22 +32,24 @@ class Application:
         manager: core.PluginManager,
         router: contract.IRouter,
         view: contract.IView,
-        input_source: contract.IInputSource,
+        runner: contract.ISessionRunner,
+        input_source: contract.IInputSource | None = None,
         /,
     ) -> None:
-        """Create an application using a configured client plugin manager.
+        """Create an application with configured dependencies and session runner.
 
         Args:
             manager: Plugin manager containing the available client plugins.
             router: Command router resolving interactive prompt input to controller actions.
             view: Operator view interface handling output presentation.
-            input_source: Operator input source interface reading commands.
+            runner: Session runner executing interaction workflows over active sessions.
+            input_source: Optional operator input source interface.
         """
 
         self._manager = manager
-        self._registry = manager
         self._router = router
         self._view = view
+        self._runner = runner
         self._input_source = input_source
 
         self._connect_routes()
@@ -44,6 +60,18 @@ class Application:
 
         return self._manager
 
+    @property
+    def runner(self) -> contract.ISessionRunner:
+        """The active session runner."""
+
+        return self._runner
+
+    @runner.setter
+    def runner(self, runner: contract.ISessionRunner) -> None:
+        """Set or replace the session runner at runtime."""
+
+        self._runner = runner
+
     def register_plugin(self, plugin: type[contract.IPlugin], /) -> None:
         """Register a client plugin at runtime.
 
@@ -53,39 +81,31 @@ class Application:
 
         self._manager.register(plugin)
 
-    def parse(self, argv: Sequence[str] | None = None, /) -> core.DeclusorOptions:
-        """Parse command-line options using the composed client registry.
-
-        Args:
-            argv: Arguments to parse, excluding the executable name. When
-                ``None``, arguments are read from the process command line.
-
-        Returns:
-            Validated application and client configuration.
-        """
-
-        return core.DeclusorParser(
-            self._manager,
-            name=config.Settings.PROJECT_NAME,
-            description=config.Settings.PROJECT_DESCRIPTION,
-        ).parse(argv)
-
-    def run(self, options: core.DeclusorOptions, /) -> None:
+    def run(
+        self,
+        config: contract.PluginConfig,
+        /,
+        *,
+        runner: contract.ISessionRunner | None = None,
+    ) -> None:
         """Run the configured server connection.
 
         Args:
-            options: Parsed application and client configuration.
+            config: Validated client plugin configuration.
+            runner: Optional session runner overriding the default runner for this execution.
 
         Raises:
             ConnectionFailure: If the socket session cannot be established.
         """
 
-        plugin_config = options["plugin"]
-        plugin_runtime = self._manager.get(plugin_config.kind).build_runtime(plugin_config)
+        plugin_runtime = self._manager.get(config.kind).build_runtime(config)
+
+        if self._input_source is not None and (setup_completer := getattr(self._input_source, "setup_completer", None)):
+            setup_completer(self._router.routes)
 
         self._view.write_message(plugin_runtime.client_script)
 
-        with util.await_connection(plugin_config.host, plugin_config.port) as socket_connection:
+        with util.await_connection(config.host, config.port) as socket_connection:
             with plugin_runtime.create_connection(socket_connection) as connection:
                 connection.initialize()
 
@@ -96,13 +116,8 @@ class Application:
                     files=plugin_runtime.client_files,
                 )
 
-                prompt = presentation.PromptLoop(
-                    config.Settings.PROJECT_NAME,
-                    router=self._router,
-                    session=session,
-                )
-
-                prompt.run()
+                active_runner = runner if runner is not None else self._runner
+                active_runner.run(session, self._router)
 
     def _connect_routes(self) -> None:
         """Register built-in command routes on the application router."""
@@ -118,17 +133,40 @@ class Application:
         self._router.connect("exit", controller.call_exit)
 
 
-def create_application(search_dirs: Sequence[Path] | None = None) -> Application:
-    """Create the application with all discovered client plugins registered.
+class TerminalApplication(Application):
+    """Specialized application pre-configured for interactive terminal REPL."""
 
-    Runs the multi-tier discovery engine (built-in plugins/, entry points,
-    and user drop-in directory) to populate the registry dynamically.
+    def __init__(
+        self,
+        manager: core.PluginManager,
+        router: contract.IRouter,
+        view: contract.IView,
+        input_source: contract.IInputSource,
+        runner: contract.ISessionRunner | None = None,
+        /,
+    ) -> None:
+        """Create a TerminalApplication with terminal view, input source, and prompt loop.
+
+        Args:
+            manager: Plugin manager containing the available client plugins.
+            router: Command router resolving interactive prompt input to controller actions.
+            view: Operator view interface handling output presentation.
+            input_source: Operator input source interface reading commands.
+            runner: Optional session runner. Defaults to PromptLoop.
+        """
+
+        terminal_runner = runner if runner is not None else presentation.PromptLoop(config.Settings.PROJECT_NAME)
+        super().__init__(manager, router, view, terminal_runner, input_source)
+
+
+def create_terminal_application(search_dirs: Sequence[Path] | None = None) -> TerminalApplication:
+    """Create a TerminalApplication with discovered plugins and terminal components.
 
     Args:
         search_dirs: Optional sequence of paths to search for plugins.
 
     Returns:
-        Fully composed application ready to execute parsed options.
+        Fully composed TerminalApplication ready to execute.
     """
 
     manager = core.PluginManager().discover(search_dirs)
@@ -136,4 +174,17 @@ def create_application(search_dirs: Sequence[Path] | None = None) -> Application
     view = presentation.TerminalView()
     input_source = presentation.TerminalInputSource()
 
-    return Application(manager, router, view, input_source)
+    return TerminalApplication(manager, router, view, input_source)
+
+
+def create_application(search_dirs: Sequence[Path] | None = None) -> TerminalApplication:
+    """Create a default Declusor application (TerminalApplication).
+
+    Args:
+        search_dirs: Optional sequence of paths to search for plugins.
+
+    Returns:
+        Fully composed TerminalApplication ready to execute parsed options.
+    """
+
+    return create_terminal_application(search_dirs)

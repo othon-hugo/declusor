@@ -16,6 +16,7 @@ The **contract** package defines the abstract contracts that establish the bound
 | `parser`       | Interface for CLI argument parsing and options mapping                        |
 | `plugin`       | Abstractions for client plugins, runtimes, and client file stores             |
 | `router`       | Route registration, lookup, and usage contract                                |
+| `runner`       | Session workflow and interaction loop contract (`ISessionRunner`)             |
 | `view`         | Output presentation contract for messages, errors, warnings, info, and binary |
 
 ## Design Principles

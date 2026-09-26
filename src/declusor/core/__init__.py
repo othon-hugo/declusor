@@ -6,7 +6,6 @@ from declusor.config import (
 )
 
 from .parser import (
-    DeclusorOptions,
     DeclusorParser,
 )
 from .plugin import (
@@ -19,14 +18,11 @@ from .router import (
 )
 
 __all__ = [
-    "DeclusorOptions",
     "DeclusorParser",
     "ParserError",
     "PluginError",
     "PluginManager",
     "PluginRegistry",
-    "PluginRegistry",
-    "PluginType",
     "PluginType",
     "PluginValidationError",
     "Router",

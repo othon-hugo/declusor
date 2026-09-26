@@ -1,6 +1,6 @@
 from typing import Any
 
-from declusor import config, contract, core
+from declusor import config, contract
 from declusor.testing.doubles.connection import DummyConnection
 from declusor.testing.doubles.filestore import DummyPluginFileStore
 from declusor.testing.doubles.input_source import DummyInputSource
@@ -98,8 +98,8 @@ def create_dummy_options(
     host: str = "127.0.0.1",
     port: int = 9000,
     client: contract.PluginConfig | None = None,
-) -> core.DeclusorOptions:
-    """Create a fully-formed DeclusorOptions TypedDict for testing.
+) -> contract.PluginConfig:
+    """Create a fully-formed PluginConfig for testing.
 
     Args:
         host: Target host. Defaults to '127.0.0.1'.
@@ -107,11 +107,8 @@ def create_dummy_options(
         client: PluginConfig instance. Defaults to dummy config.
 
     Returns:
-        A valid DeclusorOptions TypedDict mapping.
+        A valid PluginConfig instance.
     """
 
-    return {
-        "host": host,
-        "port": port,
-        "plugin": client or create_dummy_plugin_config(host=host, port=port),
-    }
+    return client or create_dummy_plugin_config(host=host, port=port)
+
