@@ -15,7 +15,8 @@ class Application:
         self,
         manager: core.PluginManager,
         router: contract.IRouter,
-        console: contract.IConsole,
+        view: contract.IView,
+        input_source: contract.IInputSource,
         /,
     ) -> None:
         """Create an application using a configured client plugin manager.
@@ -23,13 +24,15 @@ class Application:
         Args:
             manager: Plugin manager containing the available client plugins.
             router: Command router resolving interactive prompt input to controller actions.
-            console: Operator console interface handling terminal presentation and input/output.
+            view: Operator view interface handling output presentation.
+            input_source: Operator input source interface reading commands.
         """
 
         self._manager = manager
         self._registry = manager
         self._router = router
-        self._console = console
+        self._view = view
+        self._input_source = input_source
 
     @property
     def manager(self) -> core.PluginManager:
@@ -78,8 +81,9 @@ class Application:
         plugin_config = options["plugin"]
         plugin_runtime = self._manager.get(plugin_config.kind).build_runtime(plugin_config)
 
-        self._console.setup_completer(self._router.routes)
-        self._console.write_message(plugin_runtime.client_script)
+        if hasattr(self._input_source, "setup_completer"):
+            self._input_source.setup_completer(self._router.routes)
+        self._view.write_message(plugin_runtime.client_script)
 
         with util.await_connection(plugin_config.host, plugin_config.port) as socket_connection:
             with plugin_runtime.create_connection(socket_connection) as connection:
@@ -87,11 +91,12 @@ class Application:
 
                 session = contract.SessionContext(
                     connection=connection,
-                    console=self._console,
+                    view=self._view,
+                    input=self._input_source,
                     files=plugin_runtime.client_files,
                 )
 
-                prompt = presentation.PromptCLI(
+                prompt = presentation.PromptLoop(
                     config.Settings.PROJECT_NAME,
                     router=self._router,
                     session=session,
@@ -131,6 +136,7 @@ def create_application(search_dirs: Sequence[Path] | None = None) -> Application
 
     manager = core.PluginManager().discover(search_dirs)
     router = core.Router()
-    console = presentation.Console()
+    view = presentation.TerminalView()
+    input_source = presentation.TerminalInputSource()
 
-    return Application(manager, router, console)
+    return Application(manager, router, view, input_source)

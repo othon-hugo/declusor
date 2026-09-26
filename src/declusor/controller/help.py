@@ -23,9 +23,9 @@ def create_help_controller(get_documentation: DocumentationProvider, get_route_u
         arguments, _ = req.parse_arguments({"command": str | None})
 
         if help_command := arguments.get("command"):
-            session.console.write_message(f"{help_command}: {get_route_usage(help_command)}")
+            session.view.write_message(f"{help_command}: {get_route_usage(help_command)}")
         else:
-            session.console.write_message(get_documentation())
+            session.view.write_message(get_documentation())
 
         return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
 

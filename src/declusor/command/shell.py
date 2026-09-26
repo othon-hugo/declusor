@@ -46,54 +46,54 @@ class LaunchShell(contract.ICommand):
         return self._dto
 
     def send_request(self, session: contract.SessionContext, /) -> None:
-        """Start the background task that streams remote client output to the console.
+        """Start the background task that streams remote client output to the view.
 
         Args:
-            session: Active session context providing connection and console.
+            session: Active session context providing connection and view.
         """
 
         output_streamer = self._create_shell_output_handler(
             session.connection,
-            session.console,
+            session.view,
         )
 
         self._task_pool.add_task(output_streamer, name="shell_output_streamer")
         self._task_pool.start_all()
 
     def read_response(self, session: contract.SessionContext, /) -> None:
-        """Forward operator input from the console to the remote client until interrupted.
+        """Forward operator input from the input source to the remote client until interrupted.
 
         Args:
-            session: Active session context providing connection and console.
+            session: Active session context providing connection, view, and input source.
         """
 
         input_forwarder = self._create_shell_input_handler(
             session.connection,
-            session.console,
+            session.input,
         )
 
         try:
             if self._dto.banner:
-                session.console.write_message(self._dto.banner)
+                session.view.write_message(self._dto.banner)
 
             input_forwarder(self._stop_event)
             self._task_pool.wait_all()
         except KeyboardInterrupt:
-            session.console.write_message("[keyboard interrupt received]")
+            session.view.write_message("[keyboard interrupt received]")
         finally:
             self._task_pool.stop()
 
     def _create_shell_input_handler(
         self,
         connection: contract.IConnection,
-        console: contract.IConsole,
+        input_source: contract.IInputSource,
         /,
     ) -> util.TaskHandler:
-        """Return a TaskHandler that reads lines from console and sends them over the connection.
+        """Return a TaskHandler that reads lines from input source and sends them over the connection.
 
         Args:
             connection: Active client connection.
-            console: Operator console interface.
+            input_source: Operator input source interface.
 
         Returns:
             A callable task handler for execution in the thread pool or loop.
@@ -101,7 +101,7 @@ class LaunchShell(contract.ICommand):
 
         def _handle_request(stop_event: util.TaskEvent) -> None:
             while not stop_event.is_set():
-                command_request = console.read_line()
+                command_request = input_source.read_raw()
 
                 if command_request:
                     connection.write(command_request.encode())
@@ -111,17 +111,17 @@ class LaunchShell(contract.ICommand):
     def _create_shell_output_handler(
         self,
         connection: contract.IConnection,
-        console: contract.IConsole,
+        view: contract.IView,
         /,
     ) -> util.TaskHandler:
-        """Return a TaskHandler that streams client output to the console.
+        """Return a TaskHandler that streams client output to the view.
 
         Temporarily clears the connection timeout for blocking reads and restores
         it on completion.
 
         Args:
             connection: Active client connection.
-            console: Operator console interface.
+            view: Operator view interface.
 
         Returns:
             A callable task handler for execution in the background task pool.
@@ -135,7 +135,7 @@ class LaunchShell(contract.ICommand):
 
                 while not stop_event.is_set():
                     for chunk in connection.read():
-                        console.write_binary_data(chunk)
+                        view.write_binary_data(chunk)
             finally:
                 connection.timeout = previous_timeout
 

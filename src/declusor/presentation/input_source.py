@@ -2,7 +2,6 @@ import atexit
 import glob
 import os
 import readline
-import sys
 from collections.abc import Sequence
 from contextlib import suppress
 from pathlib import Path
@@ -10,11 +9,35 @@ from pathlib import Path
 from declusor import contract
 
 
-class Console(contract.IConsole):
-    """Console implementation using readline for terminal input and output."""
+class TerminalInputSource(contract.IInputSource):
+    """Terminal input source implementation using readline for input, history, and autocomplete."""
 
     def __init__(self) -> None:
         self._history_file: Path | None = None
+
+    def read_command(self, prompt: str = "", /) -> str:
+        """Read a stripped command string from standard input.
+
+        Args:
+            prompt: Text prompt displayed to the operator.
+
+        Returns:
+            The input string with leading and trailing whitespace stripped.
+        """
+
+        return input(prompt).strip()
+
+    def read_raw(self, prompt: str = "", /) -> str:
+        """Read a raw line from standard input with newline appended.
+
+        Args:
+            prompt: Text prompt displayed to the operator.
+
+        Returns:
+            The raw input string including trailing newline.
+        """
+
+        return input(prompt) + "\n"
 
     def setup_completer(self, command_routes: Sequence[str], /) -> None:
         """Set up the readline completer for command line input.
@@ -106,45 +129,6 @@ class Console(contract.IConsole):
                 readline.read_history_file(str(self._history_file))
 
         atexit.register(self._save_history)
-
-    def read_line(self, prompt: str = "", /) -> str:
-        """Read a line from standard input with readline support.
-
-        Note:
-            Uses input() to preserve readline functionality (autocomplete, history).
-            This is a blocking call.
-        """
-
-        return input(prompt) + "\n"
-
-    def read_stripped_line(self, prompt: str = "", /) -> str:
-        """Read a line from standard input and strip whitespace."""
-
-        return self.read_line(prompt).strip()
-
-    def write_message(self, message: str, /) -> None:
-        """Write a message to standard output."""
-
-        sys.stdout.write(message + "\n")
-        sys.stdout.flush()
-
-    def write_binary_data(self, message: bytes, /) -> None:
-        """Write binary data to standard output."""
-
-        sys.stdout.buffer.write(message)
-        sys.stdout.buffer.flush()
-
-    def write_error_message(self, message: str | BaseException, /) -> None:
-        """Write an error message to standard error."""
-
-        sys.stderr.write(f"error: {message}\n")
-        sys.stderr.flush()
-
-    def write_warning_message(self, message: str | BaseException, /) -> None:
-        """Write a warning message to standard error."""
-
-        sys.stderr.write(f"warning: {message}\n")
-        sys.stderr.flush()
 
     def _save_history(self) -> None:
         """Save history to file."""

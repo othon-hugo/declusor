@@ -3,19 +3,22 @@ from declusor import contract, testing
 
 def test_session_context_initialization_and_properties(
     dummy_connection: testing.DummyConnection,
-    dummy_console: testing.DummyConsole,
+    dummy_view: testing.DummyView,
+    dummy_input_source: testing.DummyInputSource,
     dummy_file_store: testing.DummyPluginFileStore,
 ) -> None:
-    """SessionContext should properly hold and expose connection, console, and files."""
+    """SessionContext should properly hold and expose connection, view, input, and files."""
 
     session = contract.SessionContext(
         connection=dummy_connection,
-        console=dummy_console,
+        view=dummy_view,
+        input=dummy_input_source,
         files=dummy_file_store,
     )
 
     assert session.connection is dummy_connection
-    assert session.console is dummy_console
+    assert session.view is dummy_view
+    assert session.input is dummy_input_source
     assert session.files is dummy_file_store
 
 
@@ -28,27 +31,3 @@ def test_session_context_execute_invokes_command_execute(
     test_session.execute(command)
 
     assert command.call_sequence == ["send_request", "read_response"]
-
-
-def test_session_context_backward_compatibility_tuple_unpacking(
-    dummy_connection: testing.DummyConnection,
-    dummy_console: testing.DummyConsole,
-    dummy_file_store: testing.DummyPluginFileStore,
-) -> None:
-    """SessionContext must support tuple indexing, unpacking, and len for backward compatibility."""
-
-    session = contract.SessionContext(
-        connection=dummy_connection,
-        console=dummy_console,
-        files=dummy_file_store,
-    )
-
-    assert len(session) == 3
-    assert session[0] is dummy_connection
-    assert session[1] is dummy_console
-    assert session[2] is dummy_file_store
-
-    unpacked_conn, unpacked_console, unpacked_files = session
-    assert unpacked_conn is dummy_connection
-    assert unpacked_console is dummy_console
-    assert unpacked_files is dummy_file_store

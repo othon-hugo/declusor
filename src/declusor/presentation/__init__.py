@@ -2,15 +2,19 @@ from declusor.config import (
     PromptError,
 )
 
-from .console import (
-    Console,
+from .input_source import (
+    TerminalInputSource,
 )
 from .prompt import (
-    PromptCLI,
+    PromptLoop,
+)
+from .view import (
+    TerminalView,
 )
 
 __all__ = [
-    "Console",
-    "PromptCLI",
     "PromptError",
+    "PromptLoop",
+    "TerminalInputSource",
+    "TerminalView",
 ]

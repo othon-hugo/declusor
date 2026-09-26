@@ -2,20 +2,23 @@ from typing import Any
 
 from declusor import config, contract, core
 from declusor.testing.doubles.connection import DummyConnection
-from declusor.testing.doubles.console import DummyConsole
 from declusor.testing.doubles.filestore import DummyPluginFileStore
+from declusor.testing.doubles.input_source import DummyInputSource
+from declusor.testing.doubles.view import DummyView
 
 
 def create_test_session(
     connection: contract.IConnection | None = None,
-    console: contract.IConsole | None = None,
+    view: contract.IView | None = None,
+    input_source: contract.IInputSource | None = None,
     files: contract.IClientFileStore | None = None,
 ) -> contract.SessionContext:
     """Create a SessionContext populated with test doubles by default.
 
     Args:
         connection: Connection double to inject. Defaults to DummyConnection.
-        console: Console double to inject. Defaults to DummyConsole.
+        view: View double to inject. Defaults to DummyView.
+        input_source: Input source double to inject. Defaults to DummyInputSource.
         files: File store double to inject. Defaults to DummyPluginFileStore.
 
     Returns:
@@ -24,7 +27,8 @@ def create_test_session(
 
     return contract.SessionContext(
         connection=connection or DummyConnection(),
-        console=console or DummyConsole(),
+        view=view or DummyView(),
+        input=input_source or DummyInputSource(),
         files=files or DummyPluginFileStore(),
     )
 

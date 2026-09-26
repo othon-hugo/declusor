@@ -81,11 +81,11 @@ class LoadModule(contract.ICommand):
         """Read and display the remote client's module registration response.
 
         Args:
-            session: Active session providing connection and console interfaces.
+            session: Active session providing connection and view interfaces.
 
         Raises:
             ConnectionClosed: If the remote peer terminates the connection unexpectedly.
         """
 
         for data in session.connection.read():
-            session.console.write_binary_data(data)
+            session.view.write_binary_data(data)

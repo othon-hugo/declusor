@@ -8,9 +8,9 @@ from declusor import command, config, contract, testing
 def test_execute_command_lifecycle(
     test_session: contract.SessionContext,
     dummy_connection: testing.DummyConnection,
-    dummy_console: testing.DummyConsole,
+    dummy_view: testing.DummyView,
 ) -> None:
-    """ExecuteCommand transmits the raw command string and streams chunks to console."""
+    """ExecuteCommand transmits the raw command string and streams chunks to view."""
 
     dto = command.ExecuteCommandDTO(command_line="id")
     cmd = command.ExecuteCommand(dto=dto)
@@ -18,14 +18,14 @@ def test_execute_command_lifecycle(
     test_session.execute(cmd)
 
     assert dummy_connection.written == [b"id"]
-    assert dummy_console.binary_data == [b"chunk1\n", b"chunk2\n"]
+    assert dummy_view.binary_data == [b"chunk1\n", b"chunk2\n"]
 
 
 def test_execute_file_lifecycle(
     tmp_path: Path,
     test_session: contract.SessionContext,
     dummy_connection: testing.DummyConnection,
-    dummy_console: testing.DummyConsole,
+    dummy_view: testing.DummyView,
     dummy_profile: testing.DummyConnectionProfile,
 ) -> None:
     """ExecuteFile encodes file content, invokes profile rendering, and executes."""
@@ -43,14 +43,14 @@ def test_execute_file_lifecycle(
     assert len(dummy_profile.render_calls) == 1
     assert dummy_profile.render_calls[0][0] == config.OperationCode.EXEC_FILE
     assert dummy_connection.written == [b"rendered_exec_script"]
-    assert len(dummy_console.binary_data) == 2
+    assert len(dummy_view.binary_data) == 2
 
 
 def test_upload_file_lifecycle(
     tmp_path: Path,
     test_session: contract.SessionContext,
     dummy_connection: testing.DummyConnection,
-    dummy_console: testing.DummyConsole,
+    dummy_view: testing.DummyView,
     dummy_profile: testing.DummyConnectionProfile,
 ) -> None:
     """UploadFile encodes file content, renders STORE_FILE command, and transmits."""
@@ -68,7 +68,7 @@ def test_upload_file_lifecycle(
     assert len(dummy_profile.render_calls) == 1
     assert dummy_profile.render_calls[0][0] == config.OperationCode.STORE_FILE
     assert dummy_connection.written == [b"rendered_upload_script"]
-    assert len(dummy_console.binary_data) == 2
+    assert len(dummy_view.binary_data) == 2
 
 
 def test_file_command_render_failure_raises(
@@ -93,7 +93,7 @@ def test_file_command_render_failure_raises(
 def test_load_module_lifecycle(
     test_session: contract.SessionContext,
     dummy_connection: testing.DummyConnection,
-    dummy_console: testing.DummyConsole,
+    dummy_view: testing.DummyView,
     dummy_file_store: testing.DummyPluginFileStore,
 ) -> None:
     """LoadModule reads module bytes from file store and sends to remote client."""
@@ -107,18 +107,20 @@ def test_load_module_lifecycle(
 
     assert dummy_file_store.load_module_calls == ["discovery/sysinfo"]
     assert dummy_connection.written == [b"module_code_bytes"]
-    assert len(dummy_console.binary_data) == 2
+    assert len(dummy_view.binary_data) == 2
 
 
 def test_load_module_missing_files_store(
     dummy_connection: testing.DummyConnection,
-    dummy_console: testing.DummyConsole,
+    dummy_view: testing.DummyView,
+    dummy_input_source: testing.DummyInputSource,
 ) -> None:
     """LoadModule raises CommandError if SessionContext has no file store configured."""
 
     session_no_files = contract.SessionContext(
         connection=dummy_connection,
-        console=dummy_console,
+        view=dummy_view,
+        input=dummy_input_source,
         files=None,  # type: ignore[arg-type]
     )
 

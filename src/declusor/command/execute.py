@@ -67,14 +67,14 @@ class ExecuteCommand(contract.ICommand):
         session.connection.write(self._command_line)
 
     def read_response(self, session: contract.SessionContext, /) -> None:
-        """Read output chunks from the remote client and display them on the console.
+        """Read output chunks from the remote client and display them on the view.
 
         Args:
-            session: The active session providing connection and console interfaces.
+            session: The active session providing connection and view interfaces.
 
         Raises:
             ConnectionClosed: If the remote peer terminates the connection unexpectedly.
         """
 
         for data in session.connection.read():
-            session.console.write_binary_data(data)
+            session.view.write_binary_data(data)

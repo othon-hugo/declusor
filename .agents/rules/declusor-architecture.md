@@ -44,13 +44,13 @@ main (Composition Root)
    - Implements `IRouter` (`Router`), `IParser` (`DeclusorParser`), and `PluginManager`.
    - Completely decoupled from concrete plugin implementations.
 7. **`presentation` (View Layer)**:
-   - Manages readline terminal I/O (`Console`) and the interactive prompt execution loop (`PromptCLI`).
+   - Manages readline terminal input (`TerminalInputSource`), terminal output (`TerminalView`), and the interactive prompt execution loop (`PromptLoop`).
    - Interacts with controllers exclusively via route dispatching and `ControllerResult` signals.
 8. **`main` (Composition Root)**:
    - Bootstraps registries, discovers plugins, wires core routes, and runs the application.
    - Entrypoint function `main(argv)` catches all exceptions, prints user-friendly messages, and maps to deterministic exit codes (`0`, `1`, `2`).
 9. **`testing` (Public Testing SDK)**:
-   - Ships deterministic, fully-typed test doubles (`DummyConsole`, `DummyConnection`, `DummyPluginFileStore`, `DummyPluginRuntime`, etc.) and reusable conformance suites (`PluginConformanceTestSuite`).
+   - Ships deterministic, fully-typed test doubles (`DummyView`, `DummyInputSource`, `DummyConnection`, `DummyPluginFileStore`, `DummyPluginRuntime`, etc.) and reusable conformance suites (`PluginConformanceTestSuite`).
 
 ## Autonomous Plugin Topology
 

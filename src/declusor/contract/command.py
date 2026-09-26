@@ -24,20 +24,20 @@ class ICommand(ABC):
         Implementations transmit the command payload through ``session.connection``.
 
         Args:
-            session: Active session context providing connection and console.
+            session: Active session context providing connection and view.
         """
 
         raise NotImplementedError
 
     @abstractmethod
     def read_response(self, session: "SessionContext", /) -> None:
-        """Read and display the operation response through the session console.
+        """Read and display the operation response through the session view.
 
         Implementations consume chunks from ``session.connection`` and write
-        them to ``session.console``.
+        them to ``session.view``.
 
         Args:
-            session: Active session context providing connection and console.
+            session: Active session context providing connection and view.
         """
 
         raise NotImplementedError
@@ -50,7 +50,7 @@ class ICommand(ABC):
         coordination pattern (such as bidirectional streaming) is required.
 
         Args:
-            session: Active session context providing connection and console.
+            session: Active session context providing connection and view.
         """
 
         self.send_request(session)

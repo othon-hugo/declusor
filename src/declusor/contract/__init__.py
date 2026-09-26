@@ -14,15 +14,15 @@ from .connection import (
     IConnection,
     IConnectionProfile,
 )
-from .console import (
-    IConsole,
-)
 from .controller import (
     Controller,
     ControllerAction,
     ControllerRequest,
     ControllerResult,
     SessionContext,
+)
+from .input_source import (
+    IInputSource,
 )
 from .parser import (
     IArgumentParser,
@@ -36,11 +36,11 @@ from .plugin import (
     PluginConfig,
     PluginNamespace,
 )
-from .prompt import (
-    IPrompt,
-)
 from .router import (
     IRouter,
+)
+from .view import (
+    IView,
 )
 
 __all__ = [
@@ -54,17 +54,17 @@ __all__ = [
     "ControllerRequest",
     "ControllerResult",
     "IArgumentParser",
+    "IClientFileStore",
     "ICommand",
     "IConnection",
     "IConnectionProfile",
-    "IConsole",
+    "IInputSource",
     "InvalidOperation",
     "IParser",
     "IPlugin",
-    "IClientFileStore",
     "IPluginRuntime",
-    "IPrompt",
     "IRouter",
+    "IView",
     "PluginArguments",
     "PluginConfig",
     "PluginNamespace",

@@ -18,8 +18,9 @@ def test_application_connect_routes() -> None:
 
     manager = core.PluginManager()
     router = core.Router()
-    console = presentation.Console()
-    app = main.Application(manager, router, console)
+    view = presentation.TerminalView()
+    input_source = presentation.TerminalInputSource()
+    app = main.Application(manager, router, view, input_source)
 
     app._connect_routes()
 
@@ -32,8 +33,9 @@ def test_application_register_plugin_at_runtime() -> None:
 
     manager = core.PluginManager()
     router = core.Router()
-    console = presentation.Console()
-    app = main.Application(manager, router, console)
+    view = presentation.TerminalView()
+    input_source = presentation.TerminalInputSource()
+    app = main.Application(manager, router, view, input_source)
 
     testing.DummyPlugin.reset()
 
@@ -51,11 +53,12 @@ def test_application_run_lifecycle_with_no_data_paths() -> None:
 
     manager = core.PluginManager()
     router = core.Router()
-    console = presentation.Console()
+    view = presentation.TerminalView()
+    input_source = presentation.TerminalInputSource()
 
     manager.register(testing.DummyPlugin)
 
-    app = main.Application(manager, router, console)
+    app = main.Application(manager, router, view, input_source)
 
     plugin_config = contract.PluginConfig(
         kind=testing.DummyPlugin.name,
@@ -74,7 +77,7 @@ def test_application_run_lifecycle_with_no_data_paths() -> None:
 
     with (
         patch("declusor.util.await_connection", return_value=dummy_sock) as mock_await,
-        patch("declusor.presentation.PromptCLI.run") as mock_prompt_run,
+        patch("declusor.presentation.PromptLoop.run") as mock_prompt_run,
     ):
         app.run(options)
 

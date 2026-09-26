@@ -23,8 +23,8 @@ class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
         "host": "IP address or hostname where the service should run",
         "port": "port number to listen on for incoming connections",
         "plugin": "agent responsible for handling requests",
-        "plugin-dir": "root directory containing client launchers, helpers, and modules",
-        "assets-dir": "additional directory to discover custom drop-in plugins",
+        "assets-dir": "root directory containing client launchers, helpers, and modules",
+        "plugin-dir": "additional directory to discover custom drop-in plugins",
     }
 
     def __init__(self, manager: "PluginManager", /, name: str, description: str = "") -> None:
@@ -67,14 +67,14 @@ class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
 
         self.add_argument(
             "--assets-dir",
-            help=self.flags["plugin-dir"],
+            help=self.flags["assets-dir"],
             type=Path,
             default=None,
         )
 
         self.add_argument(
             "--plugin-dir",
-            help=self.flags["assets-dir"],
+            help=self.flags["plugin-dir"],
             type=Path,
             default=None,
         )
@@ -107,7 +107,7 @@ class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
         raw_args = self.parse_args(argv)
         args = contract.PluginNamespace.from_namespace(raw_args)
 
-        data_paths = config.DataPaths.from_root(args.data_root) if args.data_root is not None else None
+        data_paths = config.DataPaths.from_root(args.assets_dir) if args.assets_dir is not None else None
         plugin_config = Plugin.build_config(args, data_paths)
 
         Plugin.validate(plugin_config)
