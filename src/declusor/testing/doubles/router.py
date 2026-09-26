@@ -13,10 +13,6 @@ class DummyRouter(contract.IRouter):
     def routes(self) -> tuple[str, ...]:
         return tuple(self._routes.keys())
 
-    @property
-    def documentation(self) -> str:
-        return "\n".join(f"{r}: {self.get_route_usage(r)}" for r in self._routes)
-
     def get_route_usage(self, route: str, /) -> str:
         r = route.strip()
 

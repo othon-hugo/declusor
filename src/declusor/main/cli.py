@@ -1,26 +1,36 @@
 import sys
 from collections.abc import Sequence
 
-from declusor import config
-from declusor.main.app import create_application
+from declusor import config, core
+from declusor.main.app import ApplicationProtocol, create_terminal_application
 
 
-def main(argv: Sequence[str] | None = None) -> int:
+def main(
+    argv: Sequence[str] | None = None,
+    application: ApplicationProtocol | None = None,
+) -> int:
     """Run Declusor from command-line arguments.
 
     Args:
         argv: Arguments to parse, excluding the executable name. When ``None``,
             arguments are read from the process command line.
+        application: Optional application instance to execute. Defaults to
+            a fresh ``TerminalApplication``.
 
     Returns:
         Process exit code. ``0`` indicates successful completion.
     """
 
-    application = create_application()
+    app = application if application is not None else create_terminal_application()
+    parser = core.DeclusorParser(
+        app.manager,
+        name=config.Settings.PROJECT_NAME,
+        description=config.Settings.PROJECT_DESCRIPTION,
+    )
 
     try:
-        options = application.parse(argv)
-        application.run(options)
+        plugin_config = parser.parse(argv)
+        app.run(plugin_config)
     except KeyboardInterrupt:
         print()
     except config.ParserError as error:

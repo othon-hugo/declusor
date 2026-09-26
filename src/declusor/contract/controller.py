@@ -43,7 +43,7 @@ class SessionContext:
         self,
         connection: "IConnection",
         view: "IView",
-        input: "IInputSource",
+        input: "IInputSource | None",
         files: "IClientFileStore",
     ) -> None:
         """Initialize the active session context.
@@ -51,7 +51,7 @@ class SessionContext:
         Args:
             connection: Active connection to the remote client.
             view: View interface for operator output presentation.
-            input: Input source interface for operator command/input reading.
+            input: Optional input source interface for operator command/input reading.
             files: Client file store for module/library loading.
         """
 
@@ -73,8 +73,8 @@ class SessionContext:
         return self._view
 
     @property
-    def input(self) -> "IInputSource":
-        """Input source interface for operator command/input reading."""
+    def input(self) -> "IInputSource | None":
+        """Optional input source interface for operator command/input reading."""
 
         return self._input
 

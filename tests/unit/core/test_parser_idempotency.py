@@ -12,11 +12,11 @@ def test_parser_parse_is_idempotent(tmp_path: Path) -> None:
     argv = ["127.0.0.1", "8080", "--plugin", testing.DummyPlugin.name, "--assets-dir", str(tmp_path)]
 
     parser = core.DeclusorParser(manager, name="test_app", description="test description")
-    options1 = parser.parse(argv)
-    assert options1["host"] == "127.0.0.1"
-    assert options1["port"] == 8080
+    config1 = parser.parse(argv)
+    assert config1.host == "127.0.0.1"
+    assert config1.port == 8080
 
     # Second parse on the exact same parser instance
-    options2 = parser.parse(argv)
-    assert options2["host"] == "127.0.0.1"
-    assert options2["port"] == 8080
+    config2 = parser.parse(argv)
+    assert config2.host == "127.0.0.1"
+    assert config2.port == 8080

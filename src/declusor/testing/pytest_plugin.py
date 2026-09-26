@@ -12,6 +12,7 @@ from declusor.testing.doubles import (
     DummyPluginFileStore,
     DummyPluginRuntime,
     DummyRouter,
+    DummySessionRunner,
     DummySocket,
     DummyView,
 )
@@ -114,7 +115,16 @@ dummy_plugin_config = dummy_plugin_config
 
 
 @pytest.fixture
-def dummy_app() -> DummyApplication:
-    """Provide a fresh DummyApplication."""
+def dummy_session_runner() -> DummySessionRunner:
+    """Provide a fresh DummySessionRunner."""
 
-    return DummyApplication()
+    return DummySessionRunner()
+
+
+@pytest.fixture
+def dummy_app() -> DummyApplication:
+    """Provide a fresh DummyApplication with DummyPlugin registered."""
+
+    app = DummyApplication()
+    app.register_plugin(DummyPlugin)
+    return app

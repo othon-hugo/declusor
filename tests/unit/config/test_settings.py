@@ -98,10 +98,10 @@ def test_parser_builds_client_paths_from_data_root(tmp_path: Path) -> None:
     manager = core.PluginManager()
     manager.register(DummyPathClientPlugin)
 
-    options = core.DeclusorParser(manager, name="declusor").parse(
+    plugin_config = core.DeclusorParser(manager, name="declusor").parse(
         ("127.0.0.1", "9000", "--plugin", "dummy_path_plugin", "--assets-dir", str(tmp_path)),
     )
 
-    data_paths = options["plugin"].data_paths
+    data_paths = plugin_config.data_paths
     assert data_paths == config.DataPaths.from_root(tmp_path)
-    assert options["plugin"].options["launcher_path"] == launcher_file
+    assert plugin_config.options["launcher_path"] == launcher_file

@@ -24,13 +24,13 @@ def test_declusor_parser_parse_success(tmp_path: Path) -> None:
     manager.register(testing.DummyPlugin)
 
     parser = core.DeclusorParser(manager, name="test_app")
-    options = parser.parse(["127.0.0.1", "9000", "-p", testing.DummyPlugin.name, "--assets-dir", str(tmp_path)])
+    plugin_config = parser.parse(["127.0.0.1", "9000", "-p", testing.DummyPlugin.name, "--assets-dir", str(tmp_path)])
 
-    assert options["host"] == "127.0.0.1"
-    assert options["port"] == 9000
-    assert options["plugin"].kind == testing.DummyPlugin.name
-    assert options["plugin"].data_paths is not None
-    assert options["plugin"].data_paths.root == tmp_path
+    assert plugin_config.host == "127.0.0.1"
+    assert plugin_config.port == 9000
+    assert plugin_config.kind == testing.DummyPlugin.name
+    assert plugin_config.data_paths is not None
+    assert plugin_config.data_paths.root == tmp_path
     assert parser in testing.DummyPlugin.configured_parsers
 
 
@@ -42,9 +42,9 @@ def test_declusor_parser_parse_defaults_data_paths_to_none() -> None:
     manager.register(testing.DummyPlugin)
 
     parser = core.DeclusorParser(manager, name="test_app")
-    options = parser.parse(["127.0.0.1", "9000", "-p", testing.DummyPlugin.name])
+    plugin_config = parser.parse(["127.0.0.1", "9000", "-p", testing.DummyPlugin.name])
 
-    assert options["plugin"].data_paths is None
+    assert plugin_config.data_paths is None
 
 
 def test_declusor_parser_parse_missing_positional_raises() -> None:

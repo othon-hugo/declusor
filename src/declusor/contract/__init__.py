@@ -39,6 +39,9 @@ from .plugin import (
 from .router import (
     IRouter,
 )
+from .runner import (
+    ISessionRunner,
+)
 from .view import (
     IView,
 )
@@ -64,6 +67,7 @@ __all__ = [
     "IPlugin",
     "IPluginRuntime",
     "IRouter",
+    "ISessionRunner",
     "IView",
     "PluginArguments",
     "PluginConfig",

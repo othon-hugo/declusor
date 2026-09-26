@@ -23,6 +23,9 @@ from declusor.testing.doubles.profile import (
 from declusor.testing.doubles.router import (
     DummyRouter,
 )
+from declusor.testing.doubles.runner import (
+    DummySessionRunner,
+)
 from declusor.testing.doubles.socket import (
     DummySocket,
 )
@@ -40,6 +43,7 @@ __all__ = [
     "DummyPluginFileStore",
     "DummyPluginRuntime",
     "DummyRouter",
+    "DummySessionRunner",
     "DummySocket",
     "DummyView",
 ]

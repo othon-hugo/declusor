@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, Final, TypedDict
+from typing import TYPE_CHECKING, Final
 
 from declusor import config, contract, util
 
@@ -8,15 +8,7 @@ if TYPE_CHECKING:
     from declusor.core.plugin import PluginManager
 
 
-class DeclusorOptions(TypedDict):
-    """Arguments for the application."""
-
-    host: str
-    port: int
-    plugin: contract.PluginConfig
-
-
-class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
+class DeclusorParser(util.Parser, contract.IParser[contract.PluginConfig]):
     """Parser for command-line arguments."""
 
     flags: Final[dict[str, str]] = {
@@ -40,7 +32,8 @@ class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
 
         self._manager = manager
         self._registry = manager
-        self._configured = False
+
+        self._is_configured = False
         self._configure_common_arguments()
 
     @property
@@ -50,7 +43,7 @@ class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
         return self._manager
 
     def _configure_common_arguments(self) -> None:
-        if self._configured:
+        if self._is_configured:
             return
 
         self.add_argument(
@@ -91,9 +84,9 @@ class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
             default=default_client,
         )
 
-        self._configured = True
+        self._is_configured = True
 
-    def parse(self, argv: Sequence[str] | None = None, /) -> DeclusorOptions:
+    def parse(self, argv: Sequence[str] | None = None, /) -> contract.PluginConfig:
         preliminary_args, _ = self.parse_known_args(argv)
 
         plugin_dir = getattr(preliminary_args, "plugin_dir", None)
@@ -112,8 +105,4 @@ class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
 
         Plugin.validate(plugin_config)
 
-        return DeclusorOptions(
-            host=args.host,
-            port=args.port,
-            plugin=plugin_config,
-        )
+        return plugin_config

@@ -25,6 +25,6 @@ def test_parser_uses_injected_manager(monkeypatch: pytest.MonkeyPatch) -> None:
         ["declusor", "127.0.0.1", "9000", "--plugin", testing.DummyPlugin.name],
     )
 
-    options = core.DeclusorParser(manager, name="declusor").parse()
+    plugin_config = core.DeclusorParser(manager, name="declusor").parse()
 
-    assert options["plugin"].kind == testing.DummyPlugin.name
+    assert plugin_config.kind == testing.DummyPlugin.name

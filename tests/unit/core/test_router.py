@@ -50,8 +50,8 @@ def test_router_locate_unknown_raises_router_error() -> None:
     assert exc_info.value.route == "unknown_cmd"
 
 
-def test_router_get_route_usage_and_documentation() -> None:
-    """Verify route usage extraction and formatted documentation string."""
+def test_router_get_route_usage() -> None:
+    """Verify route usage extraction from controller docstrings."""
 
     router = core.Router()
 
@@ -77,14 +77,19 @@ def test_router_get_route_usage_and_documentation() -> None:
     router.connect("beta", cmd_b)
 
     assert router.get_route_usage("alpha") == "First command description."
-    assert "First command description." in router.documentation
-    assert "Second command with multiple lines." in router.documentation
-    # Verify cached documentation
-    assert router.documentation == router.documentation
+    assert router.get_route_usage("beta") == "Second command with multiple lines."
 
 
-def test_router_documentation_empty_when_no_routes() -> None:
-    """Verify empty string documentation when no routes registered."""
+def test_router_get_route_usage_empty_when_no_docstring() -> None:
+    """Verify empty string returned when controller has no docstring."""
 
     router = core.Router()
-    assert router.documentation == ""
+
+    def no_doc_cmd(
+        dependencies: contract.SessionContext,
+        argument: contract.ControllerRequest,
+    ) -> contract.ControllerResult:
+        return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
+
+    router.connect("nodoc", no_doc_cmd)
+    assert router.get_route_usage("nodoc") == ""

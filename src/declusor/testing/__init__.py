@@ -16,6 +16,7 @@ from .doubles import (
     DummyPluginFileStore,
     DummyPluginRuntime,
     DummyRouter,
+    DummySessionRunner,
     DummySocket,
     DummyView,
 )
@@ -44,6 +45,7 @@ __all__ = [
     "DummyPluginFileStore",
     "DummyPluginRuntime",
     "DummyRouter",
+    "DummySessionRunner",
     "DummySocket",
     "DummyView",
     "PluginConformanceTestSuite",
