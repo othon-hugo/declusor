@@ -3,18 +3,6 @@ from unittest.mock import patch
 from declusor import contract, core, main, presentation, testing
 
 
-def test_create_application_initializes_plugins() -> None:
-    """Verify create_application loads built-in plugins into manager."""
-
-    app = main.create_application()
-    assert isinstance(app, main.Application)
-    assert isinstance(app, main.TerminalApplication)
-    assert app.manager is not None
-    assert "shell_socket" in app.manager.names()
-    assert "py_socket" in app.manager.names()
-    assert isinstance(app.runner, presentation.PromptLoop)
-
-
 def test_application_connect_routes() -> None:
     """Verify application registers core routes on its router."""
 
@@ -133,15 +121,3 @@ def test_application_run_with_custom_runner_override() -> None:
         assert len(override_runner.run_calls) == 1
         _, active_router = override_runner.run_calls[0]
         assert active_router is router
-
-
-def test_terminal_application_default_runner() -> None:
-    """Verify TerminalApplication initializes with a PromptLoop runner."""
-
-    manager = core.PluginManager()
-    router = core.Router()
-    view = presentation.TerminalView()
-    input_source = presentation.TerminalInputSource()
-
-    app = main.TerminalApplication(manager, router, view, input_source)
-    assert isinstance(app.runner, presentation.PromptLoop)

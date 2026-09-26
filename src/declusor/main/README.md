@@ -7,10 +7,11 @@ The **main** package serves as the composition root and CLI entry point for the 
 
 ## Modules
 
-| Module | Responsibility                                                                     |
-| ------ | ---------------------------------------------------------------------------------- |
-| `app`  | Application composition, route wiring, plugin registration, and execution flow     |
-| `cli`  | CLI entry point function, process argument handling, and process exit code mapping |
+| Module        | Responsibility                                                                     |
+| ------------- | ---------------------------------------------------------------------------------- |
+| `application` | Base application composition root, route wiring, and session runner delegation     |
+| `terminal`    | Specialized terminal REPL application and composition bootstrap factories          |
+| `cli`         | CLI entry point function, process argument handling, and process exit code mapping |
 
 ## Design Principles
 
