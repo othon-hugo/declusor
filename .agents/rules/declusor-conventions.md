@@ -17,14 +17,15 @@ Always import the package namespace directly rather than destructuring separated
 from declusor import command, config, contract, core, presentation, testing, util
 
 session = contract.SessionContext(...)
-console = testing.DummyConsole()
+view = testing.DummyView()
+input_source = testing.DummyInputSource()
 cmd = command.ExecuteCommand(dto)
 ```
 
 ```python
 # FORBIDDEN: Destructuring separated symbols across layers
-from declusor.testing import DummyConsole, DummyConnection
-from declusor.presentation import PromptCLI
+from declusor.testing import DummyView, DummyConnection
+from declusor.presentation import PromptLoop
 from declusor.main.app import Application
 ```
 
@@ -79,7 +80,8 @@ Every package directory must maintain a `README.md` containing at least:
 
 Do **not** use unconstrained `unittest.mock.MagicMock` or fragile monkeypatching to satisfy core contracts. Use the typed doubles provided by `declusor.testing`:
 
-- `testing.DummyConsole`: Simulates I/O, error logging, and input queues.
+- `testing.DummyView`: Simulates output presentation, capturing messages, errors, warnings, info, success, and binary data.
+- `testing.DummyInputSource`: Simulates operator input queues and command reading.
 - `testing.DummyConnection`: Full state machine (`CREATED` -> `CONNECTED` -> `CLOSED`), frame recording, and chunk streaming.
 - `testing.DummyConnectionProfile`: Script rendering and command formatting.
 - `testing.DummyPluginFileStore`: In-memory file, library, and module streaming.

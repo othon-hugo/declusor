@@ -23,17 +23,22 @@ Never mock framework contracts using raw `MagicMock`. Use typed doubles provided
 from declusor import contract, testing
 
 
-def test_handler(dummy_connection: testing.DummyConnection, dummy_console: testing.DummyConsole) -> None:
+def test_handler(
+    dummy_connection: testing.DummyConnection,
+    dummy_input_source: testing.DummyInputSource,
+    dummy_view: testing.DummyView,
+) -> None:
     """Always document test intent with a clean pydoc and blank line below."""
 
-    dummy_console.feed_inputs("help", "exit")
+    dummy_input_source.feed_inputs("help", "exit")
     dummy_connection.write(b"data")
     assert dummy_connection.written == [b"data"]
 ```
 
 Standard typed pytest fixtures are pre-registered via `pytest_plugins = ["declusor.testing.pytest_plugin"]`:
 
-- `dummy_console`: In-memory `IConsole` double
+- `dummy_view`: In-memory `IView` double
+- `dummy_input_source`: In-memory `IInputSource` double
 - `dummy_connection`: State-machine `IConnection` double
 - `dummy_file_store`: In-memory `IClientFileStore` double
 - `dummy_router`: In-memory `IRouter` double

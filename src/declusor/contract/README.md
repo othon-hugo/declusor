@@ -9,14 +9,14 @@ The **contract** package defines the abstract contracts that establish the bound
 
 | Module       | Responsibility                                                                |
 | ------------ | ----------------------------------------------------------------------------- |
-| `plugin`     | Abstractions for client plugins, runtimes, and client file stores             |
-| `command`    | Execution lifecycle contract for encapsulated command operations              |
-| `connection` | State machine contract and protocol profile interfaces for network transports |
-| `console`    | Terminal input and output presentation contract                               |
-| `controller` | Controller signatures, request/result types, and `SessionContext` coordinator |
-| `parser`     | Interface for CLI argument parsing and options mapping                        |
-| `prompt`     | Contract for interactive terminal REPL execution loops                        |
-| `router`     | Route registration, lookup, and documentation contract                        |
+| `command`      | Execution lifecycle contract for encapsulated command operations              |
+| `connection`   | State machine contract and protocol profile interfaces for network transports |
+| `controller`   | Controller signatures, request/result types, and `SessionContext` coordinator |
+| `input_source` | Operator input reading contract (command and raw lines)                       |
+| `parser`       | Interface for CLI argument parsing and options mapping                        |
+| `plugin`       | Abstractions for client plugins, runtimes, and client file stores             |
+| `router`       | Route registration, lookup, and documentation contract                        |
+| `view`         | Output presentation contract for messages, errors, warnings, info, and binary |
 
 ## Design Principles
 
