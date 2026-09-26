@@ -167,7 +167,7 @@ class PySocketFileStore(contract.IClientFileStore):
             client_script_template,
             HOST=host,
             PORT=str(port),
-            ACKNOWLEDGE=util.convert_bytes_to_hex(acknowledge),
+            ACKNOWLEDGE=acknowledge.hex(),
         )
 
     def load_library(self) -> bytes:

