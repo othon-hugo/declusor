@@ -1,6 +1,9 @@
-from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
-from declusor import contract, controller, core, util
+from declusor import contract, controller, util
+
+if TYPE_CHECKING:
+    from .plugin import PluginManager
 
 
 @runtime_checkable
@@ -8,7 +11,7 @@ class ApplicationProtocol(Protocol):
     """Protocol defining the interface required by the CLI to run an application."""
 
     @property
-    def manager(self) -> core.PluginManager:
+    def manager(self) -> "PluginManager":
         """Client plugin manager containing registered plugins."""
         ...
 
@@ -27,7 +30,7 @@ class Application(ApplicationProtocol):
 
     def __init__(
         self,
-        manager: core.PluginManager,
+        manager: "PluginManager",
         router: contract.IRouter,
         view: contract.IView,
         runner: contract.ISessionRunner,
@@ -53,7 +56,7 @@ class Application(ApplicationProtocol):
         self._connect_routes()
 
     @property
-    def manager(self) -> core.PluginManager:
+    def manager(self) -> "PluginManager":
         """Client plugin manager containing registered and discovered plugins."""
 
         return self._manager

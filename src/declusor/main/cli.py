@@ -1,15 +1,12 @@
 import sys
 from collections.abc import Sequence
 
-from declusor import config, core
-
-from .application import ApplicationProtocol
-from .terminal import create_terminal_application
+from declusor import app, config, core
 
 
-def main(
+def run(
     argv: Sequence[str] | None = None,
-    application: ApplicationProtocol | None = None,
+    application: core.ApplicationProtocol | None = None,
 ) -> int:
     """Run Declusor from command-line arguments.
 
@@ -23,16 +20,16 @@ def main(
         Process exit code. ``0`` indicates successful completion.
     """
 
-    app = application if application is not None else create_terminal_application()
-    parser = core.DeclusorParser(
-        app.manager,
+    declusor_app = application or app.create_terminal_application()
+    declusor_parser = core.DeclusorParser(
+        declusor_app.manager,
         name=config.Settings.PROJECT_NAME,
         description=config.Settings.PROJECT_DESCRIPTION,
     )
 
     try:
-        plugin_config = parser.parse(argv)
-        app.run(plugin_config)
+        plugin_config = declusor_parser.parse(argv)
+        declusor_app.run(plugin_config)
     except KeyboardInterrupt:
         print()
     except config.ParserError as error:

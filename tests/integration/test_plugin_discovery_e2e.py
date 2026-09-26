@@ -1,13 +1,13 @@
 from pathlib import Path
 
-from declusor import main
+from declusor import app
 
 
 def test_create_application_discovers_builtin_plugins() -> None:
     """Application factory must discover built-in plugins automatically."""
 
-    app = main.create_application()
-    available = app.manager.names()
+    declusor_app = app.create_application()
+    available = declusor_app.manager.names()
 
     assert "shell_socket" in available
     assert "py_socket" in available
@@ -44,8 +44,8 @@ class ExtraClientPlugin(contract.IPlugin):
 """
     (custom_plugin_dir / "plugin.py").write_text(plugin_code, encoding="utf-8")
 
-    app = main.create_application(search_dirs=[tmp_path])
-    available = app.manager.names()
+    declusor_app = app.create_application(search_dirs=[tmp_path])
+    available = declusor_app.manager.names()
 
     assert "shell_socket" in available
     assert "py_socket" in available

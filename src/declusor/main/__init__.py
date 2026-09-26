@@ -1,21 +1,7 @@
-from .application import (
-    Application,
-    ApplicationProtocol,
-)
 from .cli import (
-    main,
-)
-from .terminal import (
-    TerminalApplication,
-    create_application,
-    create_terminal_application,
+    run,
 )
 
 __all__ = [
-    "Application",
-    "ApplicationProtocol",
-    "TerminalApplication",
-    "create_application",
-    "create_terminal_application",
-    "main",
+    "run",
 ]
