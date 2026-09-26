@@ -45,7 +45,7 @@ class LaunchShell(contract.ICommand):
 
         return self._dto
 
-    def send_request(self, session: contract.SessionContext) -> None:
+    def send_request(self, session: contract.SessionContext, /) -> None:
         """Start the background task that streams remote client output to the console.
 
         Args:
@@ -60,7 +60,7 @@ class LaunchShell(contract.ICommand):
         self._task_pool.add_task(output_streamer, name="shell_output_streamer")
         self._task_pool.start_all()
 
-    def read_response(self, session: contract.SessionContext) -> None:
+    def read_response(self, session: contract.SessionContext, /) -> None:
         """Forward operator input from the console to the remote client until interrupted.
 
         Args:

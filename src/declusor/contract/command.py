@@ -18,7 +18,7 @@ class ICommand(ABC):
     """
 
     @abstractmethod
-    def send_request(self, session: "SessionContext") -> None:
+    def send_request(self, session: "SessionContext", /) -> None:
         """Send the request initiating the remote operation through the session.
 
         Implementations transmit the command payload through ``session.connection``.
@@ -30,7 +30,7 @@ class ICommand(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def read_response(self, session: "SessionContext") -> None:
+    def read_response(self, session: "SessionContext", /) -> None:
         """Read and display the operation response through the session console.
 
         Implementations consume chunks from ``session.connection`` and write
@@ -42,7 +42,7 @@ class ICommand(ABC):
 
         raise NotImplementedError
 
-    def execute(self, session: "SessionContext") -> None:
+    def execute(self, session: "SessionContext", /) -> None:
         """Execute the complete request-response lifecycle within the session.
 
         Transmits the command request and subsequently reads and presents

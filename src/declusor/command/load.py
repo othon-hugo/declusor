@@ -58,7 +58,7 @@ class LoadModule(contract.ICommand):
 
         return self._dto
 
-    def send_request(self, session: contract.SessionContext) -> None:
+    def send_request(self, session: contract.SessionContext, /) -> None:
         """Send the resolved module script to the remote client.
 
         Args:
@@ -77,7 +77,7 @@ class LoadModule(contract.ICommand):
         module_bytes = session.files.load_module(self._module_name)
         session.connection.write(module_bytes)
 
-    def read_response(self, session: contract.SessionContext) -> None:
+    def read_response(self, session: contract.SessionContext, /) -> None:
         """Read and display the remote client's module registration response.
 
         Args:
