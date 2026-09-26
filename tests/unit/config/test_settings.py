@@ -98,7 +98,8 @@ def test_parser_builds_client_paths_from_data_root(tmp_path: Path) -> None:
     manager = core.PluginManager()
     manager.register(DummyPathClientPlugin)
 
-    plugin_config = core.DeclusorParser(manager, name="declusor").parse(
+    plugin_config = core.DeclusorParser(name="declusor").parse(
+        manager,
         ("127.0.0.1", "9000", "--plugin", "dummy_path_plugin", "--assets-dir", str(tmp_path)),
     )
 

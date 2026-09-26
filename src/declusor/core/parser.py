@@ -19,28 +19,18 @@ class DeclusorParser(util.Parser, contract.IParser[contract.PluginConfig]):
         "plugin-dir": "additional directory to discover custom drop-in plugins",
     }
 
-    def __init__(self, manager: "PluginManager", /, name: str, description: str = "") -> None:
-        """Create a parser backed by a specific client plugin manager.
+    def __init__(self, name: str, description: str = "") -> None:
+        """Create a parser for command-line arguments.
 
         Args:
-            manager: Plugin manager containing the clients available to the application.
             name: Program name.
             description: Short description of the application.
         """
 
         super().__init__(prog=name, description=description or None)
 
-        self._manager = manager
-        self._registry = manager
-
         self._is_configured = False
         self._configure_common_arguments()
-
-    @property
-    def manager(self) -> "PluginManager":
-        """The client plugin manager backing this parser."""
-
-        return self._manager
 
     def _configure_common_arguments(self) -> None:
         if self._is_configured:
@@ -72,33 +62,62 @@ class DeclusorParser(util.Parser, contract.IParser[contract.PluginConfig]):
             default=None,
         )
 
-        available_clients = self._registry.names()
-        default_client = "shell_socket" if "shell_socket" in available_clients else (available_clients[0] if available_clients else None)
-
         self.add_argument(
             "-p",
             "--plugin",
             help=self.flags["plugin"],
             type=str,
-            choices=available_clients if available_clients else None,
-            default=default_client,
+            default=None,
         )
 
         self._is_configured = True
 
-    def parse(self, argv: Sequence[str] | None = None, /) -> contract.PluginConfig:
+    def parse(
+        self,
+        manager: "PluginManager",
+        argv: Sequence[str] | None = None,
+        /,
+    ) -> contract.PluginConfig:
+        """Parse arguments and build a validated PluginConfig using the provided manager.
+
+        Args:
+            manager: Plugin manager containing the client plugins available to the application.
+            argv: Sequence of arguments to parse, excluding the program name.
+
+        Returns:
+            Validated PluginConfig populated from command-line arguments.
+
+        Raises:
+            ParserError: If required arguments are missing, values are invalid, or no plugin matches.
+        """
+
         preliminary_args, _ = self.parse_known_args(argv)
 
         plugin_dir = getattr(preliminary_args, "plugin_dir", None)
 
         if plugin_dir:
-            self._manager.load_from_directory(plugin_dir, source_label="cli-plugin-dir", allow_override=True)
+            manager.load_from_directory(plugin_dir, source_label="cli-plugin-dir", allow_override=True)
 
-        Plugin = self._manager.get(preliminary_args.plugin)
+        available_clients = manager.names()
+        default_client = "shell_socket" if "shell_socket" in available_clients else (available_clients[0] if available_clients else None)
+        plugin_name = preliminary_args.plugin or default_client
+
+        if not plugin_name:
+            raise config.ParserError("No client plugin available.")
+
+        if plugin_name not in available_clients:
+            raise config.ParserError(
+                f"argument -p/--plugin: invalid choice: '{plugin_name}' (choose from {', '.join(repr(c) for c in available_clients)})"
+            )
+
+        Plugin = manager.get(plugin_name)
         Plugin.configure_parser(self)
 
         raw_args = self.parse_args(argv)
         args = contract.PluginNamespace.from_namespace(raw_args)
+
+        if not args.plugin:
+            args.plugin = Plugin.name
 
         data_paths = config.DataPaths.from_root(args.assets_dir) if args.assets_dir is not None else None
         plugin_config = Plugin.build_config(args, data_paths)

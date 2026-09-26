@@ -36,7 +36,7 @@ Repository = "https://github.com/othonhugo/declusor.git"
 Issues = "https://github.com/othonhugo/declusor/issues"
 
 [project.scripts]
-declusor = "declusor.main:run"
+declusor = "declusor.main:main"
 
 [project.entry-points.pytest11]
 declusor_testing = "declusor.testing.pytest_plugin"

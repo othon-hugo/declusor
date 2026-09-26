@@ -7,8 +7,8 @@ The **app** package provides concrete application implementations and target fla
 
 ## Modules
 
-| Module     | Responsibility                                                                 |
-| ---------- | ------------------------------------------------------------------------------ |
+| Module     | Responsibility                                                                    |
+| ---------- | --------------------------------------------------------------------------------- |
 | `terminal` | Specialized interactive terminal application, prompt runner wiring, and factories |
 
 ## Design Principles

@@ -22,13 +22,12 @@ def main(
 
     declusor_app = application or app.create_terminal_application()
     declusor_parser = core.DeclusorParser(
-        declusor_app.manager,
         name=config.Settings.PROJECT_NAME,
         description=config.Settings.PROJECT_DESCRIPTION,
     )
 
     try:
-        plugin_config = declusor_parser.parse(argv)
+        plugin_config = declusor_parser.parse(declusor_app.manager, argv)
         declusor_app.run(plugin_config)
     except KeyboardInterrupt:
         print()

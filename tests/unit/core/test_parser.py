@@ -5,15 +5,12 @@ import pytest
 from declusor import config, core, testing
 
 
-def test_declusor_parser_initialization_with_manager() -> None:
-    """Verify parser binds a ClientPluginManager directly."""
+def test_declusor_parser_initialization() -> None:
+    """Verify parser initializes with name and description without requiring a manager."""
 
-    manager = core.PluginManager()
-    manager.register(testing.DummyPlugin)
-
-    parser = core.DeclusorParser(manager, name="test_app")
-    assert parser.manager is manager
+    parser = core.DeclusorParser(name="test_app", description="test description")
     assert parser.prog == "test_app"
+    assert parser.description == "test description"
 
 
 def test_declusor_parser_parse_success(tmp_path: Path) -> None:
@@ -23,8 +20,11 @@ def test_declusor_parser_parse_success(tmp_path: Path) -> None:
     manager = core.PluginManager()
     manager.register(testing.DummyPlugin)
 
-    parser = core.DeclusorParser(manager, name="test_app")
-    plugin_config = parser.parse(["127.0.0.1", "9000", "-p", testing.DummyPlugin.name, "--assets-dir", str(tmp_path)])
+    parser = core.DeclusorParser(name="test_app")
+    plugin_config = parser.parse(
+        manager,
+        ["127.0.0.1", "9000", "-p", testing.DummyPlugin.name, "--assets-dir", str(tmp_path)],
+    )
 
     assert plugin_config.host == "127.0.0.1"
     assert plugin_config.port == 9000
@@ -41,8 +41,8 @@ def test_declusor_parser_parse_defaults_data_paths_to_none() -> None:
     manager = core.PluginManager()
     manager.register(testing.DummyPlugin)
 
-    parser = core.DeclusorParser(manager, name="test_app")
-    plugin_config = parser.parse(["127.0.0.1", "9000", "-p", testing.DummyPlugin.name])
+    parser = core.DeclusorParser(name="test_app")
+    plugin_config = parser.parse(manager, ["127.0.0.1", "9000", "-p", testing.DummyPlugin.name])
 
     assert plugin_config.data_paths is None
 
@@ -51,7 +51,17 @@ def test_declusor_parser_parse_missing_positional_raises() -> None:
     """Verify parser raises ParserError when required positional args are missing."""
 
     manager = core.PluginManager()
-    parser = core.DeclusorParser(manager, name="test_app")
+    parser = core.DeclusorParser(name="test_app")
 
     with pytest.raises(config.ParserError):
-        parser.parse(["127.0.0.1"])  # missing port
+        parser.parse(manager, ["127.0.0.1"])  # missing port
+
+
+def test_declusor_parser_parse_invalid_plugin_raises() -> None:
+    """Verify parser raises ParserError when selected plugin is not registered."""
+
+    manager = core.PluginManager()
+    parser = core.DeclusorParser(name="test_app")
+
+    with pytest.raises(config.ParserError, match="invalid choice"):
+        parser.parse(manager, ["127.0.0.1", "9000", "-p", "nonexistent"])
