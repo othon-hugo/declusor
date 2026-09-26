@@ -6,6 +6,9 @@ from declusor.config import (
     InvalidOperation,
 )
 
+from .application import (
+    ApplicationFactory,
+)
 from .command import (
     ICommand,
 )
@@ -47,6 +50,7 @@ from .view import (
 )
 
 __all__ = [
+    "ApplicationFactory",
     "ConnectionClosed",
     "ConnectionError",
     "ConnectionHandshakeError",

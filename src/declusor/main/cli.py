@@ -4,7 +4,7 @@ from collections.abc import Sequence
 from declusor import app, config, core
 
 
-def run(
+def main(
     argv: Sequence[str] | None = None,
     application: core.ApplicationProtocol | None = None,
 ) -> int:
@@ -20,15 +20,20 @@ def run(
         Process exit code. ``0`` indicates successful completion.
     """
 
-    declusor_app = application or app.create_terminal_application()
     declusor_parser = core.DeclusorParser(
-        declusor_app.manager,
         name=config.Settings.PROJECT_NAME,
         description=config.Settings.PROJECT_DESCRIPTION,
     )
 
     try:
-        plugin_config = declusor_parser.parse(argv)
+        if application is None:
+            preliminary_args, _ = declusor_parser.parse_known_args(argv)
+            mode = getattr(preliminary_args, "mode", config.Settings.DEFAULT_EXECUTION_MODE)
+            declusor_app = app.create_application(mode=mode)
+        else:
+            declusor_app = application
+
+        plugin_config = declusor_parser.parse(declusor_app.manager, argv)
         declusor_app.run(plugin_config)
     except KeyboardInterrupt:
         print()

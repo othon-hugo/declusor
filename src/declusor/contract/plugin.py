@@ -34,6 +34,9 @@ class PluginConfig:
     options: dict[str, Any] = field(default_factory=dict)
     """Client-specific configuration options."""
 
+    mode: config.ExecutionMode = config.Settings.DEFAULT_EXECUTION_MODE
+    """Application execution mode (e.g. CLI, API, MCP, HTTP)."""
+
 
 @runtime_checkable
 class PluginArguments(Protocol):
@@ -61,6 +64,7 @@ class PluginNamespace:
         data_root: Path | None = None,
         plugin: str = "",
         plugin_dir: Path | None = None,
+        mode: config.ExecutionMode = config.Settings.DEFAULT_EXECUTION_MODE,
         **extra: Any,
     ) -> None:
         self.host = host
@@ -68,6 +72,7 @@ class PluginNamespace:
         self.data_root = data_root
         self.plugin = plugin
         self.plugin_dir = plugin_dir
+        self.mode = mode
 
         for key, value in extra.items():
             setattr(self, key, value)
@@ -109,7 +114,7 @@ class PluginNamespace:
         """Construct a pre-configured PluginNamespace from an argparse.Namespace or mapping."""
 
         mapping = vars(namespace) if hasattr(namespace, "__dict__") else dict(namespace)
-        known_keys = {"host", "port", "data_root", "plugin", "plugin_dir"}
+        known_keys = {"host", "port", "data_root", "plugin", "plugin_dir", "mode"}
         extra = {k: v for k, v in mapping.items() if k not in known_keys}
 
         return cls(
@@ -118,6 +123,7 @@ class PluginNamespace:
             data_root=mapping.get("data_root"),
             plugin=str(mapping.get("plugin", "")),
             plugin_dir=mapping.get("plugin_dir"),
+            mode=mapping.get("mode", config.Settings.DEFAULT_EXECUTION_MODE),
             **extra,
         )
 

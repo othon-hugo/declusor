@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from typing import Any, Generic, Protocol, TypeVar, runtime_checkable
 
 T = TypeVar("T")
@@ -24,11 +25,15 @@ class IParser(ABC, Generic[T]):
     """
 
     @abstractmethod
-    def parse(self) -> T:
+    def parse(self, manager: Any, argv: Sequence[str] | None = None, /) -> T:
         """Parse command-line arguments and return a typed result.
 
+        Args:
+            manager: Plugin manager containing available client plugins.
+            argv: Optional sequence of arguments to parse, excluding the program name.
+
         Returns:
-            A fully validated instance of ``T`` populated from ``sys.argv``.
+            A fully validated instance of ``T`` populated from arguments.
 
         Raises:
             ParserError: If required arguments are missing or values are invalid.
