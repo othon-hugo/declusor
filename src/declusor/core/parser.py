@@ -23,6 +23,8 @@ class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
         "host": "IP address or hostname where the service should run",
         "port": "port number to listen on for incoming connections",
         "plugin": "agent responsible for handling requests",
+        "plugin-dir": "root directory containing client launchers, helpers, and modules",
+        "assets-dir": "additional directory to discover custom drop-in plugins",
     }
 
     def __init__(self, manager: "PluginManager", /, name: str, description: str = "") -> None:
@@ -64,15 +66,15 @@ class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
         )
 
         self.add_argument(
-            "--data-root",
-            help="root directory containing client launchers, helpers, and modules",
+            "--assets-dir",
+            help=self.flags["plugin-dir"],
             type=Path,
             default=None,
         )
 
         self.add_argument(
             "--plugin-dir",
-            help="additional directory to discover custom drop-in plugins",
+            help=self.flags["assets-dir"],
             type=Path,
             default=None,
         )
