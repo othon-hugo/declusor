@@ -160,11 +160,13 @@ class ShellSocketFileStore(contract.IClientFileStore):
         except OSError as error:
             raise config.ConnectionError(f"Failed to read client script: {error}") from error
 
+        hex_ack = util.convert_bytes_to_hex(acknowledge)
+
         return util.format_template(
             client_script_template,
-            HOST=host,
-            PORT=str(port),
-            ACKNOWLEDGE=util.convert_bytes_to_hex(acknowledge),
+            DECLUSOR_HOST=host,
+            DECLUSOR_PORT=str(port),
+            DECLUSOR_ACKNOWLEDGE=hex_ack,
         )
 
     def load_library(self) -> bytes:
