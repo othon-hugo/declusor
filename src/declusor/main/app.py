@@ -108,7 +108,7 @@ class Application:
         """Register built-in command routes on the application router."""
 
         call_help = controller.create_help_controller(
-            lambda: self._router.documentation,
+            self._router.routes,
             self._router.get_route_usage,
         )
 
