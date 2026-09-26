@@ -35,7 +35,7 @@ def assert_conforms_to_client_plugin(
     plugin_cls.configure_parser(parser)
 
     # Invariant 3: Config construction
-    args = util.Namespace(host="127.0.0.1", port=9000, **(sample_options or {}))
+    args = contract.PluginNamespace(host="127.0.0.1", port=9000, **(sample_options or {}))
 
     if tmp_path is not None:
         data_paths = config.DataPaths.from_root(tmp_path)
@@ -122,7 +122,7 @@ class PluginConformanceTestSuite:
     ) -> None:
         """Verify build_config returns an immutable PluginConfig instance matching the plugin."""
 
-        args = util.Namespace(host="10.0.0.1", port=4444, **sample_options)
+        args = contract.PluginNamespace(host="10.0.0.1", port=4444, **sample_options)
         data_paths = config.DataPaths.from_root(tmp_path)
         plugin_config = plugin_class.build_config(args, data_paths)
         assert isinstance(plugin_config, contract.PluginConfig)

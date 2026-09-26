@@ -83,12 +83,12 @@ class MyPlugin(contract.IPlugin):
     version = "1.0.0"
 
     @classmethod
-    def configure_parser(cls, parser: util.Parser, /) -> None:
+    def configure_parser(cls, parser: contract.IArgumentParser, /) -> None:
         parser.add_argument("--my-option", help="Custom option for this client")
 
     @classmethod
-    def build_config(cls, args: util.Namespace, data_paths: config.DataPaths | None = None, /) -> contract.ClientConfig:
-        return contract.ClientConfig(
+    def build_config(cls, args: contract.PluginArguments, data_paths: config.DataPaths | None = None, /) -> contract.PluginConfig:
+        return contract.PluginConfig(
             kind=cls.name,
             host=args.host,
             port=args.port,
@@ -96,11 +96,11 @@ class MyPlugin(contract.IPlugin):
         )
 
     @classmethod
-    def validate(cls, plugin_config: contract.ClientConfig, /) -> None:
+    def validate(cls, plugin_config: contract.PluginConfig, /) -> None:
         pass
 
     @classmethod
-    def build_runtime(cls, plugin_config: contract.ClientConfig, /) -> contract.IPluginRuntime:
+    def build_runtime(cls, plugin_config: contract.PluginConfig, /) -> contract.IPluginRuntime:
         return DeclusorRuntime(plugin_config)
 ```
 

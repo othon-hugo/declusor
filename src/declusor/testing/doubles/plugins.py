@@ -1,6 +1,6 @@
 from socket import socket
 
-from declusor import config, contract, util
+from declusor import config, contract
 from declusor.testing.doubles.connection import DummyConnection
 from declusor.testing.doubles.filestore import DummyPluginFileStore
 
@@ -44,7 +44,7 @@ class DummyPlugin(contract.IPlugin):
     version: str = "1.0.0"
     author: str = "Test Suite"
 
-    configured_parsers: list[util.Parser] = []
+    configured_parsers: list[contract.IArgumentParser] = []
     runtime_instance: contract.IPluginRuntime | None = None
     validation_error: BaseException | None = None
 
@@ -57,11 +57,11 @@ class DummyPlugin(contract.IPlugin):
         cls.validation_error = None
 
     @classmethod
-    def configure_parser(cls, parser: util.Parser, /) -> None:
+    def configure_parser(cls, parser: contract.IArgumentParser, /) -> None:
         cls.configured_parsers.append(parser)
 
     @classmethod
-    def build_config(cls, args: util.Namespace, data_paths: config.DataPaths | None = None, /) -> contract.PluginConfig:
+    def build_config(cls, args: contract.PluginArguments, data_paths: config.DataPaths | None = None, /) -> contract.PluginConfig:
         return contract.PluginConfig(
             kind=cls.name,
             host=getattr(args, "host", "127.0.0.1"),

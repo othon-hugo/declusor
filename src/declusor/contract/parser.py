@@ -1,7 +1,19 @@
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar
+from typing import Any, Generic, Protocol, TypeVar, runtime_checkable
 
 T = TypeVar("T")
+
+
+@runtime_checkable
+class IArgumentParser(Protocol):
+    """Protocol for an argument parser that registers command-line arguments.
+
+    Matches argparse.ArgumentParser, util.Parser, and DeclusorParser structurally.
+    """
+
+    def add_argument(self, *name_or_flags: str, **kwargs: Any) -> Any:
+        """Register a command-line argument or option."""
+        ...
 
 
 class IParser(ABC, Generic[T]):

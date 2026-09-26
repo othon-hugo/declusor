@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from declusor import config, contract, core, testing, util
+from declusor import config, contract, core, testing
 
 
 def test_settings_constants() -> None:
@@ -60,11 +60,11 @@ class DummyPathClientPlugin(contract.IPlugin):
     description = "Dummy path client"
 
     @classmethod
-    def configure_parser(cls, parser: util.Parser, /) -> None:
+    def configure_parser(cls, parser: contract.IArgumentParser, /) -> None:
         pass
 
     @classmethod
-    def build_config(cls, args: util.Namespace, data_paths: config.DataPaths | None = None, /) -> contract.PluginConfig:
+    def build_config(cls, args: contract.PluginArguments, data_paths: config.DataPaths | None = None, /) -> contract.PluginConfig:
         assert data_paths is not None
 
         client_paths = data_paths.for_client(cls.name)

@@ -1,15 +1,14 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from pathlib import Path
 from socket import socket
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 from declusor import config
 
 if TYPE_CHECKING:
     from declusor.contract.connection import IConnection
-    from declusor.contract.parser import IParser
-
-T = TypeVar("T")
+    from declusor.contract.parser import IArgumentParser
 
 
 @dataclass(frozen=True)
@@ -36,7 +35,45 @@ class PluginConfig:
     """Client-specific configuration options."""
 
 
-class IPluginRuntime[T](ABC):
+@runtime_checkable
+class PluginArguments(Protocol):
+    """Protocol for command-line arguments consumed by client plugins.
+
+    Guarantees typed access to standard server network parameters (host, port)
+    configured at the application level.
+    """
+
+    host: str
+    port: int
+
+
+class PluginNamespace:
+    """Pre-configured argument namespace satisfying PluginArguments.
+
+    Provides explicit typed attributes for standard options (host, port)
+    and dynamic attribute access for plugin-specific options.
+    """
+
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        data_root: Path | None = None,
+        plugin: str = "",
+        plugin_dir: Path | None = None,
+        **extra: Any,
+    ) -> None:
+        self.host = host
+        self.port = port
+        self.data_root = data_root
+        self.plugin = plugin
+        self.plugin_dir = plugin_dir
+
+        for key, value in extra.items():
+            setattr(self, key, value)
+
+
+class IPluginRuntime(ABC):
     """Runtime used by the service to operate a configured client.
 
     A runtime hides client-specific bootstrap and connection construction from
@@ -46,7 +83,7 @@ class IPluginRuntime[T](ABC):
     @property
     @abstractmethod
     def client_files(self) -> "IClientFileStore":
-        """[...]"""
+        """Client file store for module and library loading."""
 
         raise NotImplementedError
 
@@ -71,7 +108,7 @@ class IPluginRuntime[T](ABC):
         raise NotImplementedError
 
 
-class IPlugin[T](ABC):
+class IPlugin(ABC):
     """Extension point for registering configurable client implementations.
 
     Implementations define how their command-line arguments are registered,
@@ -92,7 +129,7 @@ class IPlugin[T](ABC):
 
     @classmethod
     @abstractmethod
-    def configure_parser(cls, parser: "IParser[T]", /) -> None:
+    def configure_parser(cls, parser: "IArgumentParser", /) -> None:
         """Register client-specific command-line arguments.
 
         Args:
@@ -103,11 +140,16 @@ class IPlugin[T](ABC):
 
     @classmethod
     @abstractmethod
-    def build_config(cls, args: T, data_paths: config.DataPaths | None = None, /) -> PluginConfig:
+    def build_config(
+        cls,
+        args: PluginArguments,
+        data_paths: config.DataPaths | None = None,
+        /,
+    ) -> PluginConfig:
         """Build a client configuration from parsed arguments and data paths.
 
         Args:
-            args: Namespace containing common and client-specific arguments.
+            args: Pre-configured namespace or protocol containing common and client-specific arguments.
             data_paths: Resolved filesystem paths for the application, or None to use bundled assets.
 
         Returns:

@@ -3,13 +3,13 @@
 The **contract** package defines the abstract contracts that establish the boundaries between system components. This is the **domain layer** — pure abstractions and lifecycle state machines with no framework implementation logic.
 
 > [!NOTE]
-> This package depends only on foundation layers (`config` and `util`). It has zero dependencies on concrete implementation packages (`core`, `command`, `controller`, `presentation`, `main`, or external `plugins`).
+> This package depends only on the foundation base (`config`). It has zero dependencies on `util`, `core`, `command`, `controller`, `presentation`, `main`, or external `plugins`.
 
 ## Modules
 
 | Module       | Responsibility                                                                |
 | ------------ | ----------------------------------------------------------------------------- |
-| `client`     | Abstractions for client plugins, runtimes, and client file stores             |
+| `plugin`     | Abstractions for client plugins, runtimes, and client file stores             |
 | `command`    | Execution lifecycle contract for encapsulated command operations              |
 | `connection` | State machine contract and protocol profile interfaces for network transports |
 | `console`    | Terminal input and output presentation contract                               |

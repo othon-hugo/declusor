@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import pytest
 
-from declusor import config, contract, core, testing, util
+from declusor import config, contract, core, testing
 
 
 class DummyValidPlugin(contract.IPlugin):
@@ -13,11 +13,11 @@ class DummyValidPlugin(contract.IPlugin):
     description = "A dummy plugin for unit tests"
 
     @classmethod
-    def configure_parser(cls, parser: util.Parser, /) -> None:
+    def configure_parser(cls, parser: contract.IArgumentParser, /) -> None:
         pass
 
     @classmethod
-    def build_config(cls, args: util.Namespace, data_paths: config.DataPaths | None = None, /) -> contract.PluginConfig:
+    def build_config(cls, args: contract.PluginArguments, data_paths: config.DataPaths | None = None, /) -> contract.PluginConfig:
         return contract.PluginConfig(
             kind=cls.name,
             host="127.0.0.1",

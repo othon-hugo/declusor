@@ -194,11 +194,18 @@ def test_dummy_client_plugin() -> None:
     testing.DummyPlugin.configure_parser(parser)
     assert testing.DummyPlugin.configured_parsers == [parser]
 
-    ns = util.Namespace(host="10.0.0.2", port=8000)
+    ns = contract.PluginNamespace(host="10.0.0.2", port=8000)
+    assert isinstance(ns, contract.PluginArguments)
     cfg = testing.DummyPlugin.build_config(ns, None)
     assert cfg.kind == "dummy"
     assert cfg.host == "10.0.0.2"
     assert cfg.port == 8000
+
+    # Also verify compatibility with argparse/util Namespace
+    legacy_ns = util.Namespace(host="10.0.0.2", port=8000)
+    assert isinstance(legacy_ns, contract.PluginArguments)
+    cfg_legacy = testing.DummyPlugin.build_config(legacy_ns, None)
+    assert cfg_legacy.host == "10.0.0.2"
 
     testing.DummyPlugin.validate(cfg)
 

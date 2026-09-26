@@ -122,7 +122,10 @@ from .session import SessionContext
 # FORBIDDEN: Importing own package namespace from within that package
 # (e.g. inside src/declusor/contract/plugin.py)
 from declusor import contract
+
+
 class MyPlugin(contract.IPlugin): ...
+
 
 # FORBIDDEN: Destructuring separated symbols across external layers
 from declusor.testing import DummyConsole, DummyConnection

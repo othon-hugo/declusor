@@ -56,10 +56,10 @@ Plugins implement contracts defined in `declusor.contract`:
 1. **`IPlugin`**:
    - `name: str`: Unique identifier matching the entry point key.
    - `description: str`, `version: str`: Metadata.
-   - `configure_parser(parser: IParser) -> None`: Registers plugin-specific CLI flags.
-   - `build_config(args: Namespace, data_paths: DataPaths) -> ClientConfig`: Constructs validated configuration.
-   - `validate(plugin_config: ClientConfig) -> None`: Validates assets and pre-conditions.
-   - `build_runtime(plugin_config: ClientConfig) -> IPluginRuntime`: Instantiates runtime.
+   - `configure_parser(parser: IArgumentParser) -> None`: Registers plugin-specific CLI flags.
+   - `build_config(args: PluginArguments, data_paths: DataPaths) -> PluginConfig`: Constructs validated configuration.
+   - `validate(plugin_config: PluginConfig) -> None`: Validates assets and pre-conditions.
+   - `build_runtime(plugin_config: PluginConfig) -> IPluginRuntime`: Instantiates runtime.
 2. **`IPluginRuntime`**:
    - `client_files: IClientFileStore`: Exposes file store.
    - `client_script: str`: Returns rendered stager code.

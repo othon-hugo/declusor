@@ -25,13 +25,16 @@ from .controller import (
     SessionContext,
 )
 from .parser import (
+    IArgumentParser,
     IParser,
 )
 from .plugin import (
     IClientFileStore,
     IPlugin,
     IPluginRuntime,
+    PluginArguments,
     PluginConfig,
+    PluginNamespace,
 )
 from .prompt import (
     IPrompt,
@@ -50,6 +53,7 @@ __all__ = [
     "ControllerAction",
     "ControllerRequest",
     "ControllerResult",
+    "IArgumentParser",
     "ICommand",
     "IConnection",
     "IConnectionProfile",
@@ -61,6 +65,8 @@ __all__ = [
     "IPluginRuntime",
     "IPrompt",
     "IRouter",
+    "PluginArguments",
     "PluginConfig",
+    "PluginNamespace",
     "SessionContext",
 ]
