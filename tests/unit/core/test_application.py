@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from declusor import contract, core, main, presentation, testing
+from declusor import contract, core, presentation, testing
 
 
 def test_application_connect_routes() -> None:
@@ -11,10 +11,10 @@ def test_application_connect_routes() -> None:
     view = presentation.TerminalView()
     input_source = presentation.TerminalInputSource()
     runner = testing.DummySessionRunner()
-    app = main.Application(manager, router, view, runner, input_source)
+    declusor_app = core.Application(manager, router, view, runner, input_source)
 
     expected_routes = {"help", "execute", "load", "shell", "upload", "command", "exit"}
-    assert expected_routes.issubset(set(app._router.routes))
+    assert expected_routes.issubset(set(declusor_app._router.routes))
 
 
 def test_application_register_plugin_at_runtime() -> None:
@@ -25,12 +25,12 @@ def test_application_register_plugin_at_runtime() -> None:
     view = presentation.TerminalView()
     input_source = presentation.TerminalInputSource()
     runner = testing.DummySessionRunner()
-    app = main.Application(manager, router, view, runner, input_source)
+    declusor_app = core.Application(manager, router, view, runner, input_source)
 
     testing.DummyPlugin.reset()
 
-    app.register_plugin(testing.DummyPlugin)
-    assert testing.DummyPlugin.name in app.manager.names()
+    declusor_app.register_plugin(testing.DummyPlugin)
+    assert testing.DummyPlugin.name in declusor_app.manager.names()
 
 
 def test_application_runner_property_and_setter() -> None:
@@ -42,11 +42,11 @@ def test_application_runner_property_and_setter() -> None:
     runner1 = testing.DummySessionRunner()
     runner2 = testing.DummySessionRunner()
 
-    app = main.Application(manager, router, view, runner1)
-    assert app.runner is runner1
+    declusor_app = core.Application(manager, router, view, runner1)
+    assert declusor_app.runner is runner1
 
-    app.runner = runner2
-    assert app.runner is runner2
+    declusor_app.runner = runner2
+    assert declusor_app.runner is runner2
 
 
 def test_application_run_lifecycle_with_no_data_paths() -> None:
@@ -65,7 +65,7 @@ def test_application_run_lifecycle_with_no_data_paths() -> None:
 
     manager.register(testing.DummyPlugin)
 
-    app = main.Application(manager, router, view, runner, input_source)
+    declusor_app = core.Application(manager, router, view, runner, input_source)
 
     plugin_config = contract.PluginConfig(
         kind=testing.DummyPlugin.name,
@@ -77,7 +77,7 @@ def test_application_run_lifecycle_with_no_data_paths() -> None:
     dummy_sock = testing.DummySocket()
 
     with patch("declusor.util.await_connection", return_value=dummy_sock) as mock_await:
-        app.run(plugin_config)
+        declusor_app.run(plugin_config)
 
         mock_await.assert_called_once_with("127.0.0.1", 9000)
         assert dummy_conn.initialize_called
@@ -85,7 +85,7 @@ def test_application_run_lifecycle_with_no_data_paths() -> None:
         assert len(runner.run_calls) == 1
         _, active_router = runner.run_calls[0]
         assert active_router is router
-        assert not hasattr(app, "_validate_directories")
+        assert not hasattr(declusor_app, "_validate_directories")
 
 
 def test_application_run_with_custom_runner_override() -> None:
@@ -103,7 +103,7 @@ def test_application_run_with_custom_runner_override() -> None:
     override_runner = testing.DummySessionRunner()
 
     manager.register(testing.DummyPlugin)
-    app = main.Application(manager, router, view, default_runner)
+    declusor_app = core.Application(manager, router, view, default_runner)
 
     plugin_config = contract.PluginConfig(
         kind=testing.DummyPlugin.name,
@@ -115,7 +115,7 @@ def test_application_run_with_custom_runner_override() -> None:
     dummy_sock = testing.DummySocket()
 
     with patch("declusor.util.await_connection", return_value=dummy_sock):
-        app.run(plugin_config, runner=override_runner)
+        declusor_app.run(plugin_config, runner=override_runner)
 
         assert len(default_runner.run_calls) == 0
         assert len(override_runner.run_calls) == 1

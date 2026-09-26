@@ -1,4 +1,5 @@
 from . import (
+    app,
     command,
     config,
     contract,
@@ -11,6 +12,7 @@ from . import (
 )
 
 __all__ = [
+    "app",
     "command",
     "config",
     "contract",

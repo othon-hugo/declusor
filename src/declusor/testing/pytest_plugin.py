@@ -125,6 +125,7 @@ def dummy_session_runner() -> DummySessionRunner:
 def dummy_app() -> DummyApplication:
     """Provide a fresh DummyApplication with DummyPlugin registered."""
 
-    app = DummyApplication()
-    app.register_plugin(DummyPlugin)
-    return app
+    declusor_app = DummyApplication()
+    declusor_app.register_plugin(DummyPlugin)
+
+    return declusor_app
