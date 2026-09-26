@@ -58,6 +58,25 @@ def create_dummy_plugin_config(
     )
 
 
+def create_dummy_plugin_arguments(
+    host: str = "127.0.0.1",
+    port: int = 9000,
+    **extra: Any,
+) -> contract.PluginNamespace:
+    """Create a PluginNamespace instance for testing.
+
+    Args:
+        host: Target host. Defaults to '127.0.0.1'.
+        port: Target port. Defaults to 9000.
+        **extra: Additional plugin-specific arguments.
+
+    Returns:
+        A pre-configured PluginNamespace instance satisfying PluginArguments.
+    """
+
+    return contract.PluginNamespace(host=host, port=port, **extra)
+
+
 def create_dummy_controller_request(text: str = "") -> contract.ControllerRequest:
     """Create a ControllerRequest instance wrapping command text.
 
