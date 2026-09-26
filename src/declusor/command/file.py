@@ -103,17 +103,17 @@ class _BaseFileCommand(contract.ICommand):
         session.connection.write(command_bytes)
 
     def read_response(self, session: contract.SessionContext, /) -> None:
-        """Read output chunks from the remote client and write them to the console.
+        """Read output chunks from the remote client and write them to the view.
 
         Args:
-            session: Active session context providing connection and console interfaces.
+            session: Active session context providing connection and view interfaces.
 
         Raises:
             ConnectionClosed: If the remote peer terminates the connection unexpectedly.
         """
 
         for data in session.connection.read():
-            session.console.write_binary_data(data)
+            session.view.write_binary_data(data)
 
     def _format_command(self, session: contract.SessionContext) -> bytes:
         """Format the file content into an encoded remote client command.

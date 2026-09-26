@@ -1,5 +1,4 @@
 from argparse import Namespace
-from pathlib import Path
 from socket import socket
 from typing import cast
 
@@ -8,59 +7,51 @@ import pytest
 from declusor import config, contract, testing, util
 
 
-def test_dummy_console_write_and_capture() -> None:
-    """DummyConsole captures messages, binary data, errors, and warnings."""
+def test_dummy_view_write_and_capture() -> None:
+    """DummyView captures messages, errors, warnings, info, success, and binary data."""
 
-    console = testing.DummyConsole()
-    console.write_message("info")
-    console.write_binary_data(b"data")
+    view = testing.DummyView()
+    view.write_message("msg")
     err = ValueError("err")
-    console.write_error_message(err)
-    console.write_warning_message("warn")
+    view.write_error(err)
+    view.write_warning("warn")
+    view.write_info("info")
+    view.write_success("success")
+    view.write_binary_data(b"data")
 
-    assert console.messages == ["info"]
-    assert console.binary_data == [b"data"]
-    assert console.errors == [err]
-    assert console.warnings == ["warn"]
-
-
-def test_dummy_console_inputs_and_prompts() -> None:
-    """DummyConsole feeds inputs, appends newlines for read_line, and records prompts."""
-
-    console = testing.DummyConsole(["first", "second\n"])
-    assert console.read_line("> ") == "first\n"
-    assert console.read_line("$ ") == "second\n"
-    assert console.read_line() == "\n"
-    assert console.prompts == ["> ", "$ ", ""]
-
-    console.feed_inputs("  third  ")
-    assert console.read_stripped_line("? ") == "third"
-    assert console.read_stripped_line() == ""
+    assert view.messages == ["msg"]
+    assert view.errors == [err]
+    assert view.warnings == ["warn"]
+    assert view.info_messages == ["info"]
+    assert view.success_messages == ["success"]
+    assert view.binary_data == [b"data"]
 
 
-def test_dummy_console_input_exception() -> None:
-    """DummyConsole raises input_exception when configured."""
+def test_dummy_input_source_commands_and_prompts() -> None:
+    """DummyInputSource feeds inputs, strips for read_command, keeps raw for read_raw, and records prompts."""
 
-    console = testing.DummyConsole()
-    console.input_exception = KeyboardInterrupt("ctrl-c")
+    input_source = testing.DummyInputSource(["cmd arg  ", "other\n"])
+    assert input_source.read_command("> ") == "cmd arg"
+    assert input_source.read_raw("$ ") == "other\n"
+    assert input_source.read_command() == ""
+    assert input_source.read_raw() == "\n"
+    assert input_source.prompts == ["> ", "$ ", "", ""]
+
+    input_source.feed_inputs("  third  ")
+    assert input_source.read_command("? ") == "third"
+
+
+def test_dummy_input_source_exception() -> None:
+    """DummyInputSource raises input_exception when configured."""
+
+    input_source = testing.DummyInputSource()
+    input_source.input_exception = KeyboardInterrupt("ctrl-c")
 
     with pytest.raises(KeyboardInterrupt):
-        console.read_line()
+        input_source.read_command()
 
     # Once raised, input_exception resets
-    assert console.read_line() == "\n"
-
-
-def test_dummy_console_history_and_completer(tmp_path: Path) -> None:
-    """DummyConsole records completer setups and history files."""
-
-    console = testing.DummyConsole()
-    console.setup_completer(["help", "exit"])
-    history_file = tmp_path / "hist"
-    console.enable_history(history_file)
-
-    assert console.configured_completers == [["help", "exit"]]
-    assert console.history_files == [history_file]
+    assert input_source.read_command() == ""
 
 
 def test_dummy_connection_profile() -> None:
@@ -358,7 +349,8 @@ def test_factories() -> None:
 
     session = testing.create_test_session()
     assert isinstance(session.connection, testing.DummyConnection)
-    assert isinstance(session.console, testing.DummyConsole)
+    assert isinstance(session.view, testing.DummyView)
+    assert isinstance(session.input, testing.DummyInputSource)
     assert isinstance(session.files, testing.DummyPluginFileStore)
 
     cfg = testing.create_dummy_plugin_config(kind="custom", host="192.168.1.1", port=1234, options={"opt": "val"})

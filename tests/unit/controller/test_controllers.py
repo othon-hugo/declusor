@@ -82,14 +82,15 @@ def test_call_load_module_with_dto(
 
 def test_call_shell_executes_and_returns_continue(
     test_session: contract.SessionContext,
-    dummy_console: testing.DummyConsole,
+    dummy_view: testing.DummyView,
+    dummy_input_source: testing.DummyInputSource,
 ) -> None:
     """call_shell must execute LaunchShell via session and return CONTINUE."""
 
     req = testing.create_dummy_controller_request()
-    dummy_console.input_exception = KeyboardInterrupt()
+    dummy_input_source.input_exception = KeyboardInterrupt()
 
     result = controller.call_shell(test_session, req)
 
     assert result.action == contract.ControllerAction.CONTINUE
-    assert "[keyboard interrupt received]" in dummy_console.messages
+    assert "[keyboard interrupt received]" in dummy_view.messages

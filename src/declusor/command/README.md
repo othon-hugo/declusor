@@ -14,6 +14,6 @@ The **command** package implements the Command design pattern. Each class encaps
 ## Design Principles
 
 1. **Single Responsibility**: each command performs one operation.
-2. **Interface Compliance**: commands implement `ICommand` and depend on `IConnection` and `IConsole`.
+2. **Interface Compliance**: commands implement `ICommand` and depend on `IConnection`, `IView`, and `IInputSource`.
 3. **Stateless Execution**: commands receive session state through `execute`.
 4. **Synchronous I/O**: `LaunchShell` uses `TaskPool` for bidirectional shell traffic.

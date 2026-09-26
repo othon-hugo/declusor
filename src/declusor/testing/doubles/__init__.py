@@ -7,11 +7,11 @@ from declusor.testing.doubles.command import (
 from declusor.testing.doubles.connection import (
     DummyConnection,
 )
-from declusor.testing.doubles.console import (
-    DummyConsole,
-)
 from declusor.testing.doubles.filestore import (
     DummyPluginFileStore,
+)
+from declusor.testing.doubles.input_source import (
+    DummyInputSource,
 )
 from declusor.testing.doubles.plugins import (
     DummyPlugin,
@@ -26,19 +26,20 @@ from declusor.testing.doubles.router import (
 from declusor.testing.doubles.socket import (
     DummySocket,
 )
+from declusor.testing.doubles.view import (
+    DummyView,
+)
 
 __all__ = [
     "DummyApplication",
-    "DummyPluginFileStore",
-    "DummyPlugin",
-    "DummyPluginRuntime",
     "DummyCommand",
     "DummyConnection",
     "DummyConnectionProfile",
-    "DummyConsole",
+    "DummyInputSource",
     "DummyPlugin",
     "DummyPluginFileStore",
     "DummyPluginRuntime",
     "DummyRouter",
     "DummySocket",
+    "DummyView",
 ]

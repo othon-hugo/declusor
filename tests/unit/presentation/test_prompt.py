@@ -1,17 +1,14 @@
-import pytest
-
 from declusor import config, contract, presentation, testing
 
 
 def test_prompt_terminates_on_controller_terminate_action(
     dummy_router: testing.DummyRouter,
-    dummy_connection: testing.DummyConnection,
-    dummy_console: testing.DummyConsole,
-    dummy_file_store: testing.DummyPluginFileStore,
+    test_session: contract.SessionContext,
+    dummy_input_source: testing.DummyInputSource,
 ) -> None:
-    """PromptCLI must stop cleanly when a controller signals ControllerAction.TERMINATE."""
+    """PromptLoop must stop cleanly when a controller signals ControllerAction.TERMINATE."""
 
-    dummy_console.feed_inputs("exit")
+    dummy_input_source.feed_inputs("exit")
 
     def exit_controller(
         session: contract.SessionContext,
@@ -21,12 +18,10 @@ def test_prompt_terminates_on_controller_terminate_action(
 
     dummy_router.connect("exit", exit_controller)
 
-    prompt = presentation.PromptCLI(
+    prompt = presentation.PromptLoop(
         "test_cli",
         router=dummy_router,
-        connection=dummy_connection,
-        console=dummy_console,
-        files=dummy_file_store,
+        session=test_session,
     )
 
     prompt.run()
@@ -34,43 +29,32 @@ def test_prompt_terminates_on_controller_terminate_action(
     assert dummy_router.locate_calls == ["exit"]
 
 
-def test_prompt_init_missing_dependencies_raises(dummy_router: testing.DummyRouter) -> None:
-    """Verify PromptCLI raises InvalidOperation when dependencies are incomplete."""
-
-    with pytest.raises(config.InvalidOperation):
-        presentation.PromptCLI("test_cli", router=dummy_router)
-
-
 def test_prompt_handles_keyboard_interrupt_on_input(
     dummy_router: testing.DummyRouter,
-    dummy_connection: testing.DummyConnection,
-    dummy_console: testing.DummyConsole,
-    dummy_file_store: testing.DummyPluginFileStore,
+    test_session: contract.SessionContext,
+    dummy_input_source: testing.DummyInputSource,
 ) -> None:
-    """PromptCLI must terminate loop gracefully on KeyboardInterrupt during input."""
+    """PromptLoop must terminate loop gracefully on KeyboardInterrupt during input."""
 
-    dummy_console.input_exception = KeyboardInterrupt()
+    dummy_input_source.input_exception = KeyboardInterrupt()
 
-    prompt = presentation.PromptCLI(
+    prompt = presentation.PromptLoop(
         "test_cli",
         router=dummy_router,
-        connection=dummy_connection,
-        console=dummy_console,
-        files=dummy_file_store,
+        session=test_session,
     )
 
-    prompt.run()  # Must not raise
+    prompt.run()
 
 
 def test_prompt_handles_keyboard_interrupt_during_execution(
     dummy_router: testing.DummyRouter,
-    dummy_connection: testing.DummyConnection,
-    dummy_console: testing.DummyConsole,
-    dummy_file_store: testing.DummyPluginFileStore,
+    test_session: contract.SessionContext,
+    dummy_input_source: testing.DummyInputSource,
 ) -> None:
-    """PromptCLI catches KeyboardInterrupt during command execution and continues."""
+    """PromptLoop catches KeyboardInterrupt during command execution and continues."""
 
-    dummy_console.feed_inputs("long_cmd", "exit")
+    dummy_input_source.feed_inputs("long_cmd", "exit")
 
     def interrupt_controller(
         session: contract.SessionContext,
@@ -87,12 +71,10 @@ def test_prompt_handles_keyboard_interrupt_during_execution(
     dummy_router.connect("long_cmd", interrupt_controller)
     dummy_router.connect("exit", exit_controller)
 
-    prompt = presentation.PromptCLI(
+    prompt = presentation.PromptLoop(
         "test_cli",
         router=dummy_router,
-        connection=dummy_connection,
-        console=dummy_console,
-        files=dummy_file_store,
+        session=test_session,
     )
 
     prompt.run()
@@ -102,13 +84,13 @@ def test_prompt_handles_keyboard_interrupt_during_execution(
 
 def test_prompt_handles_declusor_exception(
     dummy_router: testing.DummyRouter,
-    dummy_connection: testing.DummyConnection,
-    dummy_console: testing.DummyConsole,
-    dummy_file_store: testing.DummyPluginFileStore,
+    test_session: contract.SessionContext,
+    dummy_input_source: testing.DummyInputSource,
+    dummy_view: testing.DummyView,
 ) -> None:
-    """PromptCLI catches DeclusorException and prints error without terminating loop."""
+    """PromptLoop catches DeclusorException and prints error without terminating loop."""
 
-    dummy_console.feed_inputs("fail_cmd", "exit")
+    dummy_input_source.feed_inputs("fail_cmd", "exit")
     exc = config.CommandError("failed")
 
     def fail_controller(
@@ -126,15 +108,13 @@ def test_prompt_handles_declusor_exception(
     dummy_router.connect("fail_cmd", fail_controller)
     dummy_router.connect("exit", exit_controller)
 
-    prompt = presentation.PromptCLI(
+    prompt = presentation.PromptLoop(
         "test_cli",
         router=dummy_router,
-        connection=dummy_connection,
-        console=dummy_console,
-        files=dummy_file_store,
+        session=test_session,
     )
 
     prompt.run()
 
-    assert exc in dummy_console.errors
+    assert exc in dummy_view.errors
     assert dummy_router.locate_calls == ["fail_cmd", "exit"]

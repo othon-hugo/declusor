@@ -1,4 +1,4 @@
-from collections.abc import Callable, Iterator, Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any, TypeAlias
@@ -6,8 +6,9 @@ from typing import TYPE_CHECKING, Any, TypeAlias
 if TYPE_CHECKING:
     from declusor.contract.command import ICommand
     from declusor.contract.connection import IConnection
-    from declusor.contract.console import IConsole
+    from declusor.contract.input_source import IInputSource
     from declusor.contract.plugin import IClientFileStore
+    from declusor.contract.view import IView
 
 ArgumentDefinitions: TypeAlias = Mapping[str, Any]
 """Mapping of argument names to expected argument types."""
@@ -34,26 +35,29 @@ class ControllerResult:
 class SessionContext:
     """Encapsulates the active client session and coordinates command execution.
 
-    Provides access to the transport connection, operator console, and file store,
+    Provides access to the transport connection, operator view, input source, and file store,
     while offering an ``execute(command)`` method to run commands within this session.
     """
 
     def __init__(
         self,
         connection: "IConnection",
-        console: "IConsole",
+        view: "IView",
+        input: "IInputSource",
         files: "IClientFileStore",
     ) -> None:
         """Initialize the active session context.
 
         Args:
             connection: Active connection to the remote client.
-            console: Console interface for operator input/output.
+            view: View interface for operator output presentation.
+            input: Input source interface for operator command/input reading.
             files: Client file store for module/library loading.
         """
 
         self._connection = connection
-        self._console = console
+        self._view = view
+        self._input = input
         self._files = files
 
     @property
@@ -63,10 +67,16 @@ class SessionContext:
         return self._connection
 
     @property
-    def console(self) -> "IConsole":
-        """Console interface for operator I/O."""
+    def view(self) -> "IView":
+        """View interface for operator output presentation."""
 
-        return self._console
+        return self._view
+
+    @property
+    def input(self) -> "IInputSource":
+        """Input source interface for operator command/input reading."""
+
+        return self._input
 
     @property
     def files(self) -> "IClientFileStore":
@@ -82,23 +92,6 @@ class SessionContext:
         """
 
         command.execute(self)
-
-    def __getitem__(self, index: int) -> Any:
-        """Allow tuple indexing for backward compatibility."""
-
-        items = (self._connection, self._console, self._files)
-
-        return items[index]
-
-    def __iter__(self) -> Iterator[Any]:
-        """Allow tuple unpacking (connection, console, files) for backward compatibility."""
-
-        return iter((self._connection, self._console, self._files))
-
-    def __len__(self) -> int:
-        """Return 3 for tuple compatibility."""
-
-        return 3
 
 
 @dataclass(frozen=True)

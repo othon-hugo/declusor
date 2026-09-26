@@ -7,12 +7,13 @@ from declusor.testing.doubles import (
     DummyApplication,
     DummyConnection,
     DummyConnectionProfile,
-    DummyConsole,
+    DummyInputSource,
     DummyPlugin,
     DummyPluginFileStore,
     DummyPluginRuntime,
     DummyRouter,
     DummySocket,
+    DummyView,
 )
 from declusor.testing.factories import (
     create_dummy_plugin_config,
@@ -21,10 +22,17 @@ from declusor.testing.factories import (
 
 
 @pytest.fixture
-def dummy_console() -> DummyConsole:
-    """Provide a fresh in-memory DummyConsole."""
+def dummy_view() -> DummyView:
+    """Provide a fresh in-memory DummyView."""
 
-    return DummyConsole()
+    return DummyView()
+
+
+@pytest.fixture
+def dummy_input_source() -> DummyInputSource:
+    """Provide a fresh in-memory DummyInputSource."""
+
+    return DummyInputSource()
 
 
 @pytest.fixture
@@ -51,14 +59,16 @@ def dummy_file_store() -> DummyPluginFileStore:
 @pytest.fixture
 def test_session(
     dummy_connection: DummyConnection,
-    dummy_console: DummyConsole,
+    dummy_view: DummyView,
+    dummy_input_source: DummyInputSource,
     dummy_file_store: DummyPluginFileStore,
 ) -> contract.SessionContext:
     """Provide a SessionContext wired to isolated test doubles."""
 
     return create_test_session(
         connection=dummy_connection,
-        console=dummy_console,
+        view=dummy_view,
+        input_source=dummy_input_source,
         files=dummy_file_store,
     )
 

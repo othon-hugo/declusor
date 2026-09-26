@@ -1,13 +1,13 @@
 from declusor import config, contract
 
 
-class PromptCLI(contract.IPrompt):
-    """Readline-backed interactive prompt that routes commands to registered controllers.
+class PromptLoop:
+    """Interactive command-line loop that reads, routes, and dispatches user input.
 
     Displays a ``[name] `` prefix on each input line. Handles ``KeyboardInterrupt``
     during input (stops the loop) and during command execution (skips to next
     iteration). Handles ``ControllerAction.TERMINATE`` for clean exit without exceptions.
-    ``DeclusorException`` errors are printed to the console without terminating the connection.
+    ``DeclusorException`` errors are printed to the view without terminating the connection.
     """
 
     def __init__(
@@ -16,35 +16,19 @@ class PromptCLI(contract.IPrompt):
         /,
         *,
         router: contract.IRouter,
-        session: contract.SessionContext | None = None,
-        connection: contract.IConnection | None = None,
-        console: contract.IConsole | None = None,
-        files: contract.IClientFileStore | None = None,
+        session: contract.SessionContext,
     ) -> None:
-        """Initialize PromptCLI with an active session or individual session components.
+        """Initialize PromptLoop with an active session context.
 
         Args:
             name: Display name used as prompt prefix (e.g. project name).
             router: Router mapping command routes to controller functions.
-            session: Active SessionContext encapsulating connection, console, and files.
-            connection: Fallback connection if session is not directly passed.
-            console: Fallback console if session is not directly passed.
-            files: Fallback client file store if session is not directly passed.
+            session: Active SessionContext encapsulating connection, view, input, and files.
         """
 
         self._prompt = f"[{name}] "
         self._router = router
-
-        if session is not None:
-            self._session = session
-        elif connection is not None and console is not None and files is not None:
-            self._session = contract.SessionContext(
-                connection=connection,
-                console=console,
-                files=files,
-            )
-        else:
-            raise config.InvalidOperation("Either session or (connection, console, files) must be provided.")
+        self._session = session
 
     @property
     def session(self) -> contract.SessionContext:
@@ -73,7 +57,7 @@ class PromptCLI(contract.IPrompt):
             except KeyboardInterrupt:
                 continue
             except config.DeclusorException as e:
-                self._session.console.write_error_message(e)
+                self._session.view.write_error(e)
 
     def _read_command(self) -> str:
         """Block until the user enters a non-empty command line.
@@ -82,7 +66,7 @@ class PromptCLI(contract.IPrompt):
         """
 
         while True:
-            if command_line := self._session.console.read_stripped_line(self._prompt):
+            if command_line := self._session.input.read_command(self._prompt):
                 return command_line
 
     def _route_command(self, command_line: str) -> contract.ControllerAction:

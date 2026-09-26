@@ -128,8 +128,8 @@ class MyPlugin(contract.IPlugin): ...
 
 
 # FORBIDDEN: Destructuring separated symbols across external layers
-from declusor.testing import DummyConsole, DummyConnection
-from declusor.presentation import PromptCLI
+from declusor.testing import DummyView, DummyConnection
+from declusor.presentation import PromptLoop
 from declusor.main.app import Application
 ```
 

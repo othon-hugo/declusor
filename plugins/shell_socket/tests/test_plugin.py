@@ -103,4 +103,4 @@ def test_build_runtime_creates_shell_socket_connection(tmp_path: Path) -> None:
     runtime = shell_socket.ShellSocketPlugin.build_runtime(plugin_config)
     client_connection = runtime.create_connection(cast(socket, dummy_sock))
 
-    assert isinstance(client_connection, shell_socket.ShJellSocketConnection)
+    assert isinstance(client_connection, shell_socket.ShellSocketConnection)
