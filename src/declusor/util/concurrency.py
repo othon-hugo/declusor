@@ -31,9 +31,9 @@ class TaskPool:
     """
 
     def __init__(self, stop_event: TaskEvent | None = None, max_size: int = 10, daemon_mode: bool = True):
+        self._stop_event = stop_event or TaskEvent()
         self._daemon_mode = daemon_mode
         self._max_size = max_size
-        self._stop_event = stop_event or TaskEvent()
 
         self._threads: dict[Thread, Task] = {}
         self._results: list[Task] = []

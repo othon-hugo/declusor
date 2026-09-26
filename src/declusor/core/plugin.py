@@ -116,7 +116,14 @@ class PluginManager(PluginRegistry):
                 f"Plugin class {candidate.__name__!r} has unimplemented abstract methods: {', '.join(sorted(abstract_methods))}"
             )
 
-    def register(self, plugin: PluginType, /, *, source: str = "manual", allow_override: bool = False) -> None:
+    def register(
+        self,
+        plugin: PluginType,
+        /,
+        *,
+        source: str = "manual",
+        allow_override: bool = False,
+    ) -> None:
         """Register a validated client plugin.
 
         Args:
@@ -143,7 +150,14 @@ class PluginManager(PluginRegistry):
 
         return self._sources.get(name)
 
-    def load_from_directory(self, directory: Path, /, *, source_label: str = "directory", allow_override: bool = True) -> list[str]:
+    def load_from_directory(
+        self,
+        directory: Path,
+        /,
+        *,
+        source_label: str = "directory",
+        allow_override: bool = True,
+    ) -> list[str]:
         """Scan a directory for plugin packages and load any valid plugins found.
 
         A valid plugin folder contains an ``__init__.py`` or ``plugin.py`` that defines
@@ -187,7 +201,12 @@ class PluginManager(PluginRegistry):
 
         return loaded_names
 
-    def load_from_entry_points(self, *, group: str = ENTRY_POINT_GROUP, allow_override: bool = True) -> list[str]:
+    def load_from_entry_points(
+        self,
+        *,
+        group: str = ENTRY_POINT_GROUP,
+        allow_override: bool = True,
+    ) -> list[str]:
         """Discover and load client plugins registered via Python Entry Points.
 
         Args:
