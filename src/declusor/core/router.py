@@ -59,29 +59,3 @@ class Router(contract.IRouter):
             return controller
 
         raise RouterError(route)
-
-    @property
-    def documentation(self) -> str:
-        """Formatted help string for all routes, aligned by the longest route name.
-
-        Each line has the form ``route: description``. Returns an empty string
-        if no routes are registered.
-        """
-
-        if self._documentation_cache is not None:
-            return self._documentation_cache
-
-        if not self._route_table:
-            return ""
-
-        key_length = max(map(len, self._route_table.keys())) + 1
-
-        documentation = ""
-
-        for route in self._route_table:
-            documentation += f"{route:<{key_length}}: "
-            documentation += f"{self.get_route_usage(route)}\n"
-
-        self._documentation_cache = documentation.rstrip()
-
-        return self._documentation_cache

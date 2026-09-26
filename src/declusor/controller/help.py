@@ -2,11 +2,10 @@ from collections.abc import Callable
 
 from declusor import contract
 
-DocumentationProvider = Callable[[], str]
 RouteUsageProvider = Callable[[str], str]
 
 
-def create_help_controller(get_documentation: DocumentationProvider, get_route_usage: RouteUsageProvider) -> contract.Controller:
+def create_help_controller(routes: tuple[str, ...], get_route_usage: RouteUsageProvider) -> contract.Controller:
     """Create a help controller with documentation providers.
 
     Args:
@@ -25,7 +24,15 @@ def create_help_controller(get_documentation: DocumentationProvider, get_route_u
         if help_command := arguments.get("command"):
             session.view.write_message(f"{help_command}: {get_route_usage(help_command)}")
         else:
-            session.view.write_message(get_documentation())
+            route_table: dict[str, str] = {}
+
+            for route in routes:
+                route_table[route] = get_route_usage(route).strip()
+
+            key_length = max(map(len, route_table.keys())) + 1
+
+            for route, route_help in route_table.items():
+                session.view.write_message(f"{route:<{key_length}}: {route_help}")
 
         return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
 

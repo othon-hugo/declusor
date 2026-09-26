@@ -23,18 +23,6 @@ class IRouter(ABC):
 
         raise NotImplementedError
 
-    @property
-    @abstractmethod
-    def documentation(self) -> str:
-        """Formatted help text listing every route and its description.
-
-        Returns:
-            A multi-line string with one ``route: description`` entry per line,
-            or an empty string if no routes are registered.
-        """
-
-        raise NotImplementedError
-
     @abstractmethod
     def get_route_usage(self, route: str, /) -> str:
         """Return the one-line usage description for a registered route.
