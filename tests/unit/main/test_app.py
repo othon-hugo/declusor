@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from declusor import contract, core, main, testing
+from declusor import contract, core, main, presentation, testing
 
 
 def test_create_application_initializes_plugins() -> None:
@@ -17,7 +17,10 @@ def test_application_connect_routes() -> None:
     """Verify application registers core routes on its router."""
 
     manager = core.PluginManager()
-    app = main.Application(manager)
+    router = core.Router()
+    console = presentation.Console()
+    app = main.Application(manager, router, console)
+
     app._connect_routes()
 
     expected_routes = {"help", "execute", "load", "shell", "upload", "command", "exit"}
@@ -28,7 +31,10 @@ def test_application_register_plugin_at_runtime() -> None:
     """Verify application allows registering client plugins at runtime."""
 
     manager = core.PluginManager()
-    app = main.Application(manager)
+    router = core.Router()
+    console = presentation.Console()
+    app = main.Application(manager, router, console)
+
     testing.DummyPlugin.reset()
 
     app.register_plugin(testing.DummyPlugin)
@@ -44,9 +50,12 @@ def test_application_run_lifecycle_with_no_data_paths() -> None:
     testing.DummyPlugin.runtime_instance = dummy_runtime
 
     manager = core.PluginManager()
+    router = core.Router()
+    console = presentation.Console()
+
     manager.register(testing.DummyPlugin)
 
-    app = main.Application(manager)
+    app = main.Application(manager, router, console)
 
     plugin_config = contract.PluginConfig(
         kind=testing.DummyPlugin.name,
@@ -54,6 +63,7 @@ def test_application_run_lifecycle_with_no_data_paths() -> None:
         port=9000,
         data_paths=None,
     )
+
     options: core.DeclusorOptions = {
         "host": "127.0.0.1",
         "port": 9000,
@@ -70,5 +80,6 @@ def test_application_run_lifecycle_with_no_data_paths() -> None:
 
         mock_await.assert_called_once_with("127.0.0.1", 9000)
         assert dummy_conn.initialize_called
+
         mock_prompt_run.assert_called_once()
         assert not hasattr(app, "_validate_directories")

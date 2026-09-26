@@ -11,17 +11,25 @@ class Application:
     details behind the selected client plugin runtime.
     """
 
-    def __init__(self, manager: core.PluginManager, /) -> None:
+    def __init__(
+        self,
+        manager: core.PluginManager,
+        router: contract.IRouter,
+        console: contract.IConsole,
+        /,
+    ) -> None:
         """Create an application using a configured client plugin manager.
 
         Args:
             manager: Plugin manager containing the available client plugins.
+            router: Command router resolving interactive prompt input to controller actions.
+            console: Operator console interface handling terminal presentation and input/output.
         """
 
         self._manager = manager
         self._registry = manager
-        self._router = core.Router()
-        self._console = presentation.Console()
+        self._router = router
+        self._console = console
 
     @property
     def manager(self) -> core.PluginManager:
@@ -122,5 +130,7 @@ def create_application(search_dirs: Sequence[Path] | None = None) -> Application
     """
 
     manager = core.PluginManager().discover(search_dirs)
+    router = core.Router()
+    console = presentation.Console()
 
-    return Application(manager)
+    return Application(manager, router, console)

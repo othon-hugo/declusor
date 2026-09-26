@@ -1,9 +1,11 @@
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Final, TypedDict
+from typing import TYPE_CHECKING, Final, TypedDict
 
 from declusor import config, contract, util
-from declusor.core.plugin import PluginManager
+
+if TYPE_CHECKING:
+    from declusor.core.plugin import PluginManager
 
 
 class DeclusorOptions(TypedDict):
@@ -23,7 +25,7 @@ class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
         "plugin": "agent responsible for handling requests",
     }
 
-    def __init__(self, manager: PluginManager, /, name: str, description: str = "") -> None:
+    def __init__(self, manager: "PluginManager", /, name: str, description: str = "") -> None:
         """Create a parser backed by a specific client plugin manager.
 
         Args:
@@ -40,7 +42,7 @@ class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
         self._configure_common_arguments()
 
     @property
-    def manager(self) -> PluginManager:
+    def manager(self) -> "PluginManager":
         """The client plugin manager backing this parser."""
 
         return self._manager
@@ -100,7 +102,8 @@ class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
         Plugin = self._manager.get(preliminary_args.plugin)
         Plugin.configure_parser(self)
 
-        args = self.parse_args(argv)
+        raw_args = self.parse_args(argv)
+        args = contract.PluginNamespace.from_namespace(raw_args)
 
         data_paths = config.DataPaths.from_root(args.data_root) if args.data_root is not None else None
         plugin_config = Plugin.build_config(args, data_paths)

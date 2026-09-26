@@ -72,6 +72,26 @@ class PluginNamespace:
         for key, value in extra.items():
             setattr(self, key, value)
 
+    def __getattr__(self, name: str) -> Any:
+        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+
+    @classmethod
+    def from_namespace(cls, namespace: Any) -> "PluginNamespace":
+        """Construct a pre-configured PluginNamespace from an argparse.Namespace or mapping."""
+
+        mapping = vars(namespace) if hasattr(namespace, "__dict__") else dict(namespace)
+        known_keys = {"host", "port", "data_root", "plugin", "plugin_dir"}
+        extra = {k: v for k, v in mapping.items() if k not in known_keys}
+
+        return cls(
+            host=str(mapping.get("host", "")),
+            port=int(mapping.get("port", 0)),
+            data_root=mapping.get("data_root"),
+            plugin=str(mapping.get("plugin", "")),
+            plugin_dir=mapping.get("plugin_dir"),
+            **extra,
+        )
+
 
 class IPluginRuntime(ABC):
     """Runtime used by the service to operate a configured client.
