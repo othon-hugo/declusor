@@ -1,12 +1,14 @@
-from .app import (
+from .application import (
     Application,
     ApplicationProtocol,
-    TerminalApplication,
-    create_application,
-    create_terminal_application,
 )
 from .cli import (
     main,
+)
+from .terminal import (
+    TerminalApplication,
+    create_application,
+    create_terminal_application,
 )
 
 __all__ = [

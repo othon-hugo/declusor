@@ -2,7 +2,9 @@ import sys
 from collections.abc import Sequence
 
 from declusor import config, core
-from declusor.main.app import ApplicationProtocol, create_terminal_application
+
+from .application import ApplicationProtocol
+from .terminal import create_terminal_application
 
 
 def main(

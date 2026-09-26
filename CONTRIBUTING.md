@@ -130,7 +130,7 @@ class MyPlugin(contract.IPlugin): ...
 # FORBIDDEN: Destructuring separated symbols across external layers
 from declusor.testing import DummyView, DummyConnection
 from declusor.presentation import PromptLoop
-from declusor.main.app import Application
+from declusor.main.application import Application
 ```
 
 #### Type Hints & `TYPE_CHECKING`
