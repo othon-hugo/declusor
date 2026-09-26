@@ -202,8 +202,13 @@ def test_dummy_client_plugin() -> None:
     assert cfg.port == 8000
 
     # Also verify compatibility with argparse/util Namespace
-    legacy_ns = util.Namespace(host="10.0.0.2", port=8000)
+    legacy_ns = util.Namespace(host="10.0.0.2", port=8000, extra_val=42)
     assert isinstance(legacy_ns, contract.PluginArguments)
+    from_ns = contract.PluginNamespace.from_namespace(legacy_ns)
+    assert from_ns.host == "10.0.0.2"
+    assert from_ns.port == 8000
+    assert from_ns.extra_val == 42
+    assert isinstance(from_ns, contract.PluginArguments)
     cfg_legacy = testing.DummyPlugin.build_config(legacy_ns, None)
     assert cfg_legacy.host == "10.0.0.2"
 
