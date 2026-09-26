@@ -56,3 +56,21 @@ def test_main_keyboard_interrupt(dummy_app: testing.DummyApplication) -> None:
     dummy_app.run_error = KeyboardInterrupt()
     exit_code = main.main(["127.0.0.1", "9000"], application=dummy_app)
     assert exit_code == 0
+
+
+def test_main_explicit_cli_mode(dummy_app: testing.DummyApplication) -> None:
+    """Verify main executes TerminalApplication when --mode cli is specified."""
+
+    with patch("declusor.app.create_terminal_application", return_value=dummy_app):
+        exit_code = main.main(["127.0.0.1", "9000", "--mode", "cli"])
+        assert exit_code == 0
+        assert len(dummy_app.run_calls) == 1
+
+
+def test_main_unsupported_mode_prints_error_and_returns_1(capsys: pytest.CaptureFixture[str]) -> None:
+    """Verify main returns 1 and prints an error message when an unsupported mode is requested."""
+
+    exit_code = main.main(["127.0.0.1", "9000", "--mode", "mcp"])
+    assert exit_code == 1
+    captured = capsys.readouterr()
+    assert "Execution mode 'mcp' is not supported yet" in captured.err

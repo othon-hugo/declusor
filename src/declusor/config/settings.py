@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
 
+from .enums import ExecutionMode
+
 
 class Settings:
     """Configuration settings for Declusor."""
@@ -11,6 +13,9 @@ class Settings:
 
     PROJECT_DESCRIPTION: Final[str] = "a versatile tool for delivering Bash payloads to Linux systems."
     """Short description of the project."""
+
+    DEFAULT_EXECUTION_MODE: Final[ExecutionMode] = ExecutionMode.CLI
+    """Default application execution mode."""
 
     DEFAULT_SERVER_ACK: Final[bytes] = b"\x00"
     """Default server acknowledgment byte sequence."""

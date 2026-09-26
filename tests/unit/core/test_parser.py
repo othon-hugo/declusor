@@ -65,3 +65,47 @@ def test_declusor_parser_parse_invalid_plugin_raises() -> None:
 
     with pytest.raises(config.ParserError, match="invalid choice"):
         parser.parse(manager, ["127.0.0.1", "9000", "-p", "nonexistent"])
+
+
+def test_declusor_parser_mode_defaults_to_cli() -> None:
+    """Verify parser defaults execution mode to ExecutionMode.CLI."""
+
+    testing.DummyPlugin.reset()
+    manager = core.PluginManager()
+    manager.register(testing.DummyPlugin)
+
+    parser = core.DeclusorParser(name="test_app")
+    plugin_config = parser.parse(manager, ["127.0.0.1", "9000", "-p", testing.DummyPlugin.name])
+
+    assert plugin_config.mode == config.ExecutionMode.CLI
+
+
+def test_declusor_parser_explicit_mode() -> None:
+    """Verify parser accepts explicit --mode and -m arguments."""
+
+    testing.DummyPlugin.reset()
+    manager = core.PluginManager()
+    manager.register(testing.DummyPlugin)
+
+    parser = core.DeclusorParser(name="test_app")
+    plugin_config = parser.parse(
+        manager,
+        ["127.0.0.1", "9000", "-p", testing.DummyPlugin.name, "--mode", "http"],
+    )
+    assert plugin_config.mode == config.ExecutionMode.HTTP
+
+    plugin_config_short = parser.parse(
+        manager,
+        ["127.0.0.1", "9000", "-p", testing.DummyPlugin.name, "-m", "mcp"],
+    )
+    assert plugin_config_short.mode == config.ExecutionMode.MCP
+
+
+def test_declusor_parser_invalid_mode_raises() -> None:
+    """Verify parser raises ParserError when invalid execution mode is provided."""
+
+    manager = core.PluginManager()
+    parser = core.DeclusorParser(name="test_app")
+
+    with pytest.raises(config.ParserError):
+        parser.parse(manager, ["127.0.0.1", "9000", "--mode", "invalid_mode"])

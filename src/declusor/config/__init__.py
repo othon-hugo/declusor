@@ -1,4 +1,5 @@
 from .enums import (
+    ExecutionMode,
     OperationCode,
 )
 from .exceptions import (
@@ -37,9 +38,8 @@ __all__ = [
     "ControllerError",
     "DataPaths",
     "DeclusorException",
-    "DeclusorException",
     "DeclusorWarning",
-    "DeclusorWarning",
+    "ExecutionMode",
     "InvalidOperation",
     "OperationCode",
     "ParserError",

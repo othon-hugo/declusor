@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Final
 
@@ -17,6 +18,7 @@ class DeclusorParser(util.Parser, contract.IParser[contract.PluginConfig]):
         "plugin": "agent responsible for handling requests",
         "assets-dir": "root directory containing client launchers, helpers, and modules",
         "plugin-dir": "additional directory to discover custom drop-in plugins",
+        "mode": "application execution mode (choices: %(choices)s)",
     }
 
     def __init__(self, name: str, description: str = "") -> None:
@@ -70,6 +72,15 @@ class DeclusorParser(util.Parser, contract.IParser[contract.PluginConfig]):
             default=None,
         )
 
+        self.add_argument(
+            "-m",
+            "--mode",
+            help=self.flags["mode"],
+            type=config.ExecutionMode.from_string,
+            choices=list(config.ExecutionMode),
+            default=config.Settings.DEFAULT_EXECUTION_MODE,
+        )
+
         self._is_configured = True
 
     def parse(
@@ -121,6 +132,9 @@ class DeclusorParser(util.Parser, contract.IParser[contract.PluginConfig]):
 
         data_paths = config.DataPaths.from_root(args.assets_dir) if args.assets_dir is not None else None
         plugin_config = Plugin.build_config(args, data_paths)
+
+        if getattr(plugin_config, "mode", None) != args.mode:
+            plugin_config = replace(plugin_config, mode=args.mode)
 
         Plugin.validate(plugin_config)
 

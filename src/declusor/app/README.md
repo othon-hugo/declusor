@@ -9,6 +9,7 @@ The **app** package provides concrete application implementations and target fla
 
 | Module     | Responsibility                                                                    |
 | ---------- | --------------------------------------------------------------------------------- |
+| `factory`  | Central application factory and open-closed registry for execution modes          |
 | `terminal` | Specialized interactive terminal application, prompt runner wiring, and factories |
 
 ## Design Principles
