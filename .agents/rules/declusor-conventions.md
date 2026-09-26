@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 # Declusor Coding Conventions & Quality Invariants
 
 This document establishes the mandatory conventions, import styles, formatting invariants, and quality standards for all code in this repository.

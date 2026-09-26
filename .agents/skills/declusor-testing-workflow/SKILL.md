@@ -1,7 +1,6 @@
 ---
 name: declusor-testing-workflow
-description: >-
-  Procedures, quality standards, and command sequences for running, writing, and verifying tests in the Declusor repository. Use before completing any code changes or adding new tests.
+description: Procedures, quality standards, and command sequences for running, writing, and verifying tests in the Declusor repository. Use before completing any code changes or adding new tests.
 ---
 
 # Declusor Testing & Verification Workflow

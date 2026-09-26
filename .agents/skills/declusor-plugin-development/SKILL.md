@@ -1,7 +1,6 @@
 ---
 name: declusor-plugin-development
-description: >-
-  Guide for developing, structuring, configuring, and verifying autonomous client transport plugins for Declusor. Use when creating a new plugin, refactoring existing plugins, or adding conformance tests.
+description: Guide for developing, structuring, configuring, and verifying autonomous client transport plugins for Declusor. Use when creating a new plugin, refactoring existing plugins, or adding conformance tests.
 ---
 
 # Declusor Plugin Development Guide

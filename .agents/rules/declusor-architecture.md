@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 # Declusor Architecture & Layering Rules
 
 This document specifies the architectural boundaries, layering rules, and package invariants for the Declusor repository.
