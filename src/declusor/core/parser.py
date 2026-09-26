@@ -40,7 +40,8 @@ class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
 
         self._manager = manager
         self._registry = manager
-        self._configured = False
+
+        self._is_configured = False
         self._configure_common_arguments()
 
     @property
@@ -50,7 +51,7 @@ class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
         return self._manager
 
     def _configure_common_arguments(self) -> None:
-        if self._configured:
+        if self._is_configured:
             return
 
         self.add_argument(
@@ -91,7 +92,7 @@ class DeclusorParser(util.Parser, contract.IParser[DeclusorOptions]):
             default=default_client,
         )
 
-        self._configured = True
+        self._is_configured = True
 
     def parse(self, argv: Sequence[str] | None = None, /) -> DeclusorOptions:
         preliminary_args, _ = self.parse_known_args(argv)

@@ -246,7 +246,6 @@ def test_dummy_router() -> None:
     assert router.locate("sample") is sample_controller
     assert router.locate_calls == ["sample"]
     assert router.get_route_usage("sample") == "Sample usage line."
-    assert "sample: Sample usage line." in router.documentation
 
     router.set_route_usage("sample", "Overridden usage")
     assert router.get_route_usage("sample") == "Overridden usage"

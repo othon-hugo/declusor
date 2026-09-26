@@ -9,7 +9,7 @@ class IRouter(ABC):
     """Maps command names to their controller functions.
 
     Manages route registration (``connect``) and dispatch (``locate``),
-    and provides human-readable documentation for all registered routes.
+    and provides route usage descriptions for all registered routes.
     """
 
     @property

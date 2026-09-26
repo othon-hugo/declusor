@@ -1,7 +1,9 @@
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
 from declusor import config, contract, controller, core, presentation, util
+
+SetupCompleter = Callable[[tuple[str, ...]], None]
 
 
 class Application:
@@ -33,6 +35,8 @@ class Application:
         self._router = router
         self._view = view
         self._input_source = input_source
+
+        self._connect_routes()
 
     @property
     def manager(self) -> core.PluginManager:
@@ -76,13 +80,9 @@ class Application:
             ConnectionFailure: If the socket session cannot be established.
         """
 
-        self._connect_routes()
-
         plugin_config = options["plugin"]
         plugin_runtime = self._manager.get(plugin_config.kind).build_runtime(plugin_config)
 
-        if hasattr(self._input_source, "setup_completer"):
-            self._input_source.setup_completer(self._router.routes)
         self._view.write_message(plugin_runtime.client_script)
 
         with util.await_connection(plugin_config.host, plugin_config.port) as socket_connection:
@@ -107,10 +107,7 @@ class Application:
     def _connect_routes(self) -> None:
         """Register built-in command routes on the application router."""
 
-        call_help = controller.create_help_controller(
-            self._router.routes,
-            self._router.get_route_usage,
-        )
+        call_help = controller.create_help_controller(self._router)
 
         self._router.connect("help", call_help)
         self._router.connect("load", controller.call_load)

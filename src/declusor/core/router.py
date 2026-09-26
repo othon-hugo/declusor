@@ -13,7 +13,6 @@ class Router(contract.IRouter):
 
     def __init__(self) -> None:
         self._route_table: dict[str, contract.Controller] = {}
-        self._documentation_cache: str | None = None
 
     @property
     def routes(self) -> tuple[str, ...]:
@@ -29,9 +28,9 @@ class Router(contract.IRouter):
         """
 
         controller_doc = self.locate(route).__doc__
-        documentation = " ".join(map(str.strip, controller_doc.split("\n"))) if controller_doc else ""
+        usage = " ".join(line.strip() for line in controller_doc.splitlines() if line.strip()) if controller_doc else ""
 
-        return documentation
+        return usage
 
     def connect(self, route: str, controller: contract.Controller, /) -> None:
         """Register *controller* under *route*.
@@ -46,7 +45,6 @@ class Router(contract.IRouter):
             raise ValueError("route already exists.")
 
         self._route_table[route] = controller
-        self._documentation_cache = None
 
     def locate(self, route: str, /) -> contract.Controller:
         """Return the controller bound to *route*.

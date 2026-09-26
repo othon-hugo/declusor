@@ -94,3 +94,119 @@ def test_call_shell_executes_and_returns_continue(
 
     assert result.action == contract.ControllerAction.CONTINUE
     assert "[keyboard interrupt received]" in dummy_view.messages
+
+
+def test_call_help_lists_all_routes_with_aligned_usage(
+    test_session: contract.SessionContext,
+    dummy_view: testing.DummyView,
+    dummy_router: testing.DummyRouter,
+) -> None:
+    """call_help without arguments must list all routes aligned by key length."""
+
+    def cmd_a(session: contract.SessionContext, req: contract.ControllerRequest) -> contract.ControllerResult:
+        """Command A usage."""
+
+        return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
+
+    def cmd_longer(session: contract.SessionContext, req: contract.ControllerRequest) -> contract.ControllerResult:
+        """Command Longer usage."""
+
+        return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
+
+    dummy_router.connect("alpha", cmd_a)
+    dummy_router.connect("longer_cmd", cmd_longer)
+
+    help_ctrl = controller.create_help_controller(dummy_router)
+    req = testing.create_dummy_controller_request()
+
+    result = help_ctrl(test_session, req)
+
+    assert isinstance(result, contract.ControllerResult)
+    assert result.action == contract.ControllerAction.CONTINUE
+    assert dummy_view.messages == [
+        "alpha      : Command A usage.",
+        "longer_cmd : Command Longer usage.",
+    ]
+
+
+def test_call_help_with_specific_command(
+    test_session: contract.SessionContext,
+    dummy_view: testing.DummyView,
+    dummy_router: testing.DummyRouter,
+) -> None:
+    """call_help with a specific command must display only that command's usage."""
+
+    def cmd(session: contract.SessionContext, req: contract.ControllerRequest) -> contract.ControllerResult:
+        """Specific command description."""
+
+        return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
+
+    dummy_router.connect("target", cmd)
+
+    help_ctrl = controller.create_help_controller(dummy_router)
+    req = testing.create_dummy_controller_request("target")
+
+    result = help_ctrl(test_session, req)
+
+    assert isinstance(result, contract.ControllerResult)
+    assert result.action == contract.ControllerAction.CONTINUE
+    assert dummy_view.messages == ["target: Specific command description."]
+
+
+def test_call_help_with_unknown_command_writes_error(
+    test_session: contract.SessionContext,
+    dummy_view: testing.DummyView,
+    dummy_router: testing.DummyRouter,
+) -> None:
+    """call_help with an unknown command must write an error to the view."""
+
+    help_ctrl = controller.create_help_controller(dummy_router)
+    req = testing.create_dummy_controller_request("unknown_cmd")
+
+    result = help_ctrl(test_session, req)
+
+    assert isinstance(result, contract.ControllerResult)
+    assert result.action == contract.ControllerAction.CONTINUE
+    assert len(dummy_view.errors) == 1
+    assert "Unknown command: 'unknown_cmd'" in str(dummy_view.errors[0])
+
+
+def test_call_help_empty_router_writes_notice(
+    test_session: contract.SessionContext,
+    dummy_view: testing.DummyView,
+    dummy_router: testing.DummyRouter,
+) -> None:
+    """call_help on empty router must display no commands available."""
+
+    help_ctrl = controller.create_help_controller(dummy_router)
+    req = testing.create_dummy_controller_request()
+
+    result = help_ctrl(test_session, req)
+
+    assert isinstance(result, contract.ControllerResult)
+    assert result.action == contract.ControllerAction.CONTINUE
+    assert dummy_view.messages == ["No commands available."]
+
+
+def test_call_help_reflects_dynamically_added_routes(
+    test_session: contract.SessionContext,
+    dummy_view: testing.DummyView,
+    dummy_router: testing.DummyRouter,
+) -> None:
+    """call_help must query router dynamically, reflecting routes connected after creation."""
+
+    help_ctrl = controller.create_help_controller(dummy_router)
+
+    def dynamic_cmd(session: contract.SessionContext, req: contract.ControllerRequest) -> contract.ControllerResult:
+        """Dynamic command description."""
+
+        return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
+
+    dummy_router.connect("dynamic", dynamic_cmd)
+    req = testing.create_dummy_controller_request()
+
+    result = help_ctrl(test_session, req)
+
+    assert isinstance(result, contract.ControllerResult)
+    assert result.action == contract.ControllerAction.CONTINUE
+    assert dummy_view.messages == ["dynamic : Dynamic command description."]

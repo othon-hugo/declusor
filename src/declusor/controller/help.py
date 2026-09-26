@@ -1,16 +1,11 @@
-from collections.abc import Callable
-
 from declusor import contract
 
-RouteUsageProvider = Callable[[str], str]
 
-
-def create_help_controller(routes: tuple[str, ...], get_route_usage: RouteUsageProvider) -> contract.Controller:
-    """Create a help controller with documentation providers.
+def create_help_controller(router: contract.IRouter) -> contract.Controller:
+    """Create a help controller that queries *router* for routes and usage descriptions.
 
     Args:
-        get_documentation: Function that returns full documentation.
-        get_route_usage: Function that returns usage for a specific route.
+        router: The application router providing registered routes and route usage.
 
     Returns:
         Help controller function.
@@ -22,17 +17,26 @@ def create_help_controller(routes: tuple[str, ...], get_route_usage: RouteUsageP
         arguments, _ = req.parse_arguments({"command": str | None})
 
         if help_command := arguments.get("command"):
-            session.view.write_message(f"{help_command}: {get_route_usage(help_command)}")
+            target_route = help_command.strip()
+
+            if target_route not in router.routes:
+                session.view.write_error(f"Unknown command: '{target_route}'. Type 'help' to list available commands.")
+                return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
+
+            usage = router.get_route_usage(target_route)
+            session.view.write_message(f"{target_route}: {usage}" if usage else target_route)
         else:
-            route_table: dict[str, str] = {}
+            routes = router.routes
+
+            if not routes:
+                session.view.write_message("No commands available.")
+                return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
+
+            key_length = max(map(len, routes)) + 1
 
             for route in routes:
-                route_table[route] = get_route_usage(route).strip()
-
-            key_length = max(map(len, route_table.keys())) + 1
-
-            for route, route_help in route_table.items():
-                session.view.write_message(f"{route:<{key_length}}: {route_help}")
+                usage = router.get_route_usage(route)
+                session.view.write_message(f"{route:<{key_length}}: {usage}" if usage else route)
 
         return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
 

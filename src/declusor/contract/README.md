@@ -7,15 +7,15 @@ The **contract** package defines the abstract contracts that establish the bound
 
 ## Modules
 
-| Module       | Responsibility                                                                |
-| ------------ | ----------------------------------------------------------------------------- |
+| Module         | Responsibility                                                                |
+| -------------- | ----------------------------------------------------------------------------- |
 | `command`      | Execution lifecycle contract for encapsulated command operations              |
 | `connection`   | State machine contract and protocol profile interfaces for network transports |
 | `controller`   | Controller signatures, request/result types, and `SessionContext` coordinator |
 | `input_source` | Operator input reading contract (command and raw lines)                       |
 | `parser`       | Interface for CLI argument parsing and options mapping                        |
 | `plugin`       | Abstractions for client plugins, runtimes, and client file stores             |
-| `router`       | Route registration, lookup, and documentation contract                        |
+| `router`       | Route registration, lookup, and usage contract                                |
 | `view`         | Output presentation contract for messages, errors, warnings, info, and binary |
 
 ## Design Principles
