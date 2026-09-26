@@ -53,7 +53,7 @@ class ExecuteCommand(contract.ICommand):
 
         return self._dto
 
-    def send_request(self, session: contract.SessionContext) -> None:
+    def send_request(self, session: contract.SessionContext, /) -> None:
         """Send the encoded command string to the remote client.
 
         Args:
@@ -66,7 +66,7 @@ class ExecuteCommand(contract.ICommand):
 
         session.connection.write(self._command_line)
 
-    def read_response(self, session: contract.SessionContext) -> None:
+    def read_response(self, session: contract.SessionContext, /) -> None:
         """Read output chunks from the remote client and display them on the console.
 
         Args:

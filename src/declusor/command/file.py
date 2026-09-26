@@ -87,7 +87,7 @@ class _BaseFileCommand(contract.ICommand):
 
         return self._filepath
 
-    def send_request(self, session: contract.SessionContext) -> None:
+    def send_request(self, session: contract.SessionContext, /) -> None:
         """Encode the local file and send the formatted operation command to the client.
 
         Args:
@@ -102,7 +102,7 @@ class _BaseFileCommand(contract.ICommand):
         command_bytes = self._format_command(session)
         session.connection.write(command_bytes)
 
-    def read_response(self, session: contract.SessionContext) -> None:
+    def read_response(self, session: contract.SessionContext, /) -> None:
         """Read output chunks from the remote client and write them to the console.
 
         Args:
