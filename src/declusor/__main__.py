@@ -1,4 +1,4 @@
-from declusor.main import run
+from declusor.main import main
 
 if __name__ == "__main__":
-    raise SystemExit(run())
+    raise SystemExit(main())

@@ -4,7 +4,7 @@ from collections.abc import Sequence
 from declusor import app, config, core
 
 
-def run(
+def main(
     argv: Sequence[str] | None = None,
     application: core.ApplicationProtocol | None = None,
 ) -> int:
