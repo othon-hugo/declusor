@@ -152,8 +152,7 @@ class PySocketConnection(contract.IConnection):
             raise config.ConnectionClosed("Connection is closed.")
 
         try:
-            self._connection.sendall(data + b"\x00")
-            self._connection.recv(len(self._profile.ack_server_raw))
+            self._connection.sendall(data + self._profile.ack_server_raw)
         except (OSError, TimeoutError) as error:
             raise config.ConnectionError(f"Failed to write to connection: {error}") from error
 

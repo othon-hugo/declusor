@@ -159,7 +159,6 @@ class ShellSocketConnection(contract.IConnection):
         try:
             self._connection.sendall(data)
             self._connection.sendall(self._profile.ack_server_raw)
-            self._connection.recv(len(self._profile.ack_server_raw))
         except (OSError, TimeoutError) as error:
             raise config.ConnectionError(f"Failed to write to connection: {error}") from error
 

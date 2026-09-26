@@ -11,7 +11,7 @@ def test_connection_state_lifecycle_transitions(
 ) -> None:
     """Verify connection lifecycle transitions: CREATED -> CONNECTED -> CLOSED."""
 
-    sock = testing.DummySocket(incoming_bytes=b"\x00" + b"valid_ack_32_bytes_long_sentinel")
+    sock = testing.DummySocket(incoming_bytes=b"valid_ack_32_bytes_long_sentinel")
 
     conn, _ = make_shell_connection(sock, ack=b"valid_ack_32_bytes_long_sentinel")
     state: contract.ConnectionState = conn.state
@@ -38,7 +38,6 @@ def test_connection_segmented_ack_streaming(
 
     sock = testing.DummySocket()
     sock.feed_recv_chunks(
-        b"\x00",
         b"valid_ack_",
         b"32_bytes_",
         b"long_sentinel",

@@ -11,14 +11,14 @@ def test_py_socket_connection_write_sends_null_delimited_frame(
 ) -> None:
     """Verify PySocketConnection transmits data with null byte framing."""
 
-    dummy_sock = testing.DummySocket(incoming_bytes=b"\x00")
+    dummy_sock = testing.DummySocket()
     profile = py_socket.PySocketProfile(name="test", ack_server_raw=b"\x00", ack_client_raw=b"\xab" * 32)
 
     conn = py_socket.PySocketConnection(cast(socket, dummy_sock), profile, dummy_file_store)
     conn.write(b"data")
 
     assert dummy_sock.sendall_calls == [b"data\x00"]
-    assert dummy_sock.recv_calls == [len(b"\x00")]
+    assert dummy_sock.recv_calls == []
 
 
 def test_py_socket_connection_close_is_idempotent(

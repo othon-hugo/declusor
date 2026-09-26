@@ -1,5 +1,4 @@
 from .enums import (
-    ClientFile,
     OperationCode,
 )
 from .exceptions import (
@@ -29,7 +28,6 @@ from .settings import (
 __all__ = [
     "BasePath",
     "ClientDataPaths",
-    "ClientFile",
     "CommandError",
     "CommandValidationError",
     "ConnectionClosed",
