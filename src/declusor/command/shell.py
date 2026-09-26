@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from declusor import contract, util
+from declusor import config, contract, util
 
 
 @dataclass(frozen=True)
@@ -66,6 +66,9 @@ class LaunchShell(contract.ICommand):
         Args:
             session: Active session context providing connection, view, and input source.
         """
+
+        if session.input is None:
+            raise config.InvalidOperation("Interactive shell requires an active input source.")
 
         input_forwarder = self._create_shell_input_handler(
             session.connection,

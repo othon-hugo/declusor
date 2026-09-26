@@ -4,7 +4,7 @@ from typing import cast
 
 import pytest
 
-from declusor import config, contract, testing, util
+from declusor import config, contract, core, testing, util
 
 
 def test_dummy_view_write_and_capture() -> None:
@@ -382,4 +382,3 @@ def test_dummy_session_runner(
     error_runner = testing.DummySessionRunner(run_error=config.DeclusorException("runner failed"))
     with pytest.raises(config.DeclusorException, match="runner failed"):
         error_runner.run(test_session, dummy_router)
-

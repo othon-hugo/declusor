@@ -25,8 +25,6 @@ def test_application_connect_routes() -> None:
     runner = testing.DummySessionRunner()
     app = main.Application(manager, router, view, runner, input_source)
 
-    app._connect_routes()
-
     expected_routes = {"help", "execute", "load", "shell", "upload", "command", "exit"}
     assert expected_routes.issubset(set(app._router.routes))
 
@@ -97,7 +95,8 @@ def test_application_run_lifecycle_with_no_data_paths() -> None:
         assert dummy_conn.initialize_called
 
         assert len(runner.run_calls) == 1
-        assert runner.run_calls[0].router is router
+        _, active_router = runner.run_calls[0]
+        assert active_router is router
         assert not hasattr(app, "_validate_directories")
 
 
@@ -132,7 +131,8 @@ def test_application_run_with_custom_runner_override() -> None:
 
         assert len(default_runner.run_calls) == 0
         assert len(override_runner.run_calls) == 1
-        assert override_runner.run_calls[0].router is router
+        _, active_router = override_runner.run_calls[0]
+        assert active_router is router
 
 
 def test_terminal_application_default_runner() -> None:

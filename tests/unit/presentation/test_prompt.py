@@ -142,4 +142,3 @@ def test_prompt_loop_as_session_runner(
     runner.run(test_session, dummy_router)
 
     assert dummy_router.locate_calls == ["quit"]
-

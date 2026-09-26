@@ -111,4 +111,3 @@ def create_dummy_options(
     """
 
     return client or create_dummy_plugin_config(host=host, port=port)
-

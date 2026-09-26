@@ -1,5 +1,4 @@
 from declusor import contract, core
-from declusor.testing.doubles.plugins import DummyPlugin
 
 
 class DummyApplication:
@@ -10,12 +9,7 @@ class DummyApplication:
         manager: core.PluginManager | None = None,
         run_error: BaseException | None = None,
     ) -> None:
-        if manager is None:
-            self.manager: core.PluginManager = core.PluginManager()
-            self.manager.register(DummyPlugin)
-        else:
-            self.manager = manager
-
+        self.manager: core.PluginManager = manager if manager is not None else core.PluginManager()
         self.run_error: BaseException | None = run_error
         self.run_calls: list[contract.PluginConfig] = []
 

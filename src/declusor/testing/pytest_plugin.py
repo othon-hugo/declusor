@@ -123,6 +123,8 @@ def dummy_session_runner() -> DummySessionRunner:
 
 @pytest.fixture
 def dummy_app() -> DummyApplication:
-    """Provide a fresh DummyApplication."""
+    """Provide a fresh DummyApplication with DummyPlugin registered."""
 
-    return DummyApplication()
+    app = DummyApplication()
+    app.register_plugin(DummyPlugin)
+    return app
