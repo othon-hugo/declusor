@@ -5,13 +5,13 @@ from typing import cast
 import declusor_py_socket as py_socket
 import pytest
 
-from declusor import config, contract, testing, util
+from declusor import config, contract, testing
 
 
 def test_build_config_uses_bundled_assets_when_data_paths_is_none() -> None:
     """When data_paths is None, plugin must cleanly resolve bundled ASSETS_DIR."""
 
-    args = util.Namespace(host="127.0.0.1", port=9000)
+    args = contract.PluginNamespace(host="127.0.0.1", port=9000)
     cfg = py_socket.PySocketPlugin.build_config(args, None)
 
     assert cfg.options["launcher_path"] == py_socket.plugin.ASSETS_DIR / "launchers" / "py_socket_client.py"
@@ -29,7 +29,7 @@ def test_build_config_resolves_custom_data_paths_when_provided(tmp_path: Path) -
     custom_launcher.write_text("# custom launcher", encoding="utf-8")
 
     data_paths = config.DataPaths.from_root(tmp_path)
-    args = util.Namespace(host="127.0.0.1", port=9000)
+    args = contract.PluginNamespace(host="127.0.0.1", port=9000)
     cfg = py_socket.PySocketPlugin.build_config(args, data_paths)
 
     assert cfg.options["launcher_path"] == custom_launcher

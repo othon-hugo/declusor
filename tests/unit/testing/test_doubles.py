@@ -1,3 +1,4 @@
+from argparse import Namespace
 from pathlib import Path
 from socket import socket
 from typing import cast
@@ -201,13 +202,20 @@ def test_dummy_client_plugin() -> None:
     assert cfg.host == "10.0.0.2"
     assert cfg.port == 8000
 
-    # Also verify compatibility with argparse/util Namespace
-    legacy_ns = util.Namespace(host="10.0.0.2", port=8000, extra_val=42)
+    # Also verify compatibility with standard argparse.Namespace
+    legacy_ns = Namespace(host="10.0.0.2", port=8000, extra_val=42)
     assert isinstance(legacy_ns, contract.PluginArguments)
     from_ns = contract.PluginNamespace.from_namespace(legacy_ns)
     assert from_ns.host == "10.0.0.2"
     assert from_ns.port == 8000
     assert from_ns.extra_val == 42
+    assert from_ns.get("extra_val") == 42
+    assert from_ns.get("missing", "default") == "default"
+    assert "extra_val" in from_ns
+    assert "missing" not in from_ns
+    assert "PluginNamespace(" in repr(from_ns)
+    assert from_ns == contract.PluginNamespace(host="10.0.0.2", port=8000, extra_val=42)
+    assert from_ns.to_dict()["extra_val"] == 42
     assert isinstance(from_ns, contract.PluginArguments)
     cfg_legacy = testing.DummyPlugin.build_config(legacy_ns, None)
     assert cfg_legacy.host == "10.0.0.2"
@@ -362,3 +370,9 @@ def test_factories() -> None:
     req = testing.create_dummy_controller_request("hello world")
     assert req.request_line == "hello world"
     assert isinstance(req, contract.ControllerRequest)
+
+    args = testing.create_dummy_plugin_arguments(host="10.10.10.10", port=7777, extra_flag=True)
+    assert args.host == "10.10.10.10"
+    assert args.port == 7777
+    assert args.extra_flag is True
+    assert isinstance(args, contract.PluginArguments)

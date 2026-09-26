@@ -72,6 +72,35 @@ class PluginNamespace:
         for key, value in extra.items():
             setattr(self, key, value)
 
+    def get(self, key: str, default: Any = None) -> Any:
+        """Return the value for key if present, otherwise default."""
+
+        return getattr(self, key, default)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert the argument namespace to a dictionary."""
+
+        return dict(vars(self))
+
+    def __contains__(self, item: str) -> bool:
+        """Return True if the option exists in the namespace."""
+
+        return hasattr(self, item)
+
+    def __repr__(self) -> str:
+        attrs = ", ".join(f"{k}={v!r}" for k, v in vars(self).items())
+
+        return f"{type(self).__name__}({attrs})"
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, PluginNamespace):
+            return vars(self) == vars(other)
+
+        if isinstance(other, PluginArguments):
+            return self.host == other.host and self.port == other.port
+
+        return False
+
     def __getattr__(self, name: str) -> Any:
         raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 

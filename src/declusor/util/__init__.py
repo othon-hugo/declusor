@@ -1,7 +1,3 @@
-from argparse import (
-    Namespace as Namespace,
-)
-
 from .concurrency import (
     Task,
     TaskEvent,
@@ -63,7 +59,6 @@ __all__ = [
     "hash_sha512",
     "import_plugin_from_file",
     "load_file",
-    "Namespace",
     "parse_command_arguments",
     "ParsedArguments",
     "Parser",

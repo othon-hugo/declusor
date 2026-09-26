@@ -21,6 +21,7 @@ from .doubles import (
 from .factories import (
     create_dummy_controller_request,
     create_dummy_options,
+    create_dummy_plugin_arguments,
     create_dummy_plugin_config,
     create_test_session,
 )
@@ -28,6 +29,7 @@ from .factories import (
 __all__ = [
     "assert_conforms_to_client_plugin",
     "assert_conforms_to_plugin",
+    "create_dummy_plugin_arguments",
     "create_dummy_plugin_config",
     "create_dummy_controller_request",
     "create_dummy_options",
