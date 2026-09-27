@@ -30,12 +30,12 @@ def test_declusor_parser_parse_success(tmp_path: Path) -> None:
     assert plugin_config.port == 9000
     assert plugin_config.kind == testing.DummyPlugin.name
     assert plugin_config.filesystem is not None
-    assert plugin_config.filesystem.root == tmp_path
+    assert plugin_config.filesystem.root == tmp_path.resolve()
     assert parser in testing.DummyPlugin.configured_parsers
 
 
-def test_declusor_parser_parse_defaults_data_paths_to_none() -> None:
-    """When --assets-dir is omitted, client config data_paths must be None."""
+def test_declusor_parser_parse_defaults_filesystem_to_plugin_default() -> None:
+    """When --assets-dir is omitted, plugin builds its default filesystem."""
 
     testing.DummyPlugin.reset()
     manager = core.PluginManager()
@@ -44,7 +44,26 @@ def test_declusor_parser_parse_defaults_data_paths_to_none() -> None:
     parser = core.DeclusorParser(name="test_app")
     plugin_config = parser.parse(manager, ["127.0.0.1", "9000", "-p", testing.DummyPlugin.name])
 
-    assert plugin_config.filesystem is None
+    assert plugin_config.filesystem is not None
+
+
+def test_parser_parse_is_idempotent(tmp_path: Path) -> None:
+    """Calling parse() multiple times on the same DeclusorParser must not error."""
+
+    manager = core.PluginManager()
+    manager.register(testing.DummyPlugin)
+
+    argv = ["127.0.0.1", "8080", "--plugin", testing.DummyPlugin.name, "--assets-dir", str(tmp_path)]
+
+    parser = core.DeclusorParser(name="test_app", description="test description")
+    config1 = parser.parse(manager, argv)
+    assert config1.host == "127.0.0.1"
+    assert config1.port == 8080
+
+    # Second parse on the exact same parser instance
+    config2 = parser.parse(manager, argv)
+    assert config2.host == "127.0.0.1"
+    assert config2.port == 8080
 
 
 def test_declusor_parser_parse_missing_positional_raises() -> None:

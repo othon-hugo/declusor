@@ -84,10 +84,13 @@ class PluginFilesystem:
         """
 
         normalized_root = root.expanduser().resolve()
-        assets = normalized_root / "assets"
 
-        if not assets.exists():
-            raise config.PluginValidationError(f"Plugin assets directory not found at: {assets}")
+        if (normalized_root / "assets").is_dir():
+            assets = normalized_root / "assets"
+        elif normalized_root.is_dir():
+            assets = normalized_root
+        else:
+            raise config.PluginValidationError(f"Plugin assets directory not found at: {normalized_root}")
 
         return cls(
             root=normalized_root,

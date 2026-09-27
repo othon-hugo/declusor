@@ -10,8 +10,8 @@ from declusor import contract, util
 from declusor.testing.doubles.socket import DummySocket
 
 
-def assert_conforms_to_client_plugin(
-    plugin_cls: type[contract.IPluginExtension[contract.ParsedArguments]],
+def assert_conforms_to_client_plugin[T: contract.ParsedArguments](
+    plugin_cls: type[contract.IPluginExtension[T]],
     *,
     sample_options: Mapping[str, object] | None = None,
     tmp_path: Path | None = None,
@@ -76,7 +76,7 @@ def assert_conforms_to_client_plugin(
     )
 
 
-class PluginConformanceTestSuite:
+class PluginConformanceTestSuite[T: contract.ParsedArguments]:
     """Base pytest test suite for verifying full contract conformance of a client plugin.
 
     Plugin authors can simply subclass this in their test suite and define the
@@ -84,14 +84,14 @@ class PluginConformanceTestSuite:
 
     Example::
 
-        class TestMyPluginConformance(PluginConformanceTestSuite):
+        class TestMyPluginConformance(PluginConformanceTestSuite[MyConfig]):
             @pytest.fixture
-            def plugin_class(self) -> type[contract.IPluginExtension[contract.ParsedArguments]]:
+            def plugin_class(self) -> type[contract.IPluginExtension[MyConfig]]:
                 return MyPlugin
     """
 
     @pytest.fixture
-    def plugin_class(self) -> type[contract.IPluginExtension[contract.ParsedArguments]]:
+    def plugin_class(self) -> type[contract.IPluginExtension[T]]:
         """Subclasses must override this to provide the plugin class under test."""
 
         raise NotImplementedError
@@ -102,7 +102,7 @@ class PluginConformanceTestSuite:
 
         return {}
 
-    def test_plugin_metadata(self, plugin_class: type[contract.IPluginExtension[contract.ParsedArguments]]) -> None:
+    def test_plugin_metadata(self, plugin_class: type[contract.IPluginExtension[T]]) -> None:
         """Verify plugin defines valid name, description, and version."""
 
         assert isinstance(plugin_class.name, str) and plugin_class.name.strip()
@@ -110,7 +110,7 @@ class PluginConformanceTestSuite:
         assert isinstance(plugin_class.version, str)
         assert plugin_class.options_type is not None
 
-    def test_configure_parser_callable(self, plugin_class: type[contract.IPluginExtension[contract.ParsedArguments]]) -> None:
+    def test_configure_parser_callable(self, plugin_class: type[contract.IPluginExtension[T]]) -> None:
         """Verify configure_parser accepts a Parser without error."""
 
         parser = util.Parser(prog="conformance")
@@ -118,7 +118,7 @@ class PluginConformanceTestSuite:
 
     def test_build_config_contract(
         self,
-        plugin_class: type[contract.IPluginExtension[contract.ParsedArguments]],
+        plugin_class: type[contract.IPluginExtension[T]],
         sample_options: Mapping[str, object],
         tmp_path: Path,
     ) -> None:
@@ -135,7 +135,7 @@ class PluginConformanceTestSuite:
 
     def test_full_conformance(
         self,
-        plugin_class: type[contract.IPluginExtension[contract.ParsedArguments]],
+        plugin_class: type[contract.IPluginExtension[T]],
         sample_options: Mapping[str, object],
         tmp_path: Path,
     ) -> None:
