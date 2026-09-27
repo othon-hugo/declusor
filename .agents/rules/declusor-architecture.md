@@ -12,7 +12,9 @@ Dependencies must flow strictly downwards from composition roots to foundational
 
 ```text
 main (Composition Root)
+  ├── app (Application Flavors & Bootstrap)
   ├── core (Infrastructure, Registries, Routing, Parser)
+  ├── transport (Physical Transports, Listeners, Decorators)
   ├── controller (Application Layer & Handlers)
   ├── command (Encapsulated Operations & DTOs)
   ├── presentation (Terminal REPL & Console View)
@@ -35,22 +37,41 @@ main (Composition Root)
    - Pure interfaces (`@abstractmethod`), state machines (`IConnection`), and data coordinators (`SessionContext`).
    - Must have **zero dependencies** on implementation packages (`core`, `command`, `controller`, `presentation`, `main`, or `plugins`).
 4. **`command` (Command Pattern)**:
+   - Pure interfaces (`@abstractmethod`), state machines (`IConnection`), stream contracts (`ITransport`, `ITransportListener`), and data coordinators (`SessionContext`).
+   - Must have **zero dependencies** on implementation packages (`core`, `transport`, `command`, `controller`, `presentation`, `app`, `main`, or `plugins`).
+5. **`transport` (Transport Implementations & Decorators)**:
+   - Depends **only** on `contract`, `util`, and `config`.
+   - Encapsulates physical byte-stream I/O (`SocketTransport`, `TcpListener`) and composable decorators (`XorTransport`).
+   - Completely isolates OS network mechanics from session-layer protocols.
+   - Zero dependencies on `core`, `command`, `controller`, `presentation`, `app`, `main`, or `plugins`.
+6. **`command` (Command Pattern)**:
    - Encapsulates single operations (`ExecuteCommand`, `ExecuteFile`, `UploadFile`, `LoadModule`, `LaunchShell`).
    - Uses immutable DTOs (`ExecuteCommandDTO`, etc.) with fail-fast invariant validation.
-5. **`controller` (Application Handlers)**:
+7. **`controller` (Application Handlers)**:
+8. **`controller` (Application Handlers)**:
    - Thin handlers parsing requests, creating command DTOs, and dispatching via `SessionContext.execute()`.
    - Returns structured `ControllerResult(action=ControllerAction.CONTINUE | TERMINATE)` lifecycle signals instead of relying on control-flow exceptions.
-6. **`core` (Infrastructure Services)**:
-   - Implements `IRouter` (`Router`), `IParser` (`DeclusorParser`), and `PluginManager`.
-   - Completely decoupled from concrete plugin implementations.
-7. **`presentation` (View Layer)**:
-   - Manages readline terminal input (`TerminalInputSource`), terminal output (`TerminalView`), and the interactive prompt execution loop (`PromptLoop`).
-   - Interacts with controllers exclusively via route dispatching and `ControllerResult` signals.
-8. **`main` (Composition Root)**:
-   - Bootstraps registries, discovers plugins, wires core routes, and runs the application.
-   - Entrypoint function `main(argv)` catches all exceptions, prints user-friendly messages, and maps to deterministic exit codes (`0`, `1`, `2`).
-9. **`testing` (Public Testing SDK)**:
-   - Ships deterministic, fully-typed test doubles (`DummyView`, `DummyInputSource`, `DummyConnection`, `DummyPluginFileStore`, `DummyPluginRuntime`, etc.) and reusable conformance suites (`PluginConformanceTestSuite`).
+9. **`core` (Infrastructure Services)**:
+10. **`core` (Infrastructure Services)**:
+    - Implements `IRouter` (`Router`), `IParser` (`DeclusorParser`), and `PluginManager`.
+    - Completely decoupled from concrete plugin implementations.
+11. **`presentation` (View Layer)**:
+12. **`presentation` (View Layer)**:
+    - Manages readline terminal input (`TerminalInputSource`), terminal output (`TerminalView`), and the interactive prompt execution loop (`PromptLoop`).
+    - Interacts with controllers exclusively via route dispatching and `ControllerResult` signals.
+13. **`main` (Composition Root)**:
+    - Bootstraps registries, discovers plugins, wires core routes, and runs the application.
+    - Entrypoint function `main(argv)` catches all exceptions, prints user-friendly messages, and maps to deterministic exit codes (`0`, `1`, `2`).
+14. **`testing` (Public Testing SDK)**:
+    - Ships deterministic, fully-typed test doubles (`DummyView`, `DummyInputSource`, `DummyConnection`, `DummyPluginFileStore`, `DummyPluginRuntime`, etc.) and reusable conformance suites (`PluginConformanceTestSuite`).
+15. **`app` (Application Flavors & Bootstrap)**:
+    - Assembles application targets (e.g. `terminal`) by composing `core`, `transport`, `presentation`, and `controller`.
+    - Exposes clean bootstrap factories (`create_terminal_application`).
+16. **`main` (Composition Root)**:
+    - Bootstraps registries, discovers plugins, wires core routes, and runs the application.
+    - Entrypoint function `main(argv)` catches all exceptions, prints user-friendly messages, and maps to deterministic exit codes (`0`, `1`, `2`).
+17. **`testing` (Public Testing SDK)**:
+    - Ships deterministic, fully-typed test doubles (`DummyView`, `DummyInputSource`, `DummyConnection`, `DummyTransport`, `MemoryTransport`, `MemoryTransportListener`, `DummyPluginFileStore`, `DummyPluginRuntime`, etc.) and reusable conformance suites (`PluginConformanceTestSuite`).
 
 ## Autonomous Plugin Topology
 

@@ -192,10 +192,12 @@ $ declusor 127.0.0.1 4444
 
 ### Extensible Transports & Autonomous Plugins
 
+- **Decoupled Transport Abstraction (`ITransport`)**: Separates low-level byte streaming from session protocols. Native support for physical TCP sockets (`SocketTransport`, `TcpListener`), in-memory streams (`MemoryTransport`), and composable stream cipher decorators (`XorTransport`).
+- **Stream Fragmentation Immunity**: Egress and ingress cursors are tracked independently across stream decorators, guaranteeing that arbitrary TCP packet segmentation never desynchronizes obfuscated or encrypted channels.
 - **Three-Tier Dynamic Plugin Discovery**: Discovers transport plugins across repository built-ins, installed distribution packages (PEP 621 entry points), and drop-in operator directories (`--plugin-dir`).
 - **Decoupled Transport Protocols & Agents**: Bundles native Linux `/dev/tcp` (`shell_socket`) and in-memory Python (`py_socket`) clients with zero hardcoded dependencies on the core orchestration engine.
-- **Contract-First Interface Isolation**: Enforces strict domain contracts (`IPlugin`, `IPluginRuntime`, `IConnection`) with isolated asset overlays for launchers, initialization helpers, and payloads.
-- **Deterministic Conformance Test Suite**: Equips plugin authors with `PluginConformanceTestSuite` and typed test doubles to verify full contract compliance in milliseconds without brittle mocks.
+- **Contract-First Interface Isolation**: Enforces strict domain contracts (`IPlugin`, `IPluginRuntime`, `IConnection`, `ITransport`) with isolated asset overlays for launchers, initialization helpers, and payloads.
+- **Deterministic Conformance Test Suite**: Equips plugin authors with `PluginConformanceTestSuite` and typed test doubles (`MemoryTransport`, `DummyTransport`) to verify full contract compliance in milliseconds without brittle mocks or network port binding.
 
 ## Getting Started
 
@@ -291,8 +293,10 @@ For complete packaging tutorials, asset overlay mechanics, and step-by-step guid
 Declusor adheres to strict **Clean Architecture** and **Dependency Inversion** principles:
 
 - **Unidirectional Layer Boundaries**: Dependencies flow downward into pure domain contracts (`declusor.contract`). Core framework code never imports concrete plugins.
+- **Pluggable & Composable Transports**: The transport layer (`declusor.transport`) isolates physical network mechanics behind `ITransport` and `ITransportListener`, supporting composable decorator pipelines (e.g. XOR obfuscation) without touching session logic.
 - **Fail-Fast Invariants**: Immutable Command DTOs validate parameters at the boundary, preventing invalid operations from propagating into transports.
 - **Deterministic Flow Control**: Controllers return explicit lifecycle signals (`CONTINUE`, `TERMINATE`) rather than relying on control-flow exceptions.
+- **Mock-Free Determinism**: Test suites utilize in-memory duplex transports (`MemoryTransport`, `MemoryTransportListener`), enabling full end-to-end handshake and lifecycle tests without binding real network ports or relying on fragile monkeypatching.
 - **100% Strict Static Typing**: Fully typed with strict mypy enforcement across core, native plugins, and tests.
 
 Read the complete architectural specification in [ARCHITECTURE.md](ARCHITECTURE.md).

@@ -40,6 +40,7 @@ Each subpackage re-exports its domain exceptions from `declusor.config` within i
 | `controller`   | `ControllerError`                                                                                               |
 | `core`         | `ParserError`, `PluginError`, `PluginValidationError`, `RouterError`                                            |
 | `presentation` | `PromptError`                                                                                                   |
+| `transport`    | `ConnectionClosed`, `ConnectionError`, `ConnectionTimeoutError`                                                 |
 
 When handling or raising layer-specific errors, consumers can import them directly from the relevant package namespace (e.g. `core.ParserError`, `command.CommandError`).
 

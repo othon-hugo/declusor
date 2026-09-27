@@ -40,8 +40,10 @@ It emphasizes modularity, separation of concerns, and strict dependency inversio
 
 - **Composition Root**
   - **`main`**: CLI entrypoint, dependency injection, service wiring, runtime plugin discovery, and process lifecycle.
-    - _Depends on_: `presentation`, `controller`, `core`
+    - _Depends on_: `presentation`, `controller`, `core`, `app`
     - _Dynamic discovery_: discovers plugins via entry-points and directory scanning without static coupling.
+  - **`app`**: Application flavors and bootstrap factories (e.g. `terminal`).
+    - _Depends on_: `core`, `transport`, `presentation`, `controller`, `contract`
 - **Presentation**
   - **`presentation`**: Terminal REPL interactive loop, line-editing (readline), and stream formatting.
     - _Depends on_: `contract`, `util`, `config`
@@ -50,11 +52,13 @@ It emphasizes modularity, separation of concerns, and strict dependency inversio
     - _Depends on_: `command`, `contract`
   - **`command`**: Encapsulated discrete operations via immutable, self-validating DTOs.
     - _Depends on_: `contract`, `config`
-- **Infrastructure**
+- **Infrastructure & Transport**
   - **`core`**: Infrastructure implementations (CLI parser, routing, plugin registry and discovery engine).
+    - _Depends on_: `contract`, `transport`, `util`, `config`
+  - **`transport`**: Concrete network byte-stream channels (`SocketTransport`, `TcpListener`) and composable stream ciphers (`XorTransport`).
     - _Depends on_: `contract`, `util`, `config`
 - **Domain**
-  - **`contract`**: Domain abstractions (`ABC`), protocol state machines, and session context boundaries.
+  - **`contract`**: Domain abstractions (`ABC`), protocol state machines (`IConnection`), stream contracts (`ITransport`, `ITransportListener`), and session context boundaries.
     - _Depends on_: `config` (zero dependencies on `util` or implementation layers)
 - **Foundations**
   - **`util`**: Pure, stateless helpers (encoding, network, concurrency) with generic `TypeVar` signatures.
@@ -64,22 +68,24 @@ It emphasizes modularity, separation of concerns, and strict dependency inversio
 - **Ecosystem & Verification**
   - **`plugins`**: Autonomous, self-contained transport packages implementing `contract` interfaces.
     - _Depends on_: `contract`, `config`, `util`
-  - **`testing`**: Public test harness supplying typed doubles and reusable conformance suites.
+  - **`testing`**: Public test harness supplying typed doubles (`MemoryTransport`, `DummyTransport`, `DummyView`, `DummyConnection`, etc.) and reusable conformance suites.
     - _Depends on_: `contract`, `config`
 
 ### Dependency Rules & Directional Invariants
 
-| Source Layer (From)               | Target Layer (To)                               | Permitted? | Rule                                                                          |
-| :-------------------------------- | :---------------------------------------------- | :--------: | :---------------------------------------------------------------------------- |
-| `main`                            | `core`, `controller`, `presentation`            |  **Yes**   | Composition root wires concrete components and starts execution.              |
-| `controller`                      | `command`, `contract`                           |  **Yes**   | Controllers translate requests into commands and dispatch via domain session. |
-| `command`, `core`, `presentation` | `contract`                                      |  **Yes**   | Components implement or consume domain interfaces.                            |
-| `contract`                        | `config`                                        |  **Yes**   | Domain interfaces rely strictly on base exceptions, settings, and enums.      |
-| `util`                            | `config`                                        |  **Yes**   | Pure utilities depend only on base exceptions and constants.                  |
-| `contract`                        | `util`                                          |   **No**   | Domain abstractions must never depend on stateless utility helpers.           |
-| `contract`                        | `core`, `command`, `controller`, `presentation` |   **No**   | Domain abstractions must never depend on implementation layers.               |
-| `src/declusor/`                   | concrete plugins                                |   **No**   | Host code must never import specific plugin packages directly.                |
-| Production code                   | `testing`                                       |   **No**   | Production packages must never depend on test infrastructure.                 |
+| Source Layer (From)               | Target Layer (To)                                            | Permitted? | Rule                                                                          |
+| :-------------------------------- | :----------------------------------------------------------- | :--------: | :---------------------------------------------------------------------------- |
+| `main`, `app`                     | `core`, `transport`, `controller`, `presentation`            |  **Yes**   | Composition roots wire concrete components and start execution.               |
+| `controller`                      | `command`, `contract`                                        |  **Yes**   | Controllers translate requests into commands and dispatch via domain session. |
+| `command`, `core`, `presentation` | `contract`                                                   |  **Yes**   | Components implement or consume domain interfaces.                            |
+| `transport`                       | `contract`, `util`, `config`                                 |  **Yes**   | Transports implement domain stream contracts and use base utilities/config.   |
+| `contract`                        | `config`                                                     |  **Yes**   | Domain interfaces rely strictly on base exceptions, settings, and enums.      |
+| `util`                            | `config`                                                     |  **Yes**   | Pure utilities depend only on base exceptions and constants.                  |
+| `contract`                        | `util`                                                       |   **No**   | Domain abstractions must never depend on stateless utility helpers.           |
+| `contract`                        | `core`, `transport`, `command`, `controller`, `presentation` |   **No**   | Domain abstractions must never depend on implementation layers.               |
+| `transport`                       | `core`, `command`, `controller`, `presentation`, `main`      |   **No**   | Transport implementations must never depend on higher application layers.     |
+| `src/declusor/`                   | concrete plugins                                             |   **No**   | Host code must never import specific plugin packages directly.                |
+| Production code                   | `testing`                                                    |   **No**   | Production packages must never depend on test infrastructure.                 |
 
 ## High-Level Layer Responsibilities
 
@@ -99,23 +105,24 @@ It emphasizes modularity, separation of concerns, and strict dependency inversio
 - **Command Operations (`command`)**: Encapsulates discrete remote tasks (command execution, script execution, file transfer, modular payload loading, interactive shell spawning) using immutable parameter objects with fail-fast validation.
 - **Application Controllers (`controller`)**: Serves as the application orchestration layer. Parses user arguments, constructs commands, coordinates execution through the active session, and signals declarative lifecycle actions back to the view loop.
 
-### Infrastructure (`core`)
+### Infrastructure & Transport (`core`, `transport`)
 
-- **Infrastructure Services**: Manages route registration, command usage documentation, command-line argument mapping, and the multi-tier dynamic plugin discovery engine.
+- **Infrastructure Services (`core`)**: Manages route registration, command usage documentation, command-line argument mapping, and the multi-tier dynamic plugin discovery engine.
+- **Physical & Decorator Transports (`transport`)**: Encapsulates raw socket I/O (`SocketTransport`), server listening (`TcpListener`), and composable stream ciphers (`XorTransport`). Implements clean exception translation and protects against stream segmentation desynchronization.
 
 ### Presentation (`presentation`)
 
 - **User Interface & Delivery**: Handles operator interaction, readline history, autocomplete, stream formatting, and the interactive REPL execution loop. Operates exclusively through domain contracts and controller action signals.
 
-### Composition Root (`main`)
+### Composition Root (`main`, `app`)
 
-- **Application Bootstrap**: Initializes the client registry, discovers plugins across all configured tiers, wires application routes, and executes the active session.
+- **Application Bootstrap (`main`, `app`)**: Initializes the client registry, discovers plugins across all configured tiers, wires application routes, and executes the active session via specialized application targets (`terminal`).
 - **Top-Level Error Barrier**: Handles process arguments, captures domain exceptions, prints user-friendly diagnostic messages, and translates results into deterministic operating system exit codes.
 
 ### Ecosystem & Verification (`plugins`, `testing`)
 
 - **Autonomous Transport Plugins (`plugins`)**: Self-contained packages implementing domain contracts, providing dedicated launchers, helpers, on-demand modules, and colocated test suites.
-- **Public Testing SDK (`testing`)**: Supplies mock-free, deterministic doubles for all domain abstractions and provides reusable test suites (`PluginConformanceTestSuite`) that verify plugins against host contract requirements.
+- **Public Testing SDK (`testing`)**: Supplies mock-free, deterministic doubles (`MemoryTransport`, `DummyTransport`, `DummyView`, `DummyConnection`, etc.) for all domain abstractions and provides reusable test suites (`PluginConformanceTestSuite`) that verify plugins against host contract requirements.
 
 ## Extensible Plugin Ecosystem
 
@@ -144,8 +151,9 @@ Plugins bundle default assets within their own directories. Operators can overla
 sequenceDiagram
     autonumber
     actor Operator
-    participant Main as Composition Root (main)
+    participant Main as Composition Root (main/app)
     participant Core as Discovery & Parser (core)
+    participant Listener as Listener (transport.TcpListener)
     participant Plugin as Client Plugin (plugins/)
     participant View as Presentation REPL (presentation)
     participant Controller as Controller & Command
@@ -155,10 +163,11 @@ sequenceDiagram
     Main->>Core: Parse options & discover plugins
     Core->>Plugin: Validate contract & load plugin
     Core-->>Main: Configured client runtime
-    Main->>Main: Await incoming connection on listener socket
-    Remote->>Main: Connect TCP socket
-    Main->>Plugin: Wrap socket in transport connection
-    Plugin->>Remote: Initialize session & negotiate helpers
+    Main->>Listener: with listener: accept incoming transport
+    Remote->>Listener: Connect TCP socket
+    Listener-->>Main: Return ITransport (SocketTransport)
+    Main->>Plugin: runtime.create_connection(transport)
+    Plugin->>Remote: Initialize session & negotiate helpers (via transport)
     Remote-->>Plugin: Acknowledge handshake (ACK sentinel)
     Main->>View: Start interactive REPL with SessionContext
 
