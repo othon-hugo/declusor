@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from declusor.contract.controller import SessionContext
+    from declusor.contract.session import SessionContext
 
 
 class ICommand(ABC):
