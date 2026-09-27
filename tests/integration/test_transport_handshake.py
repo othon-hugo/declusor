@@ -34,6 +34,21 @@ def test_shell_socket_handshake_and_command_execution() -> None:
         response = b"".join(connection.read())
         assert b"shell_handshake_ok" in response
 
+        connection.write(b"")
+        response = b"".join(connection.read())
+        assert response == b""
+
+        connection.write(b"echo shell_still_alive\n")
+        response = b"".join(connection.read())
+        assert b"shell_still_alive" in response
+
+        import base64
+
+        b64_script = base64.b64encode(b"echo in_memory_script_works").decode()
+        connection.write(f"execute_base64_encoded_value {b64_script}\n".encode())
+        response = b"".join(connection.read())
+        assert b"in_memory_script_works" in response
+
         connection.close()
         state = connection.state
         assert state == contract.ConnectionState.CLOSED

