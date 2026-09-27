@@ -83,7 +83,7 @@ class ShellSocketProfile(contract.IConnectionProfile):
 class ShellSocketConnection(contract.IConnection):
     """``IConnection`` implementation for a Bash-over-TCP reverse-shell client."""
 
-    def __init__(self, connection: socket, profile: ShellSocketProfile, files: contract.IClientFileStore, /) -> None:
+    def __init__(self, connection: socket, profile: ShellSocketProfile, files: contract.IPluginProcessor, /) -> None:
         self._profile = profile
         self._files = files
         self._connection = connection
@@ -116,7 +116,7 @@ class ShellSocketConnection(contract.IConnection):
         self._timeout = value
         self._connection.settimeout(value)
 
-    def initialize(self) -> None:
+    def handshake(self) -> None:
         """Perform the client initialization handshake."""
 
         if self._state != contract.ConnectionState.CREATED:
@@ -126,7 +126,7 @@ class ShellSocketConnection(contract.IConnection):
             raise config.ConnectionError("Cannot initialize a closed connection.")
 
         self._state = contract.ConnectionState.INITIALIZING
-        self.write(self._files.load_library())
+        self.write(self._files.helpers())
 
         expected_ack = self._profile.ack_client_raw
         ack_len = len(expected_ack)

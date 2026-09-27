@@ -1,7 +1,7 @@
 from declusor import contract
 
 
-class DummyPluginFileStore(contract.IClientFileStore):
+class DummyPluginFileStore(contract.IPluginProcessor):
     """Fully-typed in-memory file store for client scripts, libraries, and modules."""
 
     def __init__(
@@ -25,7 +25,7 @@ class DummyPluginFileStore(contract.IClientFileStore):
 
         self.modules[name] = content
 
-    def render_client_script(self, host: str, port: int, acknowledge: bytes, /) -> str:
+    def render_launcher(self, host: str, port: int, acknowledge: bytes, /) -> str:
         """Render client script from configured template."""
 
         if self.render_error is not None:
@@ -35,7 +35,7 @@ class DummyPluginFileStore(contract.IClientFileStore):
 
         return self.script_template.format(host=host, port=port, acknowledge=acknowledge.hex())
 
-    def load_library(self) -> bytes:
+    def helpers(self) -> bytes:
         """Return configured library payload."""
 
         if self.load_library_error is not None:
@@ -45,7 +45,7 @@ class DummyPluginFileStore(contract.IClientFileStore):
 
         return self.library_bytes
 
-    def load_module(self, module_name: str, /) -> bytes:
+    def get_module(self, module_name: str, /) -> bytes:
         """Return configured or synthesised module payload."""
 
         if self.load_module_error is not None:

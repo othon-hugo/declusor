@@ -81,7 +81,7 @@ class PySocketProfile(contract.IConnectionProfile):
 class PySocketConnection(contract.IConnection):
     """``IConnection`` implementation for a Python-socket reverse-shell client."""
 
-    def __init__(self, connection: socket, profile: PySocketProfile, files: contract.IClientFileStore, /) -> None:
+    def __init__(self, connection: socket, profile: PySocketProfile, files: contract.IPluginProcessor, /) -> None:
         self._profile = profile
         self._files = files
         self._connection = connection
@@ -114,14 +114,14 @@ class PySocketConnection(contract.IConnection):
         self._timeout = value
         self._connection.settimeout(value)
 
-    def initialize(self) -> None:
+    def handshake(self) -> None:
         """Perform the Python agent initialization handshake."""
 
         if self._state == contract.ConnectionState.CLOSED:
             raise config.ConnectionError("Cannot initialize a closed connection.")
 
         self._state = contract.ConnectionState.INITIALIZING
-        self.write(self._files.load_library())
+        self.write(self._files.helpers())
 
         expected_ack = self._profile.ack_client_raw
         ack_len = len(expected_ack)

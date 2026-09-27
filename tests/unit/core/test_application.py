@@ -71,7 +71,7 @@ def test_application_run_lifecycle_with_no_data_paths() -> None:
         kind=testing.DummyPlugin.name,
         host="127.0.0.1",
         port=9000,
-        data_paths=None,
+        filesystem=None,
     )
 
     dummy_sock = testing.DummySocket()
@@ -109,7 +109,7 @@ def test_application_run_with_custom_runner_override() -> None:
         kind=testing.DummyPlugin.name,
         host="127.0.0.1",
         port=9000,
-        data_paths=None,
+        filesystem=None,
     )
 
     dummy_sock = testing.DummySocket()

@@ -9,7 +9,7 @@ from declusor.testing.doubles.socket import DummySocket
 
 
 def assert_conforms_to_client_plugin(
-    plugin_cls: type[contract.IPlugin],
+    plugin_cls: type[contract.IPluginExtension],
     *,
     sample_options: dict[str, Any] | None = None,
     tmp_path: Path | None = None,
@@ -23,7 +23,7 @@ def assert_conforms_to_client_plugin(
     """
 
     assert inspect.isclass(plugin_cls), f"{plugin_cls!r} must be a class."
-    assert issubclass(plugin_cls, contract.IPlugin), f"{plugin_cls!r} must subclass contract.IPlugin."
+    assert issubclass(plugin_cls, contract.IPluginExtension), f"{plugin_cls!r} must subclass contract.IPlugin."
 
     # Invariant 1: Metadata presence
     assert isinstance(plugin_cls.name, str) and plugin_cls.name.strip(), "plugin.name must be a non-empty string."
@@ -58,8 +58,8 @@ def assert_conforms_to_client_plugin(
     # Invariant 5: Runtime creation
     runtime = plugin_cls.build_runtime(plugin_config)
     assert isinstance(runtime, contract.IPluginRuntime), f"build_runtime must return IPluginRuntime, got {type(runtime)}."
-    assert isinstance(runtime.client_script, str), "runtime.client_script must return a bootstrap string."
-    assert isinstance(runtime.client_files, contract.IClientFileStore), "runtime.client_files must implement IClientFileStore."
+    assert isinstance(runtime.launcher, str), "runtime.client_script must return a bootstrap string."
+    assert isinstance(runtime.processor, contract.IPluginProcessor), "runtime.client_files must implement IClientFileStore."
 
     # Invariant 6: Connection instantiation
     dummy_sock = DummySocket(incoming_bytes=b"")
@@ -90,7 +90,7 @@ class PluginConformanceTestSuite:
     """
 
     @pytest.fixture
-    def plugin_class(self) -> type[contract.IPlugin]:
+    def plugin_class(self) -> type[contract.IPluginExtension]:
         """Subclasses must override this to provide the plugin class under test."""
 
         raise NotImplementedError
@@ -101,14 +101,14 @@ class PluginConformanceTestSuite:
 
         return {}
 
-    def test_plugin_metadata(self, plugin_class: type[contract.IPlugin]) -> None:
+    def test_plugin_metadata(self, plugin_class: type[contract.IPluginExtension]) -> None:
         """Verify plugin defines valid name, description, and version."""
 
         assert isinstance(plugin_class.name, str) and plugin_class.name.strip()
         assert isinstance(plugin_class.description, str)
         assert isinstance(plugin_class.version, str)
 
-    def test_configure_parser_callable(self, plugin_class: type[contract.IPlugin]) -> None:
+    def test_configure_parser_callable(self, plugin_class: type[contract.IPluginExtension]) -> None:
         """Verify configure_parser accepts a Parser without error."""
 
         parser = util.Parser(prog="conformance")
@@ -116,7 +116,7 @@ class PluginConformanceTestSuite:
 
     def test_build_config_contract(
         self,
-        plugin_class: type[contract.IPlugin],
+        plugin_class: type[contract.IPluginExtension],
         sample_options: dict[str, Any],
         tmp_path: Path,
     ) -> None:
@@ -132,7 +132,7 @@ class PluginConformanceTestSuite:
 
     def test_full_conformance(
         self,
-        plugin_class: type[contract.IPlugin],
+        plugin_class: type[contract.IPluginExtension],
         sample_options: dict[str, Any],
         tmp_path: Path,
     ) -> None:

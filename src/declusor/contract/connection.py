@@ -15,9 +15,16 @@ class ConnectionState(StrEnum):
     """
 
     CREATED = "CREATED"
+    """[...]"""
+
     INITIALIZING = "INITIALIZING"
+    """[...]"""
+
     CONNECTED = "CONNECTED"
+    """[...]"""
+
     CLOSED = "CLOSED"
+    """[...]"""
 
 
 class IConnectionProfile(ABC):
@@ -70,6 +77,15 @@ class IConnection(ABC):
     on exit.
     """
 
+    def __init__(self, connection: "IConnection | None" = None, /) -> None:
+        self._underlying_connection = connection
+
+    def handshake(self) -> None:
+        """[...]"""
+
+        if self._underlying_connection:
+            self._underlying_connection.handshake()
+
     @property
     @abstractmethod
     def state(self) -> ConnectionState:
@@ -107,20 +123,6 @@ class IConnection(ABC):
 
         Args:
             value: Timeout in seconds, or ``None`` to block indefinitely.
-        """
-
-        raise NotImplementedError
-
-    @abstractmethod
-    def initialize(self) -> None:
-        """Perform the initial protocol handshake.
-
-        Typically sends the library payload to the client and verifies the
-        client's acknowledgment before the session is considered ready.
-
-        Raises:
-            ConnectionFailure: If the handshake times out or the client ACK
-                is invalid.
         """
 
         raise NotImplementedError

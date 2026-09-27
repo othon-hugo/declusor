@@ -76,8 +76,8 @@ def test_router_get_route_usage() -> None:
     router.connect("alpha", cmd_a)
     router.connect("beta", cmd_b)
 
-    assert router.get_route_usage("alpha") == "First command description."
-    assert router.get_route_usage("beta") == "Second command with multiple lines."
+    assert router.help("alpha") == "First command description."
+    assert router.help("beta") == "Second command with multiple lines."
 
 
 def test_router_get_route_usage_empty_when_no_docstring() -> None:
@@ -92,4 +92,4 @@ def test_router_get_route_usage_empty_when_no_docstring() -> None:
         return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
 
     router.connect("nodoc", no_doc_cmd)
-    assert router.get_route_usage("nodoc") == ""
+    assert router.help("nodoc") == ""

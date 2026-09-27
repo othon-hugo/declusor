@@ -10,7 +10,7 @@ _PACKAGE_ASSETS_DIR = Path(__file__).resolve().parent / "assets"
 ASSETS_DIR = _REPO_ASSETS_DIR if _REPO_ASSETS_DIR.exists() else _PACKAGE_ASSETS_DIR
 
 
-class ShellSocketPlugin(contract.IPlugin):
+class ShellSocketPlugin(contract.IPluginExtension):
     """Plugin that configures the traditional shell-over-socket client.
 
     Deploys a Bash payload that connects to Declusor over TCP using Linux's
@@ -61,7 +61,7 @@ class ShellSocketPlugin(contract.IPlugin):
                 "helpers_dir": helpers_dir,
                 "modules_dir": modules_dir,
             },
-            data_paths=data_paths,
+            filesystem=data_paths,
         )
 
     @classmethod
@@ -110,16 +110,16 @@ class ShellSocketRuntime(contract.IPluginRuntime):
         )
 
     @property
-    def client_files(self) -> contract.IClientFileStore:
+    def processor(self) -> contract.IPluginProcessor:
         """The shell_socket file store."""
 
         return self._files
 
     @property
-    def client_script(self) -> str:
+    def launcher(self) -> str:
         """Return the rendered client bootstrap script."""
 
-        return self._files.render_client_script(
+        return self._files.render_launcher(
             self._plugin_config.host,
             self._plugin_config.port,
             self._profile.ack_client_raw,
@@ -131,7 +131,7 @@ class ShellSocketRuntime(contract.IPluginRuntime):
         return ShellSocketConnection(connection, self._profile, self._files)
 
 
-class ShellSocketFileStore(contract.IClientFileStore):
+class ShellSocketFileStore(contract.IPluginProcessor):
     """Filesystem adapter for shell client templates, libraries and payloads.
 
     Resolves launchers, helpers and modules from the plugin's own self-contained
@@ -152,7 +152,7 @@ class ShellSocketFileStore(contract.IClientFileStore):
         self._library_extensions = library_extensions
         self._module_extensions = module_extensions
 
-    def render_client_script(self, host: str, port: int, acknowledge: bytes, /) -> str:
+    def render_launcher(self, host: str, port: int, acknowledge: bytes, /) -> str:
         """Read and render the client bootstrap script."""
 
         try:
@@ -169,7 +169,7 @@ class ShellSocketFileStore(contract.IClientFileStore):
             DECLUSOR_ACKNOWLEDGE=hex_ack,
         )
 
-    def load_library(self) -> bytes:
+    def helpers(self) -> bytes:
         """Load and concatenate valid helper libraries."""
 
         if not self._helpers_dir.exists():
@@ -191,7 +191,7 @@ class ShellSocketFileStore(contract.IClientFileStore):
 
         return b"\n".join(modules)
 
-    def load_module(self, module_name: str, /) -> bytes:
+    def get_module(self, module_name: str, /) -> bytes:
         """Load one operator-selected module from the modules directory."""
 
         module_path = (self._modules_dir / module_name).resolve()

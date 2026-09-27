@@ -74,7 +74,7 @@ class LoadModule(contract.ICommand):
         if session.files is None:
             raise config.CommandError("Client file store is not configured for this session.")
 
-        module_bytes = session.files.load_module(self._module_name)
+        module_bytes = session.files.get_module(self._module_name)
         session.connection.write(module_bytes)
 
     def read_response(self, session: contract.SessionContext, /) -> None:

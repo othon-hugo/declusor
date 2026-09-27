@@ -1,23 +1,13 @@
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import Any, Generic, Protocol, TypeVar, runtime_checkable
-
-T = TypeVar("T")
+from typing import TypedDict
 
 
-@runtime_checkable
-class IArgumentParser(Protocol):
-    """Protocol for an argument parser that registers command-line arguments.
-
-    Matches argparse.ArgumentParser, util.Parser, and DeclusorParser structurally.
-    """
-
-    def add_argument(self, *name_or_flags: str, **kwargs: Any) -> Any:
-        """Register a command-line argument or option."""
-        ...
+class ParsedArguments(TypedDict):
+    """[...]"""
 
 
-class IParser(ABC, Generic[T]):
+class IArgumentParser[T: ParsedArguments](ABC):
     """Generic contract for a command-line argument parser.
 
     Type parameter ``T`` is the typed result produced by ``parse()``
@@ -25,7 +15,16 @@ class IParser(ABC, Generic[T]):
     """
 
     @abstractmethod
-    def parse(self, manager: Any, argv: Sequence[str] | None = None, /) -> T:
+    def add_argument(self, name: str, *flags: str) -> None:
+        """Register a command-line argument or option.
+
+        [...]
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def parse(self, argv: Sequence[str] | None = None, /) -> T:
         """Parse command-line arguments and return a typed result.
 
         Args:

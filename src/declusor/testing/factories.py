@@ -11,7 +11,7 @@ def create_test_session(
     connection: contract.IConnection | None = None,
     view: contract.IView | None = None,
     input_source: contract.IInputSource | None = None,
-    files: contract.IClientFileStore | None = None,
+    files: contract.IPluginProcessor | None = None,
 ) -> contract.SessionContext:
     """Create a SessionContext populated with test doubles by default.
 
@@ -28,8 +28,8 @@ def create_test_session(
     return contract.SessionContext(
         connection=connection or DummyConnection(),
         view=view or DummyView(),
-        input=input_source or DummyInputSource(),
-        files=files or DummyPluginFileStore(),
+        input_source=input_source or DummyInputSource(),
+        plugin_processor=files or DummyPluginFileStore(),
     )
 
 
@@ -57,7 +57,7 @@ def create_dummy_plugin_config(
         kind=kind,
         host=host,
         port=port,
-        data_paths=data_paths,
+        filesystem=data_paths,
         options=options if options is not None else {},
     )
 

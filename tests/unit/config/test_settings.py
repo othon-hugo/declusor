@@ -53,7 +53,7 @@ def test_base_path_contains_only_application_and_plugin_directories() -> None:
     assert not hasattr(config.BasePath, "USER_DATA_PATHS")
 
 
-class DummyPathClientPlugin(contract.IPlugin):
+class DummyPathClientPlugin(contract.IPluginExtension):
     """Dummy client plugin for testing data path derivation."""
 
     name = "dummy_path_plugin"
@@ -74,7 +74,7 @@ class DummyPathClientPlugin(contract.IPlugin):
             kind=cls.name,
             host=getattr(args, "host", "127.0.0.1"),
             port=getattr(args, "port", 9000),
-            data_paths=data_paths,
+            filesystem=data_paths,
             options={"launcher_path": launcher},
         )
 
@@ -103,6 +103,6 @@ def test_parser_builds_client_paths_from_data_root(tmp_path: Path) -> None:
         ("127.0.0.1", "9000", "--plugin", "dummy_path_plugin", "--assets-dir", str(tmp_path)),
     )
 
-    data_paths = plugin_config.data_paths
+    data_paths = plugin_config.filesystem
     assert data_paths == config.DataPaths.from_root(tmp_path)
     assert plugin_config.options["launcher_path"] == launcher_file

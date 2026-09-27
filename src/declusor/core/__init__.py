@@ -7,6 +7,7 @@ from declusor.config import (
 
 from .application import (
     Application,
+    ApplicationFactory,
     ApplicationProtocol,
 )
 from .parser import (

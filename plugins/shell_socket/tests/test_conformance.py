@@ -10,7 +10,7 @@ class TestShellSocketConformance(testing.PluginConformanceTestSuite):
     """Verify ShellSocketPlugin strictly complies with the IPlugin contract."""
 
     @pytest.fixture
-    def plugin_class(self) -> type[contract.IPlugin]:
+    def plugin_class(self) -> type[contract.IPluginExtension]:
         return shell_socket.ShellSocketPlugin
 
     @pytest.fixture

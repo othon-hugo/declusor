@@ -6,7 +6,7 @@ import pytest
 from declusor import config, contract, core, testing
 
 
-class DummyValidPlugin(contract.IPlugin):
+class DummyValidPlugin(contract.IPluginExtension):
     """Compliant test plugin implementing all required IPlugin methods."""
 
     name = "dummy_test"
@@ -22,7 +22,7 @@ class DummyValidPlugin(contract.IPlugin):
             kind=cls.name,
             host="127.0.0.1",
             port=9000,
-            data_paths=data_paths,
+            filesystem=data_paths,
         )
 
     @classmethod
@@ -40,7 +40,7 @@ class NotAPlugin:
     name = "not_a_plugin"
 
 
-class MissingAbstractMethods(contract.IPlugin):
+class MissingAbstractMethods(contract.IPluginExtension):
     """Plugin subclass missing required abstract method implementations."""
 
     name = "missing_methods"
@@ -242,11 +242,11 @@ def test_discover_from_entry_points() -> None:
     """Verify plugin discovery via Python entry points ('declusor.plugins')."""
 
     class DummyEntryPoint:
-        def __init__(self, name: str, plugin_cls: type[contract.IPlugin]) -> None:
+        def __init__(self, name: str, plugin_cls: type[contract.IPluginExtension]) -> None:
             self.name = name
             self._plugin_cls = plugin_cls
 
-        def load(self) -> type[contract.IPlugin]:
+        def load(self) -> type[contract.IPluginExtension]:
             return self._plugin_cls
 
     ep = DummyEntryPoint(name="mock_plugin", plugin_cls=DummyValidPlugin)

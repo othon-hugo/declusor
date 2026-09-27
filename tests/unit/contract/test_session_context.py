@@ -12,8 +12,8 @@ def test_session_context_initialization_and_properties(
     session = contract.SessionContext(
         connection=dummy_connection,
         view=dummy_view,
-        input=dummy_input_source,
-        files=dummy_file_store,
+        input_source=dummy_input_source,
+        plugin_processor=dummy_file_store,
     )
 
     assert session.connection is dummy_connection

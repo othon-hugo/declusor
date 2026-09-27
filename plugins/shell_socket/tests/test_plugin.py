@@ -24,7 +24,7 @@ def test_build_config_uses_bundled_assets_when_data_paths_is_none() -> None:
     assert cfg.options["launcher_path"] == shell_socket.plugin.ASSETS_DIR / "launchers" / "shell_socket_client.sh"
     assert cfg.options["helpers_dir"] == shell_socket.plugin.ASSETS_DIR / "helpers"
     assert cfg.options["modules_dir"] == shell_socket.plugin.ASSETS_DIR / "modules"
-    assert cfg.data_paths is None
+    assert cfg.filesystem is None
 
     shell_socket.ShellSocketPlugin.validate(cfg)
 
@@ -41,7 +41,7 @@ def test_build_config_resolves_custom_data_paths_when_provided(tmp_path: Path) -
     cfg = shell_socket.ShellSocketPlugin.build_config(args, data_paths)
 
     assert cfg.options["launcher_path"] == custom_launcher
-    assert cfg.data_paths == data_paths
+    assert cfg.filesystem == data_paths
 
     shell_socket.ShellSocketPlugin.validate(cfg)
 
@@ -63,7 +63,7 @@ def test_build_runtime_renders_configured_client_script(tmp_path: Path) -> None:
     )
 
     runtime = shell_socket.ShellSocketPlugin.build_runtime(plugin_config)
-    assert runtime.client_script.startswith("connect 127.0.0.1:9000 ack=\\x")
+    assert runtime.launcher.startswith("connect 127.0.0.1:9000 ack=\\x")
 
 
 def test_build_runtime_renders_bundled_launcher_with_declusor_prefix() -> None:
@@ -73,7 +73,7 @@ def test_build_runtime_renders_bundled_launcher_with_declusor_prefix() -> None:
     cfg = shell_socket.ShellSocketPlugin.build_config(args, None)
     runtime = shell_socket.ShellSocketPlugin.build_runtime(cfg)
 
-    script = runtime.client_script
+    script = runtime.launcher
     assert "/dev/tcp/192.168.1.50/5555" in script
     assert "$DECLUSOR_HOST" not in script
     assert "$DECLUSOR_PORT" not in script

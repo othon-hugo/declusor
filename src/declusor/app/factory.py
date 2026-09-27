@@ -2,7 +2,7 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-from declusor import config, core, contract
+from declusor import config, contract, core
 
 
 def _default_cli_factory(search_dirs: Sequence[Path] | None = None) -> core.ApplicationProtocol:

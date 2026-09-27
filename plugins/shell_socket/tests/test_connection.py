@@ -17,7 +17,7 @@ def test_connection_state_lifecycle_transitions(
     state: contract.ConnectionState = conn.state
     assert state == contract.ConnectionState.CREATED
 
-    conn.initialize()
+    conn.handshake()
     state = conn.state
     assert state == contract.ConnectionState.CONNECTED
 
@@ -44,7 +44,7 @@ def test_connection_segmented_ack_streaming(
     )
 
     conn, _ = make_shell_connection(sock, ack=b"valid_ack_32_bytes_long_sentinel")
-    conn.initialize()
+    conn.handshake()
     assert conn.state == contract.ConnectionState.CONNECTED
 
 
@@ -57,7 +57,7 @@ def test_initialize_fails_on_closed_connection(
     conn.close()
 
     with pytest.raises(config.ConnectionError, match="Cannot initialize a closed connection"):
-        conn.initialize()
+        conn.handshake()
 
 
 def test_write_uses_sendall_for_payload_and_ack(

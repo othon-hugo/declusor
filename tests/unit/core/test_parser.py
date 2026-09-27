@@ -29,8 +29,8 @@ def test_declusor_parser_parse_success(tmp_path: Path) -> None:
     assert plugin_config.host == "127.0.0.1"
     assert plugin_config.port == 9000
     assert plugin_config.kind == testing.DummyPlugin.name
-    assert plugin_config.data_paths is not None
-    assert plugin_config.data_paths.root == tmp_path
+    assert plugin_config.filesystem is not None
+    assert plugin_config.filesystem.root == tmp_path
     assert parser in testing.DummyPlugin.configured_parsers
 
 
@@ -44,7 +44,7 @@ def test_declusor_parser_parse_defaults_data_paths_to_none() -> None:
     parser = core.DeclusorParser(name="test_app")
     plugin_config = parser.parse(manager, ["127.0.0.1", "9000", "-p", testing.DummyPlugin.name])
 
-    assert plugin_config.data_paths is None
+    assert plugin_config.filesystem is None
 
 
 def test_declusor_parser_parse_missing_positional_raises() -> None:

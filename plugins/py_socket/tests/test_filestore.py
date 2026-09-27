@@ -15,14 +15,14 @@ def test_py_socket_file_store_load_library_returns_concatenated_helpers(tmp_path
     (helpers / "b.py").write_bytes(b"# helper b")
 
     store = py_socket.PySocketFileStore(tmp_path / "client.py", helpers, tmp_path / "modules")
-    assert store.load_library() == b"# helper a\n\n# helper b"
+    assert store.helpers() == b"# helper a\n\n# helper b"
 
 
 def test_py_socket_file_store_load_library_returns_empty_when_no_helpers(tmp_path: Path) -> None:
     """Verify PySocketFileStore returns empty bytes when helpers directory is missing or empty."""
 
     store = py_socket.PySocketFileStore(tmp_path / "client.py", tmp_path / "helpers", tmp_path / "modules")
-    assert store.load_library() == b""
+    assert store.helpers() == b""
 
 
 def test_py_socket_file_store_load_module_reads_module(tmp_path: Path) -> None:
@@ -33,7 +33,7 @@ def test_py_socket_file_store_load_module_reads_module(tmp_path: Path) -> None:
     (modules / "info.py").write_bytes(b"# info module")
 
     store = py_socket.PySocketFileStore(tmp_path / "client.py", tmp_path / "helpers", modules)
-    assert store.load_module("info.py") == b"# info module"
+    assert store.get_module("info.py") == b"# info module"
 
 
 def test_py_socket_file_store_load_module_rejects_traversal_and_wrong_extension(tmp_path: Path) -> None:
@@ -46,7 +46,7 @@ def test_py_socket_file_store_load_module_rejects_traversal_and_wrong_extension(
     store = py_socket.PySocketFileStore(tmp_path / "client.py", tmp_path / "helpers", modules)
 
     with pytest.raises(config.InvalidOperation):
-        store.load_module("../outside.py")
+        store.get_module("../outside.py")
 
     with pytest.raises(config.InvalidOperation):
-        store.load_module("bad.sh")
+        store.get_module("bad.sh")

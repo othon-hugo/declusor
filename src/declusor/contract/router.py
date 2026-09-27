@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -14,7 +15,7 @@ class IRouter(ABC):
 
     @property
     @abstractmethod
-    def routes(self) -> tuple[str, ...]:
+    def routes(self) -> Sequence[str]:
         """All currently registered route names.
 
         Returns:
@@ -24,7 +25,7 @@ class IRouter(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_route_usage(self, route: str, /) -> str:
+    def help(self, route: str, /) -> str:
         """Return the one-line usage description for a registered route.
 
         Args:

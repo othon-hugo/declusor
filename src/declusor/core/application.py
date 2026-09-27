@@ -1,3 +1,5 @@
+from collections.abc import Callable, Sequence
+from pathlib import Path
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from declusor import contract, controller, util
@@ -5,9 +7,11 @@ from declusor import contract, controller, util
 if TYPE_CHECKING:
     from .plugin import PluginManager
 
+ApplicationFactory = Callable[[Sequence[Path] | None], "ApplicationProtocol"]
+
 
 @runtime_checkable
-class ApplicationProtocol(Protocol):
+class ApplicationProtocol[T: contract.ParsedArguments](Protocol):
     """Protocol defining the interface required by the CLI to run an application."""
 
     @property
@@ -15,7 +19,7 @@ class ApplicationProtocol(Protocol):
         """Client plugin manager containing registered plugins."""
         ...
 
-    def run(self, config: contract.PluginConfig, /) -> None:
+    def run(self, config: contract.PluginConfig[T], /) -> None:
         """Execute the application lifecycle for a given plugin configuration."""
         ...
 
@@ -67,13 +71,7 @@ class Application(ApplicationProtocol):
 
         return self._runner
 
-    @runner.setter
-    def runner(self, runner: contract.ISessionRunner) -> None:
-        """Set or replace the session runner at runtime."""
-
-        self._runner = runner
-
-    def register_plugin(self, plugin: type[contract.IPlugin], /) -> None:
+    def register_plugin(self, plugin: type[contract.IPluginExtension], /) -> None:
         """Register a client plugin at runtime.
 
         Args:
@@ -82,13 +80,7 @@ class Application(ApplicationProtocol):
 
         self._manager.register(plugin)
 
-    def run(
-        self,
-        config: contract.PluginConfig,
-        /,
-        *,
-        runner: contract.ISessionRunner | None = None,
-    ) -> None:
+    def run(self, config: contract.PluginConfig, /) -> None:
         """Run the configured server connection.
 
         Args:
@@ -104,21 +96,20 @@ class Application(ApplicationProtocol):
         if self._input_source is not None and (setup_completer := getattr(self._input_source, "setup_completer", None)):
             setup_completer(self._router.routes)
 
-        self._view.write_message(plugin_runtime.client_script)
+        self._view.write_message(plugin_runtime.launcher)
 
         with util.await_connection(config.host, config.port) as socket_connection:
             with plugin_runtime.create_connection(socket_connection) as connection:
-                connection.initialize()
+                connection.handshake()
 
                 session = contract.SessionContext(
                     connection=connection,
                     view=self._view,
-                    input=self._input_source,
-                    files=plugin_runtime.client_files,
+                    plugin_processor=plugin_runtime.processor,
+                    input_source=self._input_source,
                 )
 
-                active_runner = runner if runner is not None else self._runner
-                active_runner.run(session, self._router)
+                self._runner.run(session, self._router)
 
     def _connect_routes(self) -> None:
         """Register built-in command routes on the application router."""

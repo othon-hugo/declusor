@@ -120,8 +120,8 @@ def test_load_module_missing_files_store(
     session_no_files = contract.SessionContext(
         connection=dummy_connection,
         view=dummy_view,
-        input=dummy_input_source,
-        files=None,  # type: ignore[arg-type]
+        input_source=dummy_input_source,
+        plugin_processor=None,  # type: ignore[arg-type]
     )
 
     dto = command.LoadModuleDTO(module_name="discovery/sysinfo")

@@ -21,7 +21,7 @@ def test_shell_socket_handshake_and_command_execution() -> None:
     config = Plugin.build_config(contract.PluginNamespace(host="127.0.0.1", port=port))
     runtime = Plugin.build_runtime(config)
 
-    proc = subprocess.Popen(["bash", "-c", runtime.client_script])
+    proc = subprocess.Popen(["bash", "-c", runtime.launcher])
     client_conn: socket.socket | None = None
 
     try:
@@ -33,7 +33,7 @@ def test_shell_socket_handshake_and_command_execution() -> None:
         state: contract.ConnectionState = connection.state
         assert state == contract.ConnectionState.CREATED
 
-        connection.initialize()
+        connection.handshake()
         state = connection.state
         assert state == contract.ConnectionState.CONNECTED
 
@@ -69,7 +69,7 @@ def test_py_socket_handshake_and_command_execution() -> None:
     config = Plugin.build_config(contract.PluginNamespace(host="127.0.0.1", port=port))
     runtime = Plugin.build_runtime(config)
 
-    proc = subprocess.Popen([sys.executable, "-c", runtime.client_script])
+    proc = subprocess.Popen([sys.executable, "-c", runtime.launcher])
     client_conn: socket.socket | None = None
 
     try:
@@ -81,7 +81,7 @@ def test_py_socket_handshake_and_command_execution() -> None:
         state: contract.ConnectionState = connection.state
         assert state == contract.ConnectionState.CREATED
 
-        connection.initialize()
+        connection.handshake()
         state = connection.state
         assert state == contract.ConnectionState.CONNECTED
 

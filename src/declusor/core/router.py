@@ -20,7 +20,7 @@ class Router(contract.IRouter):
 
         return tuple(self._route_table.keys())
 
-    def get_route_usage(self, route: str, /) -> str:
+    def help(self, route: str, /) -> str:
         """Return the one-line description of the controller for *route*.
 
         Collapses the controller's ``__doc__`` into a single space-separated

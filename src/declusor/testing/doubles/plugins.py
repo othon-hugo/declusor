@@ -10,21 +10,21 @@ class DummyPluginRuntime(contract.IPluginRuntime):
 
     def __init__(
         self,
-        file_store: contract.IClientFileStore | None = None,
+        file_store: contract.IPluginProcessor | None = None,
         client_script: str = "#!/bin/sh\necho dummy",
         connection_to_return: contract.IConnection | None = None,
     ) -> None:
-        self._file_store: contract.IClientFileStore = file_store or DummyPluginFileStore()
+        self._file_store: contract.IPluginProcessor = file_store or DummyPluginFileStore()
         self._client_script: str = client_script
         self.connection_to_return: contract.IConnection | None = connection_to_return
         self.created_connections: list[contract.IConnection] = []
 
     @property
-    def client_files(self) -> contract.IClientFileStore:
+    def processor(self) -> contract.IPluginProcessor:
         return self._file_store
 
     @property
-    def client_script(self) -> str:
+    def launcher(self) -> str:
         return self._client_script
 
     def create_connection(self, connection: socket, /) -> contract.IConnection:
@@ -36,7 +36,7 @@ class DummyPluginRuntime(contract.IPluginRuntime):
         return conn
 
 
-class DummyPlugin(contract.IPlugin):
+class DummyPlugin(contract.IPluginExtension):
     """Fully-typed plugin implementing the IPlugin extension point."""
 
     name: str = "dummy"
@@ -66,7 +66,7 @@ class DummyPlugin(contract.IPlugin):
             kind=cls.name,
             host=getattr(args, "host", "127.0.0.1"),
             port=getattr(args, "port", 9000),
-            data_paths=data_paths,
+            filesystem=data_paths,
         )
 
     @classmethod

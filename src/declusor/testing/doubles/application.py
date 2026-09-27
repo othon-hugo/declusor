@@ -13,7 +13,7 @@ class DummyApplication:
         self.run_error: BaseException | None = run_error
         self.run_calls: list[contract.PluginConfig] = []
 
-    def register_plugin(self, plugin: type[contract.IPlugin], /) -> None:
+    def register_plugin(self, plugin: type[contract.IPluginExtension], /) -> None:
         """Register a client plugin in the manager."""
 
         self.manager.register(plugin)
