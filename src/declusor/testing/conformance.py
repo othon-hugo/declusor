@@ -1,13 +1,11 @@
 import inspect
 from collections.abc import Mapping
 from pathlib import Path
-from socket import socket
-from typing import cast
 
 import pytest
 
 from declusor import contract, util
-from declusor.testing.doubles.socket import DummySocket
+from declusor.testing.doubles.transport import DummyTransport
 
 
 def assert_conforms_to_client_plugin[T: contract.ParsedArguments](
@@ -67,9 +65,8 @@ def assert_conforms_to_client_plugin[T: contract.ParsedArguments](
     assert isinstance(runtime.processor, contract.IPluginProcessor), "runtime.processor must implement IPluginProcessor."
 
     # Invariant 6: Connection instantiation
-    dummy_sock = DummySocket(incoming_bytes=b"")
-    sock = cast(socket, dummy_sock)
-    connection = runtime.create_connection(sock)
+    dummy_transport = DummyTransport()
+    connection = runtime.create_connection(dummy_transport)
     assert isinstance(connection, contract.IConnection), f"create_connection must return IConnection, got {type(connection)}."
     assert connection.state in (contract.ConnectionState.CREATED, contract.ConnectionState.CONNECTED), (
         f"Initial state must be CREATED or CONNECTED, got {connection.state}."

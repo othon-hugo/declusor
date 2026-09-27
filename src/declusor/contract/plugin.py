@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from socket import socket
 from typing import TYPE_CHECKING
 
 from declusor import config
@@ -10,6 +9,7 @@ from declusor import config
 if TYPE_CHECKING:
     from declusor.contract.connection import IConnection
     from declusor.contract.parser import IArgumentParser, ParsedArguments
+    from declusor.contract.transport import ITransport
 
 
 @dataclass(frozen=True)
@@ -243,11 +243,11 @@ class IPluginRuntime(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def create_connection(self, connection: socket, /) -> "IConnection":
-        """Create a connection for an accepted socket.
+    def create_connection(self, transport: "ITransport", /) -> "IConnection":
+        """Create a connection for an accepted transport channel.
 
         Args:
-            connection: Accepted socket connected to the remote client.
+            transport: Accepted transport connected to the remote client.
 
         Returns:
             Connection implementation for the configured client.

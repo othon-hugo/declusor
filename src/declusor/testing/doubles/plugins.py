@@ -1,6 +1,5 @@
 from collections.abc import Mapping
 from pathlib import Path
-from socket import socket
 
 from declusor import config, contract
 from declusor.testing.doubles.connection import DummyConnection
@@ -33,7 +32,7 @@ class DummyPluginRuntime(contract.IPluginRuntime):
     def launcher(self) -> str:
         return self._client_script
 
-    def create_connection(self, connection: socket, /) -> contract.IConnection:
+    def create_connection(self, transport: contract.ITransport, /) -> contract.IConnection:
         """Return configured connection or new DummyConnection instance."""
 
         conn = self.connection_to_return or DummyConnection()

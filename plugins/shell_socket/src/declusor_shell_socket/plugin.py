@@ -1,6 +1,5 @@
 from collections.abc import Mapping
 from pathlib import Path
-from socket import socket
 
 from declusor import config, contract, util
 
@@ -110,10 +109,10 @@ class ShellSocketRuntime(contract.IPluginRuntime):
 
         return rendered_bytes.decode("utf-8")
 
-    def create_connection(self, connection: socket, /) -> contract.IConnection:
-        """Create a shell_socket connection for an accepted socket."""
+    def create_connection(self, transport: contract.ITransport, /) -> contract.IConnection:
+        """Create a shell_socket connection for an accepted transport channel."""
 
-        return ShellSocketConnection(connection, self._profile, self._processor)
+        return ShellSocketConnection(transport, self._profile, self._processor)
 
 
 class ShellSocketProcessor(contract.IPluginProcessor):

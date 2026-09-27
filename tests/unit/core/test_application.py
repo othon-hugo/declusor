@@ -1,5 +1,4 @@
 from pathlib import Path
-from unittest.mock import patch
 
 from declusor import contract, core, presentation, testing
 
@@ -67,12 +66,16 @@ def test_application_run_lifecycle(tmp_path: Path) -> None:
 
     manager.register(testing.DummyPlugin)
 
+    listener = testing.MemoryTransportListener()
+    _ = listener.create_client()
+
     declusor_app = core.Application(
         router,
         view,
         plugin_manager=manager,
         session_runner=runner,
         input_source=input_source,
+        listener_factory=lambda host, port: listener,
     )
 
     fs = contract.PluginFilesystem.from_root(tmp_path)
@@ -85,17 +88,13 @@ def test_application_run_lifecycle(tmp_path: Path) -> None:
         filesystem=fs,
     )
 
-    dummy_sock = testing.DummySocket()
+    declusor_app.run(plugin_config)
 
-    with patch("declusor.util.await_connection", return_value=dummy_sock) as mock_await:
-        declusor_app.run(plugin_config)
+    assert dummy_conn.initialize_called
+    assert "launcher_script_payload" in view.messages
+    assert len(runner.run_calls) == 1
 
-        mock_await.assert_called_once_with("127.0.0.1", 9000)
-        assert dummy_conn.initialize_called
-        assert "launcher_script_payload" in view.messages
-        assert len(runner.run_calls) == 1
-
-        active_session, active_router = runner.run_calls[0]
-        assert active_router is router
-        assert active_session.connection is dummy_conn
-        assert active_session.view is view
+    active_session, active_router = runner.run_calls[0]
+    assert active_router is router
+    assert active_session.connection is dummy_conn
+    assert active_session.view is view
