@@ -70,7 +70,7 @@ class PySocketProfile(contract.IConnectionProfile):
             return None
 
         if args:
-            quoted_args = ", ".join(f"'{a}'" for a in args)
+            quoted_args = ", ".join(util.quote(a) for a in args)
             return f"{function_name}({quoted_args})"
 
         return f"{function_name}()"
@@ -123,7 +123,7 @@ class PySocketConnection(contract.IConnection):
             raise config.ConnectionError("Cannot initialize a closed connection.")
 
         self._state = contract.ConnectionState.INITIALIZING
-        self.write(b"\n\n".join(self._files.load_all_helpers().values()))
+        self.write(self._files.helpers)
 
         expected_ack = self._profile.ack_client_raw
         try:

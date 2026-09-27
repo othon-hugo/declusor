@@ -125,7 +125,7 @@ class ShellSocketConnection(contract.IConnection):
             raise config.ConnectionError("Cannot initialize a closed connection.")
 
         self._state = contract.ConnectionState.INITIALIZING
-        self.write(b"\n".join(self._files.load_all_helpers().values()))
+        self.write(self._files.helpers)
 
         expected_ack = self._profile.ack_client_raw
         try:

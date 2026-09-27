@@ -198,6 +198,3 @@ class PySocketProcessor(contract.IPluginProcessor):
             raise config.InvalidOperation(f"Module '{module}' has an unsupported extension. Allowed: {self._module_extensions}")
 
         return util.load_file(module_path)
-
-
-PySocketFileStore = PySocketProcessor

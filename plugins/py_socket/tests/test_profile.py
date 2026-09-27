@@ -26,3 +26,20 @@ def test_py_socket_profile_supported_functions_are_immutable() -> None:
     profile = py_socket.PySocketProfile(name="test", ack_server_raw=b"\x00", ack_client_raw=b"\xab" * 32)
     with pytest.raises(TypeError):
         profile._supported_functions[config.OperationCode.EXEC_FILE] = "changed"  # type: ignore[index]
+
+
+def test_py_socket_profile_render_operation_command_with_special_characters() -> None:
+    """Verify render_operation_command safely quotes arguments containing quotes and special characters."""
+
+    profile = py_socket.DEFAULT_PY_SOCKET
+    rendered = profile.render_operation_command(config.OperationCode.STORE_FILE, "payload", "path with 'quotes' & $vars")
+    assert rendered == "store_base64_encoded_value('payload', \"path with 'quotes' & $vars\")"
+    assert profile.render_operation_command(config.OperationCode.EXEC_FILE) == "execute_base64_encoded_value()"
+
+    empty_profile = py_socket.PySocketProfile(
+        name="empty",
+        ack_server_raw=b"\x00",
+        ack_client_raw=b"\xab" * 32,
+        _supported_functions={},
+    )
+    assert empty_profile.render_operation_command(config.OperationCode.EXEC_FILE) is None
