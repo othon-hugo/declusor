@@ -1,6 +1,4 @@
 from pathlib import Path
-from socket import socket
-from typing import cast
 
 import declusor_py_socket as py_socket
 import pytest
@@ -84,9 +82,9 @@ def test_build_runtime_creates_py_socket_connection() -> None:
 
     options = py_socket.PySocketPlugin.extract_options({})
     cfg = py_socket.PySocketPlugin.build_config("127.0.0.1", 9000, options)
-    dummy_sock = testing.DummySocket(peer_name=("127.0.0.1", 9000))
+    dummy_trans = testing.DummyTransport(peer_address="127.0.0.1:9000")
 
     runtime = py_socket.PySocketPlugin.build_runtime(cfg)
-    client_connection = runtime.create_connection(cast(socket, dummy_sock))
+    client_connection = runtime.create_connection(dummy_trans)
 
     assert isinstance(client_connection, py_socket.PySocketConnection)

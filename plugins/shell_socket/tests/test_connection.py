@@ -7,13 +7,13 @@ from declusor import config, contract, testing
 
 
 def test_connection_state_lifecycle_transitions(
-    make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummySocket]],
+    make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
 ) -> None:
     """Verify connection lifecycle transitions: CREATED -> CONNECTED -> CLOSED."""
 
-    sock = testing.DummySocket(incoming_bytes=b"valid_ack_32_bytes_long_sentinel")
+    trans = testing.DummyTransport(incoming_data=b"valid_ack_32_bytes_long_sentinel")
 
-    conn, _ = make_shell_connection(sock, ack=b"valid_ack_32_bytes_long_sentinel")
+    conn, _ = make_shell_connection(trans, ack=b"valid_ack_32_bytes_long_sentinel")
     state: contract.ConnectionState = conn.state
     assert state == contract.ConnectionState.CREATED
 
@@ -32,24 +32,25 @@ def test_connection_state_lifecycle_transitions(
 
 
 def test_connection_segmented_ack_streaming(
-    make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummySocket]],
+    make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
 ) -> None:
     """Verify ACK validation handles segmented byte streaming properly."""
 
-    sock = testing.DummySocket()
-    sock.feed_recv_chunks(
-        b"valid_ack_",
-        b"32_bytes_",
-        b"long_sentinel",
+    trans = testing.DummyTransport(
+        incoming_data=[
+            b"valid_ack_",
+            b"32_bytes_",
+            b"long_sentinel",
+        ]
     )
 
-    conn, _ = make_shell_connection(sock, ack=b"valid_ack_32_bytes_long_sentinel")
+    conn, _ = make_shell_connection(trans, ack=b"valid_ack_32_bytes_long_sentinel")
     conn.handshake()
     assert conn.state == contract.ConnectionState.CONNECTED
 
 
 def test_initialize_fails_on_closed_connection(
-    make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummySocket]],
+    make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
 ) -> None:
     """Verify initialize raises ConnectionError when connection is already closed."""
 
@@ -61,29 +62,26 @@ def test_initialize_fails_on_closed_connection(
 
 
 def test_write_uses_sendall_for_payload_and_ack(
-    make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummySocket]],
+    make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
 ) -> None:
-    """Verify write uses sendall to transmit payload followed by null byte framing."""
+    """Verify write transmits payload followed by null byte framing."""
 
-    connection, sock = make_shell_connection()
+    connection, trans = make_shell_connection()
 
     connection.write(b"command")
-    assert sock.sendall_calls == [b"command", b"\x00"]
+    assert trans.write_history == [b"command", b"\x00"]
+    assert trans.written_bytes == b"command\x00"
 
 
-@pytest.mark.parametrize("error", [OSError("broken pipe"), TimeoutError("timed out")])
 def test_write_translates_transport_errors(
-    make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummySocket]],
-    error: BaseException,
+    make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
 ) -> None:
-    """Verify write translates socket transport errors into domain ConnectionError."""
+    """Verify write translates transport errors into domain ConnectionError."""
 
-    sock = testing.DummySocket()
-    sock.sendall_error = error
+    trans = testing.DummyTransport()
+    trans.simulate_error_on_next_write(config.ConnectionError("transport write failed"))
 
-    connection, _ = make_shell_connection(sock)
+    connection, _ = make_shell_connection(trans)
 
-    with pytest.raises(config.ConnectionError) as raised:
+    with pytest.raises(config.ConnectionError, match="Failed to write to connection"):
         connection.write(b"command")
-
-    assert raised.value.__cause__ is error

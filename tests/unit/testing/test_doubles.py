@@ -1,6 +1,3 @@
-from socket import socket
-from typing import cast
-
 import pytest
 
 from declusor import config, contract, core, testing, util
@@ -172,8 +169,8 @@ def test_dummy_client_runtime() -> None:
     assert isinstance(runtime.processor, contract.IPluginProcessor)
     assert runtime.launcher == "echo test"
 
-    dummy_socket = testing.DummySocket()
-    created = runtime.create_connection(cast(socket, dummy_socket))
+    dummy_transport = testing.DummyTransport()
+    created = runtime.create_connection(dummy_transport)
     assert created is conn
     assert runtime.created_connections == [conn]
 

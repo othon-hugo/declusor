@@ -1,6 +1,4 @@
 from pathlib import Path
-from socket import socket
-from typing import cast
 
 import declusor_shell_socket as shell_socket
 
@@ -72,9 +70,9 @@ def test_build_runtime_creates_shell_socket_connection() -> None:
 
     options = shell_socket.ShellSocketPlugin.extract_options({})
     cfg = shell_socket.ShellSocketPlugin.build_config("127.0.0.1", 9000, options)
-    dummy_sock = testing.DummySocket(peer_name=("127.0.0.1", 9000))
+    dummy_trans = testing.DummyTransport(peer_address="127.0.0.1:9000")
 
     runtime = shell_socket.ShellSocketPlugin.build_runtime(cfg)
-    client_connection = runtime.create_connection(cast(socket, dummy_sock))
+    client_connection = runtime.create_connection(dummy_trans)
 
     assert isinstance(client_connection, shell_socket.ShellSocketConnection)
