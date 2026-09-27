@@ -93,7 +93,7 @@ class PySocketRuntime(contract.IPluginRuntime):
             ack_client_raw=util.hash_sha256(config.Settings.DEFAULT_CLIENT_ACK_SEED),
         )
 
-        self._processor = PySocketFileStore(plugin_config.filesystem)
+        self._processor = PySocketProcessor(plugin_config.filesystem)
 
     @property
     def processor(self) -> contract.IPluginProcessor:
@@ -119,7 +119,7 @@ class PySocketRuntime(contract.IPluginRuntime):
         return PySocketConnection(connection, self._profile, self._processor)
 
 
-class PySocketFileStore(contract.IPluginProcessor):
+class PySocketProcessor(contract.IPluginProcessor):
     """Filesystem adapter for Python client templates, libraries and payloads.
 
     Resolves launchers, helpers and modules from the plugin's own self-contained
@@ -198,3 +198,6 @@ class PySocketFileStore(contract.IPluginProcessor):
             raise config.InvalidOperation(f"Module '{module}' has an unsupported extension. Allowed: {self._module_extensions}")
 
         return util.load_file(module_path)
+
+
+PySocketFileStore = PySocketProcessor

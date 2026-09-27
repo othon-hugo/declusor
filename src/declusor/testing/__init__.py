@@ -9,6 +9,7 @@ from .conformance import (
 from .doubles import (
     DummyApplication,
     DummyCommand,
+    DummyConfig,
     DummyConnection,
     DummyConnectionProfile,
     DummyInputSource,
@@ -36,6 +37,7 @@ __all__ = [
     "create_test_session",
     "DummyApplication",
     "DummyCommand",
+    "DummyConfig",
     "DummyConnection",
     "DummyConnectionProfile",
     "DummyInputSource",

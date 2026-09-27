@@ -14,6 +14,7 @@ from declusor.testing.doubles.input_source import (
     DummyInputSource,
 )
 from declusor.testing.doubles.plugins import (
+    DummyConfig,
     DummyPlugin,
     DummyPluginRuntime,
 )
@@ -36,6 +37,7 @@ from declusor.testing.doubles.view import (
 __all__ = [
     "DummyApplication",
     "DummyCommand",
+    "DummyConfig",
     "DummyConnection",
     "DummyConnectionProfile",
     "DummyInputSource",
