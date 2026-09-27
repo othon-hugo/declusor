@@ -43,6 +43,10 @@ from .session import (
     ISessionRunner,
     SessionContext,
 )
+from .transport import (
+    ITransport,
+    ITransportListener,
+)
 from .view import (
     IView,
 )
@@ -70,6 +74,8 @@ __all__ = [
     "IPluginRuntime",
     "IRouter",
     "ISessionRunner",
+    "ITransport",
+    "ITransportListener",
     "IView",
     "ParsedArguments",
     "PluginConfig",

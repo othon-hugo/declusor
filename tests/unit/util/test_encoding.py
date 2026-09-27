@@ -60,3 +60,55 @@ def test_hashing_functions() -> None:
     assert encoding.hash_sha384(data) == hashlib.sha384(data).digest()
     assert encoding.hash_sha512(data) == hashlib.sha512(data).digest()
     assert encoding.hash_sha256("test payload") == hashlib.sha256(data).digest()
+
+
+def test_xor_bytes_roundtrip() -> None:
+    """Verify XOR encoding and decoding returns the original data."""
+
+    data = b"Hello, Declusor Transport Protocol!"
+    key = b"secret_key_123"
+
+    encrypted = encoding.xor_bytes(data, key)
+    assert encrypted != data
+
+    decrypted = encoding.xor_bytes(encrypted, key)
+    assert decrypted == data
+
+
+def test_xor_bytes_empty_data() -> None:
+    """Verify XOR on empty bytes returns empty bytes."""
+
+    assert encoding.xor_bytes(b"", b"key") == b""
+
+
+def test_xor_bytes_empty_key_raises_error() -> None:
+    """Verify ValueError is raised if key is empty."""
+
+    import pytest
+
+    with pytest.raises(ValueError, match="XOR key cannot be empty"):
+        encoding.xor_bytes(b"data", b"")
+
+
+def test_xor_bytes_negative_offset_raises_error() -> None:
+    """Verify ValueError is raised if offset is negative."""
+
+    import pytest
+
+    with pytest.raises(ValueError, match="Offset cannot be negative"):
+        encoding.xor_bytes(b"data", b"key", offset=-1)
+
+
+def test_xor_bytes_stream_fragmentation_with_offset() -> None:
+    """Verify chunked encryption with offset matches contiguous stream encryption."""
+
+    full_payload = b"A" * 50 + b"B" * 50 + b"C" * 50
+    key = b"cyclic_key"
+
+    contiguous = encoding.xor_bytes(full_payload, key)
+
+    chunk1 = encoding.xor_bytes(full_payload[:40], key, offset=0)
+    chunk2 = encoding.xor_bytes(full_payload[40:110], key, offset=40)
+    chunk3 = encoding.xor_bytes(full_payload[110:], key, offset=110)
+
+    assert chunk1 + chunk2 + chunk3 == contiguous

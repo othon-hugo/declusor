@@ -139,3 +139,33 @@ def hash_sha512(data: str | bytes, /) -> bytes:
     """
 
     return sha512(convert_to_bytes(data)).digest()
+
+
+def xor_bytes(data: bytes, key: bytes, offset: int = 0) -> bytes:
+    """Apply repeating-key XOR cipher to data starting from a keystream offset.
+
+    Symmetric operation: encrypting and decrypting use identical logic.
+    Supporting an offset allows stream ciphers across fragmented TCP packets
+    to remain synchronized without key reset.
+
+    Args:
+        data: Raw bytes to encrypt or decrypt.
+        key: Non-empty encryption key.
+        offset: Non-negative starting index in the repeating keystream.
+
+    Returns:
+        The XOR-transformed bytes.
+
+    Raises:
+        ValueError: If key is empty or offset is negative.
+    """
+
+    if not key:
+        raise ValueError("XOR key cannot be empty.")
+    if offset < 0:
+        raise ValueError("Offset cannot be negative.")
+    if not data:
+        return b""
+
+    key_len = len(key)
+    return bytes(b ^ key[(offset + i) % key_len] for i, b in enumerate(data))

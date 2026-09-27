@@ -15,6 +15,7 @@ from .encoding import (
     hash_sha384,
     hash_sha512,
     quote,
+    xor_bytes,
 )
 from .network import (
     await_connection,
@@ -70,4 +71,5 @@ __all__ = [
     "try_load_file",
     "validate_file_extension",
     "validate_file_relative",
+    "xor_bytes",
 ]
