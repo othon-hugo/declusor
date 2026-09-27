@@ -13,7 +13,7 @@ def test_load_library_reports_read_errors(tmp_path: Path, monkeypatch: pytest.Mo
     helpers.mkdir(parents=True)
     (helpers / "common.sh").write_bytes(b"echo common")
 
-    store = shell_socket.ShellSocketFileStore(tmp_path / "client.sh", helpers, tmp_path / "modules")
+    store = shell_socket.ShellSocketProcessor(tmp_path / "client.sh", helpers, tmp_path / "modules")
 
     def fail_load_file(filepath: str | Path, /) -> bytes:
         raise config.InvalidOperation(f"cannot read {filepath}")
@@ -31,7 +31,7 @@ def test_load_library_returns_non_empty_scripts(tmp_path: Path) -> None:
     helpers.mkdir(parents=True)
     (helpers / "common.sh").write_bytes(b"echo common")
 
-    store = shell_socket.ShellSocketFileStore(tmp_path / "client.sh", helpers, tmp_path / "modules")
+    store = shell_socket.ShellSocketProcessor(tmp_path / "client.sh", helpers, tmp_path / "modules")
     assert store.helpers() == b"echo common"
 
 
@@ -42,7 +42,7 @@ def test_load_module_reads_only_from_modules_directory(tmp_path: Path) -> None:
     modules.mkdir(parents=True)
     (modules / "example.sh").write_bytes(b"echo module")
 
-    store = shell_socket.ShellSocketFileStore(tmp_path / "client.sh", tmp_path / "helpers", modules)
+    store = shell_socket.ShellSocketProcessor(tmp_path / "client.sh", tmp_path / "helpers", modules)
     assert store.get_module("example.sh") == b"echo module"
 
 
@@ -53,7 +53,7 @@ def test_load_module_rejects_traversal_and_wrong_extension(tmp_path: Path) -> No
     modules.mkdir(parents=True)
     (tmp_path / "outside.txt").write_bytes(b"outside")
 
-    store = shell_socket.ShellSocketFileStore(tmp_path / "client.sh", tmp_path / "helpers", modules)
+    store = shell_socket.ShellSocketProcessor(tmp_path / "client.sh", tmp_path / "helpers", modules)
 
     with pytest.raises(config.InvalidOperation):
         store.get_module("../outside.txt")

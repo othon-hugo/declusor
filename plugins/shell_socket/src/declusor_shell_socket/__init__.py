@@ -4,15 +4,15 @@ from .connection import (
     ShellSocketProfile,
 )
 from .plugin import (
-    ShellSocketFileStore,
     ShellSocketPlugin,
+    ShellSocketProcessor,
     ShellSocketRuntime,
 )
 
 __all__ = [
     "DEFAULT_SHELL_SOCKET",
     "ShellSocketConnection",
-    "ShellSocketFileStore",
+    "ShellSocketProcessor",
     "ShellSocketPlugin",
     "ShellSocketProfile",
     "ShellSocketRuntime",
