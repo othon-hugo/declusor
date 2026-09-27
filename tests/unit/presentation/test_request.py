@@ -1,5 +1,3 @@
-from typing import TypedDict
-
 import pytest
 
 from declusor import config, contract, presentation

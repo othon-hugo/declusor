@@ -80,7 +80,7 @@ def test_application_run_lifecycle(tmp_path: Path) -> None:
         kind=testing.DummyPlugin.name,
         host="127.0.0.1",
         port=9000,
-        options={},
+        options=contract.ParsedArguments(),
         options_type=contract.ParsedArguments,
         filesystem=fs,
     )

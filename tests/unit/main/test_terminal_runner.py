@@ -1,4 +1,4 @@
-from declusor import contract, core, testing
+from declusor import core, testing
 from declusor.main.terminal import run_terminal_app
 
 

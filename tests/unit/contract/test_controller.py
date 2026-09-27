@@ -1,5 +1,4 @@
 from dataclasses import FrozenInstanceError
-from typing import Any
 
 import pytest
 

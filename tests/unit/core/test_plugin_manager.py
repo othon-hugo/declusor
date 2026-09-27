@@ -69,7 +69,7 @@ class NotAPlugin:
     name = "not_a_plugin"
 
 
-class MissingAbstractMethods(contract.IPluginExtension):
+class MissingAbstractMethods(contract.IPluginExtension[contract.ParsedArguments]):
     """Plugin subclass missing required abstract method implementations."""
 
     name = "missing_methods"
@@ -289,11 +289,11 @@ def test_discover_from_entry_points() -> None:
     """Verify plugin discovery via Python entry points ('declusor.plugins')."""
 
     class DummyEntryPoint:
-        def __init__(self, name: str, plugin_cls: type[contract.IPluginExtension]) -> None:
+        def __init__(self, name: str, plugin_cls: type[DummyValidPlugin]) -> None:
             self.name = name
             self._plugin_cls = plugin_cls
 
-        def load(self) -> type[contract.IPluginExtension]:
+        def load(self) -> type[DummyValidPlugin]:
             return self._plugin_cls
 
     ep = DummyEntryPoint(name="mock_plugin", plugin_cls=DummyValidPlugin)

@@ -11,7 +11,7 @@ def test_plugin_config_default_mode(tmp_path: Path) -> None:
         kind="dummy",
         host="127.0.0.1",
         port=9000,
-        options={},
+        options=contract.ParsedArguments(),
         options_type=contract.ParsedArguments,
         filesystem=fs,
     )
@@ -32,7 +32,7 @@ def test_plugin_config_explicit_mode(tmp_path: Path) -> None:
         kind="dummy",
         host="127.0.0.1",
         port=9000,
-        options={},
+        options=contract.ParsedArguments(),
         options_type=contract.ParsedArguments,
         filesystem=fs,
         mode=config.ExecutionMode.MCP,
