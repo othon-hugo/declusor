@@ -19,7 +19,11 @@ from .doubles import (
     DummyRouter,
     DummySessionRunner,
     DummySocket,
+    DummyTransport,
     DummyView,
+    MemoryTransport,
+    MemoryTransportListener,
+    create_memory_transport_pair,
 )
 from .factories import (
     create_dummy_controller_request,
@@ -34,6 +38,7 @@ __all__ = [
     "create_dummy_controller_request",
     "create_dummy_options",
     "create_dummy_plugin_config",
+    "create_memory_transport_pair",
     "create_test_session",
     "DummyApplication",
     "DummyCommand",
@@ -47,7 +52,10 @@ __all__ = [
     "DummyRouter",
     "DummySessionRunner",
     "DummySocket",
+    "DummyTransport",
     "DummyView",
+    "MemoryTransport",
+    "MemoryTransportListener",
     "PluginConformanceTestSuite",
     "pytest_plugin",
 ]
