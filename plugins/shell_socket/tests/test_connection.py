@@ -7,13 +7,13 @@ from declusor import config, contract, testing
 
 
 def test_connection_state_lifecycle_transitions(
-    make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummySocket]],
+    make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
 ) -> None:
     """Verify connection lifecycle transitions: CREATED -> CONNECTED -> CLOSED."""
 
-    sock = testing.DummySocket(incoming_bytes=b"valid_ack_32_bytes_long_sentinel")
+    trans = testing.DummyTransport(incoming_data=b"__DECLUSOR_EOF_test_nonce__\n")
 
-    conn, _ = make_shell_connection(sock, ack=b"valid_ack_32_bytes_long_sentinel")
+    conn, _ = make_shell_connection(trans)
     state: contract.ConnectionState = conn.state
     assert state == contract.ConnectionState.CREATED
 
@@ -31,25 +31,26 @@ def test_connection_state_lifecycle_transitions(
     assert state == contract.ConnectionState.CLOSED
 
 
-def test_connection_segmented_ack_streaming(
-    make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummySocket]],
+def test_connection_segmented_envelope_streaming(
+    make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
 ) -> None:
-    """Verify ACK validation handles segmented byte streaming properly."""
+    """Verify handshake envelope handles segmented byte streaming properly."""
 
-    sock = testing.DummySocket()
-    sock.feed_recv_chunks(
-        b"valid_ack_",
-        b"32_bytes_",
-        b"long_sentinel",
+    trans = testing.DummyTransport(
+        incoming_data=[
+            b"__DECLUSOR_EOF_",
+            b"test_",
+            b"nonce__\n",
+        ]
     )
 
-    conn, _ = make_shell_connection(sock, ack=b"valid_ack_32_bytes_long_sentinel")
+    conn, _ = make_shell_connection(trans)
     conn.handshake()
     assert conn.state == contract.ConnectionState.CONNECTED
 
 
 def test_initialize_fails_on_closed_connection(
-    make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummySocket]],
+    make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
 ) -> None:
     """Verify initialize raises ConnectionError when connection is already closed."""
 
@@ -60,30 +61,60 @@ def test_initialize_fails_on_closed_connection(
         conn.handshake()
 
 
-def test_write_uses_sendall_for_payload_and_ack(
-    make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummySocket]],
+def test_write_uses_ephemeral_envelope_framing(
+    make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
 ) -> None:
-    """Verify write uses sendall to transmit payload followed by null byte framing."""
+    """Verify write transmits ephemeral nonce prefix followed by null-delimited payload."""
 
-    connection, sock = make_shell_connection()
+    connection, trans = make_shell_connection(default_nonce="fixed_nonce")
 
     connection.write(b"command")
-    assert sock.sendall_calls == [b"command", b"\x00"]
+    assert trans.written_bytes == b"fixed_nonce\x00command\x00"
 
 
-@pytest.mark.parametrize("error", [OSError("broken pipe"), TimeoutError("timed out")])
 def test_write_translates_transport_errors(
-    make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummySocket]],
-    error: BaseException,
+    make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
 ) -> None:
-    """Verify write translates socket transport errors into domain ConnectionError."""
+    """Verify write translates transport errors into domain ConnectionError."""
 
-    sock = testing.DummySocket()
-    sock.sendall_error = error
+    trans = testing.DummyTransport()
+    trans.simulate_error_on_next_write(config.ConnectionError("transport write failed"))
 
-    connection, _ = make_shell_connection(sock)
+    connection, _ = make_shell_connection(trans)
 
-    with pytest.raises(config.ConnectionError) as raised:
+    with pytest.raises(config.ConnectionError, match="Failed to write to connection"):
         connection.write(b"command")
 
-    assert raised.value.__cause__ is error
+
+def test_write_and_read_ephemeral_envelope(
+    make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+) -> None:
+    """Verify write transmits ephemeral nonce prefix and read terminates at dynamic envelope."""
+
+    conn, trans = make_shell_connection(framing_mode=config.FramingMode.EPHEMERAL_ENVELOPE)
+    conn.write(b"ls -la", nonce="abcdef0123456789")
+
+    assert trans.written_bytes == b"abcdef0123456789\x00ls -la\x00"
+    assert conn.current_nonce == "abcdef0123456789"
+
+    envelope = b"__DECLUSOR_EOF_abcdef0123456789__\n"
+    trans.push_incoming(b"output_chunk_1\n" + b"output_chunk_2\n" + envelope)
+
+    chunks = list(conn.read())
+    assert chunks == [b"output_chunk_1\noutput_chunk_2\n"]
+
+
+def test_handshake_with_ephemeral_envelope(
+    make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+) -> None:
+    """Verify handshake in EPHEMERAL_ENVELOPE mode sends helpers and waits for dynamic envelope."""
+
+    conn, trans = make_shell_connection(
+        framing_mode=config.FramingMode.EPHEMERAL_ENVELOPE,
+        default_nonce="fixed_handshake_nonce",
+    )
+    trans.push_incoming(b"__DECLUSOR_EOF_fixed_handshake_nonce__\n")
+    conn.handshake()
+
+    assert conn.state == contract.ConnectionState.CONNECTED
+    assert trans.written_bytes.startswith(b"fixed_handshake_nonce\x00")

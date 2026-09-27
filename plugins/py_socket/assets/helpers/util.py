@@ -77,3 +77,30 @@ def get_system_summary() -> dict:
         "username": os.environ.get("USER") or os.environ.get("USERNAME") or "unknown",
         "pid": os.getpid(),
     }
+
+
+def execute_system_command(command: str) -> None:
+    """Execute a system shell command and stream output chunks in real time.
+
+    Args:
+        command: The shell command string to execute.
+    """
+
+    import subprocess
+
+    proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)  # noqa: S602
+    send_fn = globals().get("_send_frame")
+
+    while proc.stdout:
+        chunk = proc.stdout.read(4096)
+
+        if not chunk:
+            break
+
+        if send_fn:
+            send_fn(1, chunk)
+        else:
+            sys.stdout.buffer.write(chunk)
+            sys.stdout.buffer.flush()
+
+    proc.wait()

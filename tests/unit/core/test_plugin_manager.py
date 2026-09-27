@@ -69,7 +69,7 @@ class NotAPlugin:
     name = "not_a_plugin"
 
 
-class MissingAbstractMethods(contract.IPluginExtension):
+class MissingAbstractMethods(contract.IPluginExtension[contract.ParsedArguments]):
     """Plugin subclass missing required abstract method implementations."""
 
     name = "missing_methods"
@@ -197,18 +197,27 @@ def test_discover_from_directory(tmp_path: Path) -> None:
     plugin_dir.mkdir()
 
     plugin_code = """
+from collections.abc import Mapping
 from declusor import contract
 
-class CustomAgentPlugin(contract.IPlugin):
+class CustomAgentConfig(contract.ParsedArguments, total=False):
+    pass
+
+class CustomAgentPlugin(contract.IPluginExtension[CustomAgentConfig]):
     name = "custom_agent"
     description = "Drop-in test agent"
+    options_type = CustomAgentConfig
 
     @classmethod
     def configure_parser(cls, parser, /) -> None:
         pass
 
     @classmethod
-    def build_config(cls, args, data_paths=None, /):
+    def extract_options(cls, raw: Mapping[str, object], /) -> CustomAgentConfig:
+        return CustomAgentConfig()
+
+    @classmethod
+    def build_config(cls, host, port, options, /, filesystem=None, mode=None):
         return None
 
     @classmethod
@@ -236,18 +245,27 @@ def test_discover_from_directory_src_layout(tmp_path: Path) -> None:
     src_pkg.mkdir(parents=True)
 
     plugin_code = """
+from collections.abc import Mapping
 from declusor import contract
 
-class CustomSrcAgentPlugin(contract.IPlugin):
+class CustomSrcAgentConfig(contract.ParsedArguments, total=False):
+    pass
+
+class CustomSrcAgentPlugin(contract.IPluginExtension[CustomSrcAgentConfig]):
     name = "custom_src_agent"
     description = "Drop-in test agent using src layout"
+    options_type = CustomSrcAgentConfig
 
     @classmethod
     def configure_parser(cls, parser, /) -> None:
         pass
 
     @classmethod
-    def build_config(cls, args, data_paths=None, /):
+    def extract_options(cls, raw: Mapping[str, object], /) -> CustomSrcAgentConfig:
+        return CustomSrcAgentConfig()
+
+    @classmethod
+    def build_config(cls, host, port, options, /, filesystem=None, mode=None):
         return None
 
     @classmethod
@@ -271,11 +289,11 @@ def test_discover_from_entry_points() -> None:
     """Verify plugin discovery via Python entry points ('declusor.plugins')."""
 
     class DummyEntryPoint:
-        def __init__(self, name: str, plugin_cls: type[contract.IPluginExtension]) -> None:
+        def __init__(self, name: str, plugin_cls: type[DummyValidPlugin]) -> None:
             self.name = name
             self._plugin_cls = plugin_cls
 
-        def load(self) -> type[contract.IPluginExtension]:
+        def load(self) -> type[DummyValidPlugin]:
             return self._plugin_cls
 
     ep = DummyEntryPoint(name="mock_plugin", plugin_cls=DummyValidPlugin)

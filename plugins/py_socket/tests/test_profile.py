@@ -26,3 +26,58 @@ def test_py_socket_profile_supported_functions_are_immutable() -> None:
     profile = py_socket.PySocketProfile(name="test", ack_server_raw=b"\x00", ack_client_raw=b"\xab" * 32)
     with pytest.raises(TypeError):
         profile._supported_functions[config.OperationCode.EXEC_FILE] = "changed"  # type: ignore[index]
+
+
+def test_py_socket_profile_render_operation_command_with_special_characters() -> None:
+    """Verify render_operation_command safely quotes arguments containing quotes and special characters."""
+
+    profile = py_socket.DEFAULT_PY_SOCKET
+    rendered = profile.render_operation_command(config.OperationCode.STORE_FILE, "payload", "path with 'quotes' & $vars")
+    assert rendered == "store_base64_encoded_value('payload', \"path with 'quotes' & $vars\")"
+    assert profile.render_operation_command(config.OperationCode.EXEC_FILE) == "execute_base64_encoded_value()"
+
+    empty_profile = py_socket.PySocketProfile(
+        name="empty",
+        ack_server_raw=b"\x00",
+        ack_client_raw=b"\xab" * 32,
+        _supported_functions={},
+    )
+    assert empty_profile.render_operation_command(config.OperationCode.EXEC_FILE) is None
+
+
+def test_py_socket_profile_render_operation_command_exec_command_python() -> None:
+    """Verify EXEC_COMMAND returns Python code unaltered."""
+
+    profile = py_socket.DEFAULT_PY_SOCKET
+
+    py_code = "import os\nprint(os.getpid())"
+    assert profile.render_operation_command(config.OperationCode.EXEC_COMMAND, py_code) == py_code
+
+    py_shebang = "#!/usr/bin/env python\nprint('hello')"
+    assert profile.render_operation_command(config.OperationCode.EXEC_COMMAND, py_shebang) == py_shebang
+
+    py_helper_call = "execute_base64_encoded_value('xyz')"
+    assert profile.render_operation_command(config.OperationCode.EXEC_COMMAND, py_helper_call) == py_helper_call
+
+
+def test_py_socket_profile_render_operation_command_exec_command_shell() -> None:
+    """Verify EXEC_COMMAND wraps shell commands in execute_system_command."""
+
+    profile = py_socket.DEFAULT_PY_SOCKET
+
+    cmd = "uname -a && whoami"
+    expected = "execute_system_command('uname -a && whoami')"
+    assert profile.render_operation_command(config.OperationCode.EXEC_COMMAND, cmd) == expected
+
+    cmd_quotes = "echo 'hello world' \"nested\""
+    expected_quotes = "execute_system_command('echo \\'hello world\\' \"nested\"')"
+    assert profile.render_operation_command(config.OperationCode.EXEC_COMMAND, cmd_quotes) == expected_quotes
+
+
+def test_py_socket_profile_render_operation_command_exec_command_empty() -> None:
+    """Verify EXEC_COMMAND with empty or missing arguments returns empty string."""
+
+    profile = py_socket.DEFAULT_PY_SOCKET
+
+    assert profile.render_operation_command(config.OperationCode.EXEC_COMMAND) == ""
+    assert profile.render_operation_command(config.OperationCode.EXEC_COMMAND, "") == ""

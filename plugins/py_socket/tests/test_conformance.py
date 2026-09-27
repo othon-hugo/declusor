@@ -3,14 +3,14 @@ from pathlib import Path
 import declusor_py_socket as py_socket
 import pytest
 
-from declusor import contract, testing
+from declusor import testing
 
 
-class TestPySocketConformance(testing.PluginConformanceTestSuite):
+class TestPySocketConformance(testing.PluginConformanceTestSuite[py_socket.plugin.PySocketConfig]):
     """Verify PySocketPlugin strictly complies with the IPlugin contract."""
 
     @pytest.fixture
-    def plugin_class(self) -> type[contract.IPluginExtension]:
+    def plugin_class(self) -> type[py_socket.PySocketPlugin]:
         return py_socket.PySocketPlugin
 
     @pytest.fixture

@@ -61,6 +61,7 @@ class DummyPluginFileStore(contract.IPluginProcessor):
 
         return dict(self.helpers_map)
 
+    @property
     def helpers(self) -> bytes:
         """Compatibility helper returning concatenated helper libraries."""
 

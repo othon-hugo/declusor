@@ -1,7 +1,6 @@
+import secrets
 from collections.abc import Generator, Mapping
-from contextlib import suppress
 from dataclasses import dataclass, field
-from socket import socket
 from types import MappingProxyType
 
 from declusor import config, contract, util
@@ -27,6 +26,12 @@ class ShellSocketProfile(contract.IConnectionProfile):
     _default_timeout: float | None = 1.0
     """Timeout in seconds for socket operations. Set to None for no timeout."""
 
+    _framing_mode: config.FramingMode = config.FramingMode.EPHEMERAL_ENVELOPE
+    """Framing strategy used by this profile."""
+
+    _default_nonce: str | None = None
+    """Default or fixed nonce for deterministic testing."""
+
     _default_buffer_size: int = 2**8
     """Size of the buffer to use when reading from the socket. Must be > 0."""
 
@@ -48,6 +53,18 @@ class ShellSocketProfile(contract.IConnectionProfile):
 
         if self.default_timeout and self.default_timeout < 0:
             raise config.ConnectionError("connection_timeout must be >= 0 or None")
+
+    @property
+    def framing_mode(self) -> config.FramingMode:
+        """Framing strategy used by this profile."""
+
+        return self._framing_mode
+
+    @property
+    def default_nonce(self) -> str | None:
+        """Default or fixed nonce for deterministic testing."""
+
+        return self._default_nonce
 
     @property
     def default_buffer_size(self) -> int:
@@ -72,6 +89,9 @@ class ShellSocketProfile(contract.IConnectionProfile):
             A ready-to-send shell command string, or ``None`` if unsupported.
         """
 
+        if opcode == config.OperationCode.EXEC_COMMAND:
+            return args[0] if args else ""
+
         function_name = self._supported_functions.get(opcode)
 
         if not function_name:
@@ -83,15 +103,21 @@ class ShellSocketProfile(contract.IConnectionProfile):
 class ShellSocketConnection(contract.IConnection):
     """``IConnection`` implementation for a Bash-over-TCP reverse-shell client."""
 
-    def __init__(self, connection: socket, profile: ShellSocketProfile, files: contract.IPluginProcessor, /) -> None:
+    def __init__(
+        self,
+        transport: contract.ITransport,
+        profile: ShellSocketProfile,
+        files: contract.IPluginProcessor,
+        /,
+    ) -> None:
         self._profile = profile
         self._files = files
-        self._connection = connection
-        self._timeout = profile.default_timeout
+        self._transport = transport
         self._state = contract.ConnectionState.CREATED
+        self._current_nonce: str | None = profile.default_nonce
 
-        if self._timeout is not None:
-            self._connection.settimeout(self._timeout)
+        if profile.default_timeout is not None:
+            self._transport.timeout = profile.default_timeout
 
     @property
     def state(self) -> contract.ConnectionState:
@@ -106,72 +132,69 @@ class ShellSocketConnection(contract.IConnection):
         return self._profile
 
     @property
-    def timeout(self) -> float | None:
-        """Current socket timeout in seconds."""
+    def current_nonce(self) -> str | None:
+        """The active ephemeral nonce for the current or most recent command."""
 
-        return self._timeout
+        return self._current_nonce
+
+    @property
+    def timeout(self) -> float | None:
+        """Current transport timeout in seconds."""
+
+        return self._transport.timeout
 
     @timeout.setter
     def timeout(self, value: float | None) -> None:
-        self._timeout = value
-        self._connection.settimeout(value)
+        self._transport.timeout = value
 
     def handshake(self) -> None:
         """Perform the client initialization handshake."""
-
-        if self._state != contract.ConnectionState.CREATED:
-            pass  # TODO
 
         if self._state == contract.ConnectionState.CLOSED:
             raise config.ConnectionError("Cannot initialize a closed connection.")
 
         self._state = contract.ConnectionState.INITIALIZING
-        self.write(b"\n".join(self._files.load_all_helpers().values()))
-
-        expected_ack = self._profile.ack_client_raw
-        ack_len = len(expected_ack)
-        received_ack = bytearray()
+        self.write(self._files.helpers)
 
         try:
-            while len(received_ack) < ack_len:
-                remaining = ack_len - len(received_ack)
-                read_size = min(self._profile.default_buffer_size, remaining)
-                chunk = self._connection.recv(read_size)
-
-                if not chunk:
-                    raise config.ConnectionError("Connection closed by client before receiving ACK.")
-
-                received_ack.extend(chunk)
-
-            if bytes(received_ack) != expected_ack:
-                raise config.ConnectionError("Invalid client ACK during session initialization.")
-        except (OSError, TimeoutError) as error:
-            raise config.ConnectionError("Failed waiting for client ACK during session initialization.") from error
+            for _ in self.read():
+                pass
+        except (config.ConnectionClosed, config.ConnectionTimeoutError, config.ConnectionError) as error:
+            raise config.ConnectionError("Failed waiting for client handshake envelope.") from error
 
         self._state = contract.ConnectionState.CONNECTED
 
-    def write(self, data: bytes, /) -> None:
-        """Send data to the remote client."""
+    def write(self, data: bytes, /, *, nonce: str | None = None) -> None:
+        """Send data to the remote client enclosed in an ephemeral transaction envelope."""
 
         if self._state == contract.ConnectionState.CLOSED:
             raise config.ConnectionClosed("Connection is closed.")
 
+        self._current_nonce = nonce or self._profile.default_nonce or secrets.token_hex(16)
+        payload = self._current_nonce.encode("ascii") + b"\x00" + data + b"\x00"
+
         try:
-            self._connection.sendall(data)
-            self._connection.sendall(self._profile.ack_server_raw)
-        except (OSError, TimeoutError) as error:
+            self._transport.write(payload)
+        except (config.ConnectionClosed, config.ConnectionTimeoutError, config.ConnectionError) as error:
             raise config.ConnectionError(f"Failed to write to connection: {error}") from error
 
     def read(self) -> Generator[bytes, None, None]:
-        """Stream response chunks from the client until the ACK sentinel."""
+        """Stream response chunks from the client until the ephemeral envelope delimiter."""
 
-        ack = self._profile.ack_client_raw
+        if self._state == contract.ConnectionState.CLOSED:
+            raise config.ConnectionClosed("Connection is closed.")
+
+        if not self._current_nonce:
+            raise config.ConnectionError("No active command nonce for read operation.")
+
+        delim = f"__DECLUSOR_EOF_{self._current_nonce}__".encode("ascii")
+
         buffer = bytearray()
 
         while True:
             try:
-                chunk = self._connection.recv(self._profile.default_buffer_size)
-            except (OSError, TimeoutError) as error:
+                chunk = self._transport.read(self._profile.default_buffer_size)
+            except (config.ConnectionClosed, config.ConnectionTimeoutError, config.ConnectionError) as error:
                 raise config.ConnectionClosed(f"Connection interrupted during read: {error}") from error
 
             if not chunk:
@@ -180,19 +203,21 @@ class ShellSocketConnection(contract.IConnection):
             buffer.extend(chunk)
 
             while True:
-                ack_pos = buffer.find(ack)
-                if ack_pos == -1:
+                pos = buffer.find(delim)
+                if pos == -1:
                     break
 
-                if ack_pos > 0:
-                    yield bytes(buffer[:ack_pos])
+                if pos > 0:
+                    yield bytes(buffer[:pos])
 
-                buffer = buffer[ack_pos + len(ack) :]
+                buffer = buffer[pos + len(delim) :]
+                if buffer.startswith(b"\n"):
+                    buffer = buffer[1:]
                 return
 
-            if len(buffer) > len(ack):
-                yield bytes(buffer[: -len(ack)])
-                buffer = buffer[-len(ack) :]
+            if len(buffer) > len(delim):
+                yield bytes(buffer[: -len(delim)])
+                buffer = buffer[-len(delim) :]
 
     def __enter__(self) -> "ShellSocketConnection":
         return self
@@ -201,19 +226,18 @@ class ShellSocketConnection(contract.IConnection):
         self.close()
 
     def close(self) -> None:
-        """Close the underlying socket idempotently."""
+        """Close the underlying transport idempotently."""
 
         if self._state == contract.ConnectionState.CLOSED:
             return
 
         self._state = contract.ConnectionState.CLOSED
-
-        with suppress(OSError):
-            self._connection.close()
+        self._transport.close()
 
 
 DEFAULT_SHELL_SOCKET = ShellSocketProfile(
     name="Shell Socket",
     ack_server_raw=config.Settings.DEFAULT_SERVER_ACK,
     ack_client_raw=util.hash_sha256(config.Settings.DEFAULT_CLIENT_ACK_SEED),
+    _framing_mode=config.FramingMode.EPHEMERAL_ENVELOPE,
 )

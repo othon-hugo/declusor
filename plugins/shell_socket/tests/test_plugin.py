@@ -1,10 +1,8 @@
 from pathlib import Path
-from socket import socket
-from typing import cast
 
 import declusor_shell_socket as shell_socket
 
-from declusor import config, contract, testing
+from declusor import contract, testing
 
 
 def test_shell_socket_plugin_metadata() -> None:
@@ -15,62 +13,48 @@ def test_shell_socket_plugin_metadata() -> None:
     assert shell_socket.ShellSocketPlugin.version == "1.0.0"
 
 
-def test_build_config_uses_bundled_assets_when_data_paths_is_none() -> None:
-    """When data_paths is None, plugin must cleanly resolve bundled ASSETS_DIR."""
+def test_extract_options_returns_typed_dict() -> None:
+    """Verify extract_options returns a ShellSocketConfig instance."""
 
-    args = contract.PluginNamespace(host="127.0.0.1", port=9000)
-    cfg = shell_socket.ShellSocketPlugin.build_config(args, None)
+    raw: dict[str, object] = {}
+    options = shell_socket.ShellSocketPlugin.extract_options(raw)
 
-    assert cfg.options["launcher_path"] == shell_socket.plugin.ASSETS_DIR / "launchers" / "shell_socket_client.sh"
-    assert cfg.options["helpers_dir"] == shell_socket.plugin.ASSETS_DIR / "helpers"
-    assert cfg.options["modules_dir"] == shell_socket.plugin.ASSETS_DIR / "modules"
-    assert cfg.filesystem is None
+    assert isinstance(options, dict)
 
+
+def test_build_config_uses_default_assets_when_filesystem_is_none() -> None:
+    """When filesystem is None, plugin builds default PluginFilesystem from bundled assets."""
+
+    options = shell_socket.ShellSocketPlugin.extract_options({})
+    cfg = shell_socket.ShellSocketPlugin.build_config("127.0.0.1", 9000, options)
+
+    assert cfg.kind == "shell_socket"
+    assert cfg.host == "127.0.0.1"
+    assert cfg.port == 9000
+    assert cfg.filesystem is not None
     shell_socket.ShellSocketPlugin.validate(cfg)
 
 
-def test_build_config_resolves_custom_data_paths_when_provided(tmp_path: Path) -> None:
-    """When custom data_paths is provided, plugin resolves against client namespace."""
+def test_build_config_uses_custom_filesystem_when_provided(tmp_path: Path) -> None:
+    """When custom filesystem is provided, plugin resolves against that filesystem."""
 
-    custom_launcher = tmp_path / "shell_socket" / "launchers" / "shell_socket_client.sh"
-    custom_launcher.parent.mkdir(parents=True)
-    custom_launcher.write_text("# custom launcher", encoding="utf-8")
+    launchers = tmp_path / "launchers"
+    launchers.mkdir()
+    (launchers / "shell_socket_client.sh").write_text("#!/bin/sh", encoding="utf-8")
 
-    data_paths = config.DataPaths.from_root(tmp_path)
-    args = contract.PluginNamespace(host="127.0.0.1", port=9000)
-    cfg = shell_socket.ShellSocketPlugin.build_config(args, data_paths)
+    fs = contract.PluginFilesystem.from_root(tmp_path)
+    options = shell_socket.ShellSocketPlugin.extract_options({})
+    cfg = shell_socket.ShellSocketPlugin.build_config("127.0.0.1", 9000, options, filesystem=fs)
 
-    assert cfg.options["launcher_path"] == custom_launcher
-    assert cfg.filesystem == data_paths
-
+    assert cfg.filesystem == fs
     shell_socket.ShellSocketPlugin.validate(cfg)
 
 
-def test_build_runtime_renders_configured_client_script(tmp_path: Path) -> None:
-    """Verify shell_socket.ShellSocketPlugin.build_runtime renders client script with substituted parameters."""
-
-    client_path = tmp_path / "client.sh"
-    client_path.write_text("connect $DECLUSOR_HOST:$DECLUSOR_PORT ack=$DECLUSOR_ACKNOWLEDGE", encoding="utf-8")
-    plugin_config = contract.PluginConfig(
-        kind=shell_socket.ShellSocketPlugin.name,
-        host="127.0.0.1",
-        port=9000,
-        options={
-            "launcher_path": client_path,
-            "helpers_dir": tmp_path / "helpers",
-            "modules_dir": tmp_path / "modules",
-        },
-    )
-
-    runtime = shell_socket.ShellSocketPlugin.build_runtime(plugin_config)
-    assert runtime.launcher.startswith("connect 127.0.0.1:9000 ack=\\x")
-
-
-def test_build_runtime_renders_bundled_launcher_with_declusor_prefix() -> None:
+def test_build_runtime_renders_bundled_launcher_with_parameters() -> None:
     """Verify default bundled shell_socket_client.sh renders with substituted values."""
 
-    args = contract.PluginNamespace(host="192.168.1.50", port=5555)
-    cfg = shell_socket.ShellSocketPlugin.build_config(args, None)
+    options = shell_socket.ShellSocketPlugin.extract_options({})
+    cfg = shell_socket.ShellSocketPlugin.build_config("192.168.1.50", 5555, options)
     runtime = shell_socket.ShellSocketPlugin.build_runtime(cfg)
 
     script = runtime.launcher
@@ -81,26 +65,14 @@ def test_build_runtime_renders_bundled_launcher_with_declusor_prefix() -> None:
     assert "$data" in script  # Runtime bash variable is preserved
 
 
-def test_build_runtime_creates_shell_socket_connection(tmp_path: Path) -> None:
+def test_build_runtime_creates_shell_socket_connection() -> None:
     """Verify runtime creates a valid shell_socket.ShellSocketConnection instance."""
 
-    client_path = tmp_path / "client.sh"
-    client_path.write_text("$DECLUSOR_HOST:$DECLUSOR_PORT", encoding="utf-8")
+    options = shell_socket.ShellSocketPlugin.extract_options({})
+    cfg = shell_socket.ShellSocketPlugin.build_config("127.0.0.1", 9000, options)
+    dummy_trans = testing.DummyTransport(peer_address="127.0.0.1:9000")
 
-    plugin_config = contract.PluginConfig(
-        kind=shell_socket.ShellSocketPlugin.name,
-        host="127.0.0.1",
-        port=9000,
-        options={
-            "launcher_path": client_path,
-            "helpers_dir": tmp_path / "helpers",
-            "modules_dir": tmp_path / "modules",
-        },
-    )
-
-    dummy_sock = testing.DummySocket(peer_name=("127.0.0.1", 9000))
-
-    runtime = shell_socket.ShellSocketPlugin.build_runtime(plugin_config)
-    client_connection = runtime.create_connection(cast(socket, dummy_sock))
+    runtime = shell_socket.ShellSocketPlugin.build_runtime(cfg)
+    client_connection = runtime.create_connection(dummy_trans)
 
     assert isinstance(client_connection, shell_socket.ShellSocketConnection)

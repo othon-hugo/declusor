@@ -9,14 +9,40 @@ def test_execute_command_lifecycle(
     test_session: contract.SessionContext,
     dummy_connection: testing.DummyConnection,
     dummy_view: testing.DummyView,
+    dummy_profile: testing.DummyConnectionProfile,
 ) -> None:
-    """ExecuteCommand transmits the raw command string and streams chunks to view."""
+    """ExecuteCommand transmits the rendered command string and streams chunks to view."""
+
+    dummy_profile.set_rendered_command(config.OperationCode.EXEC_COMMAND, "rendered_id")
 
     dto = command.ExecuteCommandDTO(command_line="id")
     cmd = command.ExecuteCommand(dto=dto)
 
     test_session.execute(cmd)
 
+    assert len(dummy_profile.render_calls) == 1
+    assert dummy_profile.render_calls[0] == (config.OperationCode.EXEC_COMMAND, ("id",))
+    assert dummy_connection.written == [b"rendered_id"]
+    assert dummy_view.binary_data == [b"chunk1\n", b"chunk2\n"]
+
+
+def test_execute_command_lifecycle_fallback_unrendered(
+    test_session: contract.SessionContext,
+    dummy_connection: testing.DummyConnection,
+    dummy_view: testing.DummyView,
+    dummy_profile: testing.DummyConnectionProfile,
+) -> None:
+    """ExecuteCommand transmits raw command bytes when profile returns None."""
+
+    dummy_profile.set_rendered_command(config.OperationCode.EXEC_COMMAND, None)
+
+    dto = command.ExecuteCommandDTO(command_line="id")
+    cmd = command.ExecuteCommand(dto=dto)
+
+    test_session.execute(cmd)
+
+    assert len(dummy_profile.render_calls) == 1
+    assert dummy_profile.render_calls[0] == (config.OperationCode.EXEC_COMMAND, ("id",))
     assert dummy_connection.written == [b"id"]
     assert dummy_view.binary_data == [b"chunk1\n", b"chunk2\n"]
 

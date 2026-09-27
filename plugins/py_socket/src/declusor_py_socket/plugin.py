@@ -1,6 +1,5 @@
 from collections.abc import Mapping
 from pathlib import Path
-from socket import socket
 
 from declusor import config, contract, util
 
@@ -93,7 +92,7 @@ class PySocketRuntime(contract.IPluginRuntime):
             ack_client_raw=util.hash_sha256(config.Settings.DEFAULT_CLIENT_ACK_SEED),
         )
 
-        self._processor = PySocketFileStore(plugin_config.filesystem)
+        self._processor = PySocketProcessor(plugin_config.filesystem)
 
     @property
     def processor(self) -> contract.IPluginProcessor:
@@ -113,13 +112,13 @@ class PySocketRuntime(contract.IPluginRuntime):
 
         return rendered_bytes.decode("utf-8")
 
-    def create_connection(self, connection: socket, /) -> contract.IConnection:
-        """Create a py_socket connection for an accepted socket."""
+    def create_connection(self, transport: contract.ITransport, /) -> contract.IConnection:
+        """Create a py_socket connection for an accepted transport channel."""
 
-        return PySocketConnection(connection, self._profile, self._processor)
+        return PySocketConnection(transport, self._profile, self._processor)
 
 
-class PySocketFileStore(contract.IPluginProcessor):
+class PySocketProcessor(contract.IPluginProcessor):
     """Filesystem adapter for Python client templates, libraries and payloads.
 
     Resolves launchers, helpers and modules from the plugin's own self-contained
@@ -136,6 +135,14 @@ class PySocketFileStore(contract.IPluginProcessor):
         self._library_extensions = library_extensions
         self._module_extensions = module_extensions
 
+    @property
+    def helpers(self) -> bytes:
+        """Load and concatenate valid Python helper libraries for backward compatibility."""
+
+        all_helpers = self.load_all_helpers()
+
+        return b"\n\n".join(all_helpers.values())
+
     def render_launcher(self, host: str, port: int, acknowledge: bytes, /) -> bytes:
         """Read and render the Python client bootstrap launcher script."""
 
@@ -146,11 +153,15 @@ class PySocketFileStore(contract.IPluginProcessor):
         except OSError as error:
             raise config.ConnectionError(f"Failed to read client script: {error}") from error
 
+        hex_ack = acknowledge.hex()
         rendered = util.format_template(
             client_script_template,
             HOST=host,
             PORT=str(port),
-            ACKNOWLEDGE=acknowledge.hex(),
+            ACKNOWLEDGE=hex_ack,
+            DECLUSOR_HOST=host,
+            DECLUSOR_PORT=str(port),
+            DECLUSOR_ACKNOWLEDGE=hex_ack,
         )
 
         return rendered.encode("utf-8")
@@ -178,13 +189,6 @@ class PySocketFileStore(contract.IPluginProcessor):
                 helpers[file.name] = util.load_file(file)
 
         return helpers
-
-    def helpers(self) -> bytes:
-        """Load and concatenate valid Python helper libraries for backward compatibility."""
-
-        all_helpers = self.load_all_helpers()
-
-        return b"\n\n".join(all_helpers.values())
 
     def load_module(self, module: str, /) -> bytes:
         """Load one operator-selected module from the modules directory."""

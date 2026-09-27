@@ -16,13 +16,16 @@ def test_call_exit_returns_terminate_action(test_session: contract.SessionContex
 def test_call_command_executes_with_dto_and_returns_continue(
     test_session: contract.SessionContext,
     dummy_connection: testing.DummyConnection,
+    dummy_profile: testing.DummyConnectionProfile,
 ) -> None:
     """call_command must construct ExecuteCommand with ExecuteCommandDTO and execute via session."""
+
+    dummy_profile.set_rendered_command(config.OperationCode.EXEC_COMMAND, "rendered_whoami")
 
     req = testing.create_dummy_controller_request("whoami", controller.CommandArguments)
     result = controller.call_command(test_session, req)
 
-    assert dummy_connection.written == [b"whoami"]
+    assert dummy_connection.written == [b"rendered_whoami"]
     assert result.action == contract.ControllerAction.CONTINUE
 
 

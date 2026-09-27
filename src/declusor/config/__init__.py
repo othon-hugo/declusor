@@ -1,5 +1,7 @@
 from .enums import (
+    ChannelType,
     ExecutionMode,
+    FramingMode,
     OperationCode,
 )
 from .exceptions import (
@@ -44,4 +46,6 @@ __all__ = [
     "PromptError",
     "RouterError",
     "Settings",
+    "FramingMode",
+    "ChannelType",
 ]

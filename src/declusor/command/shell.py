@@ -107,7 +107,12 @@ class LaunchShell(contract.ICommand):
                 command_request = input_source.read_raw()
 
                 if command_request:
-                    connection.write(command_request.encode())
+                    rendered = connection.profile.render_operation_command(
+                        config.OperationCode.EXEC_COMMAND,
+                        command_request,
+                    )
+                    payload = (rendered or command_request).encode()
+                    connection.write(payload)
 
         return _handle_request
 

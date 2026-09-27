@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from pathlib import Path
 
 from declusor import contract, core, presentation, testing
 
@@ -11,7 +11,14 @@ def test_application_connect_routes() -> None:
     view = presentation.TerminalView()
     input_source = presentation.TerminalInputSource()
     runner = testing.DummySessionRunner()
-    declusor_app = core.Application(manager, router, view, runner, input_source)
+
+    declusor_app = core.Application(
+        router,
+        view,
+        plugin_manager=manager,
+        session_runner=runner,
+        input_source=input_source,
+    )
 
     expected_routes = {"help", "execute", "load", "shell", "upload", "command", "exit"}
     assert expected_routes.issubset(set(declusor_app._router.routes))
@@ -25,99 +32,69 @@ def test_application_register_plugin_at_runtime() -> None:
     view = presentation.TerminalView()
     input_source = presentation.TerminalInputSource()
     runner = testing.DummySessionRunner()
-    declusor_app = core.Application(manager, router, view, runner, input_source)
+
+    declusor_app = core.Application(
+        router,
+        view,
+        plugin_manager=manager,
+        session_runner=runner,
+        input_source=input_source,
+    )
 
     testing.DummyPlugin.reset()
-
     declusor_app.register_plugin(testing.DummyPlugin)
-    assert testing.DummyPlugin.name in declusor_app.manager.names()
+
+    assert testing.DummyPlugin.name in declusor_app.plugin_manager.names()
 
 
-def test_application_runner_property_and_setter() -> None:
-    """Verify Application.runner can be inspected and replaced at runtime."""
-
-    manager = core.PluginManager()
-    router = core.Router()
-    view = presentation.TerminalView()
-    runner1 = testing.DummySessionRunner()
-    runner2 = testing.DummySessionRunner()
-
-    declusor_app = core.Application(manager, router, view, runner1)
-    assert declusor_app.runner is runner1
-
-    declusor_app.runner = runner2
-    assert declusor_app.runner is runner2
-
-
-def test_application_run_lifecycle_with_no_data_paths() -> None:
-    """Verify Application.run succeeds with data_paths=None without host filesystem checks."""
+def test_application_run_lifecycle(tmp_path: Path) -> None:
+    """Verify Application.run coordinates connection, handshake, launcher output, and session runner."""
 
     dummy_conn = testing.DummyConnection()
-    dummy_runtime = testing.DummyPluginRuntime(connection_to_return=dummy_conn)
+    dummy_runtime = testing.DummyPluginRuntime(
+        client_script="launcher_script_payload",
+        connection_to_return=dummy_conn,
+    )
     testing.DummyPlugin.reset()
     testing.DummyPlugin.runtime_instance = dummy_runtime
 
     manager = core.PluginManager()
     router = core.Router()
-    view = presentation.TerminalView()
-    input_source = presentation.TerminalInputSource()
+    view = testing.DummyView()
+    input_source = testing.DummyInputSource()
     runner = testing.DummySessionRunner()
 
     manager.register(testing.DummyPlugin)
 
-    declusor_app = core.Application(manager, router, view, runner, input_source)
+    listener = testing.MemoryTransportListener()
+    _ = listener.create_client()
 
+    declusor_app = core.Application(
+        router,
+        view,
+        plugin_manager=manager,
+        session_runner=runner,
+        input_source=input_source,
+        listener_factory=lambda host, port: listener,
+    )
+
+    fs = contract.PluginFilesystem.from_root(tmp_path)
     plugin_config = contract.PluginConfig(
         kind=testing.DummyPlugin.name,
         host="127.0.0.1",
         port=9000,
-        filesystem=None,
+        options=contract.ParsedArguments(),
+        options_type=contract.ParsedArguments,
+        filesystem=fs,
     )
 
-    dummy_sock = testing.DummySocket()
+    declusor_app.run(plugin_config)
 
-    with patch("declusor.util.await_connection", return_value=dummy_sock) as mock_await:
-        declusor_app.run(plugin_config)
+    assert dummy_conn.initialize_called
+    assert "launcher_script_payload" in view.messages
+    assert len(runner.run_calls) == 1
 
-        mock_await.assert_called_once_with("127.0.0.1", 9000)
-        assert dummy_conn.initialize_called
-
-        assert len(runner.run_calls) == 1
-        _, active_router = runner.run_calls[0]
-        assert active_router is router
-        assert not hasattr(declusor_app, "_validate_directories")
-
-
-def test_application_run_with_custom_runner_override() -> None:
-    """Verify passing a runner override to run() uses the override instead of default."""
-
-    dummy_conn = testing.DummyConnection()
-    dummy_runtime = testing.DummyPluginRuntime(connection_to_return=dummy_conn)
-    testing.DummyPlugin.reset()
-    testing.DummyPlugin.runtime_instance = dummy_runtime
-
-    manager = core.PluginManager()
-    router = core.Router()
-    view = presentation.TerminalView()
-    default_runner = testing.DummySessionRunner()
-    override_runner = testing.DummySessionRunner()
-
-    manager.register(testing.DummyPlugin)
-    declusor_app = core.Application(manager, router, view, default_runner)
-
-    plugin_config = contract.PluginConfig(
-        kind=testing.DummyPlugin.name,
-        host="127.0.0.1",
-        port=9000,
-        filesystem=None,
-    )
-
-    dummy_sock = testing.DummySocket()
-
-    with patch("declusor.util.await_connection", return_value=dummy_sock):
-        declusor_app.run(plugin_config, runner=override_runner)
-
-        assert len(default_runner.run_calls) == 0
-        assert len(override_runner.run_calls) == 1
-        _, active_router = override_runner.run_calls[0]
-        assert active_router is router
+    active_session, active_router = runner.run_calls[0]
+    assert active_router is router
+    assert active_session.connection is dummy_conn
+    assert active_session.view is view

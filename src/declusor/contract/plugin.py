@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from socket import socket
 from typing import TYPE_CHECKING
 
 from declusor import config
@@ -10,6 +9,7 @@ from declusor import config
 if TYPE_CHECKING:
     from declusor.contract.connection import IConnection
     from declusor.contract.parser import IArgumentParser, ParsedArguments
+    from declusor.contract.transport import ITransport
 
 
 @dataclass(frozen=True)
@@ -84,10 +84,13 @@ class PluginFilesystem:
         """
 
         normalized_root = root.expanduser().resolve()
-        assets = normalized_root / "assets"
 
-        if not assets.exists():
-            raise config.PluginValidationError(f"Plugin assets directory not found at: {assets}")
+        if (normalized_root / "assets").is_dir():
+            assets = normalized_root / "assets"
+        elif normalized_root.is_dir():
+            assets = normalized_root
+        else:
+            raise config.PluginValidationError(f"Plugin assets directory not found at: {normalized_root}")
 
         return cls(
             root=normalized_root,
@@ -240,11 +243,11 @@ class IPluginRuntime(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def create_connection(self, connection: socket, /) -> "IConnection":
-        """Create a connection for an accepted socket.
+    def create_connection(self, transport: "ITransport", /) -> "IConnection":
+        """Create a connection for an accepted transport channel.
 
         Args:
-            connection: Accepted socket connected to the remote client.
+            transport: Accepted transport connected to the remote client.
 
         Returns:
             Connection implementation for the configured client.
@@ -260,6 +263,13 @@ class IPluginProcessor(ABC):
     launcher scripts, helper libraries, and on-demand modules without knowing
     the concrete filesystem layout of each plugin.
     """
+
+    @property
+    @abstractmethod
+    def helpers(self, /) -> bytes:
+        """[...]"""
+
+        raise NotImplementedError
 
     @abstractmethod
     def load_module(self, module: str, /) -> bytes:

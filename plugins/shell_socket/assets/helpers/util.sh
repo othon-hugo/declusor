@@ -7,8 +7,8 @@ print_with_label() {
     while IFS= read -r line; do
         if [ ${title+x} ]; then
             echo
-            echo $title | tr '[:lower:]' '[:upper:]'
-            echo $(head -c ${#title} < /dev/zero | tr '\0' '-')
+            echo "$title" | tr '[:lower:]' '[:upper:]'
+            printf '%*s\n' "${#title}" '' | tr ' ' '-'
 
             unset title
         fi
@@ -22,7 +22,7 @@ if ! command -v column >/dev/null 2>&1; then
         local sep=" "
         local table=0
 
-        while [[ $# -gt 0 ]]; do
+        while [ $# -gt 0 ]; do
             case "$1" in
                 -t) table=1 ;;
                 -s)
@@ -35,8 +35,8 @@ if ! command -v column >/dev/null 2>&1; then
             shift
         done
 
-        if [[ "$table" -eq 0 ]]; then
-            awk -v FS="$sep" '{$1=$1; print}' 
+        if [ "$table" -eq 0 ]; then
+            awk -v FS="$sep" '{$1=$1; print}'
             return
         fi
 

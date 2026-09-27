@@ -14,6 +14,7 @@ from declusor.testing.doubles.input_source import (
     DummyInputSource,
 )
 from declusor.testing.doubles.plugins import (
+    DummyConfig,
     DummyPlugin,
     DummyPluginRuntime,
 )
@@ -29,13 +30,21 @@ from declusor.testing.doubles.runner import (
 from declusor.testing.doubles.socket import (
     DummySocket,
 )
+from declusor.testing.doubles.transport import (
+    DummyTransport,
+    MemoryTransport,
+    MemoryTransportListener,
+    create_memory_transport_pair,
+)
 from declusor.testing.doubles.view import (
     DummyView,
 )
 
 __all__ = [
+    "create_memory_transport_pair",
     "DummyApplication",
     "DummyCommand",
+    "DummyConfig",
     "DummyConnection",
     "DummyConnectionProfile",
     "DummyInputSource",
@@ -45,5 +54,8 @@ __all__ = [
     "DummyRouter",
     "DummySessionRunner",
     "DummySocket",
+    "DummyTransport",
     "DummyView",
+    "MemoryTransport",
+    "MemoryTransportListener",
 ]

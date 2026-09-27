@@ -24,3 +24,19 @@ def test_profile_render_operation_command() -> None:
     rendered_store = profile.render_operation_command(config.OperationCode.STORE_FILE, "payload==", "/tmp/f")
     assert rendered_store is not None
     assert "store_base64_encoded_value payload== /tmp/f" in rendered_store
+
+    rendered_spaces = profile.render_operation_command(config.OperationCode.STORE_FILE, "payload==", "path with spaces/file.sh")
+    assert rendered_spaces == "store_base64_encoded_value payload== 'path with spaces/file.sh'"
+
+    empty_profile = shell_socket.ShellSocketProfile(name="empty", ack_server_raw=b"\x00", ack_client_raw=b"ack", _supported_functions={})
+    assert empty_profile.render_operation_command(config.OperationCode.STORE_FILE) is None
+
+
+def test_profile_render_operation_command_exec_command() -> None:
+    """Verify EXEC_COMMAND returns the command string unaltered."""
+
+    profile = shell_socket.DEFAULT_SHELL_SOCKET
+
+    cmd = "echo hello && ls -la /tmp"
+    assert profile.render_operation_command(config.OperationCode.EXEC_COMMAND, cmd) == cmd
+    assert profile.render_operation_command(config.OperationCode.EXEC_COMMAND) == ""

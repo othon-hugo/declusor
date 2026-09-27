@@ -1,8 +1,9 @@
+import ast
+import struct
 from collections.abc import Generator, Mapping
-from contextlib import suppress
 from dataclasses import dataclass, field
-from socket import socket
 from types import MappingProxyType
+from typing import Final
 
 from declusor import config, contract, util
 
@@ -26,13 +27,16 @@ class PySocketProfile(contract.IConnectionProfile):
     ack_client_raw: bytes
     """Acknowledgment byte sequence sent by the client."""
 
-    _default_timeout: float | None = 1.0
+    _default_timeout: Final[float | None] = 1.0
     """Timeout in seconds for socket operations. Set to None for no timeout."""
 
-    _default_buffer_size: int = 2**8
+    _framing_mode: Final[config.FramingMode] = config.FramingMode.CHUNKED_TLV
+    """Framing strategy used by this profile."""
+
+    _default_buffer_size: Final[int] = 2**8
     """Size of the read buffer. Must be > 0."""
 
-    _supported_functions: Mapping[config.OperationCode, str] = field(
+    _supported_functions: Final[Mapping[config.OperationCode, str]] = field(
         default_factory=lambda: MappingProxyType(
             {
                 config.OperationCode.STORE_FILE: "store_base64_encoded_value",
@@ -52,6 +56,12 @@ class PySocketProfile(contract.IConnectionProfile):
             raise config.ConnectionError("connection_timeout must be >= 0 or None")
 
     @property
+    def framing_mode(self) -> config.FramingMode:
+        """Framing strategy used by this profile."""
+
+        return self._framing_mode
+
+    @property
     def default_buffer_size(self) -> int:
         """Default buffer size for socket reads."""
 
@@ -63,8 +73,67 @@ class PySocketProfile(contract.IConnectionProfile):
 
         return self._default_timeout
 
+    @property
+    def supported_functions(self) -> Mapping[config.OperationCode, str]:
+        """Mapping of supported operation codes to Python helper function names."""
+
+        return self._supported_functions
+
+    def _is_python_code(self, code: str) -> bool:
+        """Return True if code should be evaluated directly by the Python runtime."""
+
+        stripped = code.strip()
+
+        if not stripped:
+            return True
+
+        if stripped.startswith("#!"):
+            first_line = stripped.splitlines()[0].lower()
+            return "python" in first_line
+
+        for fn_name in self._supported_functions.values():
+            if stripped.startswith(fn_name + "("):
+                return True
+
+        if stripped.startswith("execute_system_command("):
+            return True
+
+        try:
+            tree = ast.parse(stripped)
+            for node in ast.walk(tree):
+                if isinstance(
+                    node,
+                    (
+                        ast.Import,
+                        ast.ImportFrom,
+                        ast.FunctionDef,
+                        ast.AsyncFunctionDef,
+                        ast.ClassDef,
+                        ast.Assign,
+                        ast.AnnAssign,
+                        ast.AugAssign,
+                        ast.For,
+                        ast.While,
+                        ast.If,
+                        ast.With,
+                        ast.Try,
+                        ast.Call,
+                    ),
+                ):
+                    return True
+        except SyntaxError:
+            pass
+
+        return False
+
     def render_operation_command(self, opcode: "config.OperationCode", /, *args: str) -> str | None:
         """Build the Python function call string for a given operation code."""
+
+        if opcode == config.OperationCode.EXEC_COMMAND:
+            command = args[0] if args else ""
+            if self._is_python_code(command):
+                return command
+            return f"execute_system_command({command!r})"
 
         function_name = self._supported_functions.get(opcode)
 
@@ -72,7 +141,7 @@ class PySocketProfile(contract.IConnectionProfile):
             return None
 
         if args:
-            quoted_args = ", ".join(f"'{a}'" for a in args)
+            quoted_args = ", ".join(repr(a) for a in args)
             return f"{function_name}({quoted_args})"
 
         return f"{function_name}()"
@@ -81,15 +150,20 @@ class PySocketProfile(contract.IConnectionProfile):
 class PySocketConnection(contract.IConnection):
     """``IConnection`` implementation for a Python-socket reverse-shell client."""
 
-    def __init__(self, connection: socket, profile: PySocketProfile, files: contract.IPluginProcessor, /) -> None:
+    def __init__(
+        self,
+        transport: contract.ITransport,
+        profile: PySocketProfile,
+        files: contract.IPluginProcessor,
+        /,
+    ) -> None:
         self._profile = profile
         self._files = files
-        self._connection = connection
-        self._timeout = profile.default_timeout
+        self._transport = transport
         self._state = contract.ConnectionState.CREATED
 
-        if self._timeout is not None:
-            self._connection.settimeout(self._timeout)
+        if profile.default_timeout is not None:
+            self._transport.timeout = profile.default_timeout
 
     @property
     def state(self) -> contract.ConnectionState:
@@ -105,14 +179,13 @@ class PySocketConnection(contract.IConnection):
 
     @property
     def timeout(self) -> float | None:
-        """Current socket timeout in seconds."""
+        """Current transport timeout in seconds."""
 
-        return self._timeout
+        return self._transport.timeout
 
     @timeout.setter
     def timeout(self, value: float | None) -> None:
-        self._timeout = value
-        self._connection.settimeout(value)
+        self._transport.timeout = value
 
     def handshake(self) -> None:
         """Perform the Python agent initialization handshake."""
@@ -121,73 +194,70 @@ class PySocketConnection(contract.IConnection):
             raise config.ConnectionError("Cannot initialize a closed connection.")
 
         self._state = contract.ConnectionState.INITIALIZING
-        self.write(b"\n\n".join(self._files.load_all_helpers().values()))
+        self.write(self._files.helpers)
 
         expected_ack = self._profile.ack_client_raw
-        ack_len = len(expected_ack)
-        received_ack = bytearray()
-
         try:
-            while len(received_ack) < ack_len:
-                remaining = ack_len - len(received_ack)
-                read_size = min(self._profile.default_buffer_size, remaining)
-                chunk = self._connection.recv(read_size)
-
-                if not chunk:
-                    raise config.ConnectionError("Connection closed by client before receiving ACK.")
-
-                received_ack.extend(chunk)
-
-            if bytes(received_ack) != expected_ack:
+            received_ack = self._transport.read_exact(len(expected_ack))
+            if received_ack != expected_ack:
                 raise config.ConnectionError("Invalid client ACK during session initialization.")
-        except (OSError, TimeoutError) as error:
+        except (config.ConnectionClosed, config.ConnectionTimeoutError, config.ConnectionError) as error:
             raise config.ConnectionError("Failed waiting for client ACK during session initialization.") from error
 
         self._state = contract.ConnectionState.CONNECTED
 
     def write(self, data: bytes, /) -> None:
-        """Send a null-delimited payload to the remote Python agent."""
+        """Send a TLV-framed payload to the remote Python agent."""
 
         if self._state == contract.ConnectionState.CLOSED:
             raise config.ConnectionClosed("Connection is closed.")
 
+        frame = struct.pack(">BI", config.ChannelType.STDOUT, len(data)) + data
+
         try:
-            self._connection.sendall(data + self._profile.ack_server_raw)
-        except (OSError, TimeoutError) as error:
+            self._transport.write(frame)
+        except (config.ConnectionClosed, config.ConnectionTimeoutError, config.ConnectionError) as error:
             raise config.ConnectionError(f"Failed to write to connection: {error}") from error
 
     def read(self) -> Generator[bytes, None, None]:
-        """Stream response chunks from the Python agent until the ACK sentinel."""
+        """Stream response chunks from the Python agent until a PROCESS_EXIT frame."""
 
-        ack = self._profile.ack_client_raw
-        buffer = bytearray()
+        if self._state == contract.ConnectionState.CLOSED:
+            raise config.ConnectionClosed("Connection is closed.")
 
         while True:
             try:
-                chunk = self._connection.recv(self._profile.default_buffer_size)
-            except (OSError, TimeoutError) as error:
+                header = self._transport.read_exact(5)
+            except config.ConnectionTimeoutError:
+                raise
+            except (config.ConnectionClosed, config.ConnectionError) as error:
                 raise config.ConnectionClosed(f"Connection interrupted during read: {error}") from error
 
-            if not chunk:
-                raise config.ConnectionClosed("Connection closed by client during response stream.")
+            channel, length = struct.unpack(">BI", header)
 
-            buffer.extend(chunk)
+            if channel == config.ChannelType.PROCESS_EXIT:
+                if length > 0:
+                    try:
+                        self._transport.read_exact(length)
+                    except config.ConnectionTimeoutError:
+                        raise
+                    except (config.ConnectionClosed, config.ConnectionError) as error:
+                        raise config.ConnectionClosed(f"Connection interrupted reading exit frame: {error}") from error
 
-            while True:
-                ack_pos = buffer.find(ack)
-
-                if ack_pos == -1:
-                    break
-
-                if ack_pos > 0:
-                    yield bytes(buffer[:ack_pos])
-
-                buffer = buffer[ack_pos + len(ack) :]
                 return
 
-            if len(buffer) > len(ack):
-                yield bytes(buffer[: -len(ack)])
-                buffer = buffer[-len(ack) :]
+            if length == 0:
+                continue
+
+            try:
+                payload = self._transport.read_exact(length)
+            except config.ConnectionTimeoutError:
+                raise
+            except (config.ConnectionClosed, config.ConnectionError) as error:
+                raise config.ConnectionClosed(f"Connection interrupted reading payload: {error}") from error
+
+            if channel in (config.ChannelType.STDOUT, config.ChannelType.STDERR):
+                yield payload
 
     def __enter__(self) -> "PySocketConnection":
         return self
@@ -196,15 +266,13 @@ class PySocketConnection(contract.IConnection):
         self.close()
 
     def close(self) -> None:
-        """Close the underlying socket idempotently."""
+        """Close the underlying transport idempotently."""
 
         if self._state == contract.ConnectionState.CLOSED:
             return
 
         self._state = contract.ConnectionState.CLOSED
-
-        with suppress(OSError):
-            self._connection.close()
+        self._transport.close()
 
 
 DEFAULT_PY_SOCKET = PySocketProfile(

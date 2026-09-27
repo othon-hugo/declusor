@@ -64,7 +64,13 @@ class ExecuteCommand(contract.ICommand):
             ConnectionWriteError: If the socket write operation fails.
         """
 
-        session.connection.write(self._command_line)
+        rendered = session.connection.profile.render_operation_command(
+            config.OperationCode.EXEC_COMMAND,
+            self._dto.command_line,
+        )
+        command_bytes = rendered.encode() if rendered is not None else self._command_line
+
+        session.connection.write(command_bytes)
 
     def read_response(self, session: contract.SessionContext, /) -> None:
         """Read output chunks from the remote client and display them on the view.
