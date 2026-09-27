@@ -1,5 +1,4 @@
-from collections.abc import Sequence
-from dataclasses import replace
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Final
 
@@ -9,15 +8,15 @@ if TYPE_CHECKING:
     from declusor.core.plugin import PluginManager
 
 
-class DeclusorParser(util.Parser, contract.IParser[contract.PluginConfig]):
+class DeclusorParser(util.Parser):
     """Parser for command-line arguments."""
 
     flags: Final[dict[str, str]] = {
         "host": "IP address or hostname where the service should run",
         "port": "port number to listen on for incoming connections",
         "plugin": "agent responsible for handling requests",
-        "assets-dir": "root directory containing client launchers, helpers, and modules",
-        "plugin-dir": "additional directory to discover custom drop-in plugins",
+        "assets_dir": "root directory containing client launchers, helpers, and modules",
+        "plugin_dir": "additional directory to discover custom drop-in plugins",
         "mode": "application execution mode (choices: %(choices)s)",
     }
 
@@ -52,14 +51,14 @@ class DeclusorParser(util.Parser, contract.IParser[contract.PluginConfig]):
 
         self.add_argument(
             "--assets-dir",
-            help=self.flags["assets-dir"],
+            help=self.flags["assets_dir"],
             type=Path,
             default=None,
         )
 
         self.add_argument(
             "--plugin-dir",
-            help=self.flags["plugin-dir"],
+            help=self.flags["plugin_dir"],
             type=Path,
             default=None,
         )
@@ -88,7 +87,7 @@ class DeclusorParser(util.Parser, contract.IParser[contract.PluginConfig]):
         manager: "PluginManager",
         argv: Sequence[str] | None = None,
         /,
-    ) -> contract.PluginConfig:
+    ) -> contract.PluginConfig[contract.ParsedArguments]:
         """Parse arguments and build a validated PluginConfig using the provided manager.
 
         Args:
@@ -125,17 +124,31 @@ class DeclusorParser(util.Parser, contract.IParser[contract.PluginConfig]):
         Plugin.configure_parser(self)
 
         raw_args = self.parse_args(argv)
-        args = contract.PluginNamespace.from_namespace(raw_args)
+        raw_dict: dict[str, object] = vars(raw_args)
 
-        if not args.plugin:
-            args.plugin = Plugin.name
+        host_raw = raw_dict.get("host")
 
-        data_paths = config.DataPaths.from_root(args.assets_dir) if args.assets_dir is not None else None
-        plugin_config = Plugin.build_config(args, data_paths)
+        if not isinstance(host_raw, str):
+            raise config.ParserError("Missing or invalid 'host' argument.")
 
-        if getattr(plugin_config, "mode", None) != args.mode:
-            plugin_config = replace(plugin_config, mode=args.mode)
+        host = host_raw
+        port_raw = raw_dict.get("port")
 
+        if not isinstance(port_raw, int):
+            raise config.ParserError("Missing or invalid 'port' argument.")
+
+        port = port_raw
+        mode_raw = raw_dict.get("mode")
+        mode = mode_raw if isinstance(mode_raw, config.ExecutionMode) else config.Settings.DEFAULT_EXECUTION_MODE
+
+        assets_dir_raw = raw_dict.get("assets_dir")
+        assets_dir = assets_dir_raw if isinstance(assets_dir_raw, Path) else None
+        filesystem = contract.PluginFilesystem.from_root(assets_dir) if assets_dir is not None else None
+
+        plugin_raw: Mapping[str, object] = {k: v for k, v in raw_dict.items() if k not in self.flags}
+        options = Plugin.extract_options(plugin_raw)
+
+        plugin_config = Plugin.build_config(host, port, options, filesystem=filesystem, mode=mode)
         Plugin.validate(plugin_config)
 
         return plugin_config

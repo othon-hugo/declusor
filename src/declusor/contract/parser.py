@@ -1,6 +1,4 @@
-from abc import ABC, abstractmethod
-from collections.abc import Sequence
-from typing import TypedDict
+from typing import Any, Protocol, TypedDict, runtime_checkable
 
 
 class ParsedArguments(TypedDict):
@@ -11,16 +9,15 @@ class ParsedArguments(TypedDict):
     """
 
 
-class IArgumentParser[T: ParsedArguments](ABC):
-    """Generic contract for a command-line argument parser.
+@runtime_checkable
+class IArgumentParser(Protocol):
+    """Protocol for an argument parser that registers command-line arguments.
 
-    Type parameter ``T`` is the typed result produced by ``parse()``,
-    e.g. a ``TypedDict`` subclass holding the validated CLI values for a
-    specific plugin.
+    Matches ``argparse.ArgumentParser``, ``util.Parser``, and ``DeclusorParser``
+    structurally without multiple-inheritance conflicts.
     """
 
-    @abstractmethod
-    def add_argument(self, *name_or_flags: str, **kwargs: object) -> None:
+    def add_argument(self, *name_or_flags: str, **kwargs: Any) -> object:
         """Register a command-line argument or option.
 
         Args:
@@ -29,22 +26,4 @@ class IArgumentParser[T: ParsedArguments](ABC):
             **kwargs: Forwarded verbatim to the underlying parser implementation
                 (e.g. ``type``, ``default``, ``help``, ``nargs``).
         """
-
-        raise NotImplementedError
-
-    @abstractmethod
-    def parse(self, argv: Sequence[str] | None = None, /) -> T:
-        """Parse command-line arguments and return a typed result.
-
-        Args:
-            argv: Optional sequence of arguments to parse, excluding the program
-                name. Reads from ``sys.argv[1:]`` when ``None``.
-
-        Returns:
-            A fully validated instance of ``T`` populated from arguments.
-
-        Raises:
-            ParserError: If required arguments are missing or values are invalid.
-        """
-
-        raise NotImplementedError
+        ...

@@ -130,7 +130,7 @@ class IPluginExtension[T: ParsedArguments](ABC):
 
     @classmethod
     @abstractmethod
-    def configure_parser(cls, parser: "IArgumentParser[T]", /) -> None:
+    def configure_parser(cls, parser: "IArgumentParser", /) -> None:
         """Register client-specific command-line arguments.
 
         Args:
