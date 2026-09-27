@@ -4,7 +4,7 @@ from pathlib import Path
 from declusor import config, contract, core, presentation
 
 
-class TerminalApplication[T: contract.ParsedArguments](core.Application[T]):
+class TerminalApplication(core.Application):
     """Specialized application pre-configured for interactive terminal REPL."""
 
     def __init__(
@@ -20,11 +20,11 @@ class TerminalApplication[T: contract.ParsedArguments](core.Application[T]):
         """Create a TerminalApplication with terminal view, input source, and prompt loop.
 
         Args:
-            manager: Plugin manager containing the available client plugins.
             router: Command router resolving interactive prompt input to controller actions.
             view: Operator view interface handling output presentation.
+            plugin_manager: Plugin manager containing the available client plugins.
+            session_runner: Session runner executing interaction workflows over active sessions.
             input_source: Operator input source interface reading commands.
-            runner: Optional session runner. Defaults to PromptLoop.
         """
 
         super().__init__(
@@ -38,11 +38,14 @@ class TerminalApplication[T: contract.ParsedArguments](core.Application[T]):
 
 def create_terminal_application(
     search_dirs: Sequence[Path] | None = None,
-) -> TerminalApplication[contract.ParsedArguments]:
+    *,
+    plugin_manager: core.PluginManager | None = None,
+) -> TerminalApplication:
     """Create a TerminalApplication with discovered plugins and terminal components.
 
     Args:
         search_dirs: Optional sequence of paths to search for plugins.
+        plugin_manager: Optional existing plugin manager instance.
 
     Returns:
         Fully composed TerminalApplication ready to execute.
@@ -50,14 +53,14 @@ def create_terminal_application(
 
     router = core.Router()
     view = presentation.TerminalView()
-    plugin_manager = core.PluginManager().discover(search_dirs)
+    manager = plugin_manager or core.PluginManager().discover(search_dirs)
     session_runner = presentation.PromptLoop(config.Settings.PROJECT_NAME)
     input_source = presentation.TerminalInputSource()
 
     return TerminalApplication(
         router,
         view,
-        plugin_manager=plugin_manager,
+        plugin_manager=manager,
         session_runner=session_runner,
         input_source=input_source,
     )
