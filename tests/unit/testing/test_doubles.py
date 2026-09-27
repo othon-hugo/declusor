@@ -233,7 +233,7 @@ def test_dummy_router() -> None:
 
     def sample_controller(
         session: contract.SessionContext,
-        req: contract.ControllerRequest,
+        req: contract.IControllerRequest[contract.ControllerArguments],
     ) -> contract.ControllerResult:
         """Sample usage line.
         Extended explanation.
@@ -358,7 +358,7 @@ def test_factories() -> None:
 
     req = testing.create_dummy_controller_request("hello world")
     assert req.request_line == "hello world"
-    assert isinstance(req, contract.ControllerRequest)
+    assert isinstance(req, contract.IControllerRequest)
 
     args = testing.create_dummy_plugin_arguments(host="10.10.10.10", port=7777, extra_flag=True)
     assert args.host == "10.10.10.10"

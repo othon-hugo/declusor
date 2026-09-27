@@ -19,7 +19,7 @@ def test_call_command_executes_with_dto_and_returns_continue(
 ) -> None:
     """call_command must construct ExecuteCommand with ExecuteCommandDTO and execute via session."""
 
-    req = testing.create_dummy_controller_request("whoami")
+    req = testing.create_dummy_controller_request("whoami", controller.CommandArguments)
     result = controller.call_command(test_session, req)
 
     assert dummy_connection.written == [b"whoami"]
@@ -38,7 +38,7 @@ def test_call_execute_file_with_dto(
     test_file.write_text("echo test")
     dummy_profile.set_rendered_command(config.OperationCode.EXEC_FILE, "rendered_test_exec")
 
-    req = testing.create_dummy_controller_request(str(test_file))
+    req = testing.create_dummy_controller_request(str(test_file), controller.ExecuteArguments)
     result = controller.call_execute(test_session, req)
 
     assert dummy_connection.written == [b"rendered_test_exec"]
@@ -57,7 +57,7 @@ def test_call_upload_file_with_dto(
     test_file.write_bytes(b"data")
     dummy_profile.set_rendered_command(config.OperationCode.STORE_FILE, "rendered_test_upload")
 
-    req = testing.create_dummy_controller_request(str(test_file))
+    req = testing.create_dummy_controller_request(str(test_file), controller.UploadArguments)
     result = controller.call_upload(test_session, req)
 
     assert dummy_connection.written == [b"rendered_test_upload"]
@@ -72,7 +72,7 @@ def test_call_load_module_with_dto(
     """call_load must construct LoadModule with LoadModuleDTO and execute via session."""
 
     dummy_file_store.set_module("discovery/sysinfo", b"sysinfo_bytes")
-    req = testing.create_dummy_controller_request("discovery/sysinfo")
+    req = testing.create_dummy_controller_request("discovery/sysinfo", controller.LoadArguments)
     result = controller.call_load(test_session, req)
 
     assert dummy_file_store.load_module_calls == ["discovery/sysinfo"]
@@ -103,12 +103,12 @@ def test_call_help_lists_all_routes_with_aligned_usage(
 ) -> None:
     """call_help without arguments must list all routes aligned by key length."""
 
-    def cmd_a(session: contract.SessionContext, req: contract.ControllerRequest) -> contract.ControllerResult:
+    def cmd_a(session: contract.SessionContext, req: contract.IControllerRequest[contract.ControllerArguments]) -> contract.ControllerResult:
         """Command A usage."""
 
         return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
 
-    def cmd_longer(session: contract.SessionContext, req: contract.ControllerRequest) -> contract.ControllerResult:
+    def cmd_longer(session: contract.SessionContext, req: contract.IControllerRequest[contract.ControllerArguments]) -> contract.ControllerResult:
         """Command Longer usage."""
 
         return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
@@ -136,7 +136,7 @@ def test_call_help_with_specific_command(
 ) -> None:
     """call_help with a specific command must display only that command's usage."""
 
-    def cmd(session: contract.SessionContext, req: contract.ControllerRequest) -> contract.ControllerResult:
+    def cmd(session: contract.SessionContext, req: contract.IControllerRequest[contract.ControllerArguments]) -> contract.ControllerResult:
         """Specific command description."""
 
         return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
@@ -197,7 +197,7 @@ def test_call_help_reflects_dynamically_added_routes(
 
     help_ctrl = controller.create_help_controller(dummy_router)
 
-    def dynamic_cmd(session: contract.SessionContext, req: contract.ControllerRequest) -> contract.ControllerResult:
+    def dynamic_cmd(session: contract.SessionContext, req: contract.IControllerRequest[contract.ControllerArguments]) -> contract.ControllerResult:
         """Dynamic command description."""
 
         return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)

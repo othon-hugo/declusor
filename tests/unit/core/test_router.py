@@ -10,7 +10,7 @@ def test_router_connect_and_locate() -> None:
 
     def dummy_controller(
         dependencies: contract.SessionContext,
-        argument: contract.ControllerRequest,
+        argument: contract.IControllerRequest[contract.ControllerArguments],
     ) -> contract.ControllerResult:
         return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
 
@@ -29,7 +29,7 @@ def test_router_duplicate_connect_raises_value_error() -> None:
 
     def dummy_controller(
         dependencies: contract.SessionContext,
-        argument: contract.ControllerRequest,
+        argument: contract.IControllerRequest[contract.ControllerArguments],
     ) -> contract.ControllerResult:
         return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
 
@@ -57,7 +57,7 @@ def test_router_get_route_usage() -> None:
 
     def cmd_a(
         dependencies: contract.SessionContext,
-        argument: contract.ControllerRequest,
+        argument: contract.IControllerRequest[contract.ControllerArguments],
     ) -> contract.ControllerResult:
         """First command description."""
 
@@ -65,7 +65,7 @@ def test_router_get_route_usage() -> None:
 
     def cmd_b(
         dependencies: contract.SessionContext,
-        argument: contract.ControllerRequest,
+        argument: contract.IControllerRequest[contract.ControllerArguments],
     ) -> contract.ControllerResult:
         """Second command
         with multiple lines.
@@ -87,7 +87,7 @@ def test_router_get_route_usage_empty_when_no_docstring() -> None:
 
     def no_doc_cmd(
         dependencies: contract.SessionContext,
-        argument: contract.ControllerRequest,
+        argument: contract.IControllerRequest[contract.ControllerArguments],
     ) -> contract.ControllerResult:
         return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
 

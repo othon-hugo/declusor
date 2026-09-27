@@ -15,10 +15,12 @@ from .connection import (
     IConnectionProfile,
 )
 from .controller import (
+    ArgumentDefinitions,
     Controller,
     ControllerAction,
-    ControllerRequest,
+    ControllerArguments,
     ControllerResult,
+    IControllerRequest,
 )
 from .input_source import (
     IInputSource,
@@ -46,6 +48,7 @@ from .view import (
 )
 
 __all__ = [
+    "ArgumentDefinitions",
     "ConnectionClosed",
     "ConnectionError",
     "ConnectionHandshakeError",
@@ -53,12 +56,13 @@ __all__ = [
     "ConnectionTimeoutError",
     "Controller",
     "ControllerAction",
-    "ControllerRequest",
+    "ControllerArguments",
     "ControllerResult",
     "IArgumentParser",
     "ICommand",
     "IConnection",
     "IConnectionProfile",
+    "IControllerRequest",
     "IInputSource",
     "InvalidOperation",
     "IPluginExtension",

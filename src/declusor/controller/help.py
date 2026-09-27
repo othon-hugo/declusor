@@ -1,6 +1,12 @@
 from declusor import contract
 
 
+class HelpArguments(contract.ControllerArguments, total=False):
+    """Arguments for help command."""
+
+    command: str | None
+
+
 def create_help_controller(router: contract.IRouter) -> contract.Controller:
     """Create a help controller that queries *router* for routes and usage descriptions.
 
@@ -11,13 +17,16 @@ def create_help_controller(router: contract.IRouter) -> contract.Controller:
         Help controller function.
     """
 
-    def call_help(session: contract.SessionContext, req: contract.ControllerRequest) -> contract.ControllerResult:
+    def call_help(
+        session: contract.SessionContext,
+        req: contract.IControllerRequest[HelpArguments],
+    ) -> contract.ControllerResult:
         """Display detailed information about available commands or a specific command."""
 
         arguments, _ = req.parse_arguments({"command": str | None})
 
         if help_command := arguments.get("command"):
-            target_route = str(help_command).strip()
+            target_route = help_command.strip()
 
             if target_route not in router.routes:
                 session.view.write_error(f"Unknown command: '{target_route}'. Type 'help' to list available commands.")

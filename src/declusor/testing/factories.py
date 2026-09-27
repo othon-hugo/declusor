@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import overload
 
 from declusor import config, contract
 from declusor.testing.doubles.connection import DummyConnection
@@ -75,17 +76,40 @@ def create_dummy_plugin_config(
     )
 
 
-def create_dummy_controller_request(text: str = "") -> contract.ControllerRequest:
+@overload
+def create_dummy_controller_request(
+    text: str = "",
+    argument_type: None = None,
+) -> contract.IControllerRequest[contract.ControllerArguments]: ...
+
+
+@overload
+def create_dummy_controller_request[T: contract.ControllerArguments](
+    text: str = "",
+    argument_type: type[T] = ...,
+) -> contract.IControllerRequest[T]: ...
+
+
+def create_dummy_controller_request[T: contract.ControllerArguments](
+    text: str = "",
+    argument_type: type[T] | None = None,
+) -> contract.IControllerRequest[T] | contract.IControllerRequest[contract.ControllerArguments]:
     """Create a ControllerRequest instance wrapping command text.
 
     Args:
         text: Raw command string passed to the controller.
+        argument_type: Optional expected ControllerArguments TypedDict type.
 
     Returns:
-        A ControllerRequest instance.
+        An IControllerRequest instance.
     """
 
-    return contract.ControllerRequest(text)
+    from declusor.presentation.request import ControllerRequest
+
+    if argument_type is not None:
+        return ControllerRequest[T](text)
+
+    return ControllerRequest[contract.ControllerArguments](text)
 
 
 def create_dummy_options(

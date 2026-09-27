@@ -1,7 +1,14 @@
 from declusor import contract
 
 
-def call_exit(session: contract.SessionContext, req: contract.ControllerRequest) -> contract.ControllerResult:
-    """Terminate the session and exit the program."""
+class ExitArguments(contract.ControllerArguments, total=False):
+    """Arguments for exit command."""
+
+
+def call_exit(
+    session: contract.SessionContext,
+    req: contract.IControllerRequest[ExitArguments],
+) -> contract.ControllerResult:
+    """Terminate the active interactive session gracefully."""
 
     return contract.ControllerResult(action=contract.ControllerAction.TERMINATE)

@@ -1,9 +1,8 @@
+from abc import ABC, abstractmethod
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import TYPE_CHECKING
-
-from declusor import util
+from typing import TYPE_CHECKING, Any, TypedDict
 
 if TYPE_CHECKING:
     from .session import SessionContext
@@ -11,10 +10,49 @@ if TYPE_CHECKING:
 ArgumentDefinitions = Mapping[str, type | object]
 """Mapping of argument names to expected argument types."""
 
-ParsedArguments = dict[str, str | int | float | bool]
-"""Extracted argument-value pairs resulting from parsing."""
 
-Controller = Callable[["SessionContext", "ControllerRequest"], "ControllerResult"]
+class ControllerArguments(TypedDict):
+    """Base TypedDict for parsed controller arguments.
+
+    Controllers subclass this to declare statically typed argument definitions.
+    """
+
+
+class IControllerRequest[T: ControllerArguments](ABC):
+    """Encapsulates raw command line request text with parsing utilities.
+
+    Autonomous controllers declare their specific arguments TypedDict subclassing
+    ``ControllerArguments`` and specify it as the type argument ``T`` on
+    ``IControllerRequest[T]``.
+    """
+
+    @property
+    @abstractmethod
+    def request_line(self) -> str:
+        """The raw command line text of the request."""
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def parse_arguments(
+        self,
+        definitions: ArgumentDefinitions,
+        allow_unknown: bool = False,
+    ) -> tuple[T, list[str]]:
+        """Parse command-line arguments using provided definitions.
+
+        Args:
+            definitions: Schema defining expected argument names and types.
+            allow_unknown: Whether to permit unrecognized trailing arguments.
+
+        Returns:
+            Tuple of the parsed arguments instance ``T`` and any unknown tokens.
+        """
+
+        raise NotImplementedError
+
+
+Controller = Callable[["SessionContext", IControllerRequest[Any]], "ControllerResult"]
 """Type alias for a controller function.
 
 A controller receives an active session context and the command request from the
@@ -36,23 +74,3 @@ class ControllerResult:
 
     action: ControllerAction = ControllerAction.CONTINUE
     message: str | None = None
-
-
-@dataclass(frozen=True)
-class ControllerRequest:
-    """Encapsulates raw command line request text with parsing utilities."""
-
-    request_line: str = ""
-
-    def parse_arguments(
-        self,
-        definitions: ArgumentDefinitions,
-        allow_unknown: bool = False,
-    ) -> tuple[ParsedArguments, list[str]]:
-        """Parse command-line arguments using provided definitions."""
-
-        return util.parse_command_arguments(
-            line=self.request_line,
-            definitions=definitions,
-            allow_unknown=allow_unknown,
-        )
