@@ -1,9 +1,11 @@
-from typing import Any
+from pathlib import Path
+from typing import overload
 
 from declusor import config, contract
 from declusor.testing.doubles.connection import DummyConnection
 from declusor.testing.doubles.filestore import DummyPluginFileStore
 from declusor.testing.doubles.input_source import DummyInputSource
+from declusor.testing.doubles.plugins import DummyConfig
 from declusor.testing.doubles.view import DummyView
 
 
@@ -11,7 +13,7 @@ def create_test_session(
     connection: contract.IConnection | None = None,
     view: contract.IView | None = None,
     input_source: contract.IInputSource | None = None,
-    files: contract.IClientFileStore | None = None,
+    files: contract.IPluginProcessor | None = None,
 ) -> contract.SessionContext:
     """Create a SessionContext populated with test doubles by default.
 
@@ -28,8 +30,8 @@ def create_test_session(
     return contract.SessionContext(
         connection=connection or DummyConnection(),
         view=view or DummyView(),
-        input=input_source or DummyInputSource(),
-        files=files or DummyPluginFileStore(),
+        input_source=input_source or DummyInputSource(),
+        plugin_processor=files or DummyPluginFileStore(),
     )
 
 
@@ -37,68 +39,84 @@ def create_dummy_plugin_config(
     kind: str = "dummy",
     host: str = "127.0.0.1",
     port: int = 9000,
-    data_paths: config.DataPaths | None = None,
-    options: dict[str, Any] | None = None,
-) -> contract.PluginConfig:
+    filesystem: contract.PluginFilesystem | None = None,
+    options: DummyConfig | None = None,
+    mode: config.ExecutionMode = config.Settings.DEFAULT_EXECUTION_MODE,
+) -> contract.PluginConfig[DummyConfig]:
     """Create a PluginConfig instance for testing.
 
     Args:
         kind: Client implementation identifier. Defaults to "dummy".
         host: Host address. Defaults to "127.0.0.1".
         port: Port number. Defaults to 9000.
-        data_paths: Optional DataPaths instance. Defaults to None.
-        options: Plugin options dictionary. Defaults to empty dict.
+        filesystem: Optional PluginFilesystem instance. Defaults to None.
+        options: Plugin options dictionary. Defaults to empty DummyConfig.
+        mode: Application execution mode.
 
     Returns:
         An immutable PluginConfig dataclass instance.
     """
 
+    dummy_fs = contract.PluginFilesystem(
+        root=Path("."),
+        assets=Path("."),
+        launchers=Path("."),
+        modules=Path("."),
+        helpers=Path("."),
+    )
+
     return contract.PluginConfig(
         kind=kind,
         host=host,
         port=port,
-        data_paths=data_paths,
-        options=options if options is not None else {},
+        options=options if options is not None else DummyConfig(),
+        options_type=DummyConfig,
+        filesystem=filesystem or dummy_fs,
+        mode=mode,
     )
 
 
-def create_dummy_plugin_arguments(
-    host: str = "127.0.0.1",
-    port: int = 9000,
-    **extra: Any,
-) -> contract.PluginNamespace:
-    """Create a PluginNamespace instance for testing.
-
-    Args:
-        host: Target host. Defaults to '127.0.0.1'.
-        port: Target port. Defaults to 9000.
-        **extra: Additional plugin-specific arguments.
-
-    Returns:
-        A pre-configured PluginNamespace instance satisfying PluginArguments.
-    """
-
-    return contract.PluginNamespace(host=host, port=port, **extra)
+@overload
+def create_dummy_controller_request(
+    text: str = "",
+    argument_type: None = None,
+) -> contract.IControllerRequest[contract.ControllerArguments]: ...
 
 
-def create_dummy_controller_request(text: str = "") -> contract.ControllerRequest:
+@overload
+def create_dummy_controller_request[T: contract.ControllerArguments](
+    text: str = "",
+    argument_type: type[T] = ...,
+) -> contract.IControllerRequest[T]: ...
+
+
+def create_dummy_controller_request[T: contract.ControllerArguments](
+    text: str = "",
+    argument_type: type[T] | None = None,
+) -> contract.IControllerRequest[T] | contract.IControllerRequest[contract.ControllerArguments]:
     """Create a ControllerRequest instance wrapping command text.
 
     Args:
         text: Raw command string passed to the controller.
+        argument_type: Optional expected ControllerArguments TypedDict type.
 
     Returns:
-        A ControllerRequest instance.
+        An IControllerRequest instance.
     """
 
-    return contract.ControllerRequest(text)
+    from declusor.presentation.request import ControllerRequest
+
+    if argument_type is not None:
+        return ControllerRequest[T](text)
+
+    return ControllerRequest[contract.ControllerArguments](text)
 
 
 def create_dummy_options(
     host: str = "127.0.0.1",
     port: int = 9000,
-    client: contract.PluginConfig | None = None,
-) -> contract.PluginConfig:
+    client: contract.PluginConfig[DummyConfig] | None = None,
+) -> contract.PluginConfig[DummyConfig]:
     """Create a fully-formed PluginConfig for testing.
 
     Args:

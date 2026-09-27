@@ -1,4 +1,5 @@
 from declusor import config, contract
+from declusor.presentation.request import ControllerRequest
 
 
 class PromptLoop(contract.ISessionRunner):
@@ -116,9 +117,9 @@ class PromptLoop(contract.ISessionRunner):
 
         match command_line.split(" ", 1):
             case [route, argument]:
-                result = router.locate(route)(session, contract.ControllerRequest(argument.strip()))
+                result = router.locate(route)(session, ControllerRequest(argument.strip()))
             case [route]:
-                result = router.locate(route)(session, contract.ControllerRequest())
+                result = router.locate(route)(session, ControllerRequest())
             case _:
                 raise config.PromptError(command_line, "invalid command")
 

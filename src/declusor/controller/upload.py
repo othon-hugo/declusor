@@ -1,7 +1,16 @@
 from declusor import command, contract
 
 
-def call_upload(session: contract.SessionContext, req: contract.ControllerRequest) -> contract.ControllerResult:
+class UploadArguments(contract.ControllerArguments):
+    """Arguments for remote file upload."""
+
+    filepath: str
+
+
+def call_upload(
+    session: contract.SessionContext,
+    req: contract.IControllerRequest[UploadArguments],
+) -> contract.ControllerResult:
     """Upload a file from the local system to the remote system."""
 
     arguments, _ = req.parse_arguments({"filepath": str})

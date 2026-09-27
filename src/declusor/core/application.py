@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Protocol, runtime_checkable
+from typing import TYPE_CHECKING
 
 from declusor import contract, controller, util
 
@@ -6,21 +6,7 @@ if TYPE_CHECKING:
     from .plugin import PluginManager
 
 
-@runtime_checkable
-class ApplicationProtocol(Protocol):
-    """Protocol defining the interface required by the CLI to run an application."""
-
-    @property
-    def manager(self) -> "PluginManager":
-        """Client plugin manager containing registered plugins."""
-        ...
-
-    def run(self, config: contract.PluginConfig, /) -> None:
-        """Execute the application lifecycle for a given plugin configuration."""
-        ...
-
-
-class Application(ApplicationProtocol):
+class Application:
     """Compose and execute one Declusor server connection.
 
     Coordinates plugin discovery, route registration, and transport connection
@@ -30,12 +16,13 @@ class Application(ApplicationProtocol):
 
     def __init__(
         self,
-        manager: "PluginManager",
         router: contract.IRouter,
         view: contract.IView,
-        runner: contract.ISessionRunner,
-        input_source: contract.IInputSource | None = None,
         /,
+        *,
+        plugin_manager: "PluginManager",
+        session_runner: contract.ISessionRunner,
+        input_source: contract.IInputSource | None = None,
     ) -> None:
         """Create an application with configured dependencies and session runner.
 
@@ -47,48 +34,28 @@ class Application(ApplicationProtocol):
             input_source: Optional operator input source interface.
         """
 
-        self._manager = manager
         self._router = router
         self._view = view
-        self._runner = runner
+        self._session_runner = session_runner
+        self._plugin_manager = plugin_manager
         self._input_source = input_source
 
         self._connect_routes()
 
     @property
-    def manager(self) -> "PluginManager":
-        """Client plugin manager containing registered and discovered plugins."""
+    def plugin_manager(self) -> "PluginManager":
+        return self._plugin_manager
 
-        return self._manager
-
-    @property
-    def runner(self) -> contract.ISessionRunner:
-        """The active session runner."""
-
-        return self._runner
-
-    @runner.setter
-    def runner(self, runner: contract.ISessionRunner) -> None:
-        """Set or replace the session runner at runtime."""
-
-        self._runner = runner
-
-    def register_plugin(self, plugin: type[contract.IPlugin], /) -> None:
+    def register_plugin(self, plugin: type[contract.IPluginExtension[contract.ParsedArguments]], /) -> None:
         """Register a client plugin at runtime.
 
         Args:
             plugin: Plugin class implementing ``IPlugin``.
         """
 
-        self._manager.register(plugin)
+        self._plugin_manager.register(plugin)
 
-    def run(
-        self,
-        config: contract.PluginConfig,
-        /,
-        *,
-        runner: contract.ISessionRunner | None = None,
-    ) -> None:
+    def run(self, config: contract.PluginConfig[contract.ParsedArguments], /) -> None:
         """Run the configured server connection.
 
         Args:
@@ -99,26 +66,25 @@ class Application(ApplicationProtocol):
             ConnectionFailure: If the socket session cannot be established.
         """
 
-        plugin_runtime = self._manager.get(config.kind).build_runtime(config)
+        plugin_runtime = self._plugin_manager.get(config.kind).build_runtime(config)
 
         if self._input_source is not None and (setup_completer := getattr(self._input_source, "setup_completer", None)):
             setup_completer(self._router.routes)
 
-        self._view.write_message(plugin_runtime.client_script)
+        self._view.write_message(plugin_runtime.launcher)
 
         with util.await_connection(config.host, config.port) as socket_connection:
             with plugin_runtime.create_connection(socket_connection) as connection:
-                connection.initialize()
+                connection.handshake()
 
                 session = contract.SessionContext(
                     connection=connection,
                     view=self._view,
-                    input=self._input_source,
-                    files=plugin_runtime.client_files,
+                    plugin_processor=plugin_runtime.processor,
+                    input_source=self._input_source,
                 )
 
-                active_runner = runner if runner is not None else self._runner
-                active_runner.run(session, self._router)
+                self._session_runner.run(session, self._router)
 
     def _connect_routes(self) -> None:
         """Register built-in command routes on the application router."""

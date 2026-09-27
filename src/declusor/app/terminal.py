@@ -9,40 +9,58 @@ class TerminalApplication(core.Application):
 
     def __init__(
         self,
-        manager: core.PluginManager,
         router: contract.IRouter,
         view: contract.IView,
-        input_source: contract.IInputSource,
-        runner: contract.ISessionRunner | None = None,
         /,
+        *,
+        plugin_manager: core.PluginManager,
+        session_runner: contract.ISessionRunner,
+        input_source: contract.IInputSource | None = None,
     ) -> None:
         """Create a TerminalApplication with terminal view, input source, and prompt loop.
 
         Args:
-            manager: Plugin manager containing the available client plugins.
             router: Command router resolving interactive prompt input to controller actions.
             view: Operator view interface handling output presentation.
+            plugin_manager: Plugin manager containing the available client plugins.
+            session_runner: Session runner executing interaction workflows over active sessions.
             input_source: Operator input source interface reading commands.
-            runner: Optional session runner. Defaults to PromptLoop.
         """
 
-        terminal_runner = runner if runner is not None else presentation.PromptLoop(config.Settings.PROJECT_NAME)
-        super().__init__(manager, router, view, terminal_runner, input_source)
+        super().__init__(
+            router,
+            view,
+            plugin_manager=plugin_manager,
+            session_runner=session_runner,
+            input_source=input_source,
+        )
 
 
-def create_terminal_application(search_dirs: Sequence[Path] | None = None) -> TerminalApplication:
+def create_terminal_application(
+    search_dirs: Sequence[Path] | None = None,
+    *,
+    plugin_manager: core.PluginManager | None = None,
+) -> TerminalApplication:
     """Create a TerminalApplication with discovered plugins and terminal components.
 
     Args:
         search_dirs: Optional sequence of paths to search for plugins.
+        plugin_manager: Optional existing plugin manager instance.
 
     Returns:
         Fully composed TerminalApplication ready to execute.
     """
 
-    manager = core.PluginManager().discover(search_dirs)
     router = core.Router()
     view = presentation.TerminalView()
+    manager = plugin_manager or core.PluginManager().discover(search_dirs)
+    session_runner = presentation.PromptLoop(config.Settings.PROJECT_NAME)
     input_source = presentation.TerminalInputSource()
 
-    return TerminalApplication(manager, router, view, input_source)
+    return TerminalApplication(
+        router,
+        view,
+        plugin_manager=manager,
+        session_runner=session_runner,
+        input_source=input_source,
+    )

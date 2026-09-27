@@ -77,7 +77,7 @@ def test_dummy_connection_lifecycle_and_io() -> None:
     assert state == contract.ConnectionState.CREATED
     assert not conn.initialize_called
 
-    conn.initialize()
+    conn.handshake()
     state = conn.state
     assert state == contract.ConnectionState.CONNECTED
     assert conn.initialize_called
@@ -105,7 +105,7 @@ def test_dummy_connection_errors() -> None:
     conn.initialize_error = config.ConnectionError("init fail")
 
     with pytest.raises(config.ConnectionError, match="init fail"):
-        conn.initialize()
+        conn.handshake()
 
     conn.write_error = config.ConnectionError("write fail")
 
@@ -121,7 +121,7 @@ def test_dummy_connection_errors() -> None:
     conn.close()
 
     with pytest.raises(config.ConnectionError, match="Cannot initialize a closed connection"):
-        conn.initialize()
+        conn.handshake()
 
     with pytest.raises(config.ConnectionError, match="Connection is not open"):
         conn.write(b"data")
@@ -131,34 +131,34 @@ def test_dummy_client_file_store() -> None:
     """DummyPluginFileStore renders scripts, returns library payloads, and tracks module loading."""
 
     store = testing.DummyPluginFileStore()
-    rendered = store.render_client_script("10.0.0.1", 4444, b"\xaa\xbb")
+    rendered = store.render_launcher("10.0.0.1", 4444, b"\xaa\xbb")
 
     assert "10.0.0.1" in rendered
     assert "4444" in rendered
     assert "aabb" in rendered
     assert len(store.render_calls) == 1
 
-    lib = store.load_library()
+    lib = store.helpers()
     assert lib == b"dummy_library_payload"
     assert store.load_library_calls == 1
 
-    assert store.load_module("default_mod") == b"module_bytes:default_mod"
+    assert store.get_module("default_mod") == b"module_bytes:default_mod"
     store.set_module("custom_mod", b"custom_content")
-    assert store.load_module("custom_mod") == b"custom_content"
+    assert store.get_module("custom_mod") == b"custom_content"
     assert store.load_module_calls == ["default_mod", "custom_mod"]
 
     # Error simulation
     store.load_library_error = config.ConnectionError("library load fail")
     with pytest.raises(config.ConnectionError, match="library load fail"):
-        store.load_library()
+        store.helpers()
 
     store.load_module_error = config.InvalidOperation("module load fail")
     with pytest.raises(config.InvalidOperation, match="module load fail"):
-        store.load_module("bad_mod")
+        store.get_module("bad_mod")
 
     store.render_error = config.InvalidOperation("render fail")
     with pytest.raises(config.InvalidOperation, match="render fail"):
-        store.render_client_script("1.1.1.1", 1234, b"ack")
+        store.render_launcher("1.1.1.1", 1234, b"ack")
 
 
 def test_dummy_client_runtime() -> None:
@@ -167,8 +167,8 @@ def test_dummy_client_runtime() -> None:
     conn = testing.DummyConnection()
     runtime = testing.DummyPluginRuntime(client_script="echo test", connection_to_return=conn)
 
-    assert isinstance(runtime.client_files, contract.IClientFileStore)
-    assert runtime.client_script == "echo test"
+    assert isinstance(runtime.processor, contract.IPluginProcessor)
+    assert runtime.launcher == "echo test"
 
     dummy_socket = testing.DummySocket()
     created = runtime.create_connection(cast(socket, dummy_socket))
@@ -233,7 +233,7 @@ def test_dummy_router() -> None:
 
     def sample_controller(
         session: contract.SessionContext,
-        req: contract.ControllerRequest,
+        req: contract.IControllerRequest[contract.ControllerArguments],
     ) -> contract.ControllerResult:
         """Sample usage line.
         Extended explanation.
@@ -245,10 +245,10 @@ def test_dummy_router() -> None:
     assert "sample" in router.routes
     assert router.locate("sample") is sample_controller
     assert router.locate_calls == ["sample"]
-    assert router.get_route_usage("sample") == "Sample usage line."
+    assert router.help("sample") == "Sample usage line."
 
     router.set_route_usage("sample", "Overridden usage")
-    assert router.get_route_usage("sample") == "Overridden usage"
+    assert router.help("sample") == "Overridden usage"
 
     with pytest.raises(ValueError, match="route already exists"):
         router.connect("sample", sample_controller)
@@ -358,7 +358,7 @@ def test_factories() -> None:
 
     req = testing.create_dummy_controller_request("hello world")
     assert req.request_line == "hello world"
-    assert isinstance(req, contract.ControllerRequest)
+    assert isinstance(req, contract.IControllerRequest)
 
     args = testing.create_dummy_plugin_arguments(host="10.10.10.10", port=7777, extra_flag=True)
     assert args.host == "10.10.10.10"

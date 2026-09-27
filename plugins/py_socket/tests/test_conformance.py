@@ -10,7 +10,7 @@ class TestPySocketConformance(testing.PluginConformanceTestSuite):
     """Verify PySocketPlugin strictly complies with the IPlugin contract."""
 
     @pytest.fixture
-    def plugin_class(self) -> type[contract.IPlugin]:
+    def plugin_class(self) -> type[contract.IPluginExtension]:
         return py_socket.PySocketPlugin
 
     @pytest.fixture

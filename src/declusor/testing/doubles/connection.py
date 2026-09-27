@@ -45,7 +45,7 @@ class DummyConnection(contract.IConnection):
     def timeout(self, value: float | None, /) -> None:
         self._timeout = value
 
-    def initialize(self) -> None:
+    def handshake(self) -> None:
         """Simulate protocol handshake."""
 
         self.initialize_called = True

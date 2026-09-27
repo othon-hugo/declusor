@@ -2,11 +2,10 @@ import importlib.metadata
 import inspect
 from collections.abc import Sequence
 from pathlib import Path
-from typing import TypeAlias
 
 from declusor import config, contract, util
 
-PluginType: TypeAlias = type[contract.IPlugin]
+PluginType = type[contract.IPluginExtension[contract.ParsedArguments]]
 
 
 class PluginRegistry:
@@ -100,7 +99,7 @@ class PluginManager(PluginRegistry):
         if not inspect.isclass(candidate):
             raise config.PluginValidationError(f"Plugin candidate {candidate!r} must be a class.")
 
-        if not issubclass(candidate, contract.IPlugin):
+        if not issubclass(candidate, contract.IPluginExtension):
             raise config.PluginValidationError(f"Plugin class {candidate.__name__!r} must implement 'IPlugin'.")
 
         name = getattr(candidate, "name", None)
@@ -189,7 +188,7 @@ class PluginManager(PluginRegistry):
             plugin_class = util.import_plugin_from_file(
                 item.name,
                 plugin_file,
-                contract.IPlugin,  # type: ignore[type-abstract]
+                contract.IPluginExtension,  # type: ignore[type-abstract]
             )
 
             if plugin_class:

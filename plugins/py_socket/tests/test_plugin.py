@@ -17,7 +17,7 @@ def test_build_config_uses_bundled_assets_when_data_paths_is_none() -> None:
     assert cfg.options["launcher_path"] == py_socket.plugin.ASSETS_DIR / "launchers" / "py_socket_client.py"
     assert cfg.options["helpers_dir"] == py_socket.plugin.ASSETS_DIR / "helpers"
     assert cfg.options["modules_dir"] == py_socket.plugin.ASSETS_DIR / "modules"
-    assert cfg.data_paths is None
+    assert cfg.filesystem is None
     py_socket.PySocketPlugin.validate(cfg)
 
 
@@ -33,7 +33,7 @@ def test_build_config_resolves_custom_data_paths_when_provided(tmp_path: Path) -
     cfg = py_socket.PySocketPlugin.build_config(args, data_paths)
 
     assert cfg.options["launcher_path"] == custom_launcher
-    assert cfg.data_paths == data_paths
+    assert cfg.filesystem == data_paths
     py_socket.PySocketPlugin.validate(cfg)
 
 
@@ -55,8 +55,8 @@ def test_build_runtime_renders_configured_client_script(tmp_path: Path) -> None:
     )
 
     runtime = py_socket.PySocketPlugin.build_runtime(plugin_config)
-    assert "127.0.0.1" in runtime.client_script
-    assert "9000" in runtime.client_script
+    assert "127.0.0.1" in runtime.launcher
+    assert "9000" in runtime.launcher
 
 
 def test_build_runtime_creates_py_socket_connection(tmp_path: Path) -> None:

@@ -7,7 +7,6 @@ from declusor.config import (
 
 from .application import (
     Application,
-    ApplicationProtocol,
 )
 from .parser import (
     DeclusorParser,
@@ -23,7 +22,6 @@ from .router import (
 
 __all__ = [
     "Application",
-    "ApplicationProtocol",
     "DeclusorParser",
     "ParserError",
     "PluginError",

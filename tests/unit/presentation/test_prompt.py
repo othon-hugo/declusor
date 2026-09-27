@@ -12,7 +12,7 @@ def test_prompt_terminates_on_controller_terminate_action(
 
     def exit_controller(
         session: contract.SessionContext,
-        req: contract.ControllerRequest,
+        req: contract.IControllerRequest[contract.ControllerArguments],
     ) -> contract.ControllerResult:
         return contract.ControllerResult(action=contract.ControllerAction.TERMINATE)
 
@@ -58,13 +58,13 @@ def test_prompt_handles_keyboard_interrupt_during_execution(
 
     def interrupt_controller(
         session: contract.SessionContext,
-        req: contract.ControllerRequest,
+        req: contract.IControllerRequest[contract.ControllerArguments],
     ) -> contract.ControllerResult:
         raise KeyboardInterrupt()
 
     def exit_controller(
         session: contract.SessionContext,
-        req: contract.ControllerRequest,
+        req: contract.IControllerRequest[contract.ControllerArguments],
     ) -> contract.ControllerResult:
         return contract.ControllerResult(action=contract.ControllerAction.TERMINATE)
 
@@ -95,13 +95,13 @@ def test_prompt_handles_declusor_exception(
 
     def fail_controller(
         session: contract.SessionContext,
-        req: contract.ControllerRequest,
+        req: contract.IControllerRequest[contract.ControllerArguments],
     ) -> contract.ControllerResult:
         raise exc
 
     def exit_controller(
         session: contract.SessionContext,
-        req: contract.ControllerRequest,
+        req: contract.IControllerRequest[contract.ControllerArguments],
     ) -> contract.ControllerResult:
         return contract.ControllerResult(action=contract.ControllerAction.TERMINATE)
 
@@ -133,7 +133,7 @@ def test_prompt_loop_as_session_runner(
 
     def quit_controller(
         session: contract.SessionContext,
-        req: contract.ControllerRequest,
+        req: contract.IControllerRequest[contract.ControllerArguments],
     ) -> contract.ControllerResult:
         return contract.ControllerResult(action=contract.ControllerAction.TERMINATE)
 

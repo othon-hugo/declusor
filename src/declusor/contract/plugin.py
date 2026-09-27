@@ -1,18 +1,19 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from collections.abc import Mapping
+from dataclasses import dataclass
 from pathlib import Path
 from socket import socket
-from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING
 
 from declusor import config
 
 if TYPE_CHECKING:
     from declusor.contract.connection import IConnection
-    from declusor.contract.parser import IArgumentParser
+    from declusor.contract.parser import IArgumentParser, ParsedArguments
 
 
 @dataclass(frozen=True)
-class PluginConfig:
+class PluginConfig[T: ParsedArguments]:
     """Configuration produced by a client plugin.
 
     Stores the common server connection parameters and the client-specific
@@ -28,104 +29,193 @@ class PluginConfig:
     port: int
     """Port used by the server."""
 
-    data_paths: config.DataPaths | None = None
-    """Optional filesystem paths used by the selected client runtime."""
+    options: T
+    """Client-specific configuration options, typed to the plugin's TypedDict."""
 
-    options: dict[str, Any] = field(default_factory=dict)
-    """Client-specific configuration options."""
+    options_type: type[T]
+    """The concrete TypedDict class for this plugin's parsed options.
+
+    Retained alongside ``options`` so that callers can perform runtime
+    isinstance checks (e.g. ``isinstance(config.options, config.options_type)``)
+    without resorting to ``Any``.
+    """
+
+    filesystem: "PluginFilesystem"
+    """Filesystem paths used by the selected client runtime."""
 
     mode: config.ExecutionMode = config.Settings.DEFAULT_EXECUTION_MODE
     """Application execution mode (e.g. CLI, API, MCP, HTTP)."""
 
 
-@runtime_checkable
-class PluginArguments(Protocol):
-    """Protocol for command-line arguments consumed by client plugins.
+@dataclass(frozen=True)
+class PluginFilesystem:
+    """Filesystem paths used by a plugin runtime."""
 
-    Guarantees typed access to standard server network parameters (host, port)
-    configured at the application level.
-    """
+    root: Path
+    """Root directory containing the plugin directories."""
 
-    host: str
-    port: int
+    assets: Path
+    """Root directory for plugin asset files."""
 
+    launchers: Path
+    """Directory containing client bootstrap templates and launcher scripts."""
 
-class PluginNamespace:
-    """Pre-configured argument namespace satisfying PluginArguments.
+    modules: Path
+    """Directory containing payload modules."""
 
-    Provides explicit typed attributes for standard options (host, port)
-    and dynamic attribute access for plugin-specific options.
-    """
-
-    def __init__(
-        self,
-        host: str,
-        port: int,
-        data_root: Path | None = None,
-        plugin: str = "",
-        plugin_dir: Path | None = None,
-        mode: config.ExecutionMode = config.Settings.DEFAULT_EXECUTION_MODE,
-        **extra: Any,
-    ) -> None:
-        self.host = host
-        self.port = port
-        self.data_root = data_root
-        self.plugin = plugin
-        self.plugin_dir = plugin_dir
-        self.mode = mode
-
-        for key, value in extra.items():
-            setattr(self, key, value)
-
-    def get(self, key: str, default: Any = None) -> Any:
-        """Return the value for key if present, otherwise default."""
-
-        return getattr(self, key, default)
-
-    def to_dict(self) -> dict[str, Any]:
-        """Convert the argument namespace to a dictionary."""
-
-        return dict(vars(self))
-
-    def __contains__(self, item: str) -> bool:
-        """Return True if the option exists in the namespace."""
-
-        return hasattr(self, item)
-
-    def __repr__(self) -> str:
-        attrs = ", ".join(f"{k}={v!r}" for k, v in vars(self).items())
-
-        return f"{type(self).__name__}({attrs})"
-
-    def __eq__(self, other: object) -> bool:
-        if isinstance(other, PluginNamespace):
-            return vars(self) == vars(other)
-
-        if isinstance(other, PluginArguments):
-            return self.host == other.host and self.port == other.port
-
-        return False
-
-    def __getattr__(self, name: str) -> Any:
-        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+    helpers: Path
+    """Directory containing reusable client helper libraries."""
 
     @classmethod
-    def from_namespace(cls, namespace: Any) -> "PluginNamespace":
-        """Construct a pre-configured PluginNamespace from an argparse.Namespace or mapping."""
+    def from_root(cls, root: Path, /) -> "PluginFilesystem":
+        """Build normalized filesystem paths from a root directory.
 
-        mapping = vars(namespace) if hasattr(namespace, "__dict__") else dict(namespace)
-        known_keys = {"host", "port", "data_root", "plugin", "plugin_dir", "mode"}
-        extra = {k: v for k, v in mapping.items() if k not in known_keys}
+        If ``root/assets`` exists it is used as the assets directory; otherwise
+        ``root`` itself is treated as the assets directory so that both
+        installed packages (assets bundled inside the package) and repository
+        layouts (assets in a sibling ``assets/`` directory) work without extra
+        configuration.
+
+        Args:
+            root: Base directory for the plugin.
+
+        Returns:
+            Immutable ``PluginFilesystem`` derived from ``root``.
+        """
+
+        normalized_root = root.expanduser().resolve()
+        assets = normalized_root / "assets"
+
+        if not assets.exists():
+            raise config.PluginValidationError(f"Plugin assets directory not found at: {assets}")
 
         return cls(
-            host=str(mapping.get("host", "")),
-            port=int(mapping.get("port", 0)),
-            data_root=mapping.get("data_root"),
-            plugin=str(mapping.get("plugin", "")),
-            plugin_dir=mapping.get("plugin_dir"),
-            mode=mapping.get("mode", config.Settings.DEFAULT_EXECUTION_MODE),
-            **extra,
+            root=normalized_root,
+            assets=assets,
+            launchers=assets / "launchers",
+            modules=assets / "modules",
+            helpers=assets / "helpers",
         )
+
+
+class IPluginExtension[T: ParsedArguments](ABC):
+    """Extension point for registering configurable client implementations.
+
+    Each autonomous plugin subclasses ``ParsedArguments`` to declare its own
+    typed options (e.g. ``ShellSocketConfig``), then subclasses
+    ``IPluginExtension[ShellSocketConfig]`` and provides concrete
+    implementations for all abstract methods.
+
+    The parser never constructs the plugin's TypedDict directly.  Instead it
+    calls ``configure_parser`` (so the plugin can register its flags) and then
+    ``extract_options`` (so the plugin converts the raw namespace dict into its
+    own statically typed ``T``).  This keeps ``Any`` entirely out of the
+    parse-to-config pipeline.
+    """
+
+    name: str
+    """Unique identifier used to select the client from the command line."""
+
+    description: str = ""
+    """Brief human-readable description shown in CLI help."""
+
+    version: str = "1.0.0"
+    """Semantic version of the client plugin."""
+
+    author: str = ""
+    """Author or maintainer of the client plugin."""
+
+    options_type: type[T]
+    """The concrete TypedDict class for this plugin's parsed options."""
+
+    @classmethod
+    @abstractmethod
+    def configure_parser(cls, parser: "IArgumentParser", /) -> None:
+        """Register client-specific command-line arguments.
+
+        Args:
+            parser: Argument parser that receives the client-specific options.
+        """
+
+        raise NotImplementedError
+
+    @classmethod
+    @abstractmethod
+    def extract_options(cls, raw: Mapping[str, object], /) -> T:
+        """Construct plugin-specific typed options from the parsed namespace dict.
+
+        Called by the application parser after it has stripped all standard
+        keys (``host``, ``port``, ``plugin``, ``mode``, ``assets_dir``,
+        ``plugin_dir``).  The remaining key-value pairs correspond to the
+        arguments registered by ``configure_parser`` and are passed here as a
+        plain ``Mapping[str, object]``.
+
+        The plugin is the sole authority on converting this mapping into its
+        own statically typed ``T`` — no ``Any`` is required at the call site.
+
+        Args:
+            raw: Residual argument mapping after common keys have been removed.
+
+        Returns:
+            A fully typed instance of ``T``.
+        """
+
+        raise NotImplementedError
+
+    @classmethod
+    @abstractmethod
+    def validate(cls, plugin_config: "PluginConfig[T]", /) -> None:
+        """Validate a client configuration.
+
+        Args:
+            plugin_config: Configuration produced by ``build_config``.
+
+        Raises:
+            config.ParserError: If the configuration is invalid.
+        """
+
+        raise NotImplementedError
+
+    @classmethod
+    @abstractmethod
+    def build_config(
+        cls,
+        host: str,
+        port: int,
+        options: T,
+        /,
+        filesystem: "PluginFilesystem | None" = None,
+        mode: config.ExecutionMode = config.Settings.DEFAULT_EXECUTION_MODE,
+    ) -> "PluginConfig[T]":
+        """Build a client configuration from typed options and filesystem paths.
+
+        Args:
+            host: Host address the server will bind to.
+            port: Port the server will listen on.
+            options: Plugin-specific options produced by ``extract_options``.
+            filesystem: Resolved filesystem paths, or ``None`` to fall back to
+                the plugin's own bundled assets.
+            mode: Application execution mode.
+
+        Returns:
+            Immutable configuration object for the selected client.
+        """
+
+        raise NotImplementedError
+
+    @classmethod
+    @abstractmethod
+    def build_runtime(cls, plugin_config: "PluginConfig[T]", /) -> "IPluginRuntime":
+        """Build the runtime for a validated client configuration.
+
+        Args:
+            plugin_config: Configuration produced by ``build_config``.
+
+        Returns:
+            Runtime that can render the bootstrap script and create connections.
+        """
+
+        raise NotImplementedError
 
 
 class IPluginRuntime(ABC):
@@ -137,14 +227,14 @@ class IPluginRuntime(ABC):
 
     @property
     @abstractmethod
-    def client_files(self) -> "IClientFileStore":
+    def processor(self) -> "IPluginProcessor":
         """Client file store for module and library loading."""
 
         raise NotImplementedError
 
     @property
     @abstractmethod
-    def client_script(self) -> str:
+    def launcher(self) -> str:
         """Return the rendered client bootstrap script."""
 
         raise NotImplementedError
@@ -163,94 +253,52 @@ class IPluginRuntime(ABC):
         raise NotImplementedError
 
 
-class IPlugin(ABC):
-    """Extension point for registering configurable client implementations.
+class IPluginProcessor(ABC):
+    """File-access interface for plugin-specific assets.
 
-    Implementations define how their command-line arguments are registered,
-    converted into a ``PluginConfig``, and validated.
-    """
-
-    name: str
-    """Unique identifier used to select the client from the command line."""
-
-    description: str = ""
-    """Brief human-readable description shown in CLI help."""
-
-    version: str = "1.0.0"
-    """Semantic version of the client plugin."""
-
-    author: str = ""
-    """Author or maintainer of the client plugin."""
-
-    @classmethod
-    @abstractmethod
-    def configure_parser(cls, parser: "IArgumentParser", /) -> None:
-        """Register client-specific command-line arguments.
-
-        Args:
-            parser: Argument parser that receives the client-specific options.
-        """
-
-        raise NotImplementedError
-
-    @classmethod
-    @abstractmethod
-    def build_config(
-        cls,
-        args: PluginArguments,
-        data_paths: config.DataPaths | None = None,
-        /,
-    ) -> PluginConfig:
-        """Build a client configuration from parsed arguments and data paths.
-
-        Args:
-            args: Pre-configured namespace or protocol containing common and client-specific arguments.
-            data_paths: Resolved filesystem paths for the application, or None to use bundled assets.
-
-        Returns:
-            Configuration object for the selected client.
-        """
-
-        raise NotImplementedError
-
-    @classmethod
-    @abstractmethod
-    def validate(cls, plugin_config: PluginConfig, /) -> None:
-        """Validate a client configuration.
-
-        Args:
-            plugin_config: Configuration produced by ``build_config``.
-
-        Raises:
-            config.ParserError: If the configuration is invalid.
-        """
-
-        raise NotImplementedError
-
-    @classmethod
-    @abstractmethod
-    def build_runtime(cls, plugin_config: PluginConfig, /) -> IPluginRuntime:
-        """Build the runtime for a validated client configuration.
-
-        Args:
-            plugin_config: Configuration produced by ``build_config``.
-
-        Returns:
-            Runtime that can render the bootstrap and create connections.
-        """
-
-        raise NotImplementedError
-
-
-class IClientFileStore(ABC):
-    """Provides client bootstrap, library and module file operations.
-
-    Libraries are loaded automatically during session initialization, while
-    modules are loaded only when explicitly requested by the operator.
+    Provides the application layer with a transport-agnostic handle to load
+    launcher scripts, helper libraries, and on-demand modules without knowing
+    the concrete filesystem layout of each plugin.
     """
 
     @abstractmethod
-    def render_client_script(self, host: str, port: int, acknowledge: bytes, /) -> str:
+    def load_module(self, module: str, /) -> bytes:
+        """Load an on-demand payload module by name.
+
+        Args:
+            module: Module file name relative to the modules directory.
+
+        Returns:
+            Raw bytes of the module file.
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def load_helper(self, helper: str, /) -> bytes:
+        """Load a single helper library by name.
+
+        Args:
+            helper: Helper file name relative to the helpers directory.
+
+        Returns:
+            Raw bytes of the helper file.
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def load_all_helpers(self) -> Mapping[str, bytes]:
+        """Load all available helper libraries.
+
+        Returns:
+            Mapping of helper file names to their raw bytes.
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def render_launcher(self, host: str, port: int, acknowledge: bytes, /) -> bytes:
         """Read and render the client bootstrap script.
 
         Args:
@@ -259,30 +307,7 @@ class IClientFileStore(ABC):
             acknowledge: Client acknowledgment bytes embedded in the script.
 
         Returns:
-            The rendered client bootstrap script.
-        """
-
-        raise NotImplementedError
-
-    @abstractmethod
-    def load_library(self) -> bytes:
-        """Load libraries uploaded automatically during initialization.
-
-        Returns:
-            Concatenated library contents.
-        """
-
-        raise NotImplementedError
-
-    @abstractmethod
-    def load_module(self, module_name: str, /) -> bytes:
-        """Load one operator-selected module.
-
-        Args:
-            module_name: Module filename relative to the modules directory.
-
-        Returns:
-            Raw module contents.
+            The rendered client bootstrap script as bytes.
         """
 
         raise NotImplementedError

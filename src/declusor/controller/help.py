@@ -1,6 +1,12 @@
 from declusor import contract
 
 
+class HelpArguments(contract.ControllerArguments, total=False):
+    """Arguments for help command."""
+
+    command: str | None
+
+
 def create_help_controller(router: contract.IRouter) -> contract.Controller:
     """Create a help controller that queries *router* for routes and usage descriptions.
 
@@ -11,7 +17,10 @@ def create_help_controller(router: contract.IRouter) -> contract.Controller:
         Help controller function.
     """
 
-    def call_help(session: contract.SessionContext, req: contract.ControllerRequest) -> contract.ControllerResult:
+    def call_help(
+        session: contract.SessionContext,
+        req: contract.IControllerRequest[HelpArguments],
+    ) -> contract.ControllerResult:
         """Display detailed information about available commands or a specific command."""
 
         arguments, _ = req.parse_arguments({"command": str | None})
@@ -23,7 +32,7 @@ def create_help_controller(router: contract.IRouter) -> contract.Controller:
                 session.view.write_error(f"Unknown command: '{target_route}'. Type 'help' to list available commands.")
                 return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
 
-            usage = router.get_route_usage(target_route)
+            usage = router.help(target_route)
             session.view.write_message(f"{target_route}: {usage}" if usage else target_route)
         else:
             routes = router.routes
@@ -35,7 +44,7 @@ def create_help_controller(router: contract.IRouter) -> contract.Controller:
             key_length = max(map(len, routes)) + 1
 
             for route in routes:
-                usage = router.get_route_usage(route)
+                usage = router.help(route)
                 session.view.write_message(f"{route:<{key_length}}: {usage}" if usage else route)
 
         return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)

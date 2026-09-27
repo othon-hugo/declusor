@@ -6,9 +6,6 @@ from declusor.config import (
     InvalidOperation,
 )
 
-from .application import (
-    ApplicationFactory,
-)
 from .command import (
     ICommand,
 )
@@ -18,39 +15,40 @@ from .connection import (
     IConnectionProfile,
 )
 from .controller import (
+    ArgumentDefinitions,
     Controller,
     ControllerAction,
-    ControllerRequest,
+    ControllerArguments,
     ControllerResult,
-    SessionContext,
+    IControllerRequest,
 )
 from .input_source import (
     IInputSource,
 )
 from .parser import (
     IArgumentParser,
-    IParser,
+    ParsedArguments,
 )
 from .plugin import (
-    IClientFileStore,
-    IPlugin,
+    IPluginExtension,
+    IPluginProcessor,
     IPluginRuntime,
-    PluginArguments,
     PluginConfig,
-    PluginNamespace,
+    PluginFilesystem,
 )
 from .router import (
     IRouter,
 )
-from .runner import (
+from .session import (
     ISessionRunner,
+    SessionContext,
 )
 from .view import (
     IView,
 )
 
 __all__ = [
-    "ApplicationFactory",
+    "ArgumentDefinitions",
     "ConnectionClosed",
     "ConnectionError",
     "ConnectionHandshakeError",
@@ -58,23 +56,23 @@ __all__ = [
     "ConnectionTimeoutError",
     "Controller",
     "ControllerAction",
-    "ControllerRequest",
+    "ControllerArguments",
     "ControllerResult",
     "IArgumentParser",
-    "IClientFileStore",
     "ICommand",
     "IConnection",
     "IConnectionProfile",
+    "IControllerRequest",
     "IInputSource",
     "InvalidOperation",
-    "IParser",
-    "IPlugin",
+    "IPluginExtension",
+    "IPluginProcessor",
     "IPluginRuntime",
     "IRouter",
     "ISessionRunner",
     "IView",
-    "PluginArguments",
+    "ParsedArguments",
     "PluginConfig",
-    "PluginNamespace",
+    "PluginFilesystem",
     "SessionContext",
 ]

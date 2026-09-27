@@ -21,14 +21,11 @@ from .exceptions import (
 )
 from .settings import (
     BasePath,
-    ClientDataPaths,
-    DataPaths,
     Settings,
 )
 
 __all__ = [
     "BasePath",
-    "ClientDataPaths",
     "CommandError",
     "CommandValidationError",
     "ConnectionClosed",
@@ -36,7 +33,6 @@ __all__ = [
     "ConnectionHandshakeError",
     "ConnectionTimeoutError",
     "ControllerError",
-    "DataPaths",
     "DeclusorException",
     "DeclusorWarning",
     "ExecutionMode",

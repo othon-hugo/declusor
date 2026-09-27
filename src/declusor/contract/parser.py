@@ -1,42 +1,29 @@
-from abc import ABC, abstractmethod
-from collections.abc import Sequence
-from typing import Any, Generic, Protocol, TypeVar, runtime_checkable
+from typing import Any, Protocol, TypedDict, runtime_checkable
 
-T = TypeVar("T")
+
+class ParsedArguments(TypedDict):
+    """Base TypedDict for plugin-specific parsed options.
+
+    Autonomous plugins subclass this to declare their statically typed options.
+    Parsers never construct this directly — plugins do via ``extract_options()``.
+    """
 
 
 @runtime_checkable
 class IArgumentParser(Protocol):
     """Protocol for an argument parser that registers command-line arguments.
 
-    Matches argparse.ArgumentParser, util.Parser, and DeclusorParser structurally.
+    Matches ``argparse.ArgumentParser``, ``util.Parser``, and ``DeclusorParser``
+    structurally without multiple-inheritance conflicts.
     """
 
-    def add_argument(self, *name_or_flags: str, **kwargs: Any) -> Any:
-        """Register a command-line argument or option."""
-        ...
-
-
-class IParser(ABC, Generic[T]):
-    """Generic contract for a command-line argument parser.
-
-    Type parameter ``T`` is the typed result produced by ``parse()``
-    (e.g. a ``TypedDict`` holding the validated CLI values).
-    """
-
-    @abstractmethod
-    def parse(self, manager: Any, argv: Sequence[str] | None = None, /) -> T:
-        """Parse command-line arguments and return a typed result.
+    def add_argument(self, *name_or_flags: str, **kwargs: Any) -> object:
+        """Register a command-line argument or option.
 
         Args:
-            manager: Plugin manager containing available client plugins.
-            argv: Optional sequence of arguments to parse, excluding the program name.
-
-        Returns:
-            A fully validated instance of ``T`` populated from arguments.
-
-        Raises:
-            ParserError: If required arguments are missing or values are invalid.
+            *name_or_flags: One positional name or one or more option flags
+                (e.g. ``\"host\"`` or ``\"-p\"``, ``\"--plugin\"``).
+            **kwargs: Forwarded verbatim to the underlying parser implementation
+                (e.g. ``type``, ``default``, ``help``, ``nargs``).
         """
-
-        raise NotImplementedError
+        ...

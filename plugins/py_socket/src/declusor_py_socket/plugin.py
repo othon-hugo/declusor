@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from pathlib import Path
 from socket import socket
 
@@ -5,12 +6,14 @@ from declusor import config, contract, util
 
 from .connection import PySocketConnection, PySocketProfile
 
-_REPO_ASSETS_DIR = Path(__file__).resolve().parents[2] / "assets"
-_PACKAGE_ASSETS_DIR = Path(__file__).resolve().parent / "assets"
-ASSETS_DIR = _REPO_ASSETS_DIR if _REPO_ASSETS_DIR.exists() else _PACKAGE_ASSETS_DIR
+_DEFAULT_ROOT = Path(__file__).resolve().parents[2]
 
 
-class PySocketPlugin(contract.IPlugin):
+class PySocketConfig(contract.ParsedArguments, total=False):
+    """Client-specific configuration options for py_socket."""
+
+
+class PySocketPlugin(contract.IPluginExtension[PySocketConfig]):
     """Plugin that configures the Python reverse-shell client.
 
     Registers the ``py_socket`` client, which deploys a self-contained Python
@@ -21,19 +24,10 @@ class PySocketPlugin(contract.IPlugin):
     """
 
     name = "py_socket"
-    """Registered identifier of the Python-socket client."""
-
     description = "Cross-platform Python reverse-shell with in-memory execution and subprocess fallback."
-    """Brief human-readable description for CLI help."""
-
     version = "1.0.0"
-    """Plugin version."""
-
     author = "Declusor Team"
-    """Plugin author."""
-
-    default_assets_dir = ASSETS_DIR
-    """Path to bundled assets."""
+    options_type = PySocketConfig
 
     @classmethod
     def configure_parser(cls, parser: contract.IArgumentParser, /) -> None:
@@ -42,47 +36,46 @@ class PySocketPlugin(contract.IPlugin):
         return None
 
     @classmethod
-    def build_config(cls, args: contract.PluginArguments, data_paths: config.DataPaths | None = None, /) -> contract.PluginConfig:
+    def extract_options(cls, raw: Mapping[str, object], /) -> PySocketConfig:
+        """Extract and construct typed options for py_socket."""
+
+        return PySocketConfig()
+
+    @classmethod
+    def build_config(
+        cls,
+        host: str,
+        port: int,
+        options: PySocketConfig,
+        /,
+        filesystem: contract.PluginFilesystem | None = None,
+        mode: config.ExecutionMode = config.Settings.DEFAULT_EXECUTION_MODE,
+    ) -> contract.PluginConfig[PySocketConfig]:
         """Build the py_socket client configuration."""
 
-        if data_paths is not None:
-            client_data = data_paths.for_client(cls.name)
-            launcher_path = client_data.launcher / "py_socket_client.py"
-            helpers_dir = client_data.helpers
-            modules_dir = client_data.modules
-        else:
-            launcher_path = ASSETS_DIR / "launchers" / "py_socket_client.py"
-            helpers_dir = ASSETS_DIR / "helpers"
-            modules_dir = ASSETS_DIR / "modules"
+        resolved_filesystem = filesystem or contract.PluginFilesystem.from_root(_DEFAULT_ROOT)
 
         return contract.PluginConfig(
             kind=cls.name,
-            host=args.host,
-            port=args.port,
-            options={
-                "launcher_path": launcher_path,
-                "helpers_dir": helpers_dir,
-                "modules_dir": modules_dir,
-            },
-            data_paths=data_paths,
+            host=host,
+            port=port,
+            options=options,
+            options_type=cls.options_type,
+            filesystem=resolved_filesystem,
+            mode=mode,
         )
 
     @classmethod
-    def validate(cls, plugin_config: contract.PluginConfig, /) -> None:
+    def validate(cls, plugin_config: contract.PluginConfig[PySocketConfig], /) -> None:
         """Validate the py_socket client configuration."""
 
-        launcher_path = plugin_config.options.get("launcher_path")
+        launcher_file = plugin_config.filesystem.launchers / "py_socket_client.py"
 
-        if not isinstance(launcher_path, Path):
-            raise config.ParserError("Invalid py_socket launcher path.")
-
-        launcher_path = launcher_path.resolve()
-
-        if not launcher_path.is_file():
-            raise config.ParserError(f"Client launcher file does not exist: {launcher_path}")
+        if not launcher_file.is_file():
+            raise config.ParserError(f"Client launcher file does not exist: {launcher_file}")
 
     @classmethod
-    def build_runtime(cls, plugin_config: contract.PluginConfig, /) -> contract.IPluginRuntime:
+    def build_runtime(cls, plugin_config: contract.PluginConfig[PySocketConfig], /) -> contract.IPluginRuntime:
         """Build the py_socket runtime from client configuration."""
 
         return PySocketRuntime(plugin_config)
@@ -91,7 +84,7 @@ class PySocketPlugin(contract.IPlugin):
 class PySocketRuntime(contract.IPluginRuntime):
     """Runtime adapter between Python client configuration and its transport."""
 
-    def __init__(self, plugin_config: contract.PluginConfig, /) -> None:
+    def __init__(self, plugin_config: contract.PluginConfig[PySocketConfig], /) -> None:
         self._plugin_config = plugin_config
 
         self._profile = PySocketProfile(
@@ -100,41 +93,33 @@ class PySocketRuntime(contract.IPluginRuntime):
             ack_client_raw=util.hash_sha256(config.Settings.DEFAULT_CLIENT_ACK_SEED),
         )
 
-        launcher_path: Path = plugin_config.options.get("launcher_path") or (ASSETS_DIR / "launchers" / "py_socket_client.py")
-        helpers_dir: Path = plugin_config.options.get("helpers_dir") or (ASSETS_DIR / "helpers")
-        modules_dir: Path = plugin_config.options.get("modules_dir") or (ASSETS_DIR / "modules")
-
-        self._files = PySocketFileStore(
-            launcher_path,
-            helpers_dir,
-            modules_dir,
-            library_extensions=(".py",),
-            module_extensions=(".py",),
-        )
+        self._processor = PySocketFileStore(plugin_config.filesystem)
 
     @property
-    def client_files(self) -> contract.IClientFileStore:
+    def processor(self) -> contract.IPluginProcessor:
         """The Python client file store."""
 
-        return self._files
+        return self._processor
 
     @property
-    def client_script(self) -> str:
+    def launcher(self) -> str:
         """Return the rendered Python client launcher script."""
 
-        return self._files.render_client_script(
+        rendered_bytes = self._processor.render_launcher(
             self._plugin_config.host,
             self._plugin_config.port,
             self._profile.ack_client_raw,
         )
 
+        return rendered_bytes.decode("utf-8")
+
     def create_connection(self, connection: socket, /) -> contract.IConnection:
         """Create a py_socket connection for an accepted socket."""
 
-        return PySocketConnection(connection, self._profile, self._files)
+        return PySocketConnection(connection, self._profile, self._processor)
 
 
-class PySocketFileStore(contract.IClientFileStore):
+class PySocketFileStore(contract.IPluginProcessor):
     """Filesystem adapter for Python client templates, libraries and payloads.
 
     Resolves launchers, helpers and modules from the plugin's own self-contained
@@ -143,64 +128,73 @@ class PySocketFileStore(contract.IClientFileStore):
 
     def __init__(
         self,
-        launcher_path: Path,
-        helpers_dir: Path,
-        modules_dir: Path,
+        filesystem: contract.PluginFilesystem,
         library_extensions: tuple[str, ...] = (".py",),
         module_extensions: tuple[str, ...] = (".py",),
     ) -> None:
-        self._launcher_path = launcher_path
-        self._helpers_dir = helpers_dir
-        self._modules_dir = modules_dir
+        self._filesystem = filesystem
         self._library_extensions = library_extensions
         self._module_extensions = module_extensions
 
-    def render_client_script(self, host: str, port: int, acknowledge: bytes, /) -> str:
+    def render_launcher(self, host: str, port: int, acknowledge: bytes, /) -> bytes:
         """Read and render the Python client bootstrap launcher script."""
 
+        launcher_path = self._filesystem.launchers / "py_socket_client.py"
+
         try:
-            client_script_template = self._launcher_path.read_text(encoding="utf-8")
+            client_script_template = launcher_path.read_text(encoding="utf-8")
         except OSError as error:
             raise config.ConnectionError(f"Failed to read client script: {error}") from error
 
-        return util.format_template(
+        rendered = util.format_template(
             client_script_template,
             HOST=host,
             PORT=str(port),
             ACKNOWLEDGE=acknowledge.hex(),
         )
 
-    def load_library(self) -> bytes:
-        """Load and concatenate valid Python helper libraries."""
+        return rendered.encode("utf-8")
 
-        if not self._helpers_dir.exists():
-            return b""
+    def load_helper(self, helper: str, /) -> bytes:
+        """Load a single helper library by name."""
 
-        modules: list[bytes] = []
+        helper_path = (self._filesystem.helpers / helper).resolve()
 
-        for file in sorted(self._helpers_dir.iterdir()):
-            if not file.is_file() or not util.validate_file_extension(file, self._library_extensions):
-                continue
+        if not util.validate_file_relative(helper_path, self._filesystem.helpers):
+            raise config.InvalidOperation(f"Helper path '{helper}' is outside permitted directory.")
 
-            try:
-                module_content = util.load_file(file)
-            except config.InvalidOperation as error:
-                raise config.ConnectionError(f"Failed to read helper file: {file}: {error}") from error
+        return util.load_file(helper_path)
 
-            if module_content:
-                modules.append(module_content)
+    def load_all_helpers(self) -> Mapping[str, bytes]:
+        """Load all valid Python helper libraries."""
 
-        return b"\n\n".join(modules)
+        if not self._filesystem.helpers.exists():
+            return {}
 
-    def load_module(self, module_name: str, /) -> bytes:
+        helpers: dict[str, bytes] = {}
+
+        for file in sorted(self._filesystem.helpers.iterdir()):
+            if file.is_file() and util.validate_file_extension(file, self._library_extensions):
+                helpers[file.name] = util.load_file(file)
+
+        return helpers
+
+    def helpers(self) -> bytes:
+        """Load and concatenate valid Python helper libraries for backward compatibility."""
+
+        all_helpers = self.load_all_helpers()
+
+        return b"\n\n".join(all_helpers.values())
+
+    def load_module(self, module: str, /) -> bytes:
         """Load one operator-selected module from the modules directory."""
 
-        module_path = (self._modules_dir / module_name).resolve()
+        module_path = (self._filesystem.modules / module).resolve()
 
-        if not util.validate_file_relative(module_path, self._modules_dir):
-            raise config.InvalidOperation(f"Module path '{module_name}' is outside the permitted modules directory.")
+        if not util.validate_file_relative(module_path, self._filesystem.modules):
+            raise config.InvalidOperation(f"Module path '{module}' is outside the permitted modules directory.")
 
         if not util.validate_file_extension(module_path, self._module_extensions):
-            raise config.InvalidOperation(f"Module '{module_name}' has an unsupported extension. Allowed: {self._module_extensions}")
+            raise config.InvalidOperation(f"Module '{module}' has an unsupported extension. Allowed: {self._module_extensions}")
 
         return util.load_file(module_path)
