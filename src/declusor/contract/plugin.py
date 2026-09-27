@@ -264,6 +264,13 @@ class IPluginProcessor(ABC):
     the concrete filesystem layout of each plugin.
     """
 
+    @property
+    @abstractmethod
+    def helpers(self, /) -> bytes:
+        """[...]"""
+
+        raise NotImplementedError
+
     @abstractmethod
     def load_module(self, module: str, /) -> bytes:
         """Load an on-demand payload module by name.

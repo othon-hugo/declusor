@@ -62,6 +62,20 @@ def test_load_helper_rejects_path_traversal(tmp_path: Path) -> None:
         processor.load_helper("../secret.sh")
 
 
+def test_helpers_concatenation(tmp_path: Path) -> None:
+    """Verify helpers property concatenates all helper library scripts."""
+
+    helpers = tmp_path / "helpers"
+    helpers.mkdir(parents=True)
+    (helpers / "a.sh").write_bytes(b"echo a")
+    (helpers / "b.sh").write_bytes(b"echo b")
+
+    fs = contract.PluginFilesystem.from_root(tmp_path)
+    processor = shell_socket.ShellSocketProcessor(fs)
+
+    assert processor.helpers == b"echo a\necho b"
+
+
 def test_load_module_success(tmp_path: Path) -> None:
     """Verify load_module reads modules from the designated modules directory."""
 

@@ -135,6 +135,14 @@ class PySocketProcessor(contract.IPluginProcessor):
         self._library_extensions = library_extensions
         self._module_extensions = module_extensions
 
+    @property
+    def helpers(self) -> bytes:
+        """Load and concatenate valid Python helper libraries for backward compatibility."""
+
+        all_helpers = self.load_all_helpers()
+
+        return b"\n\n".join(all_helpers.values())
+
     def render_launcher(self, host: str, port: int, acknowledge: bytes, /) -> bytes:
         """Read and render the Python client bootstrap launcher script."""
 
@@ -177,13 +185,6 @@ class PySocketProcessor(contract.IPluginProcessor):
                 helpers[file.name] = util.load_file(file)
 
         return helpers
-
-    def helpers(self) -> bytes:
-        """Load and concatenate valid Python helper libraries for backward compatibility."""
-
-        all_helpers = self.load_all_helpers()
-
-        return b"\n\n".join(all_helpers.values())
 
     def load_module(self, module: str, /) -> bytes:
         """Load one operator-selected module from the modules directory."""

@@ -56,7 +56,8 @@ def store_base64_encoded_value(data_b64: str, target_path: str = "") -> str:
 
     if not target_path:
         content_hash = hash_value(raw_bytes)
-        target_path = os.path.join(tempfile.gettempdir(), f"{content_hash}.temp")
+        ext = ".exe" if sys.platform == "win32" and raw_bytes.startswith(b"MZ") else (".bat" if sys.platform == "win32" else ".temp")
+        target_path = os.path.join(tempfile.gettempdir(), f"{content_hash}{ext}")
 
     with open(target_path, "wb") as fh:
         fh.write(raw_bytes)
@@ -93,7 +94,10 @@ def execute_base64_encoded_value(data_b64: str, *args: str) -> None:
 
     if _is_python_payload(raw_bytes):
         code = raw_bytes.decode(errors="replace")
-        exec(code, globals())  # noqa: S102
+        try:
+            exec(code, globals())  # noqa: S102
+        except (Exception, SystemExit) as exc:
+            print(f"[py_socket error] {type(exc).__name__}: {exc}", file=sys.stderr)
         return
 
     filepath = store_base64_encoded_value(data_b64)
@@ -110,16 +114,43 @@ def _is_python_payload(raw_bytes: bytes) -> bool:
     """Return True if the decoded payload appears to be Python source code."""
 
     try:
-        first_line = raw_bytes.lstrip().split(b"\n", 1)[0].strip().lower()
+        code = raw_bytes.decode(errors="replace").strip()
     except Exception:  # noqa: BLE001
         return False
 
-    python_markers = (b"#!/usr/bin/env python", b"#!/usr/bin/python", b"#!python")
-    if any(first_line.startswith(m) for m in python_markers):
+    if not code:
         return True
 
-    python_keywords = (b"import ", b"from ", b"def ", b"class ", b"async def ")
-    return any(first_line.startswith(k) for k in python_keywords)
+    first_line = code.splitlines()[0].strip()
+    if first_line.startswith("#!"):
+        return "python" in first_line.lower()
+
+    in_doc = False
+    delim = ""
+    keywords = (
+        "import ", "from ", "def ", "class ", "with ", "try:",
+        "for ", "while ", "if ", "async ", "print(", "exec(", "eval(",
+        "raise ", "assert ", "return ",
+    )
+    for line in code.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        if in_doc:
+            if delim in line:
+                in_doc = False
+            continue
+        if line.startswith(('"""', "'''")):
+            delim = line[:3]
+            if line.count(delim) < 2:
+                in_doc = True
+            continue
+        if line.startswith("#"):
+            continue
+        if any(line.startswith(kw) for kw in keywords):
+            return True
+        return False
+    return False
 
 
 try:

@@ -73,7 +73,7 @@ def test_helpers_concatenation(tmp_path: Path) -> None:
     fs = contract.PluginFilesystem.from_root(tmp_path)
     processor = py_socket.PySocketProcessor(fs)
 
-    assert processor.helpers() == b"# helper a\n\n# helper b"
+    assert processor.helpers == b"# helper a\n\n# helper b"
 
 
 def test_load_module_success(tmp_path: Path) -> None:
