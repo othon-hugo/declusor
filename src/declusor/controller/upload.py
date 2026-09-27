@@ -6,7 +6,7 @@ def call_upload(session: contract.SessionContext, req: contract.ControllerReques
 
     arguments, _ = req.parse_arguments({"filepath": str})
 
-    dto = command.UploadFileDTO(filepath=arguments["filepath"])
+    dto = command.UploadFileDTO(filepath=str(arguments["filepath"]))
     session.execute(command.UploadFile(dto))
 
     return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)

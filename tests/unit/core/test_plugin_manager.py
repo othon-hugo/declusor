@@ -6,31 +6,60 @@ import pytest
 from declusor import config, contract, core, testing
 
 
-class DummyValidPlugin(contract.IPluginExtension):
+class DummyValidConfig(contract.ParsedArguments, total=False):
+    pass
+
+
+class DummyValidPlugin(contract.IPluginExtension[DummyValidConfig]):
     """Compliant test plugin implementing all required IPlugin methods."""
 
     name = "dummy_test"
     description = "A dummy plugin for unit tests"
+    version = "1.0.0"
+    options_type = DummyValidConfig
 
     @classmethod
     def configure_parser(cls, parser: contract.IArgumentParser, /) -> None:
         pass
 
     @classmethod
-    def build_config(cls, args: contract.PluginArguments, data_paths: config.DataPaths | None = None, /) -> contract.PluginConfig:
+    def extract_options(cls, raw: object, /) -> DummyValidConfig:
+        return DummyValidConfig()
+
+    @classmethod
+    def build_config(
+        cls,
+        host: str,
+        port: int,
+        options: DummyValidConfig,
+        /,
+        filesystem: contract.PluginFilesystem | None = None,
+        mode: config.ExecutionMode = config.Settings.DEFAULT_EXECUTION_MODE,
+    ) -> contract.PluginConfig[DummyValidConfig]:
+        dummy_fs = contract.PluginFilesystem(
+            root=Path("."),
+            assets=Path("."),
+            launchers=Path("."),
+            modules=Path("."),
+            helpers=Path("."),
+        )
+
         return contract.PluginConfig(
             kind=cls.name,
-            host="127.0.0.1",
-            port=9000,
-            filesystem=data_paths,
+            host=host,
+            port=port,
+            options=options,
+            options_type=cls.options_type,
+            filesystem=filesystem or dummy_fs,
+            mode=mode,
         )
 
     @classmethod
-    def validate(cls, plugin_config: contract.PluginConfig, /) -> None:
+    def validate(cls, plugin_config: contract.PluginConfig[DummyValidConfig], /) -> None:
         pass
 
     @classmethod
-    def build_runtime(cls, plugin_config: contract.PluginConfig, /) -> contract.IPluginRuntime:
+    def build_runtime(cls, plugin_config: contract.PluginConfig[DummyValidConfig], /) -> contract.IPluginRuntime:
         return testing.DummyPluginRuntime()
 
 

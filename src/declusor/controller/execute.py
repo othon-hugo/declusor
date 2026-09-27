@@ -6,7 +6,7 @@ def call_execute(session: contract.SessionContext, req: contract.ControllerReque
 
     arguments, _ = req.parse_arguments({"filepath": str})
 
-    dto = command.ExecuteFileDTO(filepath=arguments["filepath"])
+    dto = command.ExecuteFileDTO(filepath=str(arguments["filepath"]))
     session.execute(command.ExecuteFile(dto))
 
     return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)

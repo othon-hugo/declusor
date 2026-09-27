@@ -105,7 +105,7 @@ def dummy_socket() -> DummySocket:
 
 
 @pytest.fixture
-def dummy_plugin_config() -> contract.PluginConfig:
+def dummy_plugin_config() -> contract.PluginConfig[contract.ParsedArguments]:
     """Provide a standard test PluginConfig."""
 
     return create_dummy_plugin_config()
