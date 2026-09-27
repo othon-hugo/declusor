@@ -8,85 +8,105 @@ import pytest
 from declusor import config, contract, testing
 
 
-def test_py_socket_plugin_metadata() -> None:
-    """Verify py_socket.PySocketPlugin metadata properties (name, description, version)."""
+def test_build_config_uses_bundled_assets_when_data_paths_is_none() -> None:
+    """When data_paths is None, plugin must cleanly resolve bundled ASSETS_DIR."""
 
-    assert py_socket.PySocketPlugin.name == "py_socket"
-    assert py_socket.PySocketPlugin.description != ""
-    assert py_socket.PySocketPlugin.version == "1.0.0"
+    args = contract.PluginNamespace(host="127.0.0.1", port=9000)
+    cfg = py_socket.PySocketPlugin.build_config(args, None)
 
-
-def test_extract_options_returns_typed_dict() -> None:
-    """Verify extract_options returns a PySocketConfig instance."""
-
-    raw: dict[str, object] = {}
-    options = py_socket.PySocketPlugin.extract_options(raw)
-
-    assert isinstance(options, dict)
-
-
-def test_build_config_uses_default_assets_when_filesystem_is_none() -> None:
-    """When filesystem is None, plugin builds default PluginFilesystem from bundled assets."""
-
-    options = py_socket.PySocketPlugin.extract_options({})
-    cfg = py_socket.PySocketPlugin.build_config("127.0.0.1", 9000, options)
-
-    assert cfg.kind == "py_socket"
-    assert cfg.host == "127.0.0.1"
-    assert cfg.port == 9000
-    assert cfg.filesystem is not None
+    assert cfg.options["launcher_path"] == py_socket.plugin.ASSETS_DIR / "launchers" / "py_socket_client.py"
+    assert cfg.options["helpers_dir"] == py_socket.plugin.ASSETS_DIR / "helpers"
+    assert cfg.options["modules_dir"] == py_socket.plugin.ASSETS_DIR / "modules"
+    assert cfg.filesystem is None
     py_socket.PySocketPlugin.validate(cfg)
 
 
-def test_build_config_uses_custom_filesystem_when_provided(tmp_path: Path) -> None:
-    """When custom filesystem is provided, plugin resolves against that filesystem."""
+def test_build_config_resolves_custom_data_paths_when_provided(tmp_path: Path) -> None:
+    """When custom data_paths is provided, plugin resolves against client namespace."""
 
-    launchers = tmp_path / "launchers"
-    launchers.mkdir()
-    (launchers / "py_socket_client.py").write_text("#!/usr/bin/env python3", encoding="utf-8")
+    custom_launcher = tmp_path / "py_socket" / "launchers" / "py_socket_client.py"
+    custom_launcher.parent.mkdir(parents=True)
+    custom_launcher.write_text("# custom launcher", encoding="utf-8")
 
-    fs = contract.PluginFilesystem.from_root(tmp_path)
-    options = py_socket.PySocketPlugin.extract_options({})
-    cfg = py_socket.PySocketPlugin.build_config("127.0.0.1", 9000, options, filesystem=fs)
+    data_paths = config.DataPaths.from_root(tmp_path)
+    args = contract.PluginNamespace(host="127.0.0.1", port=9000)
+    cfg = py_socket.PySocketPlugin.build_config(args, data_paths)
 
-    assert cfg.filesystem == fs
+    assert cfg.options["launcher_path"] == custom_launcher
+    assert cfg.filesystem == data_paths
     py_socket.PySocketPlugin.validate(cfg)
+
+
+def test_build_runtime_renders_configured_client_script(tmp_path: Path) -> None:
+    """Verify PySocketPlugin.build_runtime renders launcher script with host, port, and ACK."""
+
+    launcher = tmp_path / "py_socket_client.py"
+    launcher.write_text("HOST = '$HOST'\nPORT = int('$PORT')\nACK = bytes.fromhex('$ACKNOWLEDGE')")
+
+    plugin_config = contract.PluginConfig(
+        kind=py_socket.PySocketPlugin.name,
+        host="127.0.0.1",
+        port=9000,
+        options={
+            "launcher_path": launcher,
+            "helpers_dir": tmp_path / "helpers",
+            "modules_dir": tmp_path / "modules",
+        },
+    )
+
+    runtime = py_socket.PySocketPlugin.build_runtime(plugin_config)
+    assert "127.0.0.1" in runtime.launcher
+    assert "9000" in runtime.launcher
+
+
+def test_build_runtime_creates_py_socket_connection(tmp_path: Path) -> None:
+    """Verify runtime creates a valid PySocketConnection instance for connected sockets."""
+
+    launcher = tmp_path / "py_socket_client.py"
+    launcher.write_text("HOST = '$HOST'\nPORT = int('$PORT')\nACK = bytes.fromhex('$ACKNOWLEDGE')")
+
+    plugin_config = contract.PluginConfig(
+        kind=py_socket.PySocketPlugin.name,
+        host="127.0.0.1",
+        port=9000,
+        options={
+            "launcher_path": launcher,
+            "helpers_dir": tmp_path / "helpers",
+            "modules_dir": tmp_path / "modules",
+        },
+    )
+
+    runtime = py_socket.PySocketPlugin.build_runtime(plugin_config)
+    dummy_sock = testing.DummySocket()
+    conn = runtime.create_connection(cast(socket, dummy_sock))
+    assert isinstance(conn, py_socket.PySocketConnection)
+
+
+def test_validate_passes_when_launcher_exists(tmp_path: Path) -> None:
+    """Verify plugin configuration validation succeeds when launcher file exists."""
+
+    launcher = tmp_path / "py_socket_client.py"
+    launcher.write_text("# launcher")
+
+    plugin_config = contract.PluginConfig(
+        kind=py_socket.PySocketPlugin.name,
+        host="127.0.0.1",
+        port=9000,
+        options={"launcher_path": launcher},
+    )
+
+    py_socket.PySocketPlugin.validate(plugin_config)
 
 
 def test_validate_raises_when_launcher_missing(tmp_path: Path) -> None:
     """Verify plugin configuration validation raises ParserError when launcher file is missing."""
 
-    fs = contract.PluginFilesystem.from_root(tmp_path)
-    options = py_socket.PySocketPlugin.extract_options({})
-    cfg = py_socket.PySocketPlugin.build_config("127.0.0.1", 9000, options, filesystem=fs)
+    plugin_config = contract.PluginConfig(
+        kind=py_socket.PySocketPlugin.name,
+        host="127.0.0.1",
+        port=9000,
+        options={"launcher_path": tmp_path / "nonexistent.py"},
+    )
 
     with pytest.raises(config.ParserError, match="Client launcher file does not exist"):
-        py_socket.PySocketPlugin.validate(cfg)
-
-
-def test_build_runtime_renders_bundled_launcher_with_parameters() -> None:
-    """Verify default bundled py_socket_client.py renders with substituted values."""
-
-    options = py_socket.PySocketPlugin.extract_options({})
-    cfg = py_socket.PySocketPlugin.build_config("192.168.1.50", 5555, options)
-    runtime = py_socket.PySocketPlugin.build_runtime(cfg)
-
-    script = runtime.launcher
-    assert "192.168.1.50" in script
-    assert "5555" in script
-    assert "$HOST" not in script
-    assert "$PORT" not in script
-    assert "$ACKNOWLEDGE" not in script
-
-
-def test_build_runtime_creates_py_socket_connection() -> None:
-    """Verify runtime creates a valid py_socket.PySocketConnection instance."""
-
-    options = py_socket.PySocketPlugin.extract_options({})
-    cfg = py_socket.PySocketPlugin.build_config("127.0.0.1", 9000, options)
-    dummy_sock = testing.DummySocket(peer_name=("127.0.0.1", 9000))
-
-    runtime = py_socket.PySocketPlugin.build_runtime(cfg)
-    client_connection = runtime.create_connection(cast(socket, dummy_sock))
-
-    assert isinstance(client_connection, py_socket.PySocketConnection)
+        py_socket.PySocketPlugin.validate(plugin_config)

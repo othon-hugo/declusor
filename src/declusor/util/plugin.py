@@ -2,6 +2,9 @@ import importlib.util
 import inspect
 import sys
 from pathlib import Path
+from typing import TypeVar
+
+T = TypeVar("T")
 
 
 def find_plugin_entry(plugin_dir: Path, /) -> Path | None:
@@ -44,7 +47,7 @@ def find_plugin_entry(plugin_dir: Path, /) -> Path | None:
     return None
 
 
-def import_plugin_from_file[T](
+def import_plugin_from_file(
     module_name: str,
     file_path: Path,
     expected_type: type[T],

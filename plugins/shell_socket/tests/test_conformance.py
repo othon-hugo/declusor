@@ -3,14 +3,14 @@ from pathlib import Path
 import declusor_shell_socket as shell_socket
 import pytest
 
-from declusor import testing
+from declusor import contract, testing
 
 
-class TestShellSocketConformance(testing.PluginConformanceTestSuite[shell_socket.plugin.ShellSocketConfig]):
+class TestShellSocketConformance(testing.PluginConformanceTestSuite):
     """Verify ShellSocketPlugin strictly complies with the IPlugin contract."""
 
     @pytest.fixture
-    def plugin_class(self) -> type[shell_socket.ShellSocketPlugin]:
+    def plugin_class(self) -> type[contract.IPluginExtension]:
         return shell_socket.ShellSocketPlugin
 
     @pytest.fixture

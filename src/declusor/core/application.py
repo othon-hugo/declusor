@@ -60,6 +60,7 @@ class Application:
 
         Args:
             config: Validated client plugin configuration.
+            runner: Optional session runner overriding the default runner for this execution.
 
         Raises:
             ConnectionFailure: If the socket session cannot be established.

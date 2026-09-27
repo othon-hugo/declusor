@@ -2,7 +2,7 @@ import socket
 import subprocess
 import sys
 
-from declusor import contract, core
+from declusor import app, contract
 
 
 def test_shell_socket_handshake_and_command_execution() -> None:
@@ -15,10 +15,10 @@ def test_shell_socket_handshake_and_command_execution() -> None:
     server.listen(1)
     server.settimeout(5.0)
 
-    manager = core.PluginManager().discover()
-    Plugin = manager.get("shell_socket")
-    options = Plugin.extract_options({})
-    config = Plugin.build_config("127.0.0.1", port, options)
+    declusor_app = app.create_application()
+
+    Plugin = declusor_app.manager.get("shell_socket")
+    config = Plugin.build_config(contract.PluginNamespace(host="127.0.0.1", port=port))
     runtime = Plugin.build_runtime(config)
 
     proc = subprocess.Popen(["bash", "-c", runtime.launcher])
@@ -63,10 +63,10 @@ def test_py_socket_handshake_and_command_execution() -> None:
     server.listen(1)
     server.settimeout(5.0)
 
-    manager = core.PluginManager().discover()
-    Plugin = manager.get("py_socket")
-    options = Plugin.extract_options({})
-    config = Plugin.build_config("127.0.0.1", port, options)
+    declusor_app = app.create_application()
+
+    Plugin = declusor_app.manager.get("py_socket")
+    config = Plugin.build_config(contract.PluginNamespace(host="127.0.0.1", port=port))
     runtime = Plugin.build_runtime(config)
 
     proc = subprocess.Popen([sys.executable, "-c", runtime.launcher])

@@ -2,11 +2,10 @@ import importlib.metadata
 import inspect
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any
 
 from declusor import config, contract, util
 
-PluginType = type[contract.IPluginExtension[Any]]
+PluginType = type[contract.IPluginExtension[contract.ParsedArguments]]
 
 
 class PluginRegistry:

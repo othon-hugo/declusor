@@ -2,22 +2,22 @@ import shlex
 import types
 from argparse import ArgumentParser, HelpFormatter
 from collections.abc import Callable, Mapping
-from typing import Any, NoReturn, Union, get_args, get_origin
+from typing import Any, NoReturn, TypeAlias, Union, get_args, get_origin
 
 from declusor import config
 
 union_types = (Union, types.UnionType)
 
-type SupportedType = type[str] | type[int]
+SupportedType: TypeAlias = type[str] | type[int]
 """Primitive types accepted as command-line arguments."""
 
-type ArgumentType = SupportedType | types.UnionType | Any
+ArgumentType: TypeAlias = SupportedType | types.UnionType | Any
 """Type specification for a command argument, including optional forms."""
 
-type ArgumentDefinitions = Mapping[str, ArgumentType]
+ArgumentDefinitions: TypeAlias = Mapping[str, ArgumentType]
 """Mapping of argument names to their expected types."""
 
-type ParsedArguments = dict[str, Any]
+ParsedArguments: TypeAlias = dict[str, Any]
 """Extracted argument-value pairs resulting from parsing."""
 
 

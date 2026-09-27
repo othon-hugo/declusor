@@ -119,4 +119,4 @@ def test_parser_builds_client_paths_from_data_root(tmp_path: Path) -> None:
 
     filesystem = plugin_config.filesystem
     assert filesystem == contract.PluginFilesystem.from_root(tmp_path)
-    assert plugin_config.options.get("launcher_path") == launcher_file
+    assert plugin_config.options["launcher_path"] == launcher_file

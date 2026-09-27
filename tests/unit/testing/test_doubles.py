@@ -1,3 +1,4 @@
+from argparse import Namespace
 from socket import socket
 from typing import cast
 
@@ -132,31 +133,28 @@ def test_dummy_client_file_store() -> None:
     store = testing.DummyPluginFileStore()
     rendered = store.render_launcher("10.0.0.1", 4444, b"\xaa\xbb")
 
-    assert b"10.0.0.1" in rendered
-    assert b"4444" in rendered
-    assert b"aabb" in rendered
+    assert "10.0.0.1" in rendered
+    assert "4444" in rendered
+    assert "aabb" in rendered
     assert len(store.render_calls) == 1
 
-    helpers = store.load_all_helpers()
-    assert helpers == {"default.sh": b"dummy_library_payload"}
-    assert store.load_all_helpers_calls == 1
+    lib = store.helpers()
+    assert lib == b"dummy_library_payload"
+    assert store.load_library_calls == 1
 
-    assert store.load_helper("default.sh") == b"dummy_library_payload"
-    assert store.load_helper_calls == ["default.sh"]
-
-    assert store.load_module("default_mod") == b"module_bytes:default_mod"
+    assert store.get_module("default_mod") == b"module_bytes:default_mod"
     store.set_module("custom_mod", b"custom_content")
-    assert store.load_module("custom_mod") == b"custom_content"
+    assert store.get_module("custom_mod") == b"custom_content"
     assert store.load_module_calls == ["default_mod", "custom_mod"]
 
     # Error simulation
     store.load_library_error = config.ConnectionError("library load fail")
     with pytest.raises(config.ConnectionError, match="library load fail"):
-        store.load_all_helpers()
+        store.helpers()
 
     store.load_module_error = config.InvalidOperation("module load fail")
     with pytest.raises(config.InvalidOperation, match="module load fail"):
-        store.load_module("bad_mod")
+        store.get_module("bad_mod")
 
     store.render_error = config.InvalidOperation("render fail")
     with pytest.raises(config.InvalidOperation, match="render fail"):
@@ -188,15 +186,30 @@ def test_dummy_client_plugin() -> None:
     testing.DummyPlugin.configure_parser(parser)
     assert testing.DummyPlugin.configured_parsers == [parser]
 
-    raw = {"extra_val": 42}
-    options = testing.DummyPlugin.extract_options(raw)
-    assert isinstance(options, dict)
-
-    cfg = testing.DummyPlugin.build_config("10.0.0.2", 8000, options)
+    ns = contract.PluginNamespace(host="10.0.0.2", port=8000)
+    assert isinstance(ns, contract.PluginArguments)
+    cfg = testing.DummyPlugin.build_config(ns, None)
     assert cfg.kind == "dummy"
     assert cfg.host == "10.0.0.2"
     assert cfg.port == 8000
-    assert cfg.options == options
+
+    # Also verify compatibility with standard argparse.Namespace
+    legacy_ns = Namespace(host="10.0.0.2", port=8000, extra_val=42)
+    assert isinstance(legacy_ns, contract.PluginArguments)
+    from_ns = contract.PluginNamespace.from_namespace(legacy_ns)
+    assert from_ns.host == "10.0.0.2"
+    assert from_ns.port == 8000
+    assert from_ns.extra_val == 42
+    assert from_ns.get("extra_val") == 42
+    assert from_ns.get("missing", "default") == "default"
+    assert "extra_val" in from_ns
+    assert "missing" not in from_ns
+    assert "PluginNamespace(" in repr(from_ns)
+    assert from_ns == contract.PluginNamespace(host="10.0.0.2", port=8000, extra_val=42)
+    assert from_ns.to_dict()["extra_val"] == 42
+    assert isinstance(from_ns, contract.PluginArguments)
+    cfg_legacy = testing.DummyPlugin.build_config(legacy_ns, None)
+    assert cfg_legacy.host == "10.0.0.2"
 
     testing.DummyPlugin.validate(cfg)
 
@@ -337,15 +350,21 @@ def test_factories() -> None:
     assert isinstance(session.input, testing.DummyInputSource)
     assert isinstance(session.files, testing.DummyPluginFileStore)
 
-    cfg = testing.create_dummy_plugin_config(kind="custom", host="192.168.1.1", port=1234, options=testing.DummyConfig())
+    cfg = testing.create_dummy_plugin_config(kind="custom", host="192.168.1.1", port=1234, options={"opt": "val"})
     assert cfg.kind == "custom"
     assert cfg.host == "192.168.1.1"
     assert cfg.port == 1234
-    assert cfg.options == testing.DummyConfig()
+    assert cfg.options == {"opt": "val"}
 
     req = testing.create_dummy_controller_request("hello world")
     assert req.request_line == "hello world"
     assert isinstance(req, contract.IControllerRequest)
+
+    args = testing.create_dummy_plugin_arguments(host="10.10.10.10", port=7777, extra_flag=True)
+    assert args.host == "10.10.10.10"
+    assert args.port == 7777
+    assert args.extra_flag is True
+    assert isinstance(args, contract.PluginArguments)
 
 
 def test_dummy_session_runner(
