@@ -76,11 +76,13 @@ def test_py_socket_resilience_sys_exit_trap() -> None:
         connection.write(b"import sys\nsys.exit(42)\n")
         response = b"".join(connection.read())
         assert b"[py_socket error] SystemExit: 42" in response
+        assert connection.last_exit_code == 42
 
         # Verify client is still running and receptive
         connection.write(b"print('agent_still_alive')\n")
         response = b"".join(connection.read())
         assert b"agent_still_alive" in response
+        assert connection.last_exit_code == 0
 
         connection.close()
     finally:

@@ -127,6 +127,13 @@ class IConnection(ABC):
 
         raise NotImplementedError
 
+    @property
+    @abstractmethod
+    def last_exit_code(self) -> int | None:
+        """Remote process exit code from the most recently executed command, or None."""
+
+        raise NotImplementedError
+
     @abstractmethod
     def read(self) -> Generator[bytes, None, None]:
         """Read a framed message from the remote client.
