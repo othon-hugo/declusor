@@ -16,7 +16,7 @@ class ExecutionMode(StrEnum):
         return cls.CLI
 
     @classmethod
-    def from_string(cls, value: str) -> "ExecutionMode":
+    def from_string(cls, value: str, /) -> "ExecutionMode":
         """Parse execution mode from string in a case-insensitive manner.
 
         Args:

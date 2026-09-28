@@ -41,7 +41,7 @@ class BaseFileCommand[T: "ExecuteFileDTO | UploadFileDTO"](BaseStreamCommand):
         config.OperationCode.STORE_FILE,
     ]
 
-    def __init__(self, dto: T, opcode: "_SupportedOperationCodes") -> None:
+    def __init__(self, dto: T, /, *, opcode: "_SupportedOperationCodes") -> None:
         """Initialize the base file command.
 
         Args:

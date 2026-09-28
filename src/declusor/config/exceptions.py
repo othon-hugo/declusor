@@ -34,7 +34,7 @@ class ConnectionHandshakeError(ConnectionError):
 class PromptError(DeclusorException):
     """Raised when an interactive prompt command or argument is invalid or malformed."""
 
-    def __init__(self, argument: str, /, description: str | None = None) -> None:
+    def __init__(self, argument: str, /, *, description: str | None = None) -> None:
         self.argument = argument
         self.description = description
 
@@ -78,7 +78,7 @@ class ParserError(DeclusorException):
 class RouterError(DeclusorException):
     """Raised when a route cannot be found or is invalid in the route table."""
 
-    def __init__(self, route: str, /, description: str | None = None) -> None:
+    def __init__(self, route: str, /, *, description: str | None = None) -> None:
         self.route = route
         self.description = description
 

@@ -38,6 +38,7 @@ class TerminalApplication(core.Application):
 
 def create_terminal_application(
     search_dirs: Sequence[Path] | None = None,
+    /,
     *,
     plugin_manager: core.PluginManager | None = None,
 ) -> TerminalApplication:

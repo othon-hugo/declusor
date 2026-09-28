@@ -43,4 +43,4 @@ class UploadFile(BaseFileCommand[UploadFileDTO]):
             dto: Validated DTO containing the file path to upload.
         """
 
-        super().__init__(dto=dto, opcode=config.OperationCode.STORE_FILE)
+        super().__init__(dto, opcode=config.OperationCode.STORE_FILE)

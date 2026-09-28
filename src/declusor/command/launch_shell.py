@@ -21,9 +21,6 @@ class LaunchShell(contract.ICommand):
     thread reads and forwards the operator's keystrokes. Both threads share a
     cooperative ``TaskEvent`` stop-flag. A ``KeyboardInterrupt`` (Ctrl-C) cleanly
     shuts down the streaming task and returns control to the REPL prompt loop.
-
-    Attributes:
-        dto: Configuration options for the shell session.
     """
 
     def __init__(self, dto: LaunchShellDTO | None = None) -> None:

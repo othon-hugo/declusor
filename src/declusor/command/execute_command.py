@@ -33,7 +33,7 @@ class ExecuteCommand(BaseStreamCommand):
     to the operator's console.
     """
 
-    def __init__(self, dto: ExecuteCommandDTO) -> None:
+    def __init__(self, dto: ExecuteCommandDTO, /) -> None:
         """Initialize ExecuteCommand with validated parameters.
 
         Args:

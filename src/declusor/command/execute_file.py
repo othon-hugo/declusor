@@ -21,9 +21,8 @@ class ExecuteFileDTO:
 
     filepath: Path
 
-    def __init__(self, filepath: str | Path) -> None:
-        path_obj = Path(filepath)
-        validated_path = util.ensure_file_exists(path_obj)
+    def __init__(self, /, *, filepath: str | Path) -> None:
+        validated_path = util.ensure_file_exists(Path(filepath))
 
         object.__setattr__(self, "filepath", validated_path)
 
@@ -36,11 +35,11 @@ class ExecuteFile(BaseFileCommand[ExecuteFileDTO]):
     command (using ``EXEC_FILE`` opcode), and streaming execution output.
     """
 
-    def __init__(self, dto: ExecuteFileDTO) -> None:
+    def __init__(self, dto: ExecuteFileDTO, /) -> None:
         """Initialize ExecuteFile with validated parameters.
 
         Args:
             dto: Validated DTO containing the script file path.
         """
 
-        super().__init__(dto=dto, opcode=config.OperationCode.EXEC_FILE)
+        super().__init__(dto, opcode=config.OperationCode.EXEC_FILE)
