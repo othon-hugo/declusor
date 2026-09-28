@@ -41,8 +41,6 @@ class LoadModule(BaseStreamCommand):
         dto: The validated parameters for this module load command.
     """
 
-    _OPCODE = config.OperationCode.LOAD_MODULE
-
     def __init__(self, dto: LoadModuleDTO) -> None:
         """Initialize LoadModule with validated module parameters.
 
@@ -82,7 +80,7 @@ class LoadModule(BaseStreamCommand):
         module_b64 = util.convert_to_base64(module_bytes)
 
         rendered = session.connection.profile.render_operation_command(
-            self._OPCODE,
+            config.OperationCode.LOAD_MODULE,
             module_b64,
         )
 

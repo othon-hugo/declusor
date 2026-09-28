@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import ClassVar
 
 from declusor import config, contract
 from declusor.command._base import BaseStreamCommand
@@ -37,8 +36,6 @@ class ExecuteCode(BaseStreamCommand):
         dto: The validated parameters for this command.
     """
 
-    _OPCODE: ClassVar[config.OperationCode] = config.OperationCode.EXEC_CODE
-
     def __init__(self, dto: ExecuteCodeDTO) -> None:
         """Initialize ExecuteCode with validated parameters.
 
@@ -68,7 +65,7 @@ class ExecuteCode(BaseStreamCommand):
         """
 
         rendered = session.connection.profile.render_operation_command(
-            self._OPCODE,
+            config.OperationCode.EXEC_CODE,
             self._dto.code,
         )
 
