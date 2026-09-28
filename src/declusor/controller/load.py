@@ -5,6 +5,7 @@ class LoadArguments(contract.ControllerArguments):
     """Arguments for remote module loading."""
 
     module: str
+    """Module name or identifier to load from the client module repository."""
 
 
 def call_load(

@@ -43,7 +43,7 @@ class PluginConfig[T: ParsedArguments]:
     filesystem: "PluginFilesystem"
     """Filesystem paths used by the selected client runtime."""
 
-    mode: config.ExecutionMode = config.Settings.DEFAULT_EXECUTION_MODE
+    mode: config.ExecutionMode = config.DEFAULT_EXECUTION_MODE
     """Application execution mode (e.g. CLI, API, MCP, HTTP)."""
 
 
@@ -188,7 +188,7 @@ class IPluginExtension[T: ParsedArguments](ABC):
         options: T,
         /,
         filesystem: "PluginFilesystem | None" = None,
-        mode: config.ExecutionMode = config.Settings.DEFAULT_EXECUTION_MODE,
+        mode: config.ExecutionMode = config.DEFAULT_EXECUTION_MODE,
     ) -> "PluginConfig[T]":
         """Build a client configuration from typed options and filesystem paths.
 
@@ -266,43 +266,66 @@ class IPluginProcessor(ABC):
 
     @property
     @abstractmethod
-    def helpers(self, /) -> bytes:
-        """[...]"""
+    def filesystem(self) -> PluginFilesystem:
+        """Plugin filesystem layout exposing launcher, helper, and module asset directories."""
+
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def helpers(self) -> bytes:
+        """Concatenated bootstrap helper libraries sent to the client during handshake."""
 
         raise NotImplementedError
 
     @abstractmethod
-    def load_module(self, module: str, /) -> bytes:
-        """Load an on-demand payload module by name.
+    def find_module(self, module_name: str, /) -> Path | None:
+        """Resolve a module by name within the plugin's module repository.
 
         Args:
-            module: Module file name relative to the modules directory.
+            module_name: Module identifier or relative path to resolve.
 
         Returns:
-            Raw bytes of the module file.
+            Resolved Path to the candidate module file if found, None otherwise.
         """
 
         raise NotImplementedError
 
     @abstractmethod
-    def load_helper(self, helper: str, /) -> bytes:
-        """Load a single helper library by name.
+    def find_helper(self, helper_name: str, /) -> Path | None:
+        """Resolve a helper library by name within the plugin's helper repository.
 
         Args:
-            helper: Helper file name relative to the helpers directory.
+            helper_name: Helper library identifier or relative path to resolve.
 
         Returns:
-            Raw bytes of the helper file.
+            Resolved Path to the helper file if found, None otherwise.
         """
 
         raise NotImplementedError
 
     @abstractmethod
-    def load_all_helpers(self) -> Mapping[str, bytes]:
-        """Load all available helper libraries.
+    def load_module(self, module_path: Path, /) -> bytes:
+        """Read and return raw bytes from a validated module path.
+
+        Args:
+            module_path: Validated path to the target module file.
 
         Returns:
-            Mapping of helper file names to their raw bytes.
+            Raw binary content of the module file.
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def load_helper(self, helper_path: Path, /) -> bytes:
+        """Read and return raw bytes from a validated helper library path.
+
+        Args:
+            helper_path: Validated path to the target helper file.
+
+        Returns:
+            Raw binary content of the helper library file.
         """
 
         raise NotImplementedError

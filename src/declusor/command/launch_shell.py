@@ -5,13 +5,13 @@ from declusor import config, contract, util
 
 @dataclass(frozen=True)
 class LaunchShellDTO:
-    """Data transfer object configuring an interactive shell session.
-
-    Attributes:
-        banner: Optional informational banner message displayed upon entering shell mode.
-    """
+    """Data transfer object configuring an interactive shell session."""
 
     banner: str | None = None
+    """Optional informational banner message displayed upon entering shell mode."""
+
+    def __post_init__(self) -> None:
+        pass
 
 
 class LaunchShell(contract.ICommand):
@@ -21,12 +21,9 @@ class LaunchShell(contract.ICommand):
     thread reads and forwards the operator's keystrokes. Both threads share a
     cooperative ``TaskEvent`` stop-flag. A ``KeyboardInterrupt`` (Ctrl-C) cleanly
     shuts down the streaming task and returns control to the REPL prompt loop.
-
-    Attributes:
-        dto: Configuration options for the shell session.
     """
 
-    def __init__(self, dto: LaunchShellDTO | None = None) -> None:
+    def __init__(self, dto: LaunchShellDTO, /) -> None:
         """Initialize the interactive shell command.
 
         Args:
@@ -34,16 +31,10 @@ class LaunchShell(contract.ICommand):
         """
 
         super().__init__()
+        self._dto = dto
 
-        self._dto = dto or LaunchShellDTO()
         self._stop_event = util.TaskEvent()
         self._task_pool = util.TaskPool(self._stop_event)
-
-    @property
-    def dto(self) -> LaunchShellDTO:
-        """The command parameters."""
-
-        return self._dto
 
     def send_request(self, session: contract.SessionContext, /) -> None:
         """Start the background task that streams remote client output to the view.

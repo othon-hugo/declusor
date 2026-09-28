@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import ClassVar
 
 from declusor import config, contract
 from declusor.command.base import BaseStreamCommand
@@ -12,14 +11,12 @@ class ExecuteCodeDTO:
     Encapsulates and validates the raw code string to be evaluated directly by
     the remote client agent's runtime.
 
-    Attributes:
-        code: Non-empty code string to evaluate.
-
     Raises:
         InvalidOperation: If ``code`` is empty or consists solely of whitespace.
     """
 
     code: str
+    """Non-empty code string to evaluate."""
 
     def __post_init__(self) -> None:
         if not self.code or not self.code.strip():
@@ -32,14 +29,9 @@ class ExecuteCode(BaseStreamCommand):
     Transmits the encoded code string encapsulated in an ``ExecuteCodeDTO``
     through the active session connection and streams all response chunks directly
     to the operator's console.
-
-    Attributes:
-        dto: The validated parameters for this command.
     """
 
-    _OPCODE: ClassVar[config.OperationCode] = config.OperationCode.EXEC_CODE
-
-    def __init__(self, dto: ExecuteCodeDTO) -> None:
+    def __init__(self, dto: ExecuteCodeDTO, /) -> None:
         """Initialize ExecuteCode with validated parameters.
 
         Args:
@@ -47,14 +39,7 @@ class ExecuteCode(BaseStreamCommand):
         """
 
         super().__init__()
-
         self._dto = dto
-
-    @property
-    def dto(self) -> ExecuteCodeDTO:
-        """The command parameters."""
-
-        return self._dto
 
     def send_request(self, session: contract.SessionContext, /) -> None:
         """Send the rendered or raw code string to the remote client.
@@ -67,10 +52,15 @@ class ExecuteCode(BaseStreamCommand):
             ConnectionWriteError: If the socket write operation fails.
         """
 
+        session.connection.write(self._payload(session))
+
+    def _payload(self, session: contract.SessionContext, /) -> bytes:
         rendered = session.connection.profile.render_operation_command(
-            self._OPCODE,
+            config.OperationCode.EXEC_CODE,
             self._dto.code,
         )
 
-        code_bytes = rendered.encode() if rendered is not None else self.dto.code.encode()
-        session.connection.write(code_bytes)
+        if rendered:
+            return rendered.encode()
+
+        return self._dto.code.encode()

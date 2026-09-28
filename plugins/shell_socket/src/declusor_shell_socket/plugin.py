@@ -45,7 +45,7 @@ class ShellSocketPlugin(contract.IPluginExtension[ShellSocketConfig]):
         options: ShellSocketConfig,
         /,
         filesystem: contract.PluginFilesystem | None = None,
-        mode: config.ExecutionMode = config.Settings.DEFAULT_EXECUTION_MODE,
+        mode: config.ExecutionMode = config.DEFAULT_EXECUTION_MODE,
     ) -> contract.PluginConfig[ShellSocketConfig]:
         """Build the shell_socket client configuration."""
 
@@ -133,6 +133,12 @@ class ShellSocketProcessor(contract.IPluginProcessor):
         self._module_extensions = module_extensions
 
     @property
+    def filesystem(self) -> contract.PluginFilesystem:
+        """The plugin filesystem layout exposing asset directories."""
+
+        return self._filesystem
+
+    @property
     def helpers(self) -> bytes:
         """Load and concatenate valid helper libraries for backward compatibility."""
 
@@ -170,15 +176,46 @@ class ShellSocketProcessor(contract.IPluginProcessor):
 
         return rendered.encode("utf-8")
 
-    def load_helper(self, helper: str, /) -> bytes:
-        """Load a single helper library by name."""
+    def find_helper(self, helper_name: str, /) -> Path | None:
+        """Resolve a single helper library by name or relative path."""
 
-        helper_path = (self._filesystem.helpers / helper).resolve()
+        helper_path = (self._filesystem.helpers / helper_name).resolve()
 
-        if not util.validate_file_relative(helper_path, self._filesystem.helpers):
-            raise config.InvalidOperation(f"Helper path '{helper}' is outside permitted directory.")
+        if helper_path.is_file():
+            return helper_path
 
-        return util.load_file(helper_path)
+        for ext in self._library_extensions:
+            candidate = (self._filesystem.helpers / f"{helper_name}{ext}").resolve()
+            if candidate.is_file():
+                return candidate
+
+        return None
+
+    def find_module(self, module_name: str, /) -> Path | None:
+        """Resolve an on-demand module by name or relative path."""
+
+        module_path = (self._filesystem.modules / module_name).resolve()
+
+        if module_path.is_file():
+            return module_path
+
+        for ext in self._module_extensions:
+            candidate = (self._filesystem.modules / f"{module_name}{ext}").resolve()
+            if candidate.is_file():
+                return candidate
+
+        return None
+
+    def load_helper(self, helper_path: Path | str, /) -> bytes:
+        """Load a single helper library by path or name."""
+
+        path = Path(helper_path)
+        path = (self._filesystem.helpers / path).resolve() if not path.is_absolute() else path.resolve()
+
+        if not util.validate_file_relative(path, self._filesystem.helpers):
+            raise config.InvalidOperation(f"Helper path '{helper_path}' is outside permitted directory.")
+
+        return util.load_file(path)
 
     def load_all_helpers(self) -> Mapping[str, bytes]:
         """Load all valid shell helper libraries."""
@@ -194,15 +231,16 @@ class ShellSocketProcessor(contract.IPluginProcessor):
 
         return helpers
 
-    def load_module(self, module: str, /) -> bytes:
+    def load_module(self, module_path: Path | str, /) -> bytes:
         """Load one operator-selected module from the modules directory."""
 
-        module_path = (self._filesystem.modules / module).resolve()
+        path = Path(module_path)
+        path = (self._filesystem.modules / path).resolve() if not path.is_absolute() else path.resolve()
 
-        if not util.validate_file_relative(module_path, self._filesystem.modules):
-            raise config.InvalidOperation(f"Module path '{module}' is outside the permitted modules directory.")
+        if not util.validate_file_relative(path, self._filesystem.modules):
+            raise config.InvalidOperation(f"Module path '{module_path}' is outside the permitted modules directory.")
 
-        if not util.validate_file_extension(module_path, self._module_extensions):
-            raise config.InvalidOperation(f"Module '{module}' has an unsupported extension. Allowed: {self._module_extensions}")
+        if not util.validate_file_extension(path, self._module_extensions):
+            raise config.InvalidOperation(f"Module '{path.name}' has an unsupported extension. Allowed: {self._module_extensions}")
 
-        return util.load_file(module_path)
+        return util.load_file(path)

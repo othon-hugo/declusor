@@ -41,7 +41,7 @@ def create_dummy_plugin_config(
     port: int = 9000,
     filesystem: contract.PluginFilesystem | None = None,
     options: DummyConfig | None = None,
-    mode: config.ExecutionMode = config.Settings.DEFAULT_EXECUTION_MODE,
+    mode: config.ExecutionMode = config.DEFAULT_EXECUTION_MODE,
 ) -> contract.PluginConfig[DummyConfig]:
     """Create a PluginConfig instance for testing.
 
