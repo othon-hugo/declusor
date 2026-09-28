@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Literal
 
 from declusor import config, contract, util
-from declusor.command.base import BaseStreamCommand
+from declusor.command._base import BaseStreamCommand
 
 
 @dataclass(frozen=True)
