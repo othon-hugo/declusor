@@ -47,12 +47,6 @@ class ExecuteCommand(BaseStreamCommand):
 
         self._dto = dto
 
-    @property
-    def dto(self) -> ExecuteCommandDTO:
-        """The command parameters."""
-
-        return self._dto
-
     def send_request(self, session: contract.SessionContext, /) -> None:
         """Send the encoded command string to the remote client.
 

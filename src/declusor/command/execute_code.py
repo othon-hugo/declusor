@@ -47,12 +47,6 @@ class ExecuteCode(BaseStreamCommand):
 
         self._dto = dto
 
-    @property
-    def dto(self) -> ExecuteCodeDTO:
-        """The command parameters."""
-
-        return self._dto
-
     def send_request(self, session: contract.SessionContext, /) -> None:
         """Send the rendered or raw code string to the remote client.
 

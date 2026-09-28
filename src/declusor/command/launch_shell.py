@@ -39,12 +39,6 @@ class LaunchShell(contract.ICommand):
         self._stop_event = util.TaskEvent()
         self._task_pool = util.TaskPool(self._stop_event)
 
-    @property
-    def dto(self) -> LaunchShellDTO:
-        """The command parameters."""
-
-        return self._dto
-
     def send_request(self, session: contract.SessionContext, /) -> None:
         """Start the background task that streams remote client output to the view.
 

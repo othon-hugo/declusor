@@ -53,12 +53,6 @@ class LoadModule(BaseStreamCommand):
         self._dto = dto
         self._module_name = dto.module_name
 
-    @property
-    def dto(self) -> LoadModuleDTO:
-        """The command parameters."""
-
-        return self._dto
-
     def send_request(self, session: contract.SessionContext, /) -> None:
         """Send the rendered module payload to the remote client.
 

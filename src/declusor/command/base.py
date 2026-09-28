@@ -54,18 +54,6 @@ class BaseFileCommand[T: "ExecuteFileDTO | UploadFileDTO"](BaseStreamCommand):
         self._dto: T = dto
         self._opcode: BaseFileCommand._SupportedOperationCodes = opcode
 
-    @property
-    def dto(self) -> T:
-        """The command parameters."""
-
-        return self._dto
-
-    @property
-    def opcode(self) -> "_SupportedOperationCodes":
-        """The operational code for this file command."""
-
-        return self._opcode
-
     def send_request(self, session: contract.SessionContext, /) -> None:
         """Encode the local file and send the formatted operation command to the client.
 
