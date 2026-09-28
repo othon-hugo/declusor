@@ -4,14 +4,15 @@ The **command** package implements the Command design pattern. Each class encaps
 
 ## Modules
 
-| Module    | Responsibility                                          |
-| --------- | ------------------------------------------------------- |
-| `_base`   | Base streaming command abstraction for chunked I/O      |
-| `code`    | Encode and transmit native client runtime code          |
-| `command` | Encode and transmit a shell command                     |
-| `file`    | Encode a local file and invoke a client operation       |
-| `load`    | Load an operator-selected module from client file store |
-| `shell`   | Manage an interactive shell session                     |
+| Module            | Responsibility                                          |
+| ----------------- | ------------------------------------------------------- |
+| `_base`           | Base streaming command abstraction for chunked I/O      |
+| `execute_code`    | Encode and transmit native client runtime code          |
+| `execute_command` | Encode and transmit a shell command                     |
+| `execute_file`    | Encode a local file and invoke a client operation       |
+| `upload_file`     | Encode a local file and invoke a client operation       |
+| `load_module`     | Load an operator-selected module from client file store |
+| `launch_shell`    | Manage an interactive shell session                     |
 
 ## Design Principles
 
