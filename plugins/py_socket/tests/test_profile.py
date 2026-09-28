@@ -45,23 +45,30 @@ def test_py_socket_profile_render_operation_command_with_special_characters() ->
     assert empty_profile.render_operation_command(config.OperationCode.EXEC_FILE) is None
 
 
-def test_py_socket_profile_render_operation_command_exec_command_python() -> None:
-    """Verify EXEC_COMMAND returns Python code unaltered."""
+def test_py_socket_profile_render_operation_command_load_module() -> None:
+    """Verify LOAD_MODULE opcode renders execute_base64_encoded_value call."""
+
+    profile = py_socket.DEFAULT_PY_SOCKET
+    rendered = profile.render_operation_command(config.OperationCode.LOAD_MODULE, "b64_mod_data==")
+    assert rendered == "execute_base64_encoded_value('b64_mod_data==')"
+
+
+def test_py_socket_profile_render_operation_command_exec_code() -> None:
+    """Verify EXEC_CODE opcode returns Python code unaltered."""
 
     profile = py_socket.DEFAULT_PY_SOCKET
 
     py_code = "import os\nprint(os.getpid())"
-    assert profile.render_operation_command(config.OperationCode.EXEC_COMMAND, py_code) == py_code
+    assert profile.render_operation_command(config.OperationCode.EXEC_CODE, py_code) == py_code
 
     py_shebang = "#!/usr/bin/env python\nprint('hello')"
-    assert profile.render_operation_command(config.OperationCode.EXEC_COMMAND, py_shebang) == py_shebang
+    assert profile.render_operation_command(config.OperationCode.EXEC_CODE, py_shebang) == py_shebang
 
-    py_helper_call = "execute_base64_encoded_value('xyz')"
-    assert profile.render_operation_command(config.OperationCode.EXEC_COMMAND, py_helper_call) == py_helper_call
+    assert profile.render_operation_command(config.OperationCode.EXEC_CODE) == ""
 
 
 def test_py_socket_profile_render_operation_command_exec_command_shell() -> None:
-    """Verify EXEC_COMMAND wraps shell commands in execute_system_command."""
+    """Verify EXEC_COMMAND deterministically wraps commands in execute_system_command."""
 
     profile = py_socket.DEFAULT_PY_SOCKET
 
@@ -75,9 +82,9 @@ def test_py_socket_profile_render_operation_command_exec_command_shell() -> None
 
 
 def test_py_socket_profile_render_operation_command_exec_command_empty() -> None:
-    """Verify EXEC_COMMAND with empty or missing arguments returns empty string."""
+    """Verify EXEC_COMMAND with empty or missing arguments returns empty execute_system_command call."""
 
     profile = py_socket.DEFAULT_PY_SOCKET
 
-    assert profile.render_operation_command(config.OperationCode.EXEC_COMMAND) == ""
-    assert profile.render_operation_command(config.OperationCode.EXEC_COMMAND, "") == ""
+    assert profile.render_operation_command(config.OperationCode.EXEC_COMMAND) == "execute_system_command('')"
+    assert profile.render_operation_command(config.OperationCode.EXEC_COMMAND, "") == "execute_system_command('')"

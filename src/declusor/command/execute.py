@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from declusor import config, contract
+from declusor.command.base import _BaseStreamCommand
 
 
 @dataclass(frozen=True)
@@ -24,7 +25,7 @@ class ExecuteCommandDTO:
             raise config.InvalidOperation("Command line cannot be empty.")
 
 
-class ExecuteCommand(contract.ICommand):
+class ExecuteCommand(_BaseStreamCommand):
     """Execute a raw shell command string on the remote client.
 
     Transmits the encoded command string encapsulated in an ``ExecuteCommandDTO``
@@ -45,7 +46,6 @@ class ExecuteCommand(contract.ICommand):
         super().__init__()
 
         self._dto = dto
-        self._command_line = dto.command_line.encode()
 
     @property
     def dto(self) -> ExecuteCommandDTO:
@@ -68,19 +68,6 @@ class ExecuteCommand(contract.ICommand):
             config.OperationCode.EXEC_COMMAND,
             self._dto.command_line,
         )
-        command_bytes = rendered.encode() if rendered is not None else self._command_line
 
+        command_bytes = rendered.encode() if rendered is not None else self.dto.command_line.encode()
         session.connection.write(command_bytes)
-
-    def read_response(self, session: contract.SessionContext, /) -> None:
-        """Read output chunks from the remote client and display them on the view.
-
-        Args:
-            session: The active session providing connection and view interfaces.
-
-        Raises:
-            ConnectionClosed: If the remote peer terminates the connection unexpectedly.
-        """
-
-        for data in session.connection.read():
-            session.view.write_binary_data(data)

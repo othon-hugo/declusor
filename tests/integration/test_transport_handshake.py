@@ -97,7 +97,7 @@ def test_py_socket_handshake_and_command_execution() -> None:
         assert b"py_shell_handshake_ok" in response
 
         rendered_py = connection.profile.render_operation_command(
-            config.OperationCode.EXEC_COMMAND,
+            config.OperationCode.EXEC_CODE,
             "#!/usr/bin/env python\nprint('py_native_ok')\n",
         )
         assert rendered_py is not None

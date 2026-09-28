@@ -1,4 +1,3 @@
-import ast
 import struct
 from collections.abc import Generator, Mapping
 from dataclasses import dataclass, field
@@ -41,6 +40,7 @@ class PySocketProfile(contract.IConnectionProfile):
             {
                 config.OperationCode.STORE_FILE: "store_base64_encoded_value",
                 config.OperationCode.EXEC_FILE: "execute_base64_encoded_value",
+                config.OperationCode.LOAD_MODULE: "execute_base64_encoded_value",
             }
         )
     )
@@ -79,61 +79,15 @@ class PySocketProfile(contract.IConnectionProfile):
 
         return self._supported_functions
 
-    def _is_python_code(self, code: str) -> bool:
-        """Return True if code should be evaluated directly by the Python runtime."""
-
-        stripped = code.strip()
-
-        if not stripped:
-            return True
-
-        if stripped.startswith("#!"):
-            first_line = stripped.splitlines()[0].lower()
-            return "python" in first_line
-
-        for fn_name in self._supported_functions.values():
-            if stripped.startswith(fn_name + "("):
-                return True
-
-        if stripped.startswith("execute_system_command("):
-            return True
-
-        try:
-            tree = ast.parse(stripped)
-            for node in ast.walk(tree):
-                if isinstance(
-                    node,
-                    (
-                        ast.Import,
-                        ast.ImportFrom,
-                        ast.FunctionDef,
-                        ast.AsyncFunctionDef,
-                        ast.ClassDef,
-                        ast.Assign,
-                        ast.AnnAssign,
-                        ast.AugAssign,
-                        ast.For,
-                        ast.While,
-                        ast.If,
-                        ast.With,
-                        ast.Try,
-                        ast.Call,
-                    ),
-                ):
-                    return True
-        except SyntaxError:
-            pass
-
-        return False
-
     def render_operation_command(self, opcode: "config.OperationCode", /, *args: str) -> str | None:
         """Build the Python function call string for a given operation code."""
 
         if opcode == config.OperationCode.EXEC_COMMAND:
             command = args[0] if args else ""
-            if self._is_python_code(command):
-                return command
             return f"execute_system_command({command!r})"
+
+        if opcode == config.OperationCode.EXEC_CODE:
+            return args[0] if args else ""
 
         function_name = self._supported_functions.get(opcode)
 

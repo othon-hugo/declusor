@@ -67,19 +67,37 @@ def test_call_upload_file_with_dto(
     assert result.action == contract.ControllerAction.CONTINUE
 
 
+def test_call_code_executes_with_dto_and_returns_continue(
+    test_session: contract.SessionContext,
+    dummy_connection: testing.DummyConnection,
+    dummy_profile: testing.DummyConnectionProfile,
+) -> None:
+    """call_code must construct ExecuteCode with ExecuteCodeDTO and execute via session."""
+
+    dummy_profile.set_rendered_command(config.OperationCode.EXEC_CODE, "rendered_code_call")
+
+    req = testing.create_dummy_controller_request("print('hi')", controller.CodeArguments)
+    result = controller.call_code(test_session, req)
+
+    assert dummy_connection.written == [b"rendered_code_call"]
+    assert result.action == contract.ControllerAction.CONTINUE
+
+
 def test_call_load_module_with_dto(
     test_session: contract.SessionContext,
     dummy_connection: testing.DummyConnection,
     dummy_file_store: testing.DummyPluginFileStore,
+    dummy_profile: testing.DummyConnectionProfile,
 ) -> None:
     """call_load must construct LoadModule with LoadModuleDTO and execute via session."""
 
     dummy_file_store.set_module("discovery/sysinfo", b"sysinfo_bytes")
+    dummy_profile.set_rendered_command(config.OperationCode.LOAD_MODULE, "rendered_sysinfo_load")
     req = testing.create_dummy_controller_request("discovery/sysinfo", controller.LoadArguments)
     result = controller.call_load(test_session, req)
 
     assert dummy_file_store.load_module_calls == ["discovery/sysinfo"]
-    assert dummy_connection.written == [b"sysinfo_bytes"]
+    assert dummy_connection.written == [b"rendered_sysinfo_load"]
     assert result.action == contract.ControllerAction.CONTINUE
 
 

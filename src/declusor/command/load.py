@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
-from declusor import config, contract
+from declusor import config, contract, util
+from declusor.command.base import _BaseStreamCommand
 
 
 @dataclass(frozen=True)
@@ -29,16 +30,18 @@ class LoadModuleDTO:
             raise config.InvalidOperation(f"Invalid module name '{self.module_name}': path traversal is not permitted.")
 
 
-class LoadModule(contract.ICommand):
+class LoadModule(_BaseStreamCommand):
     """Load an operator-selected module into the remote client.
 
     Retrieves module payload from the active session's client file store,
-    transmits the module definition across the network connection, and
-    displays the resulting client response on the operator console.
+    encodes and renders it via the client profile's ``LOAD_MODULE`` operation,
+    transmits it across the network connection, and streams the client response.
 
     Attributes:
         dto: The validated parameters for this module load command.
     """
+
+    _OPCODE = config.OperationCode.LOAD_MODULE
 
     def __init__(self, dto: LoadModuleDTO) -> None:
         """Initialize LoadModule with validated module parameters.
@@ -59,7 +62,7 @@ class LoadModule(contract.ICommand):
         return self._dto
 
     def send_request(self, session: contract.SessionContext, /) -> None:
-        """Send the resolved module script to the remote client.
+        """Send the rendered module payload to the remote client.
 
         Args:
             session: Active session providing connection transport and file store.
@@ -67,6 +70,7 @@ class LoadModule(contract.ICommand):
         Raises:
             CommandError: If the session file store is unavailable.
             ModuleNotFound: If the requested module file cannot be found.
+            InvalidOperation: If the profile cannot render the load operation command.
             ConnectionClosed: If the connection is closed.
             ConnectionWriteError: If transmitting the module payload fails.
         """
@@ -75,17 +79,14 @@ class LoadModule(contract.ICommand):
             raise config.CommandError("Client file store is not configured for this session.")
 
         module_bytes = session.files.load_module(self._module_name)
-        session.connection.write(module_bytes)
+        module_b64 = util.convert_to_base64(module_bytes)
 
-    def read_response(self, session: contract.SessionContext, /) -> None:
-        """Read and display the remote client's module registration response.
+        rendered = session.connection.profile.render_operation_command(
+            self._OPCODE,
+            module_b64,
+        )
 
-        Args:
-            session: Active session providing connection and view interfaces.
+        if not rendered:
+            raise config.InvalidOperation("Failed to generate script data for module loading.")
 
-        Raises:
-            ConnectionClosed: If the remote peer terminates the connection unexpectedly.
-        """
-
-        for data in session.connection.read():
-            session.view.write_binary_data(data)
+        session.connection.write(rendered.encode())
