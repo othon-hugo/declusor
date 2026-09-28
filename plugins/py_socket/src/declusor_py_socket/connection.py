@@ -1,3 +1,4 @@
+import struct
 from collections.abc import Generator, Mapping
 from dataclasses import dataclass, field
 from types import MappingProxyType
@@ -27,7 +28,7 @@ class PySocketProfile(contract.IConnectionProfile):
     _default_timeout: float | None = 1.0
     """Timeout in seconds for socket operations. Set to None for no timeout."""
 
-    _framing_mode: config.FramingMode = config.FramingMode.SENTINEL
+    _framing_mode: config.FramingMode = config.FramingMode.CHUNKED_TLV
     """Framing strategy used by this profile."""
 
     _default_buffer_size: int = 2**8
@@ -152,48 +153,65 @@ class PySocketConnection(contract.IConnection):
         self._state = contract.ConnectionState.CONNECTED
 
     def write(self, data: bytes, /) -> None:
-        """Send a null-delimited payload to the remote Python agent."""
+        """Send a TLV-framed payload to the remote Python agent."""
 
         if self._state == contract.ConnectionState.CLOSED:
             raise config.ConnectionClosed("Connection is closed.")
 
+        self._last_exit_code = None
+        frame = struct.pack(">BI", config.ChannelType.STDOUT, len(data)) + data
+
         try:
-            self._transport.write(data + self._profile.ack_server_raw)
+            self._transport.write(frame)
         except (config.ConnectionClosed, config.ConnectionTimeoutError, config.ConnectionError) as error:
             raise config.ConnectionError(f"Failed to write to connection: {error}") from error
 
     def read(self) -> Generator[bytes, None, None]:
-        """Stream response chunks from the Python agent until the ACK sentinel."""
+        """Stream response chunks from the Python agent until a PROCESS_EXIT frame."""
 
-        ack = self._profile.ack_client_raw
-        buffer = bytearray()
+        if self._state == contract.ConnectionState.CLOSED:
+            raise config.ConnectionClosed("Connection is closed.")
 
         while True:
             try:
-                chunk = self._transport.read(self._profile.default_buffer_size)
-            except (config.ConnectionClosed, config.ConnectionTimeoutError, config.ConnectionError) as error:
+                header = self._transport.read_exact(5)
+            except config.ConnectionTimeoutError:
+                raise
+            except (config.ConnectionClosed, config.ConnectionError) as error:
                 raise config.ConnectionClosed(f"Connection interrupted during read: {error}") from error
 
-            if not chunk:
-                raise config.ConnectionClosed("Connection closed by client during response stream.")
+            channel, length = struct.unpack(">BI", header)
 
-            buffer.extend(chunk)
+            if channel == config.ChannelType.PROCESS_EXIT:
+                if length > 0:
+                    try:
+                        exit_payload = self._transport.read_exact(length)
+                    except config.ConnectionTimeoutError:
+                        raise
+                    except (config.ConnectionClosed, config.ConnectionError) as error:
+                        raise config.ConnectionClosed(f"Connection interrupted reading exit code: {error}") from error
 
-            while True:
-                ack_pos = buffer.find(ack)
+                    if len(exit_payload) == 4:
+                        self._last_exit_code = struct.unpack(">i", exit_payload)[0]
+                    else:
+                        self._last_exit_code = 0
+                else:
+                    self._last_exit_code = 0
 
-                if ack_pos == -1:
-                    break
-
-                if ack_pos > 0:
-                    yield bytes(buffer[:ack_pos])
-
-                buffer = buffer[ack_pos + len(ack) :]
                 return
 
-            if len(buffer) > len(ack):
-                yield bytes(buffer[: -len(ack)])
-                buffer = buffer[-len(ack) :]
+            if length == 0:
+                continue
+
+            try:
+                payload = self._transport.read_exact(length)
+            except config.ConnectionTimeoutError:
+                raise
+            except (config.ConnectionClosed, config.ConnectionError) as error:
+                raise config.ConnectionClosed(f"Connection interrupted reading payload: {error}") from error
+
+            if channel in (config.ChannelType.STDOUT, config.ChannelType.STDERR):
+                yield payload
 
     def __enter__(self) -> "PySocketConnection":
         return self
