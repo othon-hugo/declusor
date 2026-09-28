@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import ClassVar
+from typing import Literal
 
 from declusor import config, contract, util
-from declusor.command.base import _BaseStreamCommand
+from declusor.command.base import BaseStreamCommand
 
 
 @dataclass(frozen=True)
@@ -52,41 +52,43 @@ class UploadFileDTO:
         object.__setattr__(self, "filepath", validated_path)
 
 
-class _BaseFileCommand(_BaseStreamCommand):
+class BaseFileCommand[T: ExecuteFileDTO | UploadFileDTO](BaseStreamCommand):
     """Abstract base class for operations that encode a local file for remote client invocation.
 
     Reads a local file, converts its content to Base64, formats a client-specific
     shell execution payload using the active client profile's operation template,
     transmits it, and streams the output to the console.
-
-    Subclasses must define ``_OPCODE`` to specify the intended operation code.
     """
 
-    _OPCODE: ClassVar[config.OperationCode] = NotImplemented
+    _SupportedOperationCodes = Literal[
+        config.OperationCode.EXEC_FILE,
+        config.OperationCode.STORE_FILE,
+    ]
 
-    def __init__(self, dto: ExecuteFileDTO | UploadFileDTO) -> None:
+    def __init__(self, dto: T, opcode: "_SupportedOperationCodes") -> None:
         """Initialize the base file command.
 
         Args:
             dto: Validated DTO containing the local file path.
-
-        Raises:
-            NotImplementedError: If a subclass does not define ``_OPCODE``.
+            opcode: Operational code defining the target client operation.
         """
 
         super().__init__()
 
-        if self._OPCODE is NotImplemented:
-            raise NotImplementedError("_OPCODE must be defined by concrete subclasses.")
-
-        self._dto = dto
-        self._filepath: Path = dto.filepath
+        self._dto: T = dto
+        self._opcode: BaseFileCommand._SupportedOperationCodes = opcode
 
     @property
-    def filepath(self) -> Path:
-        """The validated path to the local file."""
+    def dto(self) -> T:
+        """The command parameters."""
 
-        return self._filepath
+        return self._dto
+
+    @property
+    def opcode(self) -> "_SupportedOperationCodes":
+        """The operational code for this file command."""
+
+        return self._opcode
 
     def send_request(self, session: contract.SessionContext, /) -> None:
         """Encode the local file and send the formatted operation command to the client.
@@ -116,11 +118,11 @@ class _BaseFileCommand(_BaseStreamCommand):
             InvalidOperation: If the client runtime fails to produce a valid command.
         """
 
-        file_content = util.load_file(self._filepath)
+        file_content = util.load_file(self._dto.filepath)
         file_base64 = util.convert_to_base64(file_content)
 
         script_data = session.connection.profile.render_operation_command(
-            self._OPCODE,
+            self._opcode,
             file_base64,
         )
 
@@ -130,15 +132,13 @@ class _BaseFileCommand(_BaseStreamCommand):
         return script_data.encode()
 
 
-class ExecuteFile(_BaseFileCommand):
+class ExecuteFile(BaseFileCommand[ExecuteFileDTO]):
     """Upload and execute a local script file on the remote client.
 
     Encapsulates script execution by reading the local file defined in
     ``ExecuteFileDTO``, encoding it, generating the client-side execution
     command (using ``EXEC_FILE`` opcode), and streaming execution output.
     """
-
-    _OPCODE: ClassVar[config.OperationCode] = config.OperationCode.EXEC_FILE
 
     def __init__(self, dto: ExecuteFileDTO) -> None:
         """Initialize ExecuteFile with validated parameters.
@@ -147,18 +147,16 @@ class ExecuteFile(_BaseFileCommand):
             dto: Validated DTO containing the script file path.
         """
 
-        super().__init__(dto=dto)
+        super().__init__(dto=dto, opcode=config.OperationCode.EXEC_FILE)
 
 
-class UploadFile(_BaseFileCommand):
+class UploadFile(BaseFileCommand[UploadFileDTO]):
     """Upload and store a local file on the remote client without executing it.
 
     Encapsulates file transfer by reading the local file defined in
     ``UploadFileDTO``, encoding it, and instructing the client to store it
     locally using the ``STORE_FILE`` opcode.
     """
-
-    _OPCODE: ClassVar[config.OperationCode] = config.OperationCode.STORE_FILE
 
     def __init__(self, dto: UploadFileDTO) -> None:
         """Initialize UploadFile with validated parameters.
@@ -167,4 +165,4 @@ class UploadFile(_BaseFileCommand):
             dto: Validated DTO containing the file path to upload.
         """
 
-        super().__init__(dto=dto)
+        super().__init__(dto=dto, opcode=config.OperationCode.STORE_FILE)
