@@ -4,6 +4,10 @@ from declusor.config import (
     InvalidOperation,
 )
 
+from .code import (
+    ExecuteCode,
+    ExecuteCodeDTO,
+)
 from .execute import (
     ExecuteCommand,
     ExecuteCommandDTO,
@@ -26,6 +30,8 @@ from .shell import (
 __all__ = [
     "CommandError",
     "CommandValidationError",
+    "ExecuteCode",
+    "ExecuteCodeDTO",
     "ExecuteCommand",
     "ExecuteCommandDTO",
     "ExecuteFile",

@@ -40,3 +40,22 @@ def test_profile_render_operation_command_exec_command() -> None:
     cmd = "echo hello && ls -la /tmp"
     assert profile.render_operation_command(config.OperationCode.EXEC_COMMAND, cmd) == cmd
     assert profile.render_operation_command(config.OperationCode.EXEC_COMMAND) == ""
+
+
+def test_profile_render_operation_command_exec_code() -> None:
+    """Verify EXEC_CODE returns the shell code unaltered."""
+
+    profile = shell_socket.DEFAULT_SHELL_SOCKET
+
+    code = "VAR='value'; echo $VAR"
+    assert profile.render_operation_command(config.OperationCode.EXEC_CODE, code) == code
+    assert profile.render_operation_command(config.OperationCode.EXEC_CODE) == ""
+
+
+def test_profile_render_operation_command_load_module() -> None:
+    """Verify LOAD_MODULE renders execute_base64_encoded_value with base64 payload."""
+
+    profile = shell_socket.DEFAULT_SHELL_SOCKET
+
+    rendered = profile.render_operation_command(config.OperationCode.LOAD_MODULE, "mod_payload==")
+    assert rendered == "execute_base64_encoded_value mod_payload=="

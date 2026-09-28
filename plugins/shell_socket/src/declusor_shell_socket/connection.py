@@ -40,6 +40,7 @@ class ShellSocketProfile(contract.IConnectionProfile):
             {
                 config.OperationCode.STORE_FILE: "store_base64_encoded_value",
                 config.OperationCode.EXEC_FILE: "execute_base64_encoded_value",
+                config.OperationCode.LOAD_MODULE: "execute_base64_encoded_value",
             }
         )
     )
@@ -89,7 +90,7 @@ class ShellSocketProfile(contract.IConnectionProfile):
             A ready-to-send shell command string, or ``None`` if unsupported.
         """
 
-        if opcode == config.OperationCode.EXEC_COMMAND:
+        if opcode in (config.OperationCode.EXEC_COMMAND, config.OperationCode.EXEC_CODE):
             return args[0] if args else ""
 
         function_name = self._supported_functions.get(opcode)
