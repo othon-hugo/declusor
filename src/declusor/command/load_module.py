@@ -9,23 +9,20 @@ class LoadModuleDTO:
     """Data transfer object containing parameters for loading a client module.
 
     Encapsulates and validates the name of the module to load from the client's
-    module repository. Prevents path traversal vulnerabilities.
+    module repository.
 
     Raises:
-        InvalidOperation: If ``module_name`` is empty or attempts directory traversal.
+        InvalidOperation: If ``module_name`` is empty or consists solely of whitespace.
     """
 
     module_name: str
-    """Clean module identifier (e.g. ``discovery/sysinfo``)."""
+    """Non-empty module identifier or relative path (e.g. ``discovery/sysinfo``)."""
 
     def __post_init__(self) -> None:
         if not self.module_name or not self.module_name.strip():
             raise config.InvalidOperation("Module name cannot be empty.")
 
-        clean_name = self.module_name.strip()
-
-        if ".." in clean_name or clean_name.startswith("/") or "\\" in clean_name:
-            raise config.InvalidOperation(f"Invalid module name '{self.module_name}': path traversal is not permitted.")
+        object.__setattr__(self, "module_name", self.module_name.strip())
 
 
 class LoadModule(BaseStreamCommand):
@@ -36,7 +33,7 @@ class LoadModule(BaseStreamCommand):
     transmits it across the network connection, and streams the client response.
     """
 
-    def __init__(self, dto: LoadModuleDTO, /) -> None:
+    def __init__(self, dto: LoadModuleDTO) -> None:
         """Initialize LoadModule with validated module parameters.
 
         Args:
@@ -63,7 +60,15 @@ class LoadModule(BaseStreamCommand):
         if session.files is None:
             raise config.CommandError("Client file store is not configured for this session.")
 
-        module_bytes = session.files.load_module(self._dto.module_name)
+        module_path = session.files.find_module(self._dto.module_name)
+
+        if not module_path:
+            raise
+
+        if not util.validate_file_relative(module_path, session.files.filesystem.helpers):
+            raise
+
+        module_bytes = session.files.load_module(module_path)
         module_b64 = util.convert_to_base64(module_bytes)
 
         rendered = session.connection.profile.render_operation_command(

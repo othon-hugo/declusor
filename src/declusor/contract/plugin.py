@@ -266,44 +266,39 @@ class IPluginProcessor(ABC):
 
     @property
     @abstractmethod
-    def helpers(self, /) -> bytes:
+    def filesystem(self) -> PluginFilesystem:
+        """[...]"""
+
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def helpers(self) -> bytes:
         """Concatenated bootstrap helper libraries sent to the client during handshake."""
 
         raise NotImplementedError
 
     @abstractmethod
-    def load_module(self, module: str, /) -> bytes:
-        """Load an on-demand payload module by name.
-
-        Args:
-            module: Module file name relative to the modules directory.
-
-        Returns:
-            Raw bytes of the module file.
-        """
+    def find_module(self, module_name: str, /) -> Path | None:
+        """[...]"""
 
         raise NotImplementedError
 
     @abstractmethod
-    def load_helper(self, helper: str, /) -> bytes:
-        """Load a single helper library by name.
-
-        Args:
-            helper: Helper file name relative to the helpers directory.
-
-        Returns:
-            Raw bytes of the helper file.
-        """
+    def find_helper(self, helper_name: str, /) -> Path | None:
+        """[...]"""
 
         raise NotImplementedError
 
     @abstractmethod
-    def load_all_helpers(self) -> Mapping[str, bytes]:
-        """Load all available helper libraries.
+    def load_module(self, module_path: Path, /) -> bytes:
+        """[...]"""
 
-        Returns:
-            Mapping of helper file names to their raw bytes.
-        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def load_helper(self, helper_path: Path, /) -> bytes:
+        """[...]"""
 
         raise NotImplementedError
 
