@@ -11,9 +11,9 @@ def test_connection_state_lifecycle_transitions(
 ) -> None:
     """Verify connection lifecycle transitions: CREATED -> CONNECTED -> CLOSED."""
 
-    trans = testing.DummyTransport(incoming_data=b"valid_ack_32_bytes_long_sentinel")
+    trans = testing.DummyTransport(incoming_data=b"__DECLUSOR_EOF_test_nonce__\n")
 
-    conn, _ = make_shell_connection(trans, ack=b"valid_ack_32_bytes_long_sentinel")
+    conn, _ = make_shell_connection(trans)
     state: contract.ConnectionState = conn.state
     assert state == contract.ConnectionState.CREATED
 
@@ -31,20 +31,20 @@ def test_connection_state_lifecycle_transitions(
     assert state == contract.ConnectionState.CLOSED
 
 
-def test_connection_segmented_ack_streaming(
+def test_connection_segmented_envelope_streaming(
     make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
 ) -> None:
-    """Verify ACK validation handles segmented byte streaming properly."""
+    """Verify handshake envelope handles segmented byte streaming properly."""
 
     trans = testing.DummyTransport(
         incoming_data=[
-            b"valid_ack_",
-            b"32_bytes_",
-            b"long_sentinel",
+            b"__DECLUSOR_EOF_",
+            b"test_",
+            b"nonce__\n",
         ]
     )
 
-    conn, _ = make_shell_connection(trans, ack=b"valid_ack_32_bytes_long_sentinel")
+    conn, _ = make_shell_connection(trans)
     conn.handshake()
     assert conn.state == contract.ConnectionState.CONNECTED
 
@@ -61,16 +61,15 @@ def test_initialize_fails_on_closed_connection(
         conn.handshake()
 
 
-def test_write_uses_sendall_for_payload_and_ack(
+def test_write_uses_ephemeral_envelope_framing(
     make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
 ) -> None:
-    """Verify write transmits payload followed by null byte framing."""
+    """Verify write transmits ephemeral nonce prefix followed by null-delimited payload."""
 
-    connection, trans = make_shell_connection()
+    connection, trans = make_shell_connection(default_nonce="fixed_nonce")
 
     connection.write(b"command")
-    assert trans.write_history == [b"command", b"\x00"]
-    assert trans.written_bytes == b"command\x00"
+    assert trans.written_bytes == b"fixed_nonce\x00command\x00"
 
 
 def test_write_translates_transport_errors(

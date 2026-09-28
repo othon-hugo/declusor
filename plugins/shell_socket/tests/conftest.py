@@ -16,8 +16,8 @@ def make_shell_connection(
     def _create_connection(
         transport_connection: testing.DummyTransport | None = None,
         ack: bytes = b"ack",
-        framing_mode: config.FramingMode = config.FramingMode.SENTINEL,
-        default_nonce: str | None = None,
+        framing_mode: config.FramingMode = config.FramingMode.EPHEMERAL_ENVELOPE,
+        default_nonce: str | None = "test_nonce",
     ) -> tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]:
         launchers = tmp_path / "launchers"
         launchers.mkdir(exist_ok=True)

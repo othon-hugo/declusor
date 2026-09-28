@@ -153,55 +153,38 @@ class ShellSocketConnection(contract.IConnection):
         self._state = contract.ConnectionState.INITIALIZING
         self.write(self._files.helpers)
 
-        if self._profile.framing_mode == config.FramingMode.SENTINEL:
-            expected_ack = self._profile.ack_client_raw
-            try:
-                received_ack = self._transport.read_exact(len(expected_ack))
-                if received_ack != expected_ack:
-                    raise config.ConnectionError("Invalid client ACK during session initialization.")
-            except (config.ConnectionClosed, config.ConnectionTimeoutError, config.ConnectionError) as error:
-                raise config.ConnectionError("Failed waiting for client ACK during session initialization.") from error
-        else:
-            try:
-                for _ in self.read():
-                    pass
-            except (config.ConnectionClosed, config.ConnectionTimeoutError, config.ConnectionError) as error:
-                raise config.ConnectionError("Failed waiting for client ACK during session initialization.") from error
+        try:
+            for _ in self.read():
+                pass
+        except (config.ConnectionClosed, config.ConnectionTimeoutError, config.ConnectionError) as error:
+            raise config.ConnectionError("Failed waiting for client handshake envelope.") from error
 
         self._state = contract.ConnectionState.CONNECTED
 
     def write(self, data: bytes, /, *, nonce: str | None = None) -> None:
-        """Send data to the remote client."""
+        """Send data to the remote client enclosed in an ephemeral transaction envelope."""
 
         if self._state == contract.ConnectionState.CLOSED:
             raise config.ConnectionClosed("Connection is closed.")
 
-        if self._profile.framing_mode == config.FramingMode.EPHEMERAL_ENVELOPE:
-            self._current_nonce = nonce or self._profile.default_nonce or secrets.token_hex(16)
-            payload = self._current_nonce.encode("ascii") + b"\x00" + data + b"\x00"
-            try:
-                self._transport.write(payload)
-            except (config.ConnectionClosed, config.ConnectionTimeoutError, config.ConnectionError) as error:
-                raise config.ConnectionError(f"Failed to write to connection: {error}") from error
-        else:
-            try:
-                self._transport.write(data)
-                self._transport.write(self._profile.ack_server_raw)
-            except (config.ConnectionClosed, config.ConnectionTimeoutError, config.ConnectionError) as error:
-                raise config.ConnectionError(f"Failed to write to connection: {error}") from error
+        self._current_nonce = nonce or self._profile.default_nonce or secrets.token_hex(16)
+        payload = self._current_nonce.encode("ascii") + b"\x00" + data + b"\x00"
+
+        try:
+            self._transport.write(payload)
+        except (config.ConnectionClosed, config.ConnectionTimeoutError, config.ConnectionError) as error:
+            raise config.ConnectionError(f"Failed to write to connection: {error}") from error
 
     def read(self) -> Generator[bytes, None, None]:
-        """Stream response chunks from the client until the ACK sentinel or ephemeral envelope."""
+        """Stream response chunks from the client until the ephemeral envelope delimiter."""
 
         if self._state == contract.ConnectionState.CLOSED:
             raise config.ConnectionClosed("Connection is closed.")
 
-        if self._profile.framing_mode == config.FramingMode.EPHEMERAL_ENVELOPE:
-            if not self._current_nonce:
-                raise config.ConnectionError("No active command nonce for read operation.")
-            delim = f"__DECLUSOR_EOF_{self._current_nonce}__".encode("ascii")
-        else:
-            delim = self._profile.ack_client_raw
+        if not self._current_nonce:
+            raise config.ConnectionError("No active command nonce for read operation.")
+
+        delim = f"__DECLUSOR_EOF_{self._current_nonce}__".encode("ascii")
 
         buffer = bytearray()
 
