@@ -16,7 +16,7 @@ def test_execute_command_lifecycle(
     dummy_profile.set_rendered_command(config.OperationCode.EXEC_COMMAND, "rendered_id")
 
     dto = command.ExecuteCommandDTO(command_line="id")
-    cmd = command.ExecuteCommand(dto=dto)
+    cmd = command.ExecuteCommand(dto)
 
     test_session.execute(cmd)
 
@@ -37,7 +37,7 @@ def test_execute_command_lifecycle_fallback_unrendered(
     dummy_profile.set_rendered_command(config.OperationCode.EXEC_COMMAND, None)
 
     dto = command.ExecuteCommandDTO(command_line="id")
-    cmd = command.ExecuteCommand(dto=dto)
+    cmd = command.ExecuteCommand(dto)
 
     test_session.execute(cmd)
 
@@ -58,7 +58,7 @@ def test_execute_code_lifecycle(
     dummy_profile.set_rendered_command(config.OperationCode.EXEC_CODE, "rendered_code")
 
     dto = command.ExecuteCodeDTO(code="print('hello')")
-    cmd = command.ExecuteCode(dto=dto)
+    cmd = command.ExecuteCode(dto)
 
     test_session.execute(cmd)
 
@@ -79,7 +79,7 @@ def test_execute_code_lifecycle_fallback_unrendered(
     dummy_profile.set_rendered_command(config.OperationCode.EXEC_CODE, None)
 
     dto = command.ExecuteCodeDTO(code="print('hello')")
-    cmd = command.ExecuteCode(dto=dto)
+    cmd = command.ExecuteCode(dto)
 
     test_session.execute(cmd)
 
@@ -104,10 +104,7 @@ def test_execute_file_lifecycle(
     dummy_profile.set_rendered_command(config.OperationCode.EXEC_FILE, "rendered_exec_script")
 
     dto = command.ExecuteFileDTO(filepath=script_file)
-    cmd = command.ExecuteFile(dto=dto)
-
-    assert cmd.dto == dto
-    assert cmd.opcode == config.OperationCode.EXEC_FILE
+    cmd = command.ExecuteFile(dto)
 
     test_session.execute(cmd)
 
@@ -132,10 +129,7 @@ def test_upload_file_lifecycle(
     dummy_profile.set_rendered_command(config.OperationCode.STORE_FILE, "rendered_upload_script")
 
     dto = command.UploadFileDTO(filepath=data_file)
-    cmd = command.UploadFile(dto=dto)
-
-    assert cmd.dto == dto
-    assert cmd.opcode == config.OperationCode.STORE_FILE
+    cmd = command.UploadFile(dto)
 
     test_session.execute(cmd)
 
@@ -158,7 +152,7 @@ def test_file_command_render_failure_raises(
     dummy_profile.set_rendered_command(config.OperationCode.STORE_FILE, None)
 
     dto = command.UploadFileDTO(filepath=data_file)
-    cmd = command.UploadFile(dto=dto)
+    cmd = command.UploadFile(dto)
 
     with pytest.raises(config.InvalidOperation, match="Failed to generate script data"):
         cmd.send_request(test_session)
@@ -177,7 +171,7 @@ def test_load_module_lifecycle(
     dummy_profile.set_rendered_command(config.OperationCode.LOAD_MODULE, "rendered_module_load")
 
     dto = command.LoadModuleDTO(module_name="discovery/sysinfo")
-    cmd = command.LoadModule(dto=dto)
+    cmd = command.LoadModule(dto)
 
     test_session.execute(cmd)
 
@@ -199,7 +193,7 @@ def test_load_module_render_failure_raises(
     dummy_profile.set_rendered_command(config.OperationCode.LOAD_MODULE, None)
 
     dto = command.LoadModuleDTO(module_name="discovery/sysinfo")
-    cmd = command.LoadModule(dto=dto)
+    cmd = command.LoadModule(dto)
 
     with pytest.raises(config.InvalidOperation, match="Failed to generate script data for module loading"):
         cmd.send_request(test_session)
@@ -220,7 +214,7 @@ def test_load_module_missing_files_store(
     )
 
     dto = command.LoadModuleDTO(module_name="discovery/sysinfo")
-    cmd = command.LoadModule(dto=dto)
+    cmd = command.LoadModule(dto)
 
     with pytest.raises(config.CommandError, match="Client file store is not configured"):
         cmd.send_request(session_no_files)
@@ -230,6 +224,6 @@ def test_launch_shell_instantiation_with_dto() -> None:
     """LaunchShell stores DTO properly on instantiation."""
 
     dto = command.LaunchShellDTO(banner="Welcome to shell")
-    cmd = command.LaunchShell(dto=dto)
+    cmd = command.LaunchShell(dto)
 
-    assert cmd.dto.banner == "Welcome to shell"
+    assert cmd._dto.banner == "Welcome to shell"

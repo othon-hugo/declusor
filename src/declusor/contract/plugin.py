@@ -267,7 +267,7 @@ class IPluginProcessor(ABC):
     @property
     @abstractmethod
     def helpers(self, /) -> bytes:
-        """[...]"""
+        """Concatenated bootstrap helper libraries sent to the client during handshake."""
 
         raise NotImplementedError
 
