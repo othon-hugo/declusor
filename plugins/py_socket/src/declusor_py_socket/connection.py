@@ -70,7 +70,7 @@ class PySocketProfile(contract.IConnectionProfile):
             return None
 
         if args:
-            quoted_args = ", ".join(util.quote(a) for a in args)
+            quoted_args = ", ".join(repr(a) for a in args)
             return f"{function_name}({quoted_args})"
 
         return f"{function_name}()"
