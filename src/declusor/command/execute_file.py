@@ -12,18 +12,15 @@ class ExecuteFileDTO:
     Encapsulates and validates the path to a local script file to be encoded,
     uploaded, and executed on the remote client.
 
-    Attributes:
-        filepath: Validated, absolute or relative ``Path`` to an existing local file.
-
     Raises:
         InvalidOperation: If the specified file does not exist or is not a regular file.
     """
 
-    filepath: Path
+    filepath: Path | str
+    """Validated, absolute or relative ``Path`` to an existing local file."""
 
-    def __init__(self, /, *, filepath: str | Path) -> None:
-        validated_path = util.ensure_file_exists(Path(filepath))
-
+    def __post_init__(self) -> None:
+        validated_path = util.ensure_file_exists(Path(self.filepath))
         object.__setattr__(self, "filepath", validated_path)
 
 
@@ -35,7 +32,7 @@ class ExecuteFile(BaseFileCommand[ExecuteFileDTO]):
     command (using ``EXEC_FILE`` opcode), and streaming execution output.
     """
 
-    def __init__(self, dto: ExecuteFileDTO, /) -> None:
+    def __init__(self, dto: ExecuteFileDTO) -> None:
         """Initialize ExecuteFile with validated parameters.
 
         Args:

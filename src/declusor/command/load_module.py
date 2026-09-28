@@ -11,14 +11,12 @@ class LoadModuleDTO:
     Encapsulates and validates the name of the module to load from the client's
     module repository. Prevents path traversal vulnerabilities.
 
-    Attributes:
-        module_name: Clean module identifier (e.g. ``discovery/sysinfo``).
-
     Raises:
         InvalidOperation: If ``module_name`` is empty or attempts directory traversal.
     """
 
     module_name: str
+    """Clean module identifier (e.g. ``discovery/sysinfo``)."""
 
     def __post_init__(self) -> None:
         if not self.module_name or not self.module_name.strip():

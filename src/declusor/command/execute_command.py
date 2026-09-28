@@ -11,14 +11,12 @@ class ExecuteCommandDTO:
     Encapsulates and validates the raw command line string to be transmitted
     and executed on the remote client.
 
-    Attributes:
-        command_line: Non-empty shell command line string.
-
     Raises:
         InvalidOperation: If ``command_line`` is empty or consists solely of whitespace.
     """
 
     command_line: str
+    """command_line: Non-empty shell command line string."""
 
     def __post_init__(self) -> None:
         if not self.command_line or not self.command_line.strip():
@@ -33,7 +31,7 @@ class ExecuteCommand(BaseStreamCommand):
     to the operator's console.
     """
 
-    def __init__(self, dto: ExecuteCommandDTO, /) -> None:
+    def __init__(self, dto: ExecuteCommandDTO) -> None:
         """Initialize ExecuteCommand with validated parameters.
 
         Args:

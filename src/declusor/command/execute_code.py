@@ -11,14 +11,12 @@ class ExecuteCodeDTO:
     Encapsulates and validates the raw code string to be evaluated directly by
     the remote client agent's runtime.
 
-    Attributes:
-        code: Non-empty code string to evaluate.
-
     Raises:
         InvalidOperation: If ``code`` is empty or consists solely of whitespace.
     """
 
     code: str
+    """Non-empty code string to evaluate."""
 
     def __post_init__(self) -> None:
         if not self.code or not self.code.strip():
@@ -33,7 +31,7 @@ class ExecuteCode(BaseStreamCommand):
     to the operator's console.
     """
 
-    def __init__(self, dto: ExecuteCodeDTO, /) -> None:
+    def __init__(self, dto: ExecuteCodeDTO) -> None:
         """Initialize ExecuteCode with validated parameters.
 
         Args:

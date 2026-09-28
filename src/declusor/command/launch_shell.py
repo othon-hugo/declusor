@@ -5,13 +5,10 @@ from declusor import config, contract, util
 
 @dataclass(frozen=True)
 class LaunchShellDTO:
-    """Data transfer object configuring an interactive shell session.
-
-    Attributes:
-        banner: Optional informational banner message displayed upon entering shell mode.
-    """
+    """Data transfer object configuring an interactive shell session."""
 
     banner: str | None = None
+    """Optional informational banner message displayed upon entering shell mode."""
 
 
 class LaunchShell(contract.ICommand):

@@ -12,19 +12,14 @@ class UploadFileDTO:
     Encapsulates and validates the path to a local file to be uploaded and stored
     on the remote client without execution.
 
-    Attributes:
-        filepath: Validated ``Path`` to an existing local file.
-
     Raises:
         InvalidOperation: If the specified file does not exist or is not a regular file.
     """
 
-    filepath: Path
+    filepath: Path | str
 
-    def __init__(self, filepath: str | Path) -> None:
-        path_obj = Path(filepath)
-        validated_path = util.ensure_file_exists(path_obj)
-
+    def __post_init__(self) -> None:
+        validated_path = util.ensure_file_exists(Path(self.filepath))
         object.__setattr__(self, "filepath", validated_path)
 
 
