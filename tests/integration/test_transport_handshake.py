@@ -1,7 +1,7 @@
 import subprocess
 import sys
 
-from declusor import contract, core, transport
+from declusor import config, contract, core, transport
 
 
 def test_shell_socket_handshake_and_command_execution() -> None:
@@ -70,8 +70,8 @@ def test_py_socket_handshake_and_command_execution() -> None:
     manager = core.PluginManager().discover()
     plugin_class = manager.get("py_socket")
     options = plugin_class.extract_options({})
-    config = plugin_class.build_config("127.0.0.1", port, options)
-    runtime = plugin_class.build_runtime(config)
+    plugin_config = plugin_class.build_config("127.0.0.1", port, options)
+    runtime = plugin_class.build_runtime(plugin_config)
 
     proc = subprocess.Popen([sys.executable, "-c", runtime.launcher])
     raw_transport: contract.ITransport | None = None
@@ -87,11 +87,21 @@ def test_py_socket_handshake_and_command_execution() -> None:
         state = connection.state
         assert state == contract.ConnectionState.CONNECTED
 
-        connection.write(b"echo py_shell_handshake_ok\n")
+        rendered_cmd = connection.profile.render_operation_command(
+            config.OperationCode.EXEC_COMMAND,
+            "echo py_shell_handshake_ok",
+        )
+        assert rendered_cmd is not None
+        connection.write(rendered_cmd.encode())
         response = b"".join(connection.read())
         assert b"py_shell_handshake_ok" in response
 
-        connection.write(b"#!/usr/bin/env python\nprint('py_native_ok')\n")
+        rendered_py = connection.profile.render_operation_command(
+            config.OperationCode.EXEC_COMMAND,
+            "#!/usr/bin/env python\nprint('py_native_ok')\n",
+        )
+        assert rendered_py is not None
+        connection.write(rendered_py.encode())
         response = b"".join(connection.read())
         assert b"py_native_ok" in response
 

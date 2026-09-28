@@ -30,3 +30,13 @@ def test_profile_render_operation_command() -> None:
 
     empty_profile = shell_socket.ShellSocketProfile(name="empty", ack_server_raw=b"\x00", ack_client_raw=b"ack", _supported_functions={})
     assert empty_profile.render_operation_command(config.OperationCode.STORE_FILE) is None
+
+
+def test_profile_render_operation_command_exec_command() -> None:
+    """Verify EXEC_COMMAND returns the command string unaltered."""
+
+    profile = shell_socket.DEFAULT_SHELL_SOCKET
+
+    cmd = "echo hello && ls -la /tmp"
+    assert profile.render_operation_command(config.OperationCode.EXEC_COMMAND, cmd) == cmd
+    assert profile.render_operation_command(config.OperationCode.EXEC_COMMAND) == ""

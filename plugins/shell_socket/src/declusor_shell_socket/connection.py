@@ -89,6 +89,9 @@ class ShellSocketProfile(contract.IConnectionProfile):
             A ready-to-send shell command string, or ``None`` if unsupported.
         """
 
+        if opcode == config.OperationCode.EXEC_COMMAND:
+            return args[0] if args else ""
+
         function_name = self._supported_functions.get(opcode)
 
         if not function_name:

@@ -2,7 +2,7 @@ import base64
 import subprocess
 import sys
 
-from declusor import contract, core, transport
+from declusor import config, contract, core, transport
 
 
 def test_shell_socket_resilience_empty_and_special_chars() -> None:
@@ -144,8 +144,8 @@ def test_py_socket_resilience_realtime_streaming() -> None:
     manager = core.PluginManager().discover()
     plugin_class = manager.get("py_socket")
     options = plugin_class.extract_options({})
-    config = plugin_class.build_config("127.0.0.1", port, options)
-    runtime = plugin_class.build_runtime(config)
+    plugin_config = plugin_class.build_config("127.0.0.1", port, options)
+    runtime = plugin_class.build_runtime(plugin_config)
 
     proc = subprocess.Popen([sys.executable, "-c", runtime.launcher])
     raw_transport: contract.ITransport | None = None
@@ -155,9 +155,14 @@ def test_py_socket_resilience_realtime_streaming() -> None:
         connection = runtime.create_connection(raw_transport)
         connection.handshake()
 
-        # Command that outputs distinct lines
-        cmd = b"echo stream_chunk_1; echo stream_chunk_2; echo stream_chunk_3\n"
-        connection.write(cmd)
+        # Command that outputs distinct lines rendered via connection profile
+        raw_cmd = "echo stream_chunk_1; echo stream_chunk_2; echo stream_chunk_3\n"
+        rendered = connection.profile.render_operation_command(
+            config.OperationCode.EXEC_COMMAND,
+            raw_cmd,
+        )
+        assert rendered is not None
+        connection.write(rendered.encode())
 
         chunks = list(connection.read())
         combined = b"".join(chunks)

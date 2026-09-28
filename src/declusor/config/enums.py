@@ -41,8 +41,9 @@ class ExecutionMode(StrEnum):
 
 
 class OperationCode(StrEnum):
-    """Enumeration of file operation codes."""
+    """Enumeration of client operation codes."""
 
+    EXEC_COMMAND = "EXECUTE_COMMAND"
     EXEC_FILE = "EXECUTE_FILE"
     STORE_FILE = "STORE_FILE"
 
