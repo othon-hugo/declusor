@@ -85,3 +85,37 @@ def test_write_translates_transport_errors(
 
     with pytest.raises(config.ConnectionError, match="Failed to write to connection"):
         connection.write(b"command")
+
+
+def test_write_and_read_ephemeral_envelope(
+    make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+) -> None:
+    """Verify write transmits ephemeral nonce prefix and read terminates at dynamic envelope."""
+
+    conn, trans = make_shell_connection(framing_mode=config.FramingMode.EPHEMERAL_ENVELOPE)
+    conn.write(b"ls -la", nonce="abcdef0123456789")
+
+    assert trans.written_bytes == b"abcdef0123456789\x00ls -la\x00"
+    assert conn.current_nonce == "abcdef0123456789"
+
+    envelope = b"__DECLUSOR_EOF_abcdef0123456789__\n"
+    trans.push_incoming(b"output_chunk_1\n" + b"output_chunk_2\n" + envelope)
+
+    chunks = list(conn.read())
+    assert chunks == [b"output_chunk_1\noutput_chunk_2\n"]
+
+
+def test_handshake_with_ephemeral_envelope(
+    make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+) -> None:
+    """Verify handshake in EPHEMERAL_ENVELOPE mode sends helpers and waits for dynamic envelope."""
+
+    conn, trans = make_shell_connection(
+        framing_mode=config.FramingMode.EPHEMERAL_ENVELOPE,
+        default_nonce="fixed_handshake_nonce",
+    )
+    trans.push_incoming(b"__DECLUSOR_EOF_fixed_handshake_nonce__\n")
+    conn.handshake()
+
+    assert conn.state == contract.ConnectionState.CONNECTED
+    assert trans.written_bytes.startswith(b"fixed_handshake_nonce\x00")

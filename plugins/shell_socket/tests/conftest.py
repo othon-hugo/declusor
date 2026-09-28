@@ -4,7 +4,7 @@ from pathlib import Path
 import declusor_shell_socket as shell_socket
 import pytest
 
-from declusor import contract, testing
+from declusor import config, contract, testing
 
 
 @pytest.fixture
@@ -16,6 +16,8 @@ def make_shell_connection(
     def _create_connection(
         transport_connection: testing.DummyTransport | None = None,
         ack: bytes = b"ack",
+        framing_mode: config.FramingMode = config.FramingMode.SENTINEL,
+        default_nonce: str | None = None,
     ) -> tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]:
         launchers = tmp_path / "launchers"
         launchers.mkdir(exist_ok=True)
@@ -28,7 +30,13 @@ def make_shell_connection(
         modules.mkdir(exist_ok=True)
 
         trans = transport_connection or testing.DummyTransport(peer_address="127.0.0.1:9000")
-        profile = shell_socket.ShellSocketProfile(name="test", ack_server_raw=b"\x00", ack_client_raw=ack)
+        profile = shell_socket.ShellSocketProfile(
+            name="test",
+            ack_server_raw=b"\x00",
+            ack_client_raw=ack,
+            _framing_mode=framing_mode,
+            _default_nonce=default_nonce,
+        )
         fs = contract.PluginFilesystem.from_root(tmp_path)
         files = shell_socket.ShellSocketProcessor(fs)
 
