@@ -31,9 +31,6 @@ class ExecuteCommand(BaseStreamCommand):
     Transmits the encoded command string encapsulated in an ``ExecuteCommandDTO``
     through the active session connection and streams all response chunks directly
     to the operator's console.
-
-    Attributes:
-        dto: The validated parameters for this command.
     """
 
     def __init__(self, dto: ExecuteCommandDTO) -> None:
@@ -63,5 +60,5 @@ class ExecuteCommand(BaseStreamCommand):
             self._dto.command_line,
         )
 
-        command_bytes = rendered.encode() if rendered is not None else self.dto.command_line.encode()
+        command_bytes = rendered.encode() if rendered is not None else self._dto.command_line.encode()
         session.connection.write(command_bytes)

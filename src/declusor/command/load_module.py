@@ -36,9 +36,6 @@ class LoadModule(BaseStreamCommand):
     Retrieves module payload from the active session's client file store,
     encodes and renders it via the client profile's ``LOAD_MODULE`` operation,
     transmits it across the network connection, and streams the client response.
-
-    Attributes:
-        dto: The validated parameters for this module load command.
     """
 
     def __init__(self, dto: LoadModuleDTO) -> None:
