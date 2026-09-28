@@ -153,11 +153,15 @@ class PySocketProcessor(contract.IPluginProcessor):
         except OSError as error:
             raise config.ConnectionError(f"Failed to read client script: {error}") from error
 
+        hex_ack = acknowledge.hex()
         rendered = util.format_template(
             client_script_template,
             HOST=host,
             PORT=str(port),
-            ACKNOWLEDGE=acknowledge.hex(),
+            ACKNOWLEDGE=hex_ack,
+            DECLUSOR_HOST=host,
+            DECLUSOR_PORT=str(port),
+            DECLUSOR_ACKNOWLEDGE=hex_ack,
         )
 
         return rendered.encode("utf-8")

@@ -49,9 +49,53 @@ def _is_python(code: str) -> bool:
     if not stripped:
         return True
 
-    first_line = stripped.splitlines()[0]
+    if stripped.startswith("#!"):
+        first_line = stripped.splitlines()[0].lower()
+        return "python" in first_line
 
-    return first_line.startswith("#!python")
+    if any(stripped.startswith(fn + "(") for fn in SESSION_SCOPE):
+        return True
+
+    in_docstring = False
+    doc_delim = ""
+    keywords = (
+        "import ",
+        "from ",
+        "def ",
+        "class ",
+        "async ",
+        "with ",
+        "try:",
+        "print(",
+        "exec(",
+        "eval(",
+        "sys.",
+        "os.",
+    )
+
+    for raw_line in stripped.splitlines():
+        line = raw_line.strip()
+
+        if not line:
+            continue
+
+        if in_docstring:
+            if doc_delim in line:
+                in_docstring = False
+            continue
+
+        if line.startswith(('"""', "'''")):
+            doc_delim = line[:3]
+            if line.count(doc_delim) < 2:
+                in_docstring = True
+            continue
+
+        if line.startswith("#"):
+            continue
+
+        return any(line.startswith(kw) for kw in keywords)
+
+    return False
 
 
 def _execute(payload: str, sock: socket.socket) -> None:

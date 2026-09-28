@@ -2,6 +2,7 @@ import struct
 from collections.abc import Generator, Mapping
 from dataclasses import dataclass, field
 from types import MappingProxyType
+from typing import Final
 
 from declusor import config, contract, util
 
@@ -25,16 +26,16 @@ class PySocketProfile(contract.IConnectionProfile):
     ack_client_raw: bytes
     """Acknowledgment byte sequence sent by the client."""
 
-    _default_timeout: float | None = 1.0
+    _default_timeout: Final[float | None] = 1.0
     """Timeout in seconds for socket operations. Set to None for no timeout."""
 
-    _framing_mode: config.FramingMode = config.FramingMode.CHUNKED_TLV
+    _framing_mode: Final[config.FramingMode] = config.FramingMode.CHUNKED_TLV
     """Framing strategy used by this profile."""
 
-    _default_buffer_size: int = 2**8
+    _default_buffer_size: Final[int] = 2**8
     """Size of the read buffer. Must be > 0."""
 
-    _supported_functions: Mapping[config.OperationCode, str] = field(
+    _supported_functions: Final[Mapping[config.OperationCode, str]] = field(
         default_factory=lambda: MappingProxyType(
             {
                 config.OperationCode.STORE_FILE: "store_base64_encoded_value",

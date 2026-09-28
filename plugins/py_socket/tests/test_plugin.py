@@ -75,6 +75,9 @@ def test_build_runtime_renders_bundled_launcher_with_parameters() -> None:
     assert "$HOST" not in script
     assert "$PORT" not in script
     assert "$ACKNOWLEDGE" not in script
+    assert "$DECLUSOR_HOST" not in script
+    assert "$DECLUSOR_PORT" not in script
+    assert "$DECLUSOR_ACKNOWLEDGE" not in script
 
 
 def test_build_runtime_creates_py_socket_connection() -> None:
