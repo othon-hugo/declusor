@@ -1,7 +1,7 @@
 from declusor import contract
 
 
-class _BaseStreamCommand(contract.ICommand):
+class BaseStreamCommand(contract.ICommand):
     """Base command for operations streaming binary chunks from client connection to view.
 
     Encapsulates the standard response loop that reads streamed output chunks from

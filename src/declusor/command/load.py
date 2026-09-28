@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from declusor import config, contract, util
-from declusor.command.base import _BaseStreamCommand
+from declusor.command.base import BaseStreamCommand
 
 
 @dataclass(frozen=True)
@@ -30,7 +30,7 @@ class LoadModuleDTO:
             raise config.InvalidOperation(f"Invalid module name '{self.module_name}': path traversal is not permitted.")
 
 
-class LoadModule(_BaseStreamCommand):
+class LoadModule(BaseStreamCommand):
     """Load an operator-selected module into the remote client.
 
     Retrieves module payload from the active session's client file store,

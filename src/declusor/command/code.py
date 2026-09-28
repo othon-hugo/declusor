@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 from declusor import config, contract
-from declusor.command.base import _BaseStreamCommand
+from declusor.command.base import BaseStreamCommand
 
 
 @dataclass(frozen=True)
@@ -26,7 +26,7 @@ class ExecuteCodeDTO:
             raise config.InvalidOperation("Code cannot be empty.")
 
 
-class ExecuteCode(_BaseStreamCommand):
+class ExecuteCode(BaseStreamCommand):
     """Execute raw native client runtime code on the remote client.
 
     Transmits the encoded code string encapsulated in an ``ExecuteCodeDTO``
