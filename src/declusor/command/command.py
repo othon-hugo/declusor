@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from declusor import config, contract
-from declusor.command.base import _BaseStreamCommand
+from declusor.command.base import BaseStreamCommand
 
 
 @dataclass(frozen=True)
@@ -25,7 +25,7 @@ class ExecuteCommandDTO:
             raise config.InvalidOperation("Command line cannot be empty.")
 
 
-class ExecuteCommand(_BaseStreamCommand):
+class ExecuteCommand(BaseStreamCommand):
     """Execute a raw shell command string on the remote client.
 
     Transmits the encoded command string encapsulated in an ``ExecuteCommandDTO``

@@ -8,7 +8,7 @@ from .code import (
     ExecuteCode,
     ExecuteCodeDTO,
 )
-from .execute import (
+from .command import (
     ExecuteCommand,
     ExecuteCommandDTO,
 )

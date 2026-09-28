@@ -106,6 +106,9 @@ def test_execute_file_lifecycle(
     dto = command.ExecuteFileDTO(filepath=script_file)
     cmd = command.ExecuteFile(dto=dto)
 
+    assert cmd.dto == dto
+    assert cmd.opcode == config.OperationCode.EXEC_FILE
+
     test_session.execute(cmd)
 
     assert len(dummy_profile.render_calls) == 1
@@ -130,6 +133,9 @@ def test_upload_file_lifecycle(
 
     dto = command.UploadFileDTO(filepath=data_file)
     cmd = command.UploadFile(dto=dto)
+
+    assert cmd.dto == dto
+    assert cmd.opcode == config.OperationCode.STORE_FILE
 
     test_session.execute(cmd)
 
