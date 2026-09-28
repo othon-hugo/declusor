@@ -2,6 +2,10 @@ from declusor.config import (
     ControllerError,
 )
 
+from .code import (
+    CodeArguments,
+    call_code,
+)
 from .command import (
     CommandArguments,
     call_command,
@@ -32,6 +36,7 @@ from .upload import (
 )
 
 __all__ = [
+    "CodeArguments",
     "CommandArguments",
     "ControllerError",
     "ExecuteArguments",
@@ -40,6 +45,7 @@ __all__ = [
     "LoadArguments",
     "ShellArguments",
     "UploadArguments",
+    "call_code",
     "call_command",
     "call_execute",
     "call_exit",

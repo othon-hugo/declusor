@@ -44,8 +44,10 @@ class OperationCode(StrEnum):
     """Enumeration of client operation codes."""
 
     EXEC_COMMAND = "EXECUTE_COMMAND"
+    EXEC_CODE = "EXECUTE_CODE"
     EXEC_FILE = "EXECUTE_FILE"
     STORE_FILE = "STORE_FILE"
+    LOAD_MODULE = "LOAD_MODULE"
 
 
 class FramingMode(StrEnum):

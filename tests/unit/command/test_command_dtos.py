@@ -76,3 +76,18 @@ def test_shell_dto_defaults() -> None:
 
     dto = command.LaunchShellDTO()
     assert dto.banner is None
+
+
+def test_execute_code_dto_valid() -> None:
+    """ExecuteCodeDTO should accept a valid non-empty code string."""
+
+    dto = command.ExecuteCodeDTO(code="print('hello')")
+    assert dto.code == "print('hello')"
+
+
+@pytest.mark.parametrize("invalid_code", ["", "   ", "\t\n"])
+def test_execute_code_dto_rejects_empty(invalid_code: str) -> None:
+    """ExecuteCodeDTO should reject empty or whitespace-only code."""
+
+    with pytest.raises(config.InvalidOperation, match="Code cannot be empty"):
+        command.ExecuteCodeDTO(code=invalid_code)

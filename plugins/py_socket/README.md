@@ -43,7 +43,7 @@ flowchart TD
 
 ### Handshake & Command Protocol
 
-For wire format specifications and frame headers, see [PROTOCOL.md](file:///home/dev/workspaces/github.com/othonhugo/declusor/plugins/py_socket/PROTOCOL.md).
+For wire format specifications and frame headers, see [PROTOCOL.md](PROTOCOL.md).
 
 ```mermaid
 sequenceDiagram

@@ -20,7 +20,7 @@ def test_application_connect_routes() -> None:
         input_source=input_source,
     )
 
-    expected_routes = {"help", "execute", "load", "shell", "upload", "command", "exit"}
+    expected_routes = {"help", "execute", "load", "shell", "upload", "command", "code", "eval", "exit"}
     assert expected_routes.issubset(set(declusor_app._router.routes))
 
 

@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import ClassVar
 
 from declusor import config, contract, util
+from declusor.command.base import _BaseStreamCommand
 
 
 @dataclass(frozen=True)
@@ -51,7 +52,7 @@ class UploadFileDTO:
         object.__setattr__(self, "filepath", validated_path)
 
 
-class _BaseFileCommand(contract.ICommand):
+class _BaseFileCommand(_BaseStreamCommand):
     """Abstract base class for operations that encode a local file for remote client invocation.
 
     Reads a local file, converts its content to Base64, formats a client-specific
@@ -101,19 +102,6 @@ class _BaseFileCommand(contract.ICommand):
 
         command_bytes = self._format_command(session)
         session.connection.write(command_bytes)
-
-    def read_response(self, session: contract.SessionContext, /) -> None:
-        """Read output chunks from the remote client and write them to the view.
-
-        Args:
-            session: Active session context providing connection and view interfaces.
-
-        Raises:
-            ConnectionClosed: If the remote peer terminates the connection unexpectedly.
-        """
-
-        for data in session.connection.read():
-            session.view.write_binary_data(data)
 
     def _format_command(self, session: contract.SessionContext) -> bytes:
         """Format the file content into an encoded remote client command.
