@@ -10,6 +10,9 @@ class LaunchShellDTO:
     banner: str | None = None
     """Optional informational banner message displayed upon entering shell mode."""
 
+    def __post_init__(self) -> None:
+        pass
+
 
 class LaunchShell(contract.ICommand):
     """Open an interactive bidirectional shell session with the remote client.
@@ -20,7 +23,7 @@ class LaunchShell(contract.ICommand):
     shuts down the streaming task and returns control to the REPL prompt loop.
     """
 
-    def __init__(self, dto: LaunchShellDTO | None = None) -> None:
+    def __init__(self, dto: LaunchShellDTO, /) -> None:
         """Initialize the interactive shell command.
 
         Args:
@@ -28,8 +31,8 @@ class LaunchShell(contract.ICommand):
         """
 
         super().__init__()
+        self._dto = dto
 
-        self._dto = dto or LaunchShellDTO()
         self._stop_event = util.TaskEvent()
         self._task_pool = util.TaskPool(self._stop_event)
 

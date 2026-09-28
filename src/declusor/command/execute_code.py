@@ -31,7 +31,7 @@ class ExecuteCode(BaseStreamCommand):
     to the operator's console.
     """
 
-    def __init__(self, dto: ExecuteCodeDTO) -> None:
+    def __init__(self, dto: ExecuteCodeDTO, /) -> None:
         """Initialize ExecuteCode with validated parameters.
 
         Args:
@@ -39,7 +39,6 @@ class ExecuteCode(BaseStreamCommand):
         """
 
         super().__init__()
-
         self._dto = dto
 
     def send_request(self, session: contract.SessionContext, /) -> None:

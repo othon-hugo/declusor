@@ -32,7 +32,7 @@ class ExecuteFile(BaseFileCommand[ExecuteFileDTO]):
     command (using ``EXEC_FILE`` opcode), and streaming execution output.
     """
 
-    def __init__(self, dto: ExecuteFileDTO) -> None:
+    def __init__(self, dto: ExecuteFileDTO, /) -> None:
         """Initialize ExecuteFile with validated parameters.
 
         Args:

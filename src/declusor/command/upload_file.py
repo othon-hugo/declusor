@@ -31,7 +31,7 @@ class UploadFile(BaseFileCommand[UploadFileDTO]):
     locally using the ``STORE_FILE`` opcode.
     """
 
-    def __init__(self, dto: UploadFileDTO) -> None:
+    def __init__(self, dto: UploadFileDTO, /) -> None:
         """Initialize UploadFile with validated parameters.
 
         Args:

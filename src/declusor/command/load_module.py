@@ -36,7 +36,7 @@ class LoadModule(BaseStreamCommand):
     transmits it across the network connection, and streams the client response.
     """
 
-    def __init__(self, dto: LoadModuleDTO) -> None:
+    def __init__(self, dto: LoadModuleDTO, /) -> None:
         """Initialize LoadModule with validated module parameters.
 
         Args:
@@ -44,9 +44,7 @@ class LoadModule(BaseStreamCommand):
         """
 
         super().__init__()
-
         self._dto = dto
-        self._module_name = dto.module_name
 
     def send_request(self, session: contract.SessionContext, /) -> None:
         """Send the rendered module payload to the remote client.
@@ -65,7 +63,7 @@ class LoadModule(BaseStreamCommand):
         if session.files is None:
             raise config.CommandError("Client file store is not configured for this session.")
 
-        module_bytes = session.files.load_module(self._module_name)
+        module_bytes = session.files.load_module(self._dto.module_name)
         module_b64 = util.convert_to_base64(module_bytes)
 
         rendered = session.connection.profile.render_operation_command(
