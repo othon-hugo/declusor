@@ -1,5 +1,8 @@
 from .enums import (
+    DEFAULT_DECLUSOR_PLUGIN,
+    DEFAULT_EXECUTION_MODE,
     ChannelType,
+    DeclusorPlugins,
     ExecutionMode,
     FramingMode,
     OperationCode,
@@ -28,6 +31,7 @@ from .settings import (
 
 __all__ = [
     "BasePath",
+    "ChannelType",
     "CommandError",
     "CommandValidationError",
     "ConnectionClosed",
@@ -36,8 +40,12 @@ __all__ = [
     "ConnectionTimeoutError",
     "ControllerError",
     "DeclusorException",
+    "DeclusorPlugins",
     "DeclusorWarning",
+    "DEFAULT_DECLUSOR_PLUGIN",
+    "DEFAULT_EXECUTION_MODE",
     "ExecutionMode",
+    "FramingMode",
     "InvalidOperation",
     "OperationCode",
     "ParserError",
@@ -46,6 +54,4 @@ __all__ = [
     "PromptError",
     "RouterError",
     "Settings",
-    "FramingMode",
-    "ChannelType",
 ]

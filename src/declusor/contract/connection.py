@@ -15,16 +15,16 @@ class ConnectionState(StrEnum):
     """
 
     CREATED = "CREATED"
-    """[...]"""
+    """Connection instantiated but protocol handshake not yet initiated."""
 
     INITIALIZING = "INITIALIZING"
-    """[...]"""
+    """Handshake in progress (transmitting helpers and verifying ACK sentinel)."""
 
     CONNECTED = "CONNECTED"
-    """[...]"""
+    """Handshake completed successfully; channel is ready for command operations."""
 
     CLOSED = "CLOSED"
-    """[...]"""
+    """Connection terminated gracefully or due to underlying network failure."""
 
 
 class IConnectionProfile(ABC):
@@ -81,7 +81,7 @@ class IConnection(ABC):
         self._underlying_connection = connection
 
     def handshake(self) -> None:
-        """[...]"""
+        """Execute protocol handshake to establish an active, authenticated session."""
 
         if self._underlying_connection:
             self._underlying_connection.handshake()

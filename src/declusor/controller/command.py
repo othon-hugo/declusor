@@ -5,6 +5,7 @@ class CommandArguments(contract.ControllerArguments):
     """Arguments for command execution."""
 
     command: str
+    """Shell command line to execute on the remote client."""
 
 
 def call_command(

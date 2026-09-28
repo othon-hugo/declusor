@@ -57,8 +57,8 @@ class SessionContext:
         return self._input_source
 
     @property
-    def files(self) -> "IPluginProcessor":
-        """Client file store for module/library loading."""
+    def plugin(self) -> "IPluginProcessor":
+        """Client plugin processor for asset resolution and payload loading."""
 
         return self._plugin_processor
 

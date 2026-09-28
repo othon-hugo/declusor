@@ -6,6 +6,8 @@ from declusor import contract, controller, transport
 if TYPE_CHECKING:
     from .plugin import PluginManager
 
+TransportListenerFactory = Callable[[str, int], contract.ITransportListener]
+
 
 class Application:
     """Compose and execute one Declusor server connection.
@@ -24,7 +26,7 @@ class Application:
         plugin_manager: "PluginManager",
         session_runner: contract.ISessionRunner,
         input_source: contract.IInputSource | None = None,
-        listener_factory: Callable[[str, int], contract.ITransportListener] | None = None,
+        listener_factory: TransportListenerFactory | None = None,
     ) -> None:
         """Create an application with configured dependencies and session runner.
 
@@ -42,12 +44,14 @@ class Application:
         self._session_runner = session_runner
         self._plugin_manager = plugin_manager
         self._input_source = input_source
-        self._listener_factory = listener_factory
+        self._listener_factory = listener_factory or transport.TcpListener
 
         self._connect_routes()
 
     @property
     def plugin_manager(self) -> "PluginManager":
+        """Active plugin manager managing discovered and registered client plugins."""
+
         return self._plugin_manager
 
     def register_plugin(self, plugin: type[contract.IPluginExtension[contract.ParsedArguments]], /) -> None:
@@ -76,9 +80,9 @@ class Application:
 
         self._view.write_message(plugin_runtime.launcher)
 
-        listener_factory = self._listener_factory or transport.TcpListener
-        with listener_factory(config.host, config.port) as listener:
+        with self._listener_factory(config.host, config.port) as listener:
             incoming_transport = listener.accept()
+
             with plugin_runtime.create_connection(incoming_transport) as connection:
                 connection.handshake()
 

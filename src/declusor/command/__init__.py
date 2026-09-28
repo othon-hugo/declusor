@@ -4,27 +4,29 @@ from declusor.config import (
     InvalidOperation,
 )
 
-from .code import (
+from .execute_code import (
     ExecuteCode,
     ExecuteCodeDTO,
 )
-from .command import (
+from .execute_command import (
     ExecuteCommand,
     ExecuteCommandDTO,
 )
-from .file import (
+from .execute_file import (
     ExecuteFile,
     ExecuteFileDTO,
-    UploadFile,
-    UploadFileDTO,
 )
-from .load import (
+from .launch_shell import (
+    LaunchShell,
+    LaunchShellDTO,
+)
+from .load_module import (
     LoadModule,
     LoadModuleDTO,
 )
-from .shell import (
-    LaunchShell,
-    LaunchShellDTO,
+from .upload_file import (
+    UploadFile,
+    UploadFileDTO,
 )
 
 __all__ = [

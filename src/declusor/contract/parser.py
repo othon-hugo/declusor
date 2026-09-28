@@ -26,4 +26,3 @@ class IArgumentParser(Protocol):
             **kwargs: Forwarded verbatim to the underlying parser implementation
                 (e.g. ``type``, ``default``, ``help``, ``nargs``).
         """
-        ...

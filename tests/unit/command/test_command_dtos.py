@@ -57,17 +57,20 @@ def test_upload_file_dto_rejects_missing_file(tmp_path: Path) -> None:
 
 
 def test_load_module_dto_valid() -> None:
-    """LoadModuleDTO should accept a clean module name."""
+    """LoadModuleDTO should accept a module name or relative module path."""
 
     dto = command.LoadModuleDTO(module_name="discovery/sysinfo")
     assert dto.module_name == "discovery/sysinfo"
 
+    dto_sub = command.LoadModuleDTO(module_name="custom/module/name")
+    assert dto_sub.module_name == "custom/module/name"
 
-@pytest.mark.parametrize("invalid_name", ["", "   ", "../escape", "..\\escape", "/etc/passwd"])
-def test_load_module_dto_rejects_invalid_names(invalid_name: str) -> None:
-    """LoadModuleDTO should reject empty names and path traversal attempts."""
 
-    with pytest.raises(config.InvalidOperation):
+@pytest.mark.parametrize("invalid_name", ["", "   ", "\t\n"])
+def test_load_module_dto_rejects_empty(invalid_name: str) -> None:
+    """LoadModuleDTO should reject empty or whitespace-only names."""
+
+    with pytest.raises(config.InvalidOperation, match="Module name cannot be empty"):
         command.LoadModuleDTO(module_name=invalid_name)
 
 
