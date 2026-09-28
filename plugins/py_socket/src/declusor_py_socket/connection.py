@@ -27,6 +27,9 @@ class PySocketProfile(contract.IConnectionProfile):
     _default_timeout: float | None = 1.0
     """Timeout in seconds for socket operations. Set to None for no timeout."""
 
+    _framing_mode: config.FramingMode = config.FramingMode.SENTINEL
+    """Framing strategy used by this profile."""
+
     _default_buffer_size: int = 2**8
     """Size of the read buffer. Must be > 0."""
 
@@ -48,6 +51,12 @@ class PySocketProfile(contract.IConnectionProfile):
 
         if self.default_timeout and self.default_timeout < 0:
             raise config.ConnectionError("connection_timeout must be >= 0 or None")
+
+    @property
+    def framing_mode(self) -> config.FramingMode:
+        """Framing strategy used by this profile."""
+
+        return self._framing_mode
 
     @property
     def default_buffer_size(self) -> int:
@@ -90,6 +99,7 @@ class PySocketConnection(contract.IConnection):
         self._files = files
         self._transport = transport
         self._state = contract.ConnectionState.CREATED
+        self._last_exit_code: int | None = None
 
         if profile.default_timeout is not None:
             self._transport.timeout = profile.default_timeout
@@ -105,6 +115,12 @@ class PySocketConnection(contract.IConnection):
         """The connection profile."""
 
         return self._profile
+
+    @property
+    def last_exit_code(self) -> int | None:
+        """Remote process exit code from the most recently executed command, or None."""
+
+        return self._last_exit_code
 
     @property
     def timeout(self) -> float | None:

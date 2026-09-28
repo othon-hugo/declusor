@@ -1,4 +1,4 @@
-from enum import StrEnum
+from enum import IntEnum, StrEnum
 
 
 class ExecutionMode(StrEnum):
@@ -45,3 +45,21 @@ class OperationCode(StrEnum):
 
     EXEC_FILE = "EXECUTE_FILE"
     STORE_FILE = "STORE_FILE"
+
+
+class FramingMode(StrEnum):
+    """Enumeration of transport stream framing strategies."""
+
+    SENTINEL = "sentinel"
+    CHUNKED_TLV = "chunked_tlv"
+    EPHEMERAL_ENVELOPE = "ephemeral_envelope"
+
+
+class ChannelType(IntEnum):
+    """Enumeration of multiplexed stream channel identifiers."""
+
+    PROCESS_EXIT = 0
+    STDOUT = 1
+    STDERR = 2
+    SIGNAL = 3
+    HEARTBEAT = 4
