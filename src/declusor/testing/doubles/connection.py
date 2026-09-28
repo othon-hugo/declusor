@@ -24,17 +24,6 @@ class DummyConnection(contract.IConnection):
         self.initialize_error: BaseException | None = None
         self.write_error: BaseException | None = None
         self.read_error: BaseException | None = None
-        self._last_exit_code: int | None = None
-
-    @property
-    def last_exit_code(self) -> int | None:
-        """Remote process exit code from the most recently executed command, or None."""
-
-        return self._last_exit_code
-
-    @last_exit_code.setter
-    def last_exit_code(self, value: int | None) -> None:
-        self._last_exit_code = value
 
     @property
     def state(self) -> contract.ConnectionState:

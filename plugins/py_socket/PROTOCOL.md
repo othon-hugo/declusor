@@ -2,7 +2,7 @@
 
 This document specifies the wire protocol, framing format, channel multiplexing, and session lifecycle for the `py_socket` transport plugin in Declusor.
 
-## 1. Protocol Architecture & Framing Mode
+## Protocol Architecture & Framing Mode
 
 The `py_socket` plugin implements the **`FramingMode.CHUNKED_TLV`** (Type-Length-Value) protocol over raw TCP byte streams.
 
@@ -13,39 +13,39 @@ Unlike sentinel-based protocols that scan for byte sequences or delimiters in th
 - **Multiplexed Channels**: Distinct data channels (stdout, stderr, control signals, process exit code) share the same underlying stream.
 - **Process Exit Propagation**: Child process termination status (`$?` / `returncode`) is communicated natively to the server.
 
-## 2. Binary Frame Layout
+## Binary Frame Layout
 
 Every frame on the wire consists of a **5-byte fixed header** followed by a variable-length payload:
 
 ```text
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++---------------+-----------------------------------------------+
 |  Channel (1B) |                 Length (4B)                   |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++---------------+-----------------------------------------------+
 |                         Payload ...                           |
 |                    (Length bytes total)                       |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++---------------------------------------------------------------+
 ```
 
-### 2.1 Header Fields
+### Header Fields
 
 | Field              |        Type        | Encoding | Description                                              |
 | :----------------- | :----------------: | :------: | :------------------------------------------------------- |
 | **Channel ID**     |  1 byte (`uint8`)  |   `>B`   | Identifies the payload type and handling channel.        |
 | **Payload Length** | 4 bytes (`uint32`) |   `>I`   | Length of the payload in bytes ($0 \le L \le 2^{32}-1$). |
 
-### 2.2 Channel Types
+### Channel Types
 
-| Channel Code | Identifier     |          Direction          | Payload Description                                                                                              |
-| :----------: | :------------- | :-------------------------: | :--------------------------------------------------------------------------------------------------------------- |
-|    `0x00`    | `PROCESS_EXIT` | Client $\rightarrow$ Server | Terminal EOF frame. Contains a 4-byte signed 32-bit integer (`>i`) representing the process or script exit code. |
-|    `0x01`    | `STDOUT`       |       Bi-directional        | Server-to-Client command payload or Client-to-Server standard output stream chunk.                               |
-|    `0x02`    | `STDERR`       | Client $\rightarrow$ Server | Standard error stream chunk.                                                                                     |
-|    `0x03`    | `SIGNAL`       |       Bi-directional        | Out-of-band process signal (e.g. `SIGINT`, `SIGTERM`).                                                           |
-|    `0x04`    | `HEARTBEAT`    |       Bi-directional        | Keep-alive probe frame (payload length may be 0).                                                                |
+| Channel Code | Identifier     |          Direction          | Payload Description                                                                |
+| :----------: | :------------- | :-------------------------: | :--------------------------------------------------------------------------------- |
+|    `0x00`    | `PROCESS_EXIT` | Client $\rightarrow$ Server | Terminal EOF frame signaling the completion of command execution.                  |
+|    `0x01`    | `STDOUT`       |       Bi-directional        | Server-to-Client command payload or Client-to-Server standard output stream chunk. |
+|    `0x02`    | `STDERR`       | Client $\rightarrow$ Server | Standard error stream chunk.                                                       |
+|    `0x03`    | `SIGNAL`       |       Bi-directional        | Out-of-band process signal (e.g. `SIGINT`, `SIGTERM`).                             |
+|    `0x04`    | `HEARTBEAT`    |       Bi-directional        | Keep-alive probe frame (payload length may be 0).                                  |
 
-## 3. Session Lifecycle & State Machine
+## Session Lifecycle & State Machine
 
 ```mermaid
 sequenceDiagram
@@ -73,8 +73,8 @@ sequenceDiagram
             Client->>Transport: STDOUT Frame [channel=0x01, len=K, payload=output]
             Transport->>Server: Yield output chunk
         end
-        Client->>Transport: PROCESS_EXIT Frame [channel=0x00, len=4, exit_code]
-        Transport->>Server: Record last_exit_code, close command stream
+        Client->>Transport: PROCESS_EXIT Frame [channel=0x00, len=0]
+        Transport->>Server: Close command stream, yield completed
     else Subprocess Shell Execution
         Client->>Client: subprocess.Popen(payload, shell=True)
         loop Real-Time Chunk Streaming
@@ -82,12 +82,12 @@ sequenceDiagram
             Transport->>Server: Instantly yield chunk to session
         end
         Client->>Client: proc.wait()
-        Client->>Transport: PROCESS_EXIT Frame [channel=0x00, len=4, returncode]
-        Transport->>Server: Record last_exit_code, close command stream
+        Client->>Transport: PROCESS_EXIT Frame [channel=0x00, len=0]
+        Transport->>Server: Close command stream, yield completed
     end
 ```
 
-## 4. Frame Encoding & Decoding Reference
+## Frame Encoding & Decoding Reference
 
 ### Python Reference (Server-Side)
 
@@ -109,9 +109,9 @@ def read_stream(transport):
         channel, length = struct.unpack(">BI", header)
 
         if channel == config.ChannelType.PROCESS_EXIT:
-            exit_bytes = transport.read_exact(length)
-            exit_code = struct.unpack(">i", exit_bytes)[0]
-            return exit_code
+            if length > 0:
+                transport.read_exact(length)
+            return
 
         payload = transport.read_exact(length)
         if channel in (config.ChannelType.STDOUT, config.ChannelType.STDERR):

@@ -78,24 +78,18 @@ def _execute(payload: str, sock: socket.socket) -> None:
     if _is_python(payload):
         buf = io.StringIO()
         old_out, old_err = sys.stdout, sys.stderr
-        exit_code = 0
         try:
             sys.stdout = sys.stderr = buf
             exec(payload, _SESSION_SCOPE)  # noqa: S102
-        except SystemExit as exc:
-            code = exc.code
-            exit_code = int(code) if isinstance(code, int) else (0 if code is None else 1)
-            buf.write(f"[py_socket error] SystemExit: {exc}\n")
-        except Exception as exc:
+        except (Exception, SystemExit) as exc:
             buf.write(f"[py_socket error] {type(exc).__name__}: {exc}\n")
-            exit_code = 1
         finally:
             sys.stdout, sys.stderr = old_out, old_err
 
         output = buf.getvalue().encode(errors="replace")
         if output:
             _send_frame(sock, 1, output)
-        _send_frame(sock, 0, struct.pack(">i", exit_code))
+        _send_frame(sock, 0, b"")
     else:
         proc = subprocess.Popen(payload, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)  # noqa: S602
         while proc.stdout:
@@ -104,7 +98,7 @@ def _execute(payload: str, sock: socket.socket) -> None:
                 break
             _send_frame(sock, 1, chunk)
         proc.wait()
-        _send_frame(sock, 0, struct.pack(">i", proc.returncode))
+        _send_frame(sock, 0, b"")
 
 
 def main() -> None:

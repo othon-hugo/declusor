@@ -100,7 +100,6 @@ class PySocketConnection(contract.IConnection):
         self._files = files
         self._transport = transport
         self._state = contract.ConnectionState.CREATED
-        self._last_exit_code: int | None = None
 
         if profile.default_timeout is not None:
             self._transport.timeout = profile.default_timeout
@@ -116,12 +115,6 @@ class PySocketConnection(contract.IConnection):
         """The connection profile."""
 
         return self._profile
-
-    @property
-    def last_exit_code(self) -> int | None:
-        """Remote process exit code from the most recently executed command, or None."""
-
-        return self._last_exit_code
 
     @property
     def timeout(self) -> float | None:
@@ -158,7 +151,6 @@ class PySocketConnection(contract.IConnection):
         if self._state == contract.ConnectionState.CLOSED:
             raise config.ConnectionClosed("Connection is closed.")
 
-        self._last_exit_code = None
         frame = struct.pack(">BI", config.ChannelType.STDOUT, len(data)) + data
 
         try:
@@ -185,18 +177,11 @@ class PySocketConnection(contract.IConnection):
             if channel == config.ChannelType.PROCESS_EXIT:
                 if length > 0:
                     try:
-                        exit_payload = self._transport.read_exact(length)
+                        self._transport.read_exact(length)
                     except config.ConnectionTimeoutError:
                         raise
                     except (config.ConnectionClosed, config.ConnectionError) as error:
-                        raise config.ConnectionClosed(f"Connection interrupted reading exit code: {error}") from error
-
-                    if len(exit_payload) == 4:
-                        self._last_exit_code = struct.unpack(">i", exit_payload)[0]
-                    else:
-                        self._last_exit_code = 0
-                else:
-                    self._last_exit_code = 0
+                        raise config.ConnectionClosed(f"Connection interrupted reading exit frame: {error}") from error
 
                 return
 

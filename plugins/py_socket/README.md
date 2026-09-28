@@ -62,12 +62,12 @@ sequenceDiagram
         Server->>Sock: TLV Frame (channel=0x01, length=N, command)
         alt Python Payload (Shebang / Keywords / Session Funcs)
             PyAgent->>PyAgent: exec() in _SESSION_SCOPE with stdout capture
-            PyAgent->>Sock: Send STDOUT Frame (0x01) + PROCESS_EXIT Frame (0x00, exit_code)
+            PyAgent->>Sock: Send STDOUT Frame (0x01) + PROCESS_EXIT Frame (0x00)
         else Shell Command / Binary
             PyAgent->>PyAgent: subprocess.Popen streaming stdout in real time
-            PyAgent->>Sock: Stream chunks (0x01) -> proc.wait() -> send PROCESS_EXIT Frame (0x00, returncode)
+            PyAgent->>Sock: Stream chunks (0x01) -> proc.wait() -> send PROCESS_EXIT Frame (0x00)
         end
-        Server-->>Server: Yield chunks in real-time, record last_exit_code
+        Server-->>Server: Yield chunks in real-time until EOF frame
     end
 ```
 

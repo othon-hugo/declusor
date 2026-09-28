@@ -90,16 +90,10 @@ def test_py_socket_handshake_and_command_execution() -> None:
         connection.write(b"echo py_shell_handshake_ok\n")
         response = b"".join(connection.read())
         assert b"py_shell_handshake_ok" in response
-        assert connection.last_exit_code == 0
 
         connection.write(b"#!/usr/bin/env python\nprint('py_native_ok')\n")
         response = b"".join(connection.read())
         assert b"py_native_ok" in response
-        assert connection.last_exit_code == 0
-
-        connection.write(b"sh -c 'exit 42'\n")
-        response = b"".join(connection.read())
-        assert connection.last_exit_code == 42
 
         connection.close()
         state = connection.state

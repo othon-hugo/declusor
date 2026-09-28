@@ -101,7 +101,6 @@ class ShellSocketConnection(contract.IConnection):
         self._files = files
         self._transport = transport
         self._state = contract.ConnectionState.CREATED
-        self._last_exit_code: int | None = None
 
         if profile.default_timeout is not None:
             self._transport.timeout = profile.default_timeout
@@ -117,12 +116,6 @@ class ShellSocketConnection(contract.IConnection):
         """The connection profile."""
 
         return self._profile
-
-    @property
-    def last_exit_code(self) -> int | None:
-        """Remote process exit code from the most recently executed command, or None."""
-
-        return self._last_exit_code
 
     @property
     def timeout(self) -> float | None:
