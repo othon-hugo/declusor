@@ -45,7 +45,7 @@ class ShellSocketPlugin(contract.IPluginExtension[ShellSocketConfig]):
         options: ShellSocketConfig,
         /,
         filesystem: contract.PluginFilesystem | None = None,
-        mode: config.ExecutionMode = config.ExecutionMode.default(),
+        mode: config.ExecutionMode = config.DEFAULT_EXECUTION_MODE,
     ) -> contract.PluginConfig[ShellSocketConfig]:
         """Build the shell_socket client configuration."""
 

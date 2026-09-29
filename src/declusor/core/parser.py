@@ -1,4 +1,4 @@
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Final
 
@@ -16,7 +16,6 @@ class DeclusorParser(util.Parser):
 
         arg_name: Final = "host"
         arg_help: Final = "IP address or hostname where the service should run"
-        arg_flags: Final = ()
 
         def __new__(cls, value: str) -> "DeclusorParser.Host":
             if not value:
@@ -29,7 +28,6 @@ class DeclusorParser(util.Parser):
 
         arg_name: Final = "port"
         arg_help: Final = "port number to listen on for incoming connections"
-        arg_flags: Final = ()
 
         def __new__(cls, value: int | str) -> "DeclusorParser.Port":
             port = int(value)
@@ -73,7 +71,7 @@ class DeclusorParser(util.Parser):
         arg_help: Final = "[...]"
         arg_flags: Final = ("-m", "--mode")
         arg_choices: Final = tuple(config.ExecutionMode)
-        arg_default: Final = config.ExecutionMode.default()
+        arg_default: Final = config.DEFAULT_EXECUTION_MODE
 
         def __new__(cls, value: str) -> "DeclusorParser.ExecutionMode":
             if not value:
@@ -189,7 +187,7 @@ class DeclusorParser(util.Parser):
         if not available_plugins:
             raise config.ParserError("No client plugin available.")
 
-        default_plugin = config.DeclusorPlugins.default().value
+        default_plugin = config.DEFAULT_DECLUSOR_PLUGIN.value
 
         if default_plugin not in available_plugins:
             default_plugin = available_plugins[0]
@@ -208,7 +206,7 @@ class DeclusorParser(util.Parser):
         plugin_options = {key: value for key, value in vars(args).items() if key not in self.declusor_arguments}
         plugin_filesystem = contract.PluginFilesystem.from_root(args.assets_dir)
 
-        options = Plugin.extract_options(plugin_options)
+        options: contract.ParsedArguments = Plugin.extract_options(plugin_options)
 
         plugin_config = Plugin.build_config(
             args.host,

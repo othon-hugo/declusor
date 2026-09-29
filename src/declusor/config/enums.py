@@ -8,9 +8,8 @@ class DeclusorPlugins(StrEnum):
     PY_SOCKET = "py_socket"
     """[...]"""
 
-    @classmethod
-    def default(cls) -> "DeclusorPlugins":
-        return cls.SHELL_SOCKET
+
+DEFAULT_DECLUSOR_PLUGIN = DeclusorPlugins.SHELL_SOCKET
 
 
 class ExecutionMode(StrEnum):
@@ -27,12 +26,6 @@ class ExecutionMode(StrEnum):
 
     HTTP = "http"
     """HTTP RESTful server mode for web-based remote interactions."""
-
-    @classmethod
-    def default(cls) -> "ExecutionMode":
-        """Return the default execution mode (CLI)."""
-
-        return cls.CLI
 
     @classmethod
     def from_string(cls, value: str, /) -> "ExecutionMode":
@@ -57,6 +50,9 @@ class ExecutionMode(StrEnum):
         valid_modes = ", ".join(repr(m.value) for m in cls)
 
         raise ValueError(f"Invalid execution mode: '{value}'. Choose from: {valid_modes}")
+
+
+DEFAULT_EXECUTION_MODE = ExecutionMode.CLI
 
 
 class OperationCode(StrEnum):

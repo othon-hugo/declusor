@@ -34,7 +34,7 @@ class DummyValidPlugin(contract.IPluginExtension[DummyValidConfig]):
         options: DummyValidConfig,
         /,
         filesystem: contract.PluginFilesystem | None = None,
-        mode: config.ExecutionMode = config.ExecutionMode.default(),
+        mode: config.ExecutionMode = config.DEFAULT_EXECUTION_MODE,
     ) -> contract.PluginConfig[DummyValidConfig]:
         dummy_fs = contract.PluginFilesystem(
             root=Path("."),

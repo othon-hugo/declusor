@@ -1,4 +1,6 @@
 from .enums import (
+    DEFAULT_DECLUSOR_PLUGIN,
+    DEFAULT_EXECUTION_MODE,
     ChannelType,
     DeclusorPlugins,
     ExecutionMode,
@@ -40,6 +42,8 @@ __all__ = [
     "DeclusorException",
     "DeclusorPlugins",
     "DeclusorWarning",
+    "DEFAULT_DECLUSOR_PLUGIN",
+    "DEFAULT_EXECUTION_MODE",
     "ExecutionMode",
     "FramingMode",
     "InvalidOperation",

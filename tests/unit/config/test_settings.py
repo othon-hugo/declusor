@@ -74,7 +74,7 @@ class DummyPathClientPlugin(contract.IPluginExtension[DummyPathConfig]):
         options: DummyPathConfig,
         /,
         filesystem: contract.PluginFilesystem | None = None,
-        mode: config.ExecutionMode = config.ExecutionMode.default(),
+        mode: config.ExecutionMode = config.DEFAULT_EXECUTION_MODE,
     ) -> contract.PluginConfig[DummyPathConfig]:
         assert filesystem is not None
 
