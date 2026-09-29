@@ -43,7 +43,7 @@ class PluginConfig[T: ParsedArguments]:
     filesystem: "PluginFilesystem"
     """Filesystem paths used by the selected client runtime."""
 
-    mode: config.ExecutionMode = config.Settings.DEFAULT_EXECUTION_MODE
+    mode: config.ExecutionMode = config.ExecutionMode.default()
     """Application execution mode (e.g. CLI, API, MCP, HTTP)."""
 
 
@@ -188,7 +188,7 @@ class IPluginExtension[T: ParsedArguments](ABC):
         options: T,
         /,
         filesystem: "PluginFilesystem | None" = None,
-        mode: config.ExecutionMode = config.Settings.DEFAULT_EXECUTION_MODE,
+        mode: config.ExecutionMode = config.ExecutionMode.default(),
     ) -> "PluginConfig[T]":
         """Build a client configuration from typed options and filesystem paths.
 

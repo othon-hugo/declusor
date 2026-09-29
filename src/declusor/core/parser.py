@@ -11,14 +11,87 @@ if TYPE_CHECKING:
 class DeclusorParser(util.Parser):
     """Parser for command-line arguments."""
 
-    flags: Final[dict[str, str]] = {
-        "host": "IP address or hostname where the service should run",
-        "port": "port number to listen on for incoming connections",
-        "plugin": "agent responsible for handling requests",
-        "assets_dir": "root directory containing client launchers, helpers, and modules",
-        "plugin_dir": "additional directory to discover custom drop-in plugins",
-        "mode": "application execution mode (choices: %(choices)s)",
-    }
+    class Host(str):
+        """Validated host value parsed from the command line."""
+
+        arg_name: Final = "host"
+        arg_help: Final = "IP address or hostname where the service should run"
+        arg_flags: Final = ()
+
+        def __new__(cls, value: str) -> "DeclusorParser.Host":
+            if not value:
+                raise ValueError("host cannot be empty")
+
+            return super().__new__(cls, value)
+
+    class Port(int):
+        """Validated TCP port parsed from the command line."""
+
+        arg_name: Final = "port"
+        arg_help: Final = "port number to listen on for incoming connections"
+        arg_flags: Final = ()
+
+        def __new__(cls, value: int | str) -> "DeclusorParser.Port":
+            port = int(value)
+
+            if not 0 <= port <= 65535:
+                raise ValueError("port must be between 0 and 65535")
+
+            return super().__new__(cls, port)
+
+    class Plugin(str):
+        """Plugin name parsed from the command line."""
+
+        arg_name: Final = "plugin"
+        arg_help: Final = "agent responsible for handling requests"
+        arg_flags: Final = ("-p", "--plugin")
+
+        def __new__(cls, value: str) -> "DeclusorParser.Plugin":
+            if not value:
+                raise ValueError("plugin cannot be empty")
+
+            return super().__new__(cls, value)
+
+    class AssetsDir(Path):
+        """Root directory containing application assets."""
+
+        arg_name: Final = "assets_dir"
+        arg_help: Final = "root directory containing client launchers, helpers, and modules"
+        arg_flags: Final = ("--assets-dir",)
+
+    class PluginDir(Path):
+        """Additional directory from which plugins are discovered."""
+
+        arg_name: Final = "plugin_dir"
+        arg_help: Final = "additional directory to discover custom drop-in plugins"
+        arg_flags: Final = ("--plugin-dir",)
+
+    class ExecutionMode(str):
+        """[...]"""
+
+        arg_name: Final = "mode"
+        arg_help: Final = "[...]"
+        arg_flags: Final = ("-m", "--mode")
+        arg_choices: Final = tuple(config.ExecutionMode)
+        arg_default: Final = config.ExecutionMode.default()
+
+        def __new__(cls, value: str) -> "DeclusorParser.ExecutionMode":
+            if not value:
+                raise ValueError("plugin cannot be empty")
+
+            if value not in config.ExecutionMode:
+                raise
+
+            return super().__new__(cls, value)
+
+    declusor_arguments: Final = (
+        Host.arg_name,
+        Port.arg_name,
+        Plugin.arg_name,
+        AssetsDir.arg_name,
+        PluginDir.arg_name,
+        ExecutionMode.arg_name,
+    )
 
     def __init__(self, name: str, description: str = "") -> None:
         """Create a parser for command-line arguments.
@@ -38,46 +111,44 @@ class DeclusorParser(util.Parser):
             return
 
         self.add_argument(
-            "host",
-            help=self.flags["host"],
-            type=str,
+            self.Host.arg_name,
+            help=self.Host.arg_help,
+            type=self.Host,
         )
 
         self.add_argument(
-            "port",
-            help=self.flags["port"],
-            type=int,
+            self.Port.arg_name,
+            help=self.Port.arg_help,
+            type=self.Port,
         )
 
         self.add_argument(
-            "--assets-dir",
-            help=self.flags["assets_dir"],
-            type=Path,
+            *self.AssetsDir.arg_flags,
+            help=self.AssetsDir.arg_help,
+            type=self.AssetsDir,
             default=None,
         )
 
         self.add_argument(
-            "--plugin-dir",
-            help=self.flags["plugin_dir"],
-            type=Path,
+            *self.PluginDir.arg_flags,
+            help=self.PluginDir.arg_help,
+            type=self.Plugin,
             default=None,
         )
 
         self.add_argument(
-            "-p",
-            "--plugin",
-            help=self.flags["plugin"],
-            type=str,
+            *self.Plugin.arg_flags,
+            help=self.Plugin.arg_help,
+            type=self.Plugin,
             default=None,
         )
 
         self.add_argument(
-            "-m",
-            "--mode",
-            help=self.flags["mode"],
-            type=config.ExecutionMode.from_string,
-            choices=list(config.ExecutionMode),
-            default=config.Settings.DEFAULT_EXECUTION_MODE,
+            *self.ExecutionMode.arg_flags,
+            help=self.ExecutionMode.arg_help,
+            choices=self.ExecutionMode.arg_choices,
+            default=self.ExecutionMode.arg_default,
+            type=self.ExecutionMode,
         )
 
         self._is_configured = True
@@ -88,67 +159,65 @@ class DeclusorParser(util.Parser):
         argv: Sequence[str] | None = None,
         /,
     ) -> contract.PluginConfig[contract.ParsedArguments]:
-        """Parse arguments and build a validated PluginConfig using the provided manager.
+        """Parse arguments and build a validated plugin configuration.
 
         Args:
-            manager: Plugin manager containing the client plugins available to the application.
+            manager: Plugin manager containing the client plugins available to
+                the application.
             argv: Sequence of arguments to parse, excluding the program name.
 
         Returns:
-            Validated PluginConfig populated from command-line arguments.
+            Validated plugin configuration populated from command-line arguments.
 
         Raises:
-            ParserError: If required arguments are missing, values are invalid, or no plugin matches.
+            config.ParserError: If no plugin is available, the requested plugin
+                does not exist, or the resulting configuration is invalid.
         """
 
         preliminary_args, _ = self.parse_known_args(argv)
+        plugin_dir: Path | None = preliminary_args.plugin_dir
 
-        plugin_dir = getattr(preliminary_args, "plugin_dir", None)
+        if plugin_dir is not None:
+            manager.load_from_directory(
+                plugin_dir,
+                source_label="cli-plugin-dir",
+                allow_override=True,
+            )
 
-        if plugin_dir:
-            manager.load_from_directory(plugin_dir, source_label="cli-plugin-dir", allow_override=True)
+        available_plugins = manager.names()
 
-        available_clients = manager.names()
-        default_client = "shell_socket" if "shell_socket" in available_clients else (available_clients[0] if available_clients else None)
-        plugin_name = preliminary_args.plugin or default_client
-
-        if not plugin_name:
+        if not available_plugins:
             raise config.ParserError("No client plugin available.")
 
-        if plugin_name not in available_clients:
-            raise config.ParserError(
-                f"argument -p/--plugin: invalid choice: '{plugin_name}' (choose from {', '.join(repr(c) for c in available_clients)})"
-            )
+        default_plugin = config.DeclusorPlugins.default().value
+
+        if default_plugin not in available_plugins:
+            default_plugin = available_plugins[0]
+
+        plugin_name: str = preliminary_args.plugin or default_plugin
+
+        if plugin_name not in available_plugins:
+            choices = ", ".join(repr(name) for name in available_plugins)
+            raise config.ParserError(f"argument -p/--plugin: invalid choice: {plugin_name!r} (choose from {choices})")
 
         Plugin = manager.get(plugin_name)
         Plugin.configure_parser(self)
 
-        raw_args = self.parse_args(argv)
-        raw_dict: dict[str, object] = vars(raw_args)
+        args = self.parse_args(argv)
 
-        host_raw = raw_dict.get("host")
+        plugin_options = {key: value for key, value in vars(args).items() if key not in self.declusor_arguments}
+        plugin_filesystem = contract.PluginFilesystem.from_root(args.assets_dir)
 
-        if not isinstance(host_raw, str):
-            raise config.ParserError("Missing or invalid 'host' argument.")
+        options = Plugin.extract_options(plugin_options)
 
-        host = host_raw
-        port_raw = raw_dict.get("port")
+        plugin_config = Plugin.build_config(
+            args.host,
+            args.port,
+            options,
+            filesystem=plugin_filesystem,
+            mode=args.mode,
+        )
 
-        if not isinstance(port_raw, int):
-            raise config.ParserError("Missing or invalid 'port' argument.")
-
-        port = port_raw
-        mode_raw = raw_dict.get("mode")
-        mode = mode_raw if isinstance(mode_raw, config.ExecutionMode) else config.Settings.DEFAULT_EXECUTION_MODE
-
-        assets_dir_raw = raw_dict.get("assets_dir")
-        assets_dir = assets_dir_raw if isinstance(assets_dir_raw, Path) else None
-        filesystem = contract.PluginFilesystem.from_root(assets_dir) if assets_dir is not None else None
-
-        plugin_raw: Mapping[str, object] = {k: v for k, v in raw_dict.items() if k not in self.flags}
-        options = Plugin.extract_options(plugin_raw)
-
-        plugin_config = Plugin.build_config(host, port, options, filesystem=filesystem, mode=mode)
         Plugin.validate(plugin_config)
 
         return plugin_config

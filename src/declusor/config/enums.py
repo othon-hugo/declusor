@@ -1,6 +1,18 @@
 from enum import IntEnum, StrEnum
 
 
+class DeclusorPlugins(StrEnum):
+    SHELL_SOCKET = "shell_socket"
+    """[...]"""
+
+    PY_SOCKET = "py_socket"
+    """[...]"""
+
+    @classmethod
+    def default(cls) -> "DeclusorPlugins":
+        return cls.SHELL_SOCKET
+
+
 class ExecutionMode(StrEnum):
     """Enumeration of application execution modes."""
 
@@ -16,11 +28,11 @@ class ExecutionMode(StrEnum):
     HTTP = "http"
     """HTTP RESTful server mode for web-based remote interactions."""
 
-    @property
-    def default(self) -> "ExecutionMode":
+    @classmethod
+    def default(cls) -> "ExecutionMode":
         """Return the default execution mode (CLI)."""
 
-        return ExecutionMode.CLI
+        return cls.CLI
 
     @classmethod
     def from_string(cls, value: str, /) -> "ExecutionMode":

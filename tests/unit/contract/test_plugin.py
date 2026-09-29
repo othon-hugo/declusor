@@ -17,7 +17,7 @@ def test_plugin_config_default_mode(tmp_path: Path) -> None:
     )
 
     assert plugin_config.mode == config.ExecutionMode.CLI
-    assert plugin_config.mode == config.Settings.DEFAULT_EXECUTION_MODE
+    assert plugin_config.mode == config.ExecutionMode.default()
     assert plugin_config.kind == "dummy"
     assert plugin_config.host == "127.0.0.1"
     assert plugin_config.port == 9000

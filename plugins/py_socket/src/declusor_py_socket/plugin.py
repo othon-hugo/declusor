@@ -48,7 +48,7 @@ class PySocketPlugin(contract.IPluginExtension[PySocketConfig]):
         options: PySocketConfig,
         /,
         filesystem: contract.PluginFilesystem | None = None,
-        mode: config.ExecutionMode = config.Settings.DEFAULT_EXECUTION_MODE,
+        mode: config.ExecutionMode = config.ExecutionMode.default(),
     ) -> contract.PluginConfig[PySocketConfig]:
         """Build the py_socket client configuration."""
 

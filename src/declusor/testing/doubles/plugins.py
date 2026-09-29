@@ -78,7 +78,7 @@ class DummyPlugin(contract.IPluginExtension[DummyConfig]):
         options: DummyConfig,
         /,
         filesystem: contract.PluginFilesystem | None = None,
-        mode: config.ExecutionMode = config.Settings.DEFAULT_EXECUTION_MODE,
+        mode: config.ExecutionMode = config.ExecutionMode.default(),
     ) -> contract.PluginConfig[DummyConfig]:
         dummy_fs = contract.PluginFilesystem(
             root=Path("."),
