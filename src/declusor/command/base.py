@@ -66,10 +66,9 @@ class BaseFileCommand[T: "ExecuteFileDTO | UploadFileDTO"](BaseStreamCommand):
             ConnectionWriteError: If the socket write operation fails.
         """
 
-        command_bytes = self._format_command(session)
-        session.connection.write(command_bytes)
+        session.connection.write(self._payload(session))
 
-    def _format_command(self, session: contract.SessionContext) -> bytes:
+    def _payload(self, session: contract.SessionContext, /) -> bytes:
         """Format the file content into an encoded remote client command.
 
         Args:
@@ -82,12 +81,12 @@ class BaseFileCommand[T: "ExecuteFileDTO | UploadFileDTO"](BaseStreamCommand):
             InvalidOperation: If the client runtime fails to produce a valid command.
         """
 
-        file_content = util.load_file(self._dto.filepath)
-        file_base64 = util.convert_to_base64(file_content)
+        file_bytes = util.load_file(self._dto.filepath)
+        file_b64 = util.convert_to_base64(file_bytes)
 
         script_data = session.connection.profile.render_operation_command(
             self._opcode,
-            file_base64,
+            file_b64,
         )
 
         if not script_data:

@@ -57,9 +57,9 @@ class LoadModule(BaseStreamCommand):
             ConnectionWriteError: If transmitting the module payload fails.
         """
 
-        if session.plugin is None:
-            raise config.CommandError("Client file store is not configured for this session.")
+        session.connection.write(self._payload(session).encode())
 
+    def _payload(self, session: contract.SessionContext, /) -> str:
         module_path = session.plugin.find_module(self._dto.module_name)
 
         if not module_path:
@@ -79,4 +79,4 @@ class LoadModule(BaseStreamCommand):
         if not rendered:
             raise config.InvalidOperation("Failed to generate script data for module loading.")
 
-        session.connection.write(rendered.encode())
+        return rendered

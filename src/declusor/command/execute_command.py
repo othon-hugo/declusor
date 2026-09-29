@@ -52,10 +52,15 @@ class ExecuteCommand(BaseStreamCommand):
             ConnectionWriteError: If the socket write operation fails.
         """
 
+        session.connection.write(self._payload(session))
+
+    def _payload(self, session: contract.SessionContext, /) -> bytes:
         rendered = session.connection.profile.render_operation_command(
             config.OperationCode.EXEC_COMMAND,
             self._dto.command_line,
         )
 
-        command_bytes = rendered.encode() if rendered is not None else self._dto.command_line.encode()
-        session.connection.write(command_bytes)
+        if rendered:
+            return rendered.encode()
+
+        return self._dto.command_line.encode()
