@@ -19,7 +19,7 @@ def test_session_context_initialization_and_properties(
     assert session.connection is dummy_connection
     assert session.view is dummy_view
     assert session.input is dummy_input_source
-    assert session.processor is dummy_file_store
+    assert session.plugin is dummy_file_store
 
 
 def test_session_context_execute_invokes_command_execute(

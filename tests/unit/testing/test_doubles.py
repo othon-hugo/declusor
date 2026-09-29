@@ -332,7 +332,7 @@ def test_factories() -> None:
     assert isinstance(session.connection, testing.DummyConnection)
     assert isinstance(session.view, testing.DummyView)
     assert isinstance(session.input, testing.DummyInputSource)
-    assert isinstance(session.processor, testing.DummyPluginFileStore)
+    assert isinstance(session.plugin, testing.DummyPluginFileStore)
 
     cfg = testing.create_dummy_plugin_config(kind="custom", host="192.168.1.1", port=1234, options=testing.DummyConfig())
     assert cfg.kind == "custom"
