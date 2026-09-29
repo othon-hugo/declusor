@@ -5,6 +5,7 @@ class CommandArguments(contract.ControllerArguments):
     """Arguments for command execution."""
 
     command: str
+    """[...]"""
 
 
 def call_command(

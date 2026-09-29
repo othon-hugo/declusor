@@ -5,6 +5,7 @@ class LoadArguments(contract.ControllerArguments):
     """Arguments for remote module loading."""
 
     module: str
+    """[...]"""
 
 
 def call_load(

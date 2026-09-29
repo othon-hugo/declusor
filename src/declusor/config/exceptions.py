@@ -39,7 +39,6 @@ class PromptError(DeclusorException):
         self.description = description
 
         msg = f"invalid argument: {argument!r}" + (f" ({description})" if description else "")
-
         super().__init__(msg)
 
 
@@ -83,7 +82,6 @@ class RouterError(DeclusorException):
         self.description = description
 
         msg = f"invalid route: {route!r}" + (f" ({description})" if description else "")
-
         super().__init__(msg)
 
 

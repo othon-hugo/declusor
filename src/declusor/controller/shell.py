@@ -11,6 +11,7 @@ def call_shell(
 ) -> contract.ControllerResult:
     """Launch an interactive pseudo-terminal shell session over the active connection."""
 
-    session.execute(command.LaunchShell())
+    dto = command.LaunchShellDTO()
+    session.execute(command.LaunchShell(dto))
 
     return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)

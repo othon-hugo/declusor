@@ -5,6 +5,7 @@ class ExecuteArguments(contract.ControllerArguments):
     """Arguments for remote file execution."""
 
     filepath: str
+    """[...]"""
 
 
 def call_execute(

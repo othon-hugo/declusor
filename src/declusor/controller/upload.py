@@ -5,6 +5,7 @@ class UploadArguments(contract.ControllerArguments):
     """Arguments for remote file upload."""
 
     filepath: str
+    """[...]"""
 
 
 def call_upload(

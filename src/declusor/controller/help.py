@@ -5,6 +5,7 @@ class HelpArguments(contract.ControllerArguments, total=False):
     """Arguments for help command."""
 
     command: str | None
+    """[...]"""
 
 
 def create_help_controller(router: contract.IRouter) -> contract.Controller:

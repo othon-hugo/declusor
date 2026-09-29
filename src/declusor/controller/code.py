@@ -5,6 +5,7 @@ class CodeArguments(contract.ControllerArguments):
     """Arguments for native client runtime code execution."""
 
     code: str
+    """[...]"""
 
 
 def call_code(
