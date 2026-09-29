@@ -22,7 +22,7 @@ def test_execution_mode_enum_members() -> None:
 def test_execution_mode_default() -> None:
     """Verify ExecutionMode.default() returns CLI mode."""
 
-    assert config.ExecutionMode.default() == config.ExecutionMode.CLI
+    assert config.ExecutionMode.default == config.ExecutionMode.CLI
     assert config.Settings.DEFAULT_EXECUTION_MODE == config.ExecutionMode.CLI
 
 

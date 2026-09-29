@@ -16,11 +16,11 @@ class ExecutionMode(StrEnum):
     HTTP = "http"
     """HTTP RESTful server mode for web-based remote interactions."""
 
-    @classmethod
-    def default(cls) -> "ExecutionMode":
+    @property
+    def default(self) -> "ExecutionMode":
         """Return the default execution mode (CLI)."""
 
-        return cls.CLI
+        return ExecutionMode.CLI
 
     @classmethod
     def from_string(cls, value: str, /) -> "ExecutionMode":
