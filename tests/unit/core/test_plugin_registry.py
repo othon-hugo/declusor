@@ -1,5 +1,3 @@
-import pytest
-
 from declusor import core, testing
 
 
@@ -15,16 +13,15 @@ def test_registries_are_isolated() -> None:
     assert second.names() == ()
 
 
-def test_parser_uses_injected_manager(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_parser_uses_injected_manager() -> None:
     """The parser must resolve plugins only from its injected manager."""
 
     manager = core.PluginManager()
     manager.register(testing.DummyPlugin)
-    monkeypatch.setattr(
-        "sys.argv",
-        ["declusor", "127.0.0.1", "9000", "--plugin", testing.DummyPlugin.name],
-    )
 
-    plugin_config = core.DeclusorParser(name="declusor").parse(manager)
+    plugin_config = core.DeclusorParser(name="declusor").parse(
+        manager,
+        ["127.0.0.1", "9000", "--plugin", testing.DummyPlugin.name],
+    )
 
     assert plugin_config.kind == testing.DummyPlugin.name

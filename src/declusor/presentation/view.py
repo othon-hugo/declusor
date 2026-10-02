@@ -1,10 +1,21 @@
 import sys
+from typing import BinaryIO, TextIO
 
 from declusor import contract
 
 
 class TerminalView(contract.IView):
     """Terminal presentation view rendering messages to stdout and stderr."""
+
+    def __init__(
+        self,
+        stdout: TextIO | None = None,
+        stderr: TextIO | None = None,
+        buffer: BinaryIO | None = None,
+    ) -> None:
+        self._stdout: TextIO = stdout if stdout is not None else sys.stdout
+        self._stderr: TextIO = stderr if stderr is not None else sys.stderr
+        self._buffer: BinaryIO = buffer if buffer is not None else getattr(self._stdout, "buffer", sys.stdout.buffer)
 
     def write_message(self, message: str, /) -> None:
         """Display a plain informational message to standard output.
@@ -13,8 +24,8 @@ class TerminalView(contract.IView):
             message: The message string to display.
         """
 
-        sys.stdout.write(message + "\n")
-        sys.stdout.flush()
+        self._stdout.write(message + "\n")
+        self._stdout.flush()
 
     def write_error(self, message: str | BaseException, /) -> None:
         """Display an error message to standard error with 'error: ' prefix.
@@ -23,8 +34,8 @@ class TerminalView(contract.IView):
             message: Error description or exception to display.
         """
 
-        sys.stderr.write(f"error: {message}\n")
-        sys.stderr.flush()
+        self._stderr.write(f"error: {message}\n")
+        self._stderr.flush()
 
     def write_warning(self, message: str | BaseException, /) -> None:
         """Display a warning message to standard error with 'warning: ' prefix.
@@ -33,8 +44,8 @@ class TerminalView(contract.IView):
             message: Warning description or exception to display.
         """
 
-        sys.stderr.write(f"warning: {message}\n")
-        sys.stderr.flush()
+        self._stderr.write(f"warning: {message}\n")
+        self._stderr.flush()
 
     def write_info(self, message: str, /) -> None:
         """Display an informational notice to standard output with 'info: ' prefix.
@@ -43,8 +54,8 @@ class TerminalView(contract.IView):
             message: Informational text to display.
         """
 
-        sys.stdout.write(f"info: {message}\n")
-        sys.stdout.flush()
+        self._stdout.write(f"info: {message}\n")
+        self._stdout.flush()
 
     def write_success(self, message: str, /) -> None:
         """Display a success notice to standard output with 'success: ' prefix.
@@ -53,8 +64,8 @@ class TerminalView(contract.IView):
             message: Success text to display.
         """
 
-        sys.stdout.write(f"success: {message}\n")
-        sys.stdout.flush()
+        self._stdout.write(f"success: {message}\n")
+        self._stdout.flush()
 
     def write_binary_data(self, data: bytes, /) -> None:
         """Write raw binary data to standard output buffer.
@@ -63,5 +74,5 @@ class TerminalView(contract.IView):
             data: Binary payload to write verbatim.
         """
 
-        sys.stdout.buffer.write(data)
-        sys.stdout.buffer.flush()
+        self._buffer.write(data)
+        self._buffer.flush()

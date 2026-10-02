@@ -1,8 +1,9 @@
+from collections.abc import Mapping
 from pathlib import Path
 
 import pytest
 
-from declusor import config, core, testing
+from declusor import config, contract, core, testing
 
 
 def test_declusor_parser_initialization() -> None:
@@ -358,16 +359,101 @@ def test_declusor_parser_transport_layer_invalid_choice_raises() -> None:
         )
 
 
-def test_declusor_parser_non_string_plugin_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_declusor_parser_non_string_plugin_raises() -> None:
     """Verify parser raises ParserError if preliminary parsed plugin is not a string."""
 
     testing.DummyPlugin.reset()
     manager = core.PluginManager()
     manager.register(testing.DummyPlugin)
 
-    parser = core.DeclusorParser(name="test_app")
-    fake_args = type("Args", (), {"plugin_dir": None, "plugin": 12345})()
-    monkeypatch.setattr(parser, "parse_known_args", lambda argv: (fake_args, []))
+    class NonStringPluginParser(core.DeclusorParser):
+        def parse_known_args(  # type: ignore[override]
+            self,
+            args: object = None,
+            namespace: object = None,
+        ) -> tuple[object, list[str]]:
+            fake_args = type("Args", (), {"plugin_dir": None, "plugin": 12345})()
+            return fake_args, []
+
+    parser = NonStringPluginParser(name="test_app")
 
     with pytest.raises(config.ParserError, match="argument -p/--plugin: expected string, got int"):
         parser.parse(manager, ["127.0.0.1", "9000"])
+
+
+class DummyPathConfig(contract.ParsedArguments, total=False):
+    """Configuration options for DummyPathClientPlugin."""
+
+    launcher_path: Path
+
+
+class DummyPathClientPlugin(contract.IPluginExtension[DummyPathConfig]):
+    """Dummy client plugin for testing data path derivation."""
+
+    name = "dummy_path_plugin"
+    description = "Dummy path client"
+    version = "1.0.0"
+    options_type = DummyPathConfig
+
+    @classmethod
+    def configure_parser(cls, parser: contract.IArgumentParser, /) -> None:
+        pass
+
+    @classmethod
+    def extract_options(cls, raw: Mapping[str, object], /) -> DummyPathConfig:
+        return DummyPathConfig()
+
+    @classmethod
+    def build_config(
+        cls,
+        host: str,
+        port: int,
+        options: DummyPathConfig,
+        /,
+        filesystem: contract.PluginFilesystem | None = None,
+        mode: config.ExecutionMode = config.DEFAULT_EXECUTION_MODE,
+    ) -> contract.PluginConfig[DummyPathConfig]:
+        assert filesystem is not None
+
+        launcher = filesystem.launchers / "client.sh"
+        options["launcher_path"] = launcher
+
+        return contract.PluginConfig(
+            kind=cls.name,
+            host=host,
+            port=port,
+            filesystem=filesystem,
+            options=options,
+            options_type=cls.options_type,
+            mode=mode,
+        )
+
+    @classmethod
+    def validate(cls, plugin_config: contract.PluginConfig[DummyPathConfig], /) -> None:
+        pass
+
+    @classmethod
+    def build_runtime(cls, plugin_config: contract.PluginConfig[DummyPathConfig], /) -> contract.IPluginRuntime:
+        return testing.DummyPluginRuntime()
+
+
+def test_parser_builds_client_paths_from_data_root(tmp_path: Path) -> None:
+    """Client configuration must derive all data paths from ``--assets-dir``."""
+
+    assets_dir = tmp_path / "assets"
+    launcher_dir = assets_dir / "launchers"
+    launcher_dir.mkdir(parents=True)
+    launcher_file = launcher_dir / "client.sh"
+    launcher_file.write_text("", encoding="utf-8")
+
+    manager = core.PluginManager()
+    manager.register(DummyPathClientPlugin)
+
+    plugin_config = core.DeclusorParser(name="declusor").parse(
+        manager,
+        ("127.0.0.1", "9000", "--plugin", "dummy_path_plugin", "--assets-dir", str(tmp_path)),
+    )
+
+    filesystem = plugin_config.filesystem
+    assert filesystem == contract.PluginFilesystem.from_root(tmp_path)
+    assert plugin_config.options.get("launcher_path") == launcher_file

@@ -1,6 +1,6 @@
 import importlib.metadata
 import inspect
-from collections.abc import Sequence
+from collections.abc import Callable, Iterable, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -205,12 +205,14 @@ class PluginManager(PluginRegistry):
         *,
         group: str = ENTRY_POINT_GROUP,
         allow_override: bool = True,
+        entry_points_loader: Callable[..., Iterable[Any]] | None = None,
     ) -> list[str]:
         """Discover and load client plugins registered via Python Entry Points.
 
         Args:
             group: Entry point group to query (default: ``declusor.plugins``).
             allow_override: Whether entry-point plugins may override earlier registrations.
+            entry_points_loader: Optional loader callable for entry points querying.
 
         Returns:
             List of plugin names successfully loaded from entry points.
@@ -219,7 +221,8 @@ class PluginManager(PluginRegistry):
         loaded_names: list[str] = []
 
         try:
-            discovered = importlib.metadata.entry_points(group=group)
+            loader = entry_points_loader or importlib.metadata.entry_points
+            discovered = loader(group=group)
         except Exception:
             return []
 
@@ -239,6 +242,7 @@ class PluginManager(PluginRegistry):
         /,
         *,
         enable_entry_points: bool = True,
+        entry_points_loader: Callable[..., Iterable[Any]] | None = None,
     ) -> "PluginManager":
         """Run the multi-tier plugin discovery engine.
 
@@ -251,6 +255,7 @@ class PluginManager(PluginRegistry):
         Args:
             search_dirs: Optional additional search directories (e.g. from CLI ``--plugin-dir``).
             enable_entry_points: Whether to query Python entry points.
+            entry_points_loader: Optional custom entry points loader.
 
         Returns:
             The populated ``PluginManager`` instance.
@@ -262,7 +267,7 @@ class PluginManager(PluginRegistry):
 
         # Tier 2: Entry points (pip packages)
         if enable_entry_points:
-            self.load_from_entry_points(allow_override=True)
+            self.load_from_entry_points(allow_override=True, entry_points_loader=entry_points_loader)
 
         # Tier 3: User drop-in directory (~/.declusor/plugins)
         if config.USER_PLUGINS_DIR.exists():

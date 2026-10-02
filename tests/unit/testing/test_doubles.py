@@ -365,3 +365,69 @@ def test_dummy_session_runner(
     error_runner = testing.DummySessionRunner(run_error=config.DeclusorException("runner failed"))
     with pytest.raises(config.DeclusorException, match="runner failed"):
         error_runner.run(test_session, dummy_router)
+
+
+def test_dummy_view_reset() -> None:
+    """DummyView.reset clears all captured messages, errors, warnings, info, success, and binary data."""
+
+    view = testing.DummyView()
+    view.write_message("msg")
+    view.write_error("err")
+    view.write_warning("warn")
+    view.write_info("info")
+    view.write_success("success")
+    view.write_binary_data(b"data")
+
+    assert len(view.messages) == 1
+    assert len(view.errors) == 1
+    assert len(view.warnings) == 1
+    assert len(view.info_messages) == 1
+    assert len(view.success_messages) == 1
+    assert len(view.binary_data) == 1
+
+    view.reset()
+
+    assert view.messages == []
+    assert view.errors == []
+    assert view.warnings == []
+    assert view.info_messages == []
+    assert view.success_messages == []
+    assert view.binary_data == []
+
+
+def test_dummy_socket_shutdown_and_timeout() -> None:
+    """DummySocket supports shutdown and gettimeout operations."""
+
+    sock = testing.DummySocket(timeout=2.5)
+    assert sock.gettimeout() == 2.5
+
+    sock.shutdown(0)
+    assert sock.shutdown_called is True
+    assert sock.shutdown_calls == [0]
+
+    sock.shutdown_error = OSError("shutdown error")
+    with pytest.raises(OSError, match="shutdown error"):
+        sock.shutdown(1)
+
+
+def test_dummy_application_collaborator_injection() -> None:
+    """DummyApplication initializes superclass with provided or default dummy collaborators."""
+
+    app = testing.DummyApplication()
+    assert app.transport_registry is not None
+    assert app.router is not None
+    assert app.view is not None
+
+
+def test_transport_pytest_fixtures(
+    dummy_transport: testing.DummyTransport,
+    memory_transport_pair: tuple[testing.MemoryTransport, testing.MemoryTransport],
+    memory_transport_listener: testing.MemoryTransportListener,
+) -> None:
+    """Transport pytest fixtures are properly provided by the plugin."""
+
+    assert isinstance(dummy_transport, testing.DummyTransport)
+    client_tx, server_tx = memory_transport_pair
+    assert isinstance(client_tx, testing.MemoryTransport)
+    assert isinstance(server_tx, testing.MemoryTransport)
+    assert isinstance(memory_transport_listener, testing.MemoryTransportListener)

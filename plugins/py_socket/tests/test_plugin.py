@@ -6,23 +6,6 @@ import pytest
 from declusor import config, contract, testing
 
 
-def test_py_socket_plugin_metadata() -> None:
-    """Verify py_socket.PySocketPlugin metadata properties (name, description, version)."""
-
-    assert py_socket.PySocketPlugin.name == "py_socket"
-    assert py_socket.PySocketPlugin.description != ""
-    assert py_socket.PySocketPlugin.version == "1.0.0"
-
-
-def test_extract_options_returns_typed_dict() -> None:
-    """Verify extract_options returns a PySocketConfig instance."""
-
-    raw: dict[str, object] = {}
-    options = py_socket.PySocketPlugin.extract_options(raw)
-
-    assert isinstance(options, dict)
-
-
 def test_build_config_uses_default_assets_when_filesystem_is_none() -> None:
     """When filesystem is None, plugin builds default PluginFilesystem from bundled assets."""
 

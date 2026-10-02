@@ -1,5 +1,4 @@
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
@@ -298,9 +297,8 @@ def test_discover_from_entry_points() -> None:
 
     ep = DummyEntryPoint(name="mock_plugin", plugin_cls=DummyValidPlugin)
 
-    with patch("importlib.metadata.entry_points", return_value=[ep]):
-        manager = core.PluginManager()
-        loaded = manager.load_from_entry_points()
+    manager = core.PluginManager()
+    loaded = manager.load_from_entry_points(entry_points_loader=lambda **_: [ep])
 
-        assert "dummy_test" in loaded
-        assert manager.get("dummy_test") is DummyValidPlugin
+    assert "dummy_test" in loaded
+    assert manager.get("dummy_test") is DummyValidPlugin

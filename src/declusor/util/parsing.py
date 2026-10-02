@@ -114,13 +114,13 @@ def parse_command_arguments(line: str, definitions: ArgumentDefinitions, allow_u
 
     cleaned_line: str = line.strip()
 
-    if not cleaned_line:
+    if not cleaned_line and not definitions:
         return {}, []
 
     parser: Parser = build_command_parser(definitions)
 
     try:
-        args_list: list[str] = shlex.split(cleaned_line)
+        args_list: list[str] = shlex.split(cleaned_line) if cleaned_line else []
     except ValueError as e:
         raise config.ControllerError(f"Parsing error: {e}") from e
 

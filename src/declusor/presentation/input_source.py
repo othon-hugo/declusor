@@ -2,7 +2,7 @@ import atexit
 import glob
 import os
 import readline
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from contextlib import suppress
 from pathlib import Path
 
@@ -12,7 +12,8 @@ from declusor import contract
 class TerminalInputSource(contract.IInputSource):
     """Terminal input source implementation using readline for input, history, and autocomplete."""
 
-    def __init__(self) -> None:
+    def __init__(self, reader: Callable[[str], str] | None = None) -> None:
+        self._reader: Callable[[str], str] = reader if reader is not None else input
         self._history_file: Path | None = None
 
     def read_command(self, prompt: str = "", /) -> str:
@@ -25,7 +26,7 @@ class TerminalInputSource(contract.IInputSource):
             The input string with leading and trailing whitespace stripped.
         """
 
-        return input(prompt).strip()
+        return self._reader(prompt).strip()
 
     def read_raw(self, prompt: str = "", /) -> str:
         """Read a raw line from standard input with newline appended.
@@ -37,7 +38,7 @@ class TerminalInputSource(contract.IInputSource):
             The raw input string including trailing newline.
         """
 
-        return input(prompt) + "\n"
+        return self._reader(prompt) + "\n"
 
     def setup_completer(self, command_routes: Sequence[str], /) -> None:
         """Set up the readline completer for command line input.

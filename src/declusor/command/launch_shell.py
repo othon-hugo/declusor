@@ -71,11 +71,11 @@ class LaunchShell(contract.ICommand):
                 session.view.write_message(self._dto.banner)
 
             input_forwarder(self._stop_event)
-            self._task_pool.wait_all()
         except KeyboardInterrupt:
             session.view.write_message("[keyboard interrupt received]")
         finally:
             self._task_pool.stop()
+            self._task_pool.wait_all()
 
     def _create_shell_input_handler(
         self,

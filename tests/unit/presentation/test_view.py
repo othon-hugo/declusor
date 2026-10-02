@@ -1,4 +1,4 @@
-from unittest.mock import patch
+import io
 
 import pytest
 
@@ -51,11 +51,26 @@ def test_terminal_view_write_success(capsys: pytest.CaptureFixture[str]) -> None
 
 
 def test_terminal_view_write_binary_data() -> None:
-    """Verify write_binary_data writes bytes to stdout.buffer."""
+    """Verify write_binary_data writes bytes to injected buffer."""
 
-    view = presentation.TerminalView()
+    buf = io.BytesIO()
+    view = presentation.TerminalView(buffer=buf)
+    view.write_binary_data(b"binary payload")
+    assert buf.getvalue() == b"binary payload"
 
-    with patch("sys.stdout.buffer.write") as mock_write, patch("sys.stdout.buffer.flush") as mock_flush:
-        view.write_binary_data(b"binary payload")
-        mock_write.assert_called_once_with(b"binary payload")
-        mock_flush.assert_called_once()
+
+def test_terminal_view_injected_streams() -> None:
+    """Verify TerminalView correctly routes text messages to injected text streams."""
+
+    out_stream = io.StringIO()
+    err_stream = io.StringIO()
+    view = presentation.TerminalView(stdout=out_stream, stderr=err_stream)
+
+    view.write_message("msg")
+    view.write_info("info")
+    view.write_success("ok")
+    view.write_error("err")
+    view.write_warning("warn")
+
+    assert out_stream.getvalue() == "msg\ninfo: info\nsuccess: ok\n"
+    assert err_stream.getvalue() == "error: err\nwarning: warn\n"

@@ -42,6 +42,12 @@ def create_dummy_plugin_config(
     filesystem: contract.PluginFilesystem | None = None,
     options: DummyConfig | None = None,
     mode: config.ExecutionMode = config.DEFAULT_EXECUTION_MODE,
+    *,
+    timeout: float | None = None,
+    launcher_output_mode: config.LauncherOutputMode = config.DEFAULT_LAUNCHER_OUTPUT_MODE,
+    launcher_output_path: Path | None = None,
+    launcher_wrapper: str | None = None,
+    transport_layers: tuple[str, ...] = (),
 ) -> contract.PluginConfig[DummyConfig]:
     """Create a PluginConfig instance for testing.
 
@@ -52,6 +58,11 @@ def create_dummy_plugin_config(
         filesystem: Optional PluginFilesystem instance. Defaults to None.
         options: Plugin options dictionary. Defaults to empty DummyConfig.
         mode: Application execution mode.
+        timeout: Default network socket operation timeout in seconds.
+        launcher_output_mode: Delivery mode for the generated client launcher.
+        launcher_output_path: Destination file path when launcher_output_mode is FILE.
+        launcher_wrapper: Optional shell invocation wrapper template.
+        transport_layers: Ordered sequence of transport layer names.
 
     Returns:
         An immutable PluginConfig dataclass instance.
@@ -73,6 +84,11 @@ def create_dummy_plugin_config(
         options_type=DummyConfig,
         filesystem=filesystem or dummy_fs,
         mode=mode,
+        timeout=timeout,
+        launcher_output_mode=launcher_output_mode,
+        launcher_output_path=launcher_output_path,
+        launcher_wrapper=launcher_wrapper,
+        transport_layers=transport_layers,
     )
 
 
