@@ -220,8 +220,8 @@ plugins/<plugin_name>/
 ├── src/
 │   └── declusor_<plugin_name>/
 │       ├── __init__.py          # Exports: __all__ = ["<PluginClass>"]
-│       ├── plugin.py            # Implements IPlugin & IPluginRuntime
-│       └── connection.py        # Implements IConnection, IConnectionProfile & IClientFileStore
+│       ├── plugin.py            # Implements IPluginExtension, IPluginRuntime, and IPluginProcessor
+│       └── connection.py        # Implements IConnection and IConnectionProfile
 ├── assets/                      # Bundled stagers and libraries
 │   ├── launchers/               # Bootstrap stagers
 │   ├── helpers/                 # Library files sent during session handshake
