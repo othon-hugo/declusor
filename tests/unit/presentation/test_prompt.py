@@ -184,3 +184,74 @@ def test_prompt_missing_session_or_router_raises_invalid_operation() -> None:
 
     with pytest.raises(config.InvalidOperation, match="PromptLoop requires an active session and router"):
         prompt.run()
+
+
+def test_prompt_displays_controller_result_message_on_continue(
+    dummy_router: testing.DummyRouter,
+    test_session: contract.SessionContext,
+    dummy_input_source: testing.DummyInputSource,
+    dummy_view: testing.DummyView,
+) -> None:
+    """PromptLoop must write message to view when controller returns ControllerResult with message."""
+
+    dummy_input_source.feed_inputs("status", "exit")
+
+    def status_controller(
+        session: contract.SessionContext,
+        req: contract.IControllerRequest[contract.ControllerArguments],
+    ) -> contract.ControllerResult:
+        return contract.ControllerResult(
+            action=contract.ControllerAction.CONTINUE,
+            message="Status operational.",
+        )
+
+    def exit_controller(
+        session: contract.SessionContext,
+        req: contract.IControllerRequest[contract.ControllerArguments],
+    ) -> contract.ControllerResult:
+        return contract.ControllerResult(action=contract.ControllerAction.TERMINATE)
+
+    dummy_router.connect("status", status_controller)
+    dummy_router.connect("exit", exit_controller)
+
+    prompt = presentation.PromptLoop(
+        "test_cli",
+        router=dummy_router,
+        session=test_session,
+    )
+
+    prompt.run()
+
+    assert "Status operational." in dummy_view.messages
+
+
+def test_prompt_displays_controller_result_message_on_terminate(
+    dummy_router: testing.DummyRouter,
+    test_session: contract.SessionContext,
+    dummy_input_source: testing.DummyInputSource,
+    dummy_view: testing.DummyView,
+) -> None:
+    """PromptLoop must write message to view before terminating when controller terminates with message."""
+
+    dummy_input_source.feed_inputs("bye")
+
+    def bye_controller(
+        session: contract.SessionContext,
+        req: contract.IControllerRequest[contract.ControllerArguments],
+    ) -> contract.ControllerResult:
+        return contract.ControllerResult(
+            action=contract.ControllerAction.TERMINATE,
+            message="Exiting session gracefully.",
+        )
+
+    dummy_router.connect("bye", bye_controller)
+
+    prompt = presentation.PromptLoop(
+        "test_cli",
+        router=dummy_router,
+        session=test_session,
+    )
+
+    prompt.run()
+
+    assert "Exiting session gracefully." in dummy_view.messages

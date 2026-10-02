@@ -19,4 +19,4 @@ def call_load(
     dto = command.LoadModuleDTO(module_name=arguments["module"])
     session.execute(command.LoadModule(dto))
 
-    return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
+    return contract.ControllerResult.for_continuation()

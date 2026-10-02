@@ -31,7 +31,7 @@ def create_help_controller(router: contract.IRouter) -> contract.Controller:
 
             if target_route not in router.routes:
                 session.view.write_error(f"Unknown command: '{target_route}'. Type 'help' to list available commands.")
-                return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
+                return contract.ControllerResult.for_continuation()
 
             usage = router.help(target_route)
             session.view.write_message(f"{target_route}: {usage}" if usage else target_route)
@@ -40,7 +40,7 @@ def create_help_controller(router: contract.IRouter) -> contract.Controller:
 
             if not routes:
                 session.view.write_message("No commands available.")
-                return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
+                return contract.ControllerResult.for_continuation()
 
             key_length = max(map(len, routes)) + 1
 
@@ -48,6 +48,6 @@ def create_help_controller(router: contract.IRouter) -> contract.Controller:
                 usage = router.help(route)
                 session.view.write_message(f"{route:<{key_length}}: {usage}" if usage else route)
 
-        return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
+        return contract.ControllerResult.for_continuation()
 
     return call_help

@@ -65,7 +65,10 @@ class ControllerAction(StrEnum):
     """Lifecycle actions signaled by controllers to the presentation layer."""
 
     CONTINUE = "CONTINUE"
+    """Signal the presentation loop to continue prompting the user for commands."""
+
     TERMINATE = "TERMINATE"
+    """Signal the presentation loop to terminate the interactive session gracefully."""
 
 
 @dataclass(frozen=True)
@@ -73,4 +76,33 @@ class ControllerResult:
     """Result returned by a controller to the presentation layer."""
 
     action: ControllerAction = ControllerAction.CONTINUE
+    """Lifecycle action indicating whether to continue or terminate the session."""
+
     message: str | None = None
+    """Optional informational message to be displayed by the presentation layer."""
+
+    @classmethod
+    def for_continuation(cls, message: str | None = None) -> "ControllerResult":
+        """Create a result signaling the presentation loop to continue.
+
+        Args:
+            message: Optional informational message to display to the user.
+
+        Returns:
+            A frozen ``ControllerResult`` with ``ControllerAction.CONTINUE``.
+        """
+
+        return cls(action=ControllerAction.CONTINUE, message=message)
+
+    @classmethod
+    def for_termination(cls, message: str | None = None) -> "ControllerResult":
+        """Create a result signaling the presentation loop to terminate.
+
+        Args:
+            message: Optional message to display to the user before termination.
+
+        Returns:
+            A frozen ``ControllerResult`` with ``ControllerAction.TERMINATE``.
+        """
+
+        return cls(action=ControllerAction.TERMINATE, message=message)

@@ -47,3 +47,27 @@ def test_controller_result_is_immutable() -> None:
 
     with pytest.raises(FrozenInstanceError):
         result.message = "mutated"  # type: ignore[misc]
+
+
+def test_controller_result_factory_for_continuation() -> None:
+    """ControllerResult.for_continuation must create a CONTINUE result with optional message."""
+
+    default_result = contract.ControllerResult.for_continuation()
+    assert default_result.action == contract.ControllerAction.CONTINUE
+    assert default_result.message is None
+
+    custom_result = contract.ControllerResult.for_continuation("In progress.")
+    assert custom_result.action == contract.ControllerAction.CONTINUE
+    assert custom_result.message == "In progress."
+
+
+def test_controller_result_factory_for_termination() -> None:
+    """ControllerResult.for_termination must create a TERMINATE result with optional message."""
+
+    default_result = contract.ControllerResult.for_termination()
+    assert default_result.action == contract.ControllerAction.TERMINATE
+    assert default_result.message is None
+
+    custom_result = contract.ControllerResult.for_termination("Goodbye!")
+    assert custom_result.action == contract.ControllerAction.TERMINATE
+    assert custom_result.message == "Goodbye!"

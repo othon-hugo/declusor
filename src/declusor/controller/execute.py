@@ -19,4 +19,4 @@ def call_execute(
     dto = command.ExecuteFileDTO(filepath=arguments["filepath"])
     session.execute(command.ExecuteFile(dto))
 
-    return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
+    return contract.ControllerResult.for_continuation()

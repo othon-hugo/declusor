@@ -127,6 +127,9 @@ class PromptLoop(contract.ISessionRunner):
                 raise config.PromptError(command_line, "invalid command")
 
         if isinstance(result, contract.ControllerResult):
+            if result.message is not None:
+                session.view.write_message(result.message)
+
             return result.action
 
         if result == contract.ControllerAction.TERMINATE:

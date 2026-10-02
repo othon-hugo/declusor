@@ -19,4 +19,4 @@ def call_command(
     dto = command.ExecuteCommandDTO(command_line=arguments["command"])
     session.execute(command.ExecuteCommand(dto))
 
-    return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
+    return contract.ControllerResult.for_continuation()

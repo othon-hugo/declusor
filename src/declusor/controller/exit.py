@@ -11,4 +11,4 @@ def call_exit(
 ) -> contract.ControllerResult:
     """Terminate the active interactive session gracefully."""
 
-    return contract.ControllerResult(action=contract.ControllerAction.TERMINATE)
+    return contract.ControllerResult.for_termination()
