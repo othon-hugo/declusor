@@ -16,6 +16,7 @@ class TerminalApplication(core.Application):
         plugin_manager: core.PluginManager,
         session_runner: contract.ISessionRunner,
         input_source: contract.IInputSource | None = None,
+        launcher_renderer: core.LauncherRenderer | None = None,
     ) -> None:
         """Create a TerminalApplication with terminal view, input source, and prompt loop.
 
@@ -25,6 +26,7 @@ class TerminalApplication(core.Application):
             plugin_manager: Plugin manager containing the available client plugins.
             session_runner: Session runner executing interaction workflows over active sessions.
             input_source: Operator input source interface reading commands.
+            launcher_renderer: Optional renderer responsible for delivering client launcher.
         """
 
         super().__init__(
@@ -33,6 +35,7 @@ class TerminalApplication(core.Application):
             plugin_manager=plugin_manager,
             session_runner=session_runner,
             input_source=input_source,
+            launcher_renderer=launcher_renderer,
         )
 
 

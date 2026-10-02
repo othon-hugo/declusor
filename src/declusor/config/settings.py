@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Final
 
-from .enums import DeclusorPlugins, ExecutionMode
+from .enums import DeclusorPlugins, ExecutionMode, LauncherOutputMode
 
 PROJECT_NAME: Final[str] = "declusor"
 """Name of the project."""
@@ -28,7 +28,10 @@ DEFAULT_CLIENT_ACK_SEED: Final[bytes] = b"declusor"
 """Default client acknowledgment seed used for SHA-256 calculation."""
 
 DEFAULT_DECLUSOR_PLUGIN = DeclusorPlugins.SHELL_SOCKET
-"""[...]"""
+"""Default client plugin identifier."""
 
 DEFAULT_EXECUTION_MODE = ExecutionMode.CLI
-"""[...]"""
+"""Default application execution mode."""
+
+DEFAULT_LAUNCHER_OUTPUT_MODE: Final[LauncherOutputMode] = LauncherOutputMode.TERMINAL
+"""Default client launcher output delivery mode."""

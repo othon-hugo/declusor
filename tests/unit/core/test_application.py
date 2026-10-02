@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from declusor import contract, core, presentation, testing
+from declusor import config, contract, core, presentation, testing
 
 
 def test_application_connect_routes() -> None:
@@ -98,3 +98,139 @@ def test_application_run_lifecycle(tmp_path: Path) -> None:
     assert active_router is router
     assert active_session.connection is dummy_conn
     assert active_session.view is view
+
+
+def test_application_run_silent_launcher_output(tmp_path: Path) -> None:
+    """Verify Application.run suppresses launcher message when launcher_output_mode is SILENT."""
+
+    dummy_conn = testing.DummyConnection()
+    dummy_runtime = testing.DummyPluginRuntime(
+        client_script="secret_launcher",
+        connection_to_return=dummy_conn,
+    )
+    testing.DummyPlugin.reset()
+    testing.DummyPlugin.runtime_instance = dummy_runtime
+
+    manager = core.PluginManager()
+    manager.register(testing.DummyPlugin)
+
+    router = core.Router()
+    view = testing.DummyView()
+    runner = testing.DummySessionRunner()
+    listener = testing.MemoryTransportListener()
+    _ = listener.create_client()
+
+    declusor_app = core.Application(
+        router,
+        view,
+        plugin_manager=manager,
+        session_runner=runner,
+        listener_factory=lambda host, port: listener,
+    )
+
+    fs = contract.PluginFilesystem.from_root(tmp_path)
+    plugin_config = contract.PluginConfig(
+        kind=testing.DummyPlugin.name,
+        host="127.0.0.1",
+        port=9000,
+        options=contract.ParsedArguments(),
+        options_type=contract.ParsedArguments,
+        filesystem=fs,
+        launcher_output_mode=config.LauncherOutputMode.SILENT,
+    )
+
+    declusor_app.run(plugin_config)
+
+    assert len(view.messages) == 0
+
+
+def test_application_run_file_launcher_output(tmp_path: Path) -> None:
+    """Verify Application.run writes launcher to file when launcher_output_mode is FILE."""
+
+    dummy_conn = testing.DummyConnection()
+    dummy_runtime = testing.DummyPluginRuntime(
+        client_script="file_launcher_payload",
+        connection_to_return=dummy_conn,
+    )
+    testing.DummyPlugin.reset()
+    testing.DummyPlugin.runtime_instance = dummy_runtime
+
+    manager = core.PluginManager()
+    manager.register(testing.DummyPlugin)
+
+    router = core.Router()
+    view = testing.DummyView()
+    runner = testing.DummySessionRunner()
+    listener = testing.MemoryTransportListener()
+    _ = listener.create_client()
+
+    declusor_app = core.Application(
+        router,
+        view,
+        plugin_manager=manager,
+        session_runner=runner,
+        listener_factory=lambda host, port: listener,
+    )
+
+    output_file = tmp_path / "out" / "launcher.sh"
+    fs = contract.PluginFilesystem.from_root(tmp_path)
+    plugin_config = contract.PluginConfig(
+        kind=testing.DummyPlugin.name,
+        host="127.0.0.1",
+        port=9000,
+        options=contract.ParsedArguments(),
+        options_type=contract.ParsedArguments,
+        filesystem=fs,
+        launcher_output_mode=config.LauncherOutputMode.FILE,
+        launcher_output_path=output_file,
+    )
+
+    declusor_app.run(plugin_config)
+
+    assert output_file.is_file()
+    assert output_file.read_text(encoding="utf-8") == "file_launcher_payload"
+    assert len(view.messages) == 0
+
+
+def test_application_run_wrapped_launcher_output(tmp_path: Path) -> None:
+    """Verify Application.run wraps launcher with launcher_wrapper template."""
+
+    dummy_conn = testing.DummyConnection()
+    dummy_runtime = testing.DummyPluginRuntime(
+        client_script="raw_script",
+        connection_to_return=dummy_conn,
+    )
+    testing.DummyPlugin.reset()
+    testing.DummyPlugin.runtime_instance = dummy_runtime
+
+    manager = core.PluginManager()
+    manager.register(testing.DummyPlugin)
+
+    router = core.Router()
+    view = testing.DummyView()
+    runner = testing.DummySessionRunner()
+    listener = testing.MemoryTransportListener()
+    _ = listener.create_client()
+
+    declusor_app = core.Application(
+        router,
+        view,
+        plugin_manager=manager,
+        session_runner=runner,
+        listener_factory=lambda host, port: listener,
+    )
+
+    fs = contract.PluginFilesystem.from_root(tmp_path)
+    plugin_config = contract.PluginConfig(
+        kind=testing.DummyPlugin.name,
+        host="127.0.0.1",
+        port=9000,
+        options=contract.ParsedArguments(),
+        options_type=contract.ParsedArguments,
+        filesystem=fs,
+        launcher_wrapper="python3 -c '$DECLUSOR_SCRIPT'",
+    )
+
+    declusor_app.run(plugin_config)
+
+    assert "python3 -c 'raw_script'" in view.messages

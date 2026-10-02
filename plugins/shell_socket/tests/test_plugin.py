@@ -57,7 +57,9 @@ def test_build_runtime_renders_bundled_launcher_with_parameters() -> None:
     cfg = shell_socket.ShellSocketPlugin.build_config("192.168.1.50", 5555, options)
     runtime = shell_socket.ShellSocketPlugin.build_runtime(cfg)
 
-    script = runtime.launcher
+    delivery = runtime.launcher
+    assert isinstance(delivery, contract.LauncherDelivery)
+    script = delivery.text
     assert "/dev/tcp/192.168.1.50/5555" in script
     assert "$DECLUSOR_HOST" not in script
     assert "$DECLUSOR_PORT" not in script

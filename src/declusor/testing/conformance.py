@@ -61,7 +61,7 @@ def assert_conforms_to_client_plugin[T: contract.ParsedArguments](
     # Invariant 5: Runtime creation
     runtime = plugin_cls.build_runtime(plugin_config)
     assert isinstance(runtime, contract.IPluginRuntime), f"build_runtime must return IPluginRuntime, got {type(runtime)}."
-    assert isinstance(runtime.launcher, str), "runtime.launcher must return a bootstrap string."
+    assert isinstance(runtime.launcher, contract.LauncherDelivery), "runtime.launcher must return a LauncherDelivery instance."
     assert isinstance(runtime.processor, contract.IPluginProcessor), "runtime.processor must implement IPluginProcessor."
 
     # Invariant 6: Connection instantiation

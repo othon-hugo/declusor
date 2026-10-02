@@ -17,7 +17,7 @@ def test_shell_socket_resilience_empty_and_special_chars() -> None:
     config = plugin_class.build_config("127.0.0.1", port, options)
     runtime = plugin_class.build_runtime(config)
 
-    proc = subprocess.Popen(["bash", "-c", runtime.launcher])
+    proc = subprocess.Popen(["bash", "-c", runtime.launcher.text])
     raw_transport: contract.ITransport | None = None
 
     try:
@@ -64,7 +64,7 @@ def test_py_socket_resilience_sys_exit_trap() -> None:
     config = plugin_class.build_config("127.0.0.1", port, options)
     runtime = plugin_class.build_runtime(config)
 
-    proc = subprocess.Popen([sys.executable, "-c", runtime.launcher])
+    proc = subprocess.Popen([sys.executable, "-c", runtime.launcher.text])
     raw_transport: contract.ITransport | None = None
 
     try:
@@ -103,7 +103,7 @@ def test_py_socket_resilience_comments_and_docstrings() -> None:
     config = plugin_class.build_config("127.0.0.1", port, options)
     runtime = plugin_class.build_runtime(config)
 
-    proc = subprocess.Popen([sys.executable, "-c", runtime.launcher])
+    proc = subprocess.Popen([sys.executable, "-c", runtime.launcher.text])
     raw_transport: contract.ITransport | None = None
 
     try:
@@ -147,7 +147,7 @@ def test_py_socket_resilience_realtime_streaming() -> None:
     plugin_config = plugin_class.build_config("127.0.0.1", port, options)
     runtime = plugin_class.build_runtime(plugin_config)
 
-    proc = subprocess.Popen([sys.executable, "-c", runtime.launcher])
+    proc = subprocess.Popen([sys.executable, "-c", runtime.launcher.text])
     raw_transport: contract.ITransport | None = None
 
     try:
