@@ -142,7 +142,7 @@ class ShellSocketConnection(contract.IConnection):
             for _ in self.read():
                 pass
         except (config.ConnectionClosed, config.ConnectionTimeoutError, config.ConnectionError) as error:
-            raise config.ConnectionError("Failed waiting for client handshake envelope.") from error
+            raise config.ConnectionHandshakeError("Failed waiting for client handshake envelope.") from error
 
         self._state = contract.ConnectionState.CONNECTED
 

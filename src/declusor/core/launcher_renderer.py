@@ -33,13 +33,16 @@ class LauncherRenderer:
                 pass
             case config.LauncherOutputMode.FILE:
                 if delivery.output_path is None:
-                    raise config.DeclusorException("Destination file path is required when output_mode is FILE.")
+                    raise config.LauncherDeliveryError("Destination file path is required when output_mode is FILE.")
 
                 try:
                     delivery.output_path.parent.mkdir(parents=True, exist_ok=True)
                     delivery.output_path.write_text(output, encoding="utf-8")
                 except OSError as error:
-                    raise config.DeclusorException(f"Failed to write client launcher to {delivery.output_path}: {error}") from error
+                    raise config.LauncherDeliveryError(
+                        f"Failed to write client launcher to {delivery.output_path}: {error}",
+                        output_path=delivery.output_path,
+                    ) from error
 
     @staticmethod
     def _apply_wrapper(payload: str, template: str | None) -> str:

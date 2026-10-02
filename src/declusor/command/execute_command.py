@@ -20,7 +20,11 @@ class ExecuteCommandDTO:
 
     def __post_init__(self) -> None:
         if not self.command_line or not self.command_line.strip():
-            raise config.InvalidOperation("Command line cannot be empty.")
+            raise config.CommandValidationError(
+                "Command line cannot be empty.",
+                field="command_line",
+                value=self.command_line,
+            )
 
 
 class ExecuteCommand(BaseStreamCommand):

@@ -26,10 +26,10 @@ class UploadFileDTO:
     def __post_init__(self) -> None:
         raw_path = str(self.filepath).strip()
         if not raw_path:
-            raise config.InvalidOperation("File path cannot be empty.")
+            raise config.CommandValidationError("File path cannot be empty.", field="filepath", value=self.filepath)
 
         if "\0" in raw_path:
-            raise config.InvalidOperation("File path cannot contain null bytes.")
+            raise config.CommandValidationError("File path cannot contain null bytes.", field="filepath", value=self.filepath)
 
         validated_path = util.ensure_file_exists(Path(self.filepath))
         object.__setattr__(self, "filepath", validated_path)
@@ -37,13 +37,17 @@ class UploadFileDTO:
         if self.destination is not None:
             clean_dest = self.destination.strip()
             if not clean_dest:
-                raise config.InvalidOperation("Destination path cannot be empty.")
+                raise config.CommandValidationError("Destination path cannot be empty.", field="destination", value=self.destination)
 
             if "\0" in clean_dest:
-                raise config.InvalidOperation("Destination path cannot contain null bytes.")
+                raise config.CommandValidationError("Destination path cannot contain null bytes.", field="destination", value=self.destination)
 
             if any(ord(c) < 32 for c in clean_dest):
-                raise config.InvalidOperation("Destination path cannot contain control characters or newlines.")
+                raise config.CommandValidationError(
+                    "Destination path cannot contain control characters or newlines.",
+                    field="destination",
+                    value=self.destination,
+                )
 
             object.__setattr__(self, "destination", clean_dest)
 

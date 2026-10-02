@@ -23,10 +23,10 @@ class ExecuteFileDTO:
     def __post_init__(self) -> None:
         raw_path = str(self.filepath).strip()
         if not raw_path:
-            raise config.InvalidOperation("File path cannot be empty.")
+            raise config.CommandValidationError("File path cannot be empty.", field="filepath", value=self.filepath)
 
         if "\0" in raw_path:
-            raise config.InvalidOperation("File path cannot contain null bytes.")
+            raise config.CommandValidationError("File path cannot contain null bytes.", field="filepath", value=self.filepath)
 
         validated_path = util.ensure_file_exists(Path(self.filepath))
         object.__setattr__(self, "filepath", validated_path)

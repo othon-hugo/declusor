@@ -60,10 +60,10 @@ class PromptLoop(contract.ISessionRunner):
         active_router = router or self._router
 
         if active_session is None or active_router is None:
-            raise config.PromptError(self._prompt, "PromptLoop requires an active session and router.")
+            raise config.InvalidOperation("PromptLoop requires an active session and router.")
 
         if active_session.input is None:
-            raise config.PromptError(self._prompt, "PromptLoop requires an active session with an input source.")
+            raise config.InvalidOperation("PromptLoop requires an active session with an input source.")
 
         while True:
             try:
@@ -78,6 +78,9 @@ class PromptLoop(contract.ISessionRunner):
                     break
             except KeyboardInterrupt:
                 continue
+            except config.ConnectionClosed as e:
+                active_session.view.write_error(e)
+                break
             except config.DeclusorException as e:
                 active_session.view.write_error(e)
 
@@ -88,7 +91,7 @@ class PromptLoop(contract.ISessionRunner):
         """
 
         if session.input is None:
-            raise config.PromptError(self._prompt, "Input source is not available.")
+            raise config.InvalidOperation("Input source is not available.")
 
         while True:
             if command_line := session.input.read_command(self._prompt):

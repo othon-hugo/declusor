@@ -122,7 +122,7 @@ def parse_command_arguments(line: str, definitions: ArgumentDefinitions, allow_u
     try:
         args_list: list[str] = shlex.split(cleaned_line)
     except ValueError as e:
-        raise config.InvalidOperation(f"Parsing error: {e}") from e
+        raise config.ControllerError(f"Parsing error: {e}") from e
 
     unrecognized_args: list[str]
 

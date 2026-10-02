@@ -305,7 +305,12 @@ class DeclusorParser(util.Parser):
             choices = ", ".join(repr(name) for name in available_plugins)
             raise config.ParserError(f"argument -p/--plugin: invalid choice: {plugin_name!r} (choose from {choices})")
 
-        Plugin = manager.get(plugin_name)
+        try:
+            Plugin = manager.get(plugin_name)
+        except config.PluginNotFoundError as error:
+            choices = ", ".join(repr(name) for name in error.available_plugins)
+            raise config.ParserError(f"argument -p/--plugin: invalid choice: {plugin_name!r} (choose from {choices})") from error
+
         Plugin.configure_parser(self)
 
         args = self.parse_args(argv)

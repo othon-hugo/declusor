@@ -127,9 +127,18 @@ class PySocketConnection(contract.IConnection):
         try:
             received_ack = self._transport.read_exact(len(expected_ack))
             if received_ack != expected_ack:
-                raise config.ConnectionError("Invalid client ACK during session initialization.")
+                raise config.ConnectionHandshakeError(
+                    "Invalid client ACK during session initialization.",
+                    expected_ack=expected_ack,
+                    received_ack=received_ack,
+                )
+        except config.ConnectionHandshakeError:
+            raise
         except (config.ConnectionClosed, config.ConnectionTimeoutError, config.ConnectionError) as error:
-            raise config.ConnectionError("Failed waiting for client ACK during session initialization.") from error
+            raise config.ConnectionHandshakeError(
+                "Failed waiting for client ACK during session initialization.",
+                expected_ack=expected_ack,
+            ) from error
 
         self._state = contract.ConnectionState.CONNECTED
 

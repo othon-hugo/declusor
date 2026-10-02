@@ -36,7 +36,7 @@ class DummyRouter(contract.IRouter):
         r = route.strip()
 
         if r in self._routes:
-            raise ValueError(f"route already exists: {r}")
+            raise config.DuplicateRouteError(r, f"route already exists: {r}")
 
         self._routes[r] = controller
 

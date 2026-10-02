@@ -22,7 +22,7 @@ def load_file(filepath: str | Path, /) -> bytes:
         with open(filepath, "rb") as f:
             return f.read()
     except OSError as e:
-        raise config.InvalidOperation(f"could not read file {filepath!r}: {e}") from e
+        raise config.StorageValidationError(f"could not read file {filepath!r}: {e}", path=filepath) from e
 
 
 def try_load_file(filepath: str | Path, /) -> bytes | None:
@@ -37,7 +37,7 @@ def try_load_file(filepath: str | Path, /) -> bytes | None:
 
     try:
         return load_file(filepath)
-    except config.InvalidOperation:
+    except (config.InvalidOperation, config.StorageError):
         return None
 
 
@@ -51,24 +51,24 @@ def ensure_file_exists(filepath: str | Path, /) -> Path:
         Path: The resolved file path.
 
     Raises:
-        InvalidOperation: If the file does not exist, is not a file, is empty,
+        StorageValidationError: If the file does not exist, is not a file, is empty,
             or contains null bytes.
     """
 
     raw_path = str(filepath).strip()
     if not raw_path:
-        raise config.InvalidOperation("File path cannot be empty.")
+        raise config.StorageValidationError("File path cannot be empty.")
 
     if "\0" in raw_path:
-        raise config.InvalidOperation("File path cannot contain null bytes.")
+        raise config.StorageValidationError("File path cannot contain null bytes.", path=filepath)
 
     filepath = Path(filepath).resolve()
 
     if not filepath.exists():
-        raise config.InvalidOperation(f"file {filepath.name!r} does not exist")
+        raise config.StorageValidationError(f"file {filepath.name!r} does not exist", path=filepath)
 
     if not filepath.is_file():
-        raise config.InvalidOperation(f"{filepath.name!r} is not a file")
+        raise config.StorageValidationError(f"{filepath.name!r} is not a file", path=filepath)
 
     return filepath
 
@@ -83,23 +83,23 @@ def ensure_directory_exists(dirpath: str | Path, /) -> Path:
         Path: The resolved directory path.
 
     Raises:
-        InvalidOperation: If the directory does not exist, is not a directory, is empty,
+        StorageValidationError: If the directory does not exist, is not a directory, is empty,
             or contains null bytes.
     """
 
     raw_path = str(dirpath).strip()
     if not raw_path:
-        raise config.InvalidOperation("Directory path cannot be empty.")
+        raise config.StorageValidationError("Directory path cannot be empty.")
 
     if "\0" in raw_path:
-        raise config.InvalidOperation("Directory path cannot contain null bytes.")
+        raise config.StorageValidationError("Directory path cannot contain null bytes.", path=dirpath)
 
     dirpath = Path(dirpath).resolve()
 
     if not dirpath.exists():
-        raise config.InvalidOperation(f"directory {dirpath.name!r} does not exist")
+        raise config.StorageValidationError(f"directory {dirpath.name!r} does not exist", path=dirpath)
 
     if not dirpath.is_dir():
-        raise config.InvalidOperation(f"{dirpath.name!r} is not a directory")
+        raise config.StorageValidationError(f"{dirpath.name!r} is not a directory", path=dirpath)
 
     return dirpath

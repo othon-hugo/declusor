@@ -6,6 +6,6 @@ from .terminal import (
 )
 
 __all__ = [
-    "run_terminal_app",
     "main",
+    "run_terminal_app",
 ]

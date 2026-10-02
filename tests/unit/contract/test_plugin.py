@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from declusor import config, contract
 
 
@@ -90,9 +92,7 @@ def test_launcher_delivery_file_mode_with_path(tmp_path: Path) -> None:
 def test_launcher_delivery_file_mode_without_path_raises() -> None:
     """Verify LauncherDelivery rejects FILE mode when output_path is None."""
 
-    import pytest
-
-    with pytest.raises(config.DeclusorException, match="output_path must be set when output_mode is FILE"):
+    with pytest.raises(config.LauncherDeliveryError, match="output_path must be set when output_mode is FILE"):
         contract.LauncherDelivery(
             script=b"echo hello",
             output_mode=config.LauncherOutputMode.FILE,
@@ -103,11 +103,11 @@ def test_launcher_delivery_file_mode_without_path_raises() -> None:
 def test_launcher_delivery_non_file_mode_with_path_raises(tmp_path: Path) -> None:
     """Verify LauncherDelivery rejects output_path when output_mode is not FILE."""
 
-    import pytest
-
-    with pytest.raises(config.DeclusorException, match="output_path is only valid when output_mode is FILE"):
+    with pytest.raises(config.LauncherDeliveryError, match="output_path is only valid when output_mode is FILE") as exc_info:
         contract.LauncherDelivery(
             script=b"echo hello",
             output_mode=config.LauncherOutputMode.TERMINAL,
             output_path=tmp_path / "out.sh",
         )
+
+    assert exc_info.value.output_path == tmp_path / "out.sh"

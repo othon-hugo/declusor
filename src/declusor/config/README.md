@@ -16,14 +16,25 @@ The **config** package sits at the base of the dependency hierarchy. It provides
 ## Exception Hierarchy
 
 ```
-DeclusorException
-├── InvalidOperation
-├── ConnectionFailure
-├── ParserError
-├── RouterError
-├── PromptError
+DeclusorException (Exception)
+├── ConnectionError
+│   ├── ConnectionClosed
+│   ├── ConnectionTimeoutError
+│   └── ConnectionHandshakeError
+├── StorageError
+│   └── StorageValidationError (StorageError, InvalidOperation)
+├── PluginError
+│   ├── PluginNotFoundError
+│   ├── PluginValidationError
+│   └── LauncherDeliveryError
+├── CommandError
+│   └── CommandValidationError (CommandError, InvalidOperation)
 ├── ControllerError
-└── ExitRequest
+├── RouterError
+│   └── DuplicateRouteError (RouterError, ValueError)
+├── PromptError
+├── ParserError
+└── InvalidOperation
 
 DeclusorWarning (Warning)
 ```

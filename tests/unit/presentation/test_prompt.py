@@ -1,3 +1,5 @@
+import pytest
+
 from declusor import config, contract, presentation, testing
 
 
@@ -142,3 +144,43 @@ def test_prompt_loop_as_session_runner(
     runner.run(test_session, dummy_router)
 
     assert dummy_router.locate_calls == ["quit"]
+
+
+def test_prompt_handles_connection_closed_terminates_session(
+    dummy_router: testing.DummyRouter,
+    test_session: contract.SessionContext,
+    dummy_input_source: testing.DummyInputSource,
+    dummy_view: testing.DummyView,
+) -> None:
+    """PromptLoop catches ConnectionClosed, logs the error, and terminates session without re-prompting."""
+
+    dummy_input_source.feed_inputs("disconnect_cmd", "never_reached")
+    exc = config.ConnectionClosed("Peer terminated connection.")
+
+    def disconnect_controller(
+        session: contract.SessionContext,
+        req: contract.IControllerRequest[contract.ControllerArguments],
+    ) -> contract.ControllerResult:
+        raise exc
+
+    dummy_router.connect("disconnect_cmd", disconnect_controller)
+
+    prompt = presentation.PromptLoop(
+        "test_cli",
+        router=dummy_router,
+        session=test_session,
+    )
+
+    prompt.run()
+
+    assert exc in dummy_view.errors
+    assert dummy_router.locate_calls == ["disconnect_cmd"]
+
+
+def test_prompt_missing_session_or_router_raises_invalid_operation() -> None:
+    """PromptLoop raises InvalidOperation when run without session, router, or input source."""
+
+    prompt = presentation.PromptLoop("test_cli")
+
+    with pytest.raises(config.InvalidOperation, match="PromptLoop requires an active session and router"):
+        prompt.run()
