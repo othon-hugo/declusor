@@ -100,17 +100,23 @@ class DeclusorParser(util.Parser):
 
             normalized = value.strip()
             lower = normalized.lower()
+
             if lower == config.LauncherOutputMode.TERMINAL.value:
                 return super().__new__(cls, config.LauncherOutputMode.TERMINAL.value)
+
             if lower == config.LauncherOutputMode.SILENT.value:
                 return super().__new__(cls, config.LauncherOutputMode.SILENT.value)
+
             if lower.startswith("file:"):
                 path_str = normalized[5:].strip()
+
                 if not path_str:
                     raise ValueError("output path cannot be empty in 'file:<path>' launcher output mode")
+
                 return super().__new__(cls, normalized)
 
             valid = f"{config.LauncherOutputMode.TERMINAL.value!r}, {config.LauncherOutputMode.SILENT.value!r}, or 'file:<path>'"
+
             raise ValueError(f"invalid launcher output mode: {value!r} (expected {valid})")
 
     class LauncherWrapper(str):
