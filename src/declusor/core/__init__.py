@@ -8,6 +8,9 @@ from declusor.config import (
 from .application import (
     Application,
 )
+from .launcher_renderer import (
+    LauncherRenderer,
+)
 from .parser import (
     DeclusorParser,
 )
@@ -23,6 +26,7 @@ from .router import (
 __all__ = [
     "Application",
     "DeclusorParser",
+    "LauncherRenderer",
     "ParserError",
     "PluginError",
     "PluginManager",

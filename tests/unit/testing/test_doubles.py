@@ -167,7 +167,9 @@ def test_dummy_client_runtime() -> None:
     runtime = testing.DummyPluginRuntime(client_script="echo test", connection_to_return=conn)
 
     assert isinstance(runtime.processor, contract.IPluginProcessor)
-    assert runtime.launcher == "echo test"
+    assert isinstance(runtime.launcher, contract.LauncherDelivery)
+    assert runtime.launcher.text == "echo test"
+    assert runtime.launcher.script == b"echo test"
 
     dummy_transport = testing.DummyTransport()
     created = runtime.create_connection(dummy_transport)

@@ -11,6 +11,7 @@ def test_settings_constants() -> None:
     assert "payload" in config.PROJECT_DESCRIPTION.lower()
     assert config.DEFAULT_SERVER_ACK == b"\x00"
     assert config.DEFAULT_CLIENT_ACK_SEED == b"declusor"
+    assert config.DEFAULT_LAUNCHER_OUTPUT_MODE == config.LauncherOutputMode.TERMINAL
 
 
 def test_plugin_filesystem_attributes(tmp_path: Path) -> None:

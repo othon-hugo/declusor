@@ -46,6 +46,15 @@ class PluginConfig[T: ParsedArguments]:
     mode: config.ExecutionMode = config.DEFAULT_EXECUTION_MODE
     """Application execution mode (e.g. CLI, API, MCP, HTTP)."""
 
+    launcher_output_mode: config.LauncherOutputMode = config.DEFAULT_LAUNCHER_OUTPUT_MODE
+    """Delivery mode for the generated client launcher."""
+
+    launcher_output_path: Path | None = None
+    """Destination file path when launcher_output_mode is FILE."""
+
+    launcher_wrapper: str | None = None
+    """Optional shell invocation wrapper template."""
+
 
 @dataclass(frozen=True)
 class PluginFilesystem:
@@ -221,6 +230,56 @@ class IPluginExtension[T: ParsedArguments](ABC):
         raise NotImplementedError
 
 
+@dataclass(frozen=True)
+class LauncherDelivery:
+    """Immutable delivery envelope for a rendered client launcher.
+
+    Carries the raw launcher payload alongside operator-controlled delivery
+    options. Encoding support is reserved for a future iteration.
+    """
+
+    script: bytes
+    """Raw launcher payload produced by the plugin."""
+
+    output_mode: config.LauncherOutputMode = config.DEFAULT_LAUNCHER_OUTPUT_MODE
+    """How the launcher is delivered to the operator."""
+
+    output_path: Path | None = None
+    """Destination file path; required when output_mode is FILE."""
+
+    wrapper_template: str | None = None
+    """Optional shell invocation wrapper using $-based template syntax.
+
+    '$DECLUSOR_SCRIPT' (or '${DECLUSOR_SCRIPT}') is substituted with the rendered payload
+    via util.format_template (string.Template.safe_substitute).
+    Example: "python3 -c '$DECLUSOR_SCRIPT'"
+
+    Note: when encoding is implemented in a future iteration, the wrapper
+    will receive the already-encoded payload. Plugin authors must declare
+    a wrapper+encoding pair that is mutually compatible.
+    """
+
+    def __post_init__(self) -> None:
+        """Validate delivery envelope invariants."""
+
+        if self.output_mode is config.LauncherOutputMode.FILE and self.output_path is None:
+            raise config.DeclusorException("output_path must be set when output_mode is FILE.")
+
+        if self.output_path is not None and self.output_mode is not config.LauncherOutputMode.FILE:
+            raise config.DeclusorException("output_path is only valid when output_mode is FILE.")
+
+    @property
+    def text(self) -> str:
+        """Decode raw script bytes to UTF-8 text."""
+
+        return self.script.decode("utf-8")
+
+    def __str__(self) -> str:
+        """Return the decoded script text for string formatting and CLI output."""
+
+        return self.text
+
+
 class IPluginRuntime(ABC):
     """Runtime used by the service to operate a configured client.
 
@@ -237,8 +296,8 @@ class IPluginRuntime(ABC):
 
     @property
     @abstractmethod
-    def launcher(self) -> str:
-        """Return the rendered client bootstrap script."""
+    def launcher(self) -> LauncherDelivery:
+        """Return the rendered client bootstrap delivery envelope."""
 
         raise NotImplementedError
 

@@ -16,11 +16,13 @@ class DummyPluginRuntime(contract.IPluginRuntime):
     def __init__(
         self,
         file_store: contract.IPluginProcessor | None = None,
-        client_script: str = "#!/bin/sh\necho dummy",
+        client_script: bytes | str = b"#!/bin/sh\necho dummy",
         connection_to_return: contract.IConnection | None = None,
+        launcher_delivery: contract.LauncherDelivery | None = None,
     ) -> None:
         self._file_store: contract.IPluginProcessor = file_store or DummyPluginFileStore()
-        self._client_script: str = client_script
+        script_bytes = client_script.encode("utf-8") if isinstance(client_script, str) else client_script
+        self._launcher_delivery = launcher_delivery or contract.LauncherDelivery(script=script_bytes)
         self.connection_to_return: contract.IConnection | None = connection_to_return
         self.created_connections: list[contract.IConnection] = []
 
@@ -29,8 +31,8 @@ class DummyPluginRuntime(contract.IPluginRuntime):
         return self._file_store
 
     @property
-    def launcher(self) -> str:
-        return self._client_script
+    def launcher(self) -> contract.LauncherDelivery:
+        return self._launcher_delivery
 
     def create_connection(self, transport: contract.ITransport, /) -> contract.IConnection:
         """Return configured connection or new DummyConnection instance."""

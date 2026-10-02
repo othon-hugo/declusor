@@ -1,7 +1,10 @@
+import dataclasses
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from declusor import contract, controller, transport
+
+from .launcher_renderer import LauncherRenderer
 
 if TYPE_CHECKING:
     from .plugin import PluginManager
@@ -27,6 +30,7 @@ class Application:
         session_runner: contract.ISessionRunner,
         input_source: contract.IInputSource | None = None,
         listener_factory: TransportListenerFactory | None = None,
+        launcher_renderer: LauncherRenderer | None = None,
     ) -> None:
         """Create an application with configured dependencies and session runner.
 
@@ -37,6 +41,7 @@ class Application:
             session_runner: Session runner executing interaction workflows over active sessions.
             input_source: Optional operator input source interface.
             listener_factory: Optional factory producing an ITransportListener for network connections.
+            launcher_renderer: Optional renderer responsible for delivering client launcher.
         """
 
         self._router = router
@@ -45,6 +50,7 @@ class Application:
         self._plugin_manager = plugin_manager
         self._input_source = input_source
         self._listener_factory = listener_factory or transport.TcpListener
+        self._launcher_renderer = launcher_renderer or LauncherRenderer(self._view)
 
         self._connect_routes()
 
@@ -78,7 +84,15 @@ class Application:
         if self._input_source is not None and (setup_completer := getattr(self._input_source, "setup_completer", None)):
             setup_completer(self._router.routes)
 
-        self._view.write_message(plugin_runtime.launcher)
+        delivery = plugin_runtime.launcher
+        delivery = dataclasses.replace(
+            delivery,
+            output_mode=config.launcher_output_mode,
+            output_path=config.launcher_output_path,
+            wrapper_template=config.launcher_wrapper or delivery.wrapper_template,
+        )
+
+        self._launcher_renderer.render(delivery)
 
         with self._listener_factory(config.host, config.port) as listener:
             incoming_transport = listener.accept()

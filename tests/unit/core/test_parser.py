@@ -128,3 +128,106 @@ def test_declusor_parser_invalid_mode_raises() -> None:
 
     with pytest.raises(config.ParserError):
         parser.parse(manager, ["127.0.0.1", "9000", "--mode", "invalid_mode"])
+
+
+def test_declusor_parser_launcher_output_defaults_to_terminal() -> None:
+    """Verify parser defaults launcher output to TERMINAL mode with no path."""
+
+    testing.DummyPlugin.reset()
+    manager = core.PluginManager()
+    manager.register(testing.DummyPlugin)
+
+    parser = core.DeclusorParser(name="test_app")
+    plugin_config = parser.parse(manager, ["127.0.0.1", "9000", "-p", testing.DummyPlugin.name])
+
+    assert plugin_config.launcher_output_mode == config.LauncherOutputMode.TERMINAL
+    assert plugin_config.launcher_output_path is None
+    assert plugin_config.launcher_wrapper is None
+
+
+def test_declusor_parser_explicit_launcher_output_silent() -> None:
+    """Verify parser accepts --launcher-output silent."""
+
+    testing.DummyPlugin.reset()
+    manager = core.PluginManager()
+    manager.register(testing.DummyPlugin)
+
+    parser = core.DeclusorParser(name="test_app")
+    plugin_config = parser.parse(
+        manager,
+        ["127.0.0.1", "9000", "-p", testing.DummyPlugin.name, "--launcher-output", "silent"],
+    )
+
+    assert plugin_config.launcher_output_mode == config.LauncherOutputMode.SILENT
+    assert plugin_config.launcher_output_path is None
+
+
+def test_declusor_parser_explicit_launcher_output_file(tmp_path: Path) -> None:
+    """Verify parser accepts --launcher-output file:<path> and resolves destination path."""
+
+    testing.DummyPlugin.reset()
+    manager = core.PluginManager()
+    manager.register(testing.DummyPlugin)
+
+    target_file = tmp_path / "client_launcher.sh"
+    parser = core.DeclusorParser(name="test_app")
+    plugin_config = parser.parse(
+        manager,
+        ["127.0.0.1", "9000", "-p", testing.DummyPlugin.name, "--launcher-output", f"file:{target_file}"],
+    )
+
+    assert plugin_config.launcher_output_mode == config.LauncherOutputMode.FILE
+    assert plugin_config.launcher_output_path == target_file
+
+
+def test_declusor_parser_invalid_launcher_output_raises() -> None:
+    """Verify parser raises ParserError for invalid launcher output choice."""
+
+    manager = core.PluginManager()
+    parser = core.DeclusorParser(name="test_app")
+
+    with pytest.raises(config.ParserError, match="--launcher-output"):
+        parser.parse(manager, ["127.0.0.1", "9000", "--launcher-output", "unsupported"])
+
+
+def test_declusor_parser_empty_launcher_output_file_path_raises() -> None:
+    """Verify parser raises ParserError when file:<path> has an empty path."""
+
+    manager = core.PluginManager()
+    parser = core.DeclusorParser(name="test_app")
+
+    with pytest.raises(config.ParserError, match="--launcher-output"):
+        parser.parse(manager, ["127.0.0.1", "9000", "--launcher-output", "file:"])
+
+
+def test_declusor_parser_explicit_launcher_wrapper() -> None:
+    """Verify parser accepts --launcher-wrapper template."""
+
+    testing.DummyPlugin.reset()
+    manager = core.PluginManager()
+    manager.register(testing.DummyPlugin)
+
+    parser = core.DeclusorParser(name="test_app")
+    plugin_config = parser.parse(
+        manager,
+        [
+            "127.0.0.1",
+            "9000",
+            "-p",
+            testing.DummyPlugin.name,
+            "--launcher-wrapper",
+            "python3 -c '$DECLUSOR_SCRIPT'",
+        ],
+    )
+
+    assert plugin_config.launcher_wrapper == "python3 -c '$DECLUSOR_SCRIPT'"
+
+
+def test_declusor_parser_empty_launcher_wrapper_raises() -> None:
+    """Verify parser raises ParserError when --launcher-wrapper is empty string."""
+
+    manager = core.PluginManager()
+    parser = core.DeclusorParser(name="test_app")
+
+    with pytest.raises(config.ParserError, match="--launcher-wrapper"):
+        parser.parse(manager, ["127.0.0.1", "9000", "--launcher-wrapper", ""])
