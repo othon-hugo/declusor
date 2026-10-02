@@ -1,12 +1,14 @@
+import argparse
 import dataclasses
 from collections.abc import Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Any, Final
 
-from declusor import config, contract, util
+from declusor import config, contract, transport, util
 
 if TYPE_CHECKING:
     from declusor.core.plugin import PluginManager
+    from declusor.transport import TransportLayerRegistry
 
 
 class DeclusorParser(util.Parser):
@@ -150,6 +152,22 @@ class DeclusorParser(util.Parser):
 
             return super().__new__(cls, timeout)
 
+    class TransportLayer(str):
+        """Transport layer argument definition."""
+
+        arg_name: Final = "transport_layers"
+        arg_help: Final = "composable transport layer to wrap connection (repeatable, e.g. --transport-layer xor)"
+        arg_action: Final = "append"
+        arg_flags: Final = ("--transport-layer",)
+
+        def __new__(cls, value: str) -> "DeclusorParser.TransportLayer":
+            """Validate and normalize transport layer identifier."""
+
+            if not value or not value.strip():
+                raise ValueError("transport layer name cannot be empty")
+
+            return super().__new__(cls, value.strip().lower())
+
     declusor_arguments: Final = (
         Host.arg_name,
         Port.arg_name,
@@ -160,6 +178,7 @@ class DeclusorParser(util.Parser):
         LauncherOutput.arg_name,
         LauncherWrapper.arg_name,
         Timeout.arg_name,
+        TransportLayer.arg_name,
     )
 
     @staticmethod
@@ -175,10 +194,13 @@ class DeclusorParser(util.Parser):
 
         normalized = value.strip()
         lower = normalized.lower()
+
         if lower == config.LauncherOutputMode.TERMINAL.value:
             return config.LauncherOutputMode.TERMINAL, None
+
         if lower == config.LauncherOutputMode.SILENT.value:
             return config.LauncherOutputMode.SILENT, None
+
         if lower.startswith("file:"):
             return config.LauncherOutputMode.FILE, Path(normalized[5:].strip())
 
@@ -263,6 +285,15 @@ class DeclusorParser(util.Parser):
             type=self.Timeout,
         )
 
+        self.add_argument(
+            *self.TransportLayer.arg_flags,
+            dest=self.TransportLayer.arg_name,
+            action=self.TransportLayer.arg_action,
+            help=self.TransportLayer.arg_help,
+            type=self.TransportLayer,
+            default=None,
+        )
+
         self._is_configured = True
 
     def parse(
@@ -270,6 +301,8 @@ class DeclusorParser(util.Parser):
         manager: "PluginManager",
         argv: Sequence[str] | None = None,
         /,
+        *,
+        transport_registry: "TransportLayerRegistry | None" = None,
     ) -> contract.PluginConfig[contract.ParsedArguments]:
         """Parse arguments and build a validated plugin configuration.
 
@@ -277,6 +310,7 @@ class DeclusorParser(util.Parser):
             manager: Plugin manager containing the client plugins available to
                 the application.
             argv: Sequence of arguments to parse, excluding the program name.
+            transport_registry: Optional registry to validate and resolve transport layers.
 
         Returns:
             Validated plugin configuration populated from command-line arguments.
@@ -287,7 +321,20 @@ class DeclusorParser(util.Parser):
         """
 
         preliminary_args, _ = self.parse_known_args(argv)
-        plugin_dir: Path | None = preliminary_args.plugin_dir
+        self._load_cli_plugin_directory(manager, preliminary_args.plugin_dir)
+
+        Plugin = self._resolve_plugin(manager, preliminary_args.plugin)
+        Plugin.configure_parser(self)
+
+        args = self.parse_args(argv)
+
+        plugin_config = self._build_plugin_config(Plugin, args)
+        transport_layers = self._resolve_transport_layers(args, transport_registry)
+
+        return self._assemble_final_config(plugin_config, args, transport_layers)
+
+    def _load_cli_plugin_directory(self, manager: "PluginManager", plugin_dir: Path | None, /) -> None:
+        """Load external plugins from CLI directory if specified."""
 
         if plugin_dir is not None:
             manager.load_from_directory(
@@ -296,36 +343,58 @@ class DeclusorParser(util.Parser):
                 allow_override=True,
             )
 
+    def _resolve_plugin(
+        self,
+        manager: "PluginManager",
+        requested_plugin: object,
+        /,
+    ) -> type[contract.IPluginExtension[Any]]:
+        """Resolve and validate the target plugin from available registrations."""
+
         available_plugins = manager.names()
-        default_plugin = (
-            config.DEFAULT_DECLUSOR_PLUGIN.value
-            if config.DEFAULT_DECLUSOR_PLUGIN.value in available_plugins
-            else (available_plugins[0] if available_plugins else None)
-        )
-        plugin_name: str | None = preliminary_args.plugin or default_plugin
+        default_plugin = self._determine_default_plugin(available_plugins)
+        plugin_name = requested_plugin or default_plugin
 
         if not plugin_name:
             raise config.ParserError("No client plugin available.")
+
+        if not isinstance(plugin_name, str):
+            raise config.ParserError(f"argument -p/--plugin: expected string, got {type(plugin_name).__name__}")
 
         if plugin_name not in available_plugins:
             choices = ", ".join(repr(name) for name in available_plugins)
             raise config.ParserError(f"argument -p/--plugin: invalid choice: {plugin_name!r} (choose from {choices})")
 
         try:
-            Plugin = manager.get(plugin_name)
+            return manager.get(plugin_name)
         except config.PluginNotFoundError as error:
             choices = ", ".join(repr(name) for name in error.available_plugins)
             raise config.ParserError(f"argument -p/--plugin: invalid choice: {plugin_name!r} (choose from {choices})") from error
 
-        Plugin.configure_parser(self)
+    @staticmethod
+    def _determine_default_plugin(available_plugins: Sequence[str], /) -> str | None:
+        """Determine default plugin identifier from available plugins."""
 
-        args = self.parse_args(argv)
+        if config.DEFAULT_DECLUSOR_PLUGIN.value in available_plugins:
+            return config.DEFAULT_DECLUSOR_PLUGIN.value
+
+        if available_plugins:
+            return available_plugins[0]
+
+        return None
+
+    def _build_plugin_config(
+        self,
+        Plugin: type[contract.IPluginExtension[Any]],
+        args: argparse.Namespace,
+        /,
+    ) -> contract.PluginConfig[contract.ParsedArguments]:
+        """Extract options and build validated base plugin configuration."""
 
         plugin_options = {key: value for key, value in vars(args).items() if key not in self.declusor_arguments}
         plugin_filesystem = contract.PluginFilesystem.from_root(args.assets_dir) if args.assets_dir is not None else None
 
         options: contract.ParsedArguments = Plugin.extract_options(plugin_options)
-
         plugin_config = Plugin.build_config(
             args.host,
             args.port,
@@ -336,6 +405,36 @@ class DeclusorParser(util.Parser):
 
         Plugin.validate(plugin_config)
 
+        return plugin_config
+
+    def _resolve_transport_layers(
+        self,
+        args: argparse.Namespace,
+        transport_registry: "TransportLayerRegistry | None",
+        /,
+    ) -> tuple[str, ...]:
+        """Validate and resolve requested transport layers against the registry."""
+
+        registry = transport_registry or transport.default_transport_registry()
+        raw_layers: list[str] = getattr(args, self.TransportLayer.arg_name, None) or []
+        available_layers = registry.names()
+
+        for layer in raw_layers:
+            if layer not in available_layers:
+                choices = ", ".join(repr(name) for name in available_layers)
+                raise config.ParserError(f"argument --transport-layer: invalid choice: {layer!r} (choose from {choices})")
+
+        return tuple(raw_layers)
+
+    def _assemble_final_config(
+        self,
+        plugin_config: contract.PluginConfig[contract.ParsedArguments],
+        args: argparse.Namespace,
+        transport_layers: tuple[str, ...],
+        /,
+    ) -> contract.PluginConfig[contract.ParsedArguments]:
+        """Apply global CLI overrides to plugin configuration."""
+
         output_mode, output_path = self.parse_launcher_output(args.launcher_output)
 
         return dataclasses.replace(
@@ -344,4 +443,5 @@ class DeclusorParser(util.Parser):
             launcher_output_mode=output_mode,
             launcher_output_path=output_path,
             launcher_wrapper=args.launcher_wrapper,
+            transport_layers=transport_layers,
         )

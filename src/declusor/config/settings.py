@@ -35,3 +35,6 @@ DEFAULT_EXECUTION_MODE = ExecutionMode.CLI
 
 DEFAULT_LAUNCHER_OUTPUT_MODE: Final[LauncherOutputMode] = LauncherOutputMode.TERMINAL
 """Default client launcher output delivery mode."""
+
+DEFAULT_XOR_KEY: Final[bytes] = b"declusor"
+"""Default obfuscation key for XOR transport layer."""

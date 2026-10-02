@@ -286,3 +286,88 @@ def test_declusor_parser_invalid_timeout_type_raises() -> None:
 
     with pytest.raises(config.ParserError):
         parser.parse(manager, ["127.0.0.1", "9000", "-p", testing.DummyPlugin.name, "-t", "abc"])
+
+
+def test_declusor_parser_transport_layers_defaults_to_empty() -> None:
+    """Verify transport_layers is an empty tuple when --transport-layer is omitted."""
+
+    testing.DummyPlugin.reset()
+    manager = core.PluginManager()
+    manager.register(testing.DummyPlugin)
+
+    parser = core.DeclusorParser(name="test_app")
+    plugin_config = parser.parse(manager, ["127.0.0.1", "9000", "-p", testing.DummyPlugin.name])
+
+    assert plugin_config.transport_layers == ()
+
+
+def test_declusor_parser_single_transport_layer() -> None:
+    """Verify parser captures a single --transport-layer flag."""
+
+    testing.DummyPlugin.reset()
+    manager = core.PluginManager()
+    manager.register(testing.DummyPlugin)
+
+    parser = core.DeclusorParser(name="test_app")
+    plugin_config = parser.parse(
+        manager,
+        ["127.0.0.1", "9000", "-p", testing.DummyPlugin.name, "--transport-layer", "xor"],
+    )
+
+    assert plugin_config.transport_layers == ("xor",)
+
+
+def test_declusor_parser_multiple_transport_layers_in_order() -> None:
+    """Verify parser accumulates repeatable --transport-layer flags in order."""
+
+    testing.DummyPlugin.reset()
+    manager = core.PluginManager()
+    manager.register(testing.DummyPlugin)
+
+    parser = core.DeclusorParser(name="test_app")
+    plugin_config = parser.parse(
+        manager,
+        [
+            "127.0.0.1",
+            "9000",
+            "-p",
+            testing.DummyPlugin.name,
+            "--transport-layer",
+            "xor",
+            "--transport-layer",
+            "xor",
+        ],
+    )
+
+    assert plugin_config.transport_layers == ("xor", "xor")
+
+
+def test_declusor_parser_transport_layer_invalid_choice_raises() -> None:
+    """Verify parser raises ParserError when an unknown transport layer is passed."""
+
+    testing.DummyPlugin.reset()
+    manager = core.PluginManager()
+    manager.register(testing.DummyPlugin)
+
+    parser = core.DeclusorParser(name="test_app")
+
+    with pytest.raises(config.ParserError, match="invalid choice: 'unknown'"):
+        parser.parse(
+            manager,
+            ["127.0.0.1", "9000", "-p", testing.DummyPlugin.name, "--transport-layer", "unknown"],
+        )
+
+
+def test_declusor_parser_non_string_plugin_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verify parser raises ParserError if preliminary parsed plugin is not a string."""
+
+    testing.DummyPlugin.reset()
+    manager = core.PluginManager()
+    manager.register(testing.DummyPlugin)
+
+    parser = core.DeclusorParser(name="test_app")
+    fake_args = type("Args", (), {"plugin_dir": None, "plugin": 12345})()
+    monkeypatch.setattr(parser, "parse_known_args", lambda argv: (fake_args, []))
+
+    with pytest.raises(config.ParserError, match="argument -p/--plugin: expected string, got int"):
+        parser.parse(manager, ["127.0.0.1", "9000"])

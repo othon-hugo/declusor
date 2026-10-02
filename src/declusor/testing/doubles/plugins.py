@@ -25,6 +25,7 @@ class DummyPluginRuntime(contract.IPluginRuntime):
         self._launcher_delivery = launcher_delivery or contract.LauncherDelivery(script=script_bytes)
         self.connection_to_return: contract.IConnection | None = connection_to_return
         self.created_connections: list[contract.IConnection] = []
+        self.received_transports: list[contract.ITransport] = []
 
     @property
     def processor(self) -> contract.IPluginProcessor:
@@ -37,6 +38,7 @@ class DummyPluginRuntime(contract.IPluginRuntime):
     def create_connection(self, transport: contract.ITransport, /) -> contract.IConnection:
         """Return configured connection or new DummyConnection instance."""
 
+        self.received_transports.append(transport)
         conn = self.connection_to_return or DummyConnection()
         self.created_connections.append(conn)
 
