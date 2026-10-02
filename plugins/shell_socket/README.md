@@ -6,10 +6,10 @@ For detailed specification of wire framing, nonces, and session transitions, see
 
 ## Modules
 
-| Module       | Responsibility                                                                  |
-| ------------ | ------------------------------------------------------------------------------- |
-| `connection` | Reverse-shell connection transport, protocol profile, and asset file store      |
-| `plugin`     | Entry-point plugin class (`IPluginExtension`), runtime orchestrator, and assets |
+| Module       | Responsibility                                                                                                           |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| `connection` | Reverse-shell connection transport (`ShellSocketConnection`) and protocol profile (`ShellSocketProfile`)                 |
+| `plugin`     | Entry-point plugin (`ShellSocketPlugin`), runtime adapter (`ShellSocketRuntime`), and asset processor (`ShellSocketProcessor`) |
 
 ## Architecture & Protocol Flow
 

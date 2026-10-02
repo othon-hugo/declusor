@@ -18,15 +18,15 @@ plugins/<plugin_name>/
 ├── src/
 │   └── declusor_<plugin_name>/
 │       ├── __init__.py    # Public exports (__all__ = ["<PluginClass>"])
-│       ├── plugin.py      # Implements IPlugin & IPluginRuntime
-│       └── connection.py  # Implements IConnection, IConnectionProfile, IClientFileStore
-├── assets/
-│   ├── launchers/         # Bootstrap stagers (e.g. client.py, client.sh)
-│   ├── helpers/           # Library files sent during session handshake
-│   └── modules/           # On-demand discovery/execution modules
-└── tests/
-    ├── conftest.py
-    └── test_conformance.py # PluginConformanceTestSuite inheritance
+│       ├── plugin.py      # Implements IPluginExtension, IPluginRuntime, and IPluginProcessor
+│       └── connection.py  # Implements IConnection and IConnectionProfile
+│   ├── assets/
+│   │   ├── launchers/     # Bootstrap stagers (e.g. client.py, client.sh)
+│   │   ├── helpers/       # Library files sent during session handshake
+│   │   └── modules/       # On-demand discovery/execution modules
+│   └── tests/
+│       ├── conftest.py
+│       └── test_conformance.py # PluginConformanceTestSuite inheritance
 ```
 
 ## 2. Manifest Configuration (`pyproject.toml`)
@@ -52,17 +52,19 @@ dependencies = [
 
 Plugins implement contracts defined in `declusor.contract`:
 
-1. **`IPlugin`**:
+1. **`IPluginExtension[T]`**:
    - `name: str`: Unique identifier matching the entry point key.
    - `description: str`, `version: str`: Metadata.
+   - `options_type: type[T]`: Concrete `ParsedArguments` TypedDict class.
    - `configure_parser(parser: IArgumentParser) -> None`: Registers plugin-specific CLI flags.
-   - `build_config(args: PluginArguments, data_paths: DataPaths) -> PluginConfig`: Constructs validated configuration.
-   - `validate(plugin_config: PluginConfig) -> None`: Validates assets and pre-conditions.
-   - `build_runtime(plugin_config: PluginConfig) -> IPluginRuntime`: Instantiates runtime.
+   - `extract_options(raw: Mapping[str, object]) -> T`: Extracts typed configuration from parsed arguments.
+   - `build_config(host: str, port: int, options: T, /, filesystem: PluginFilesystem | None = None, mode: ExecutionMode = DEFAULT_EXECUTION_MODE) -> PluginConfig[T]`: Constructs validated configuration.
+   - `validate(plugin_config: PluginConfig[T]) -> None`: Validates assets and pre-conditions.
+   - `build_runtime(plugin_config: PluginConfig[T]) -> IPluginRuntime`: Instantiates runtime.
 2. **`IPluginRuntime`**:
-   - `client_files: IClientFileStore`: Exposes file store.
-   - `client_script: str`: Returns rendered stager code.
-   - `create_connection(connection: socket) -> IConnection`: Wraps raw socket in transport connection.
+   - `processor: IPluginProcessor`: Exposes asset processor.
+   - `launcher: LauncherDelivery`: Returns rendered delivery envelope.
+   - `create_connection(transport: ITransport) -> IConnection`: Wraps accepted transport in domain connection.
 3. **`IConnection`**:
    - Manages state lifecycle: `ConnectionState.CREATED` -> `CONNECTED` -> `CLOSED`.
    - Idempotent `close()`.

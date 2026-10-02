@@ -27,7 +27,7 @@ main (Composition Root)
 
 1. **`config` (Foundation Base)**:
    - **Zero dependencies** on any other package in `declusor`.
-   - Defines centralized domain exceptions (`DeclusorException`), operational enums (`OperationCode`, `ConnectionState`, `ControllerAction`), and path settings (`DataPaths`).
+   - Defines centralized domain exceptions (`DeclusorException`), operational enums (`OperationCode`, `ConnectionState`, `ControllerAction`), and path constants (`ROOT_DIR`, `PLUGINS_DIR`, `USER_DIR`, `USER_PLUGINS_DIR`).
 2. **`util` (Stateless Primitives)**:
    - Depends **only** on `config`.
    - Zero circular dependencies. All functions are pure, stateless, or defensive.
@@ -84,7 +84,7 @@ plugins/<plugin_name>/
 ├── src/
 │   └── <plugin_name>/
 │       ├── __init__.py    # Public exports
-│       ├── plugin.py      # IPlugin & IPluginRuntime & IClientFileStore implementation
+│       ├── plugin.py      # IPluginExtension, IPluginRuntime, and IPluginProcessor implementation
 │       └── connection.py  # IConnection, IConnectionProfile
 ├── assets/                # Self-contained stagers, libraries, and helpers
 │   ├── launchers/         # Embedded client bootstrap scripts
