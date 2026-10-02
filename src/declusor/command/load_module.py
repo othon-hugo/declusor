@@ -51,8 +51,7 @@ class LoadModule(BaseStreamCommand):
 
         Raises:
             CommandError: If the session file store is unavailable.
-            ModuleNotFound: If the requested module file cannot be found.
-            InvalidOperation: If the profile cannot render the load operation command.
+            InvalidOperation: If the module is not found, attempts path traversal, or cannot be rendered.
             ConnectionClosed: If the connection is closed.
             ConnectionWriteError: If transmitting the module payload fails.
         """
@@ -60,13 +59,16 @@ class LoadModule(BaseStreamCommand):
         session.connection.write(self._payload(session).encode())
 
     def _payload(self, session: contract.SessionContext, /) -> str:
+        if session.plugin is None:
+            raise config.CommandError("Client file store is not configured for this session.")
+
         module_path = session.plugin.find_module(self._dto.module_name)
 
         if not module_path:
-            raise
+            raise config.InvalidOperation(f"Module '{self._dto.module_name}' could not be found.")
 
         if not util.validate_file_relative(module_path, session.plugin.filesystem.modules):
-            raise
+            raise config.InvalidOperation(f"Module path '{self._dto.module_name}' is outside the permitted modules directory.")
 
         module_bytes = session.plugin.load_module(module_path)
         module_b64 = util.convert_to_base64(module_bytes)

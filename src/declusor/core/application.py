@@ -50,7 +50,7 @@ class Application:
 
     @property
     def plugin_manager(self) -> "PluginManager":
-        """[...]"""
+        """Active plugin manager managing discovered and registered client plugins."""
 
         return self._plugin_manager
 

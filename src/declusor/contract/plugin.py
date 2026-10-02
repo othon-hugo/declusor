@@ -267,7 +267,7 @@ class IPluginProcessor(ABC):
     @property
     @abstractmethod
     def filesystem(self) -> PluginFilesystem:
-        """[...]"""
+        """Plugin filesystem layout exposing launcher, helper, and module asset directories."""
 
         raise NotImplementedError
 
@@ -280,25 +280,53 @@ class IPluginProcessor(ABC):
 
     @abstractmethod
     def find_module(self, module_name: str, /) -> Path | None:
-        """[...]"""
+        """Resolve a module by name within the plugin's module repository.
+
+        Args:
+            module_name: Module identifier or relative path to resolve.
+
+        Returns:
+            Resolved Path to the candidate module file if found, None otherwise.
+        """
 
         raise NotImplementedError
 
     @abstractmethod
     def find_helper(self, helper_name: str, /) -> Path | None:
-        """[...]"""
+        """Resolve a helper library by name within the plugin's helper repository.
+
+        Args:
+            helper_name: Helper library identifier or relative path to resolve.
+
+        Returns:
+            Resolved Path to the helper file if found, None otherwise.
+        """
 
         raise NotImplementedError
 
     @abstractmethod
     def load_module(self, module_path: Path, /) -> bytes:
-        """[...]"""
+        """Read and return raw bytes from a validated module path.
+
+        Args:
+            module_path: Validated path to the target module file.
+
+        Returns:
+            Raw binary content of the module file.
+        """
 
         raise NotImplementedError
 
     @abstractmethod
     def load_helper(self, helper_path: Path, /) -> bytes:
-        """[...]"""
+        """Read and return raw bytes from a validated helper library path.
+
+        Args:
+            helper_path: Validated path to the target helper file.
+
+        Returns:
+            Raw binary content of the helper library file.
+        """
 
         raise NotImplementedError
 

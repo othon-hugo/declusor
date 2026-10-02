@@ -3,10 +3,10 @@ from enum import IntEnum, StrEnum
 
 class DeclusorPlugins(StrEnum):
     SHELL_SOCKET = "shell_socket"
-    """[...]"""
+    """POSIX shell socket client transport plugin."""
 
     PY_SOCKET = "py_socket"
-    """[...]"""
+    """Cross-platform Python socket client transport plugin."""
 
 
 DEFAULT_DECLUSOR_PLUGIN = DeclusorPlugins.SHELL_SOCKET

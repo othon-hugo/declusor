@@ -58,7 +58,7 @@ class SessionContext:
 
     @property
     def plugin(self) -> "IPluginProcessor":
-        """[...]"""
+        """Client plugin processor for asset resolution and payload loading."""
 
         return self._plugin_processor
 

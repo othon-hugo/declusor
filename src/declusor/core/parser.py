@@ -65,22 +65,25 @@ class DeclusorParser(util.Parser):
         arg_flags: Final = ("--plugin-dir",)
 
     class ExecutionMode(str):
-        """[...]"""
+        """Execution mode argument definition."""
 
         arg_name: Final = "mode"
-        arg_help: Final = "[...]"
+        arg_help: Final = "runtime execution mode (e.g. cli, api, mcp, http)"
         arg_flags: Final = ("-m", "--mode")
         arg_choices: Final = tuple(config.ExecutionMode)
         arg_default: Final = config.DEFAULT_EXECUTION_MODE
 
         def __new__(cls, value: str) -> "DeclusorParser.ExecutionMode":
             if not value:
-                raise ValueError("plugin cannot be empty")
+                raise ValueError("execution mode cannot be empty")
 
-            if value not in config.ExecutionMode:
-                raise
+            try:
+                mode = config.ExecutionMode.from_string(value)
+            except ValueError as error:
+                choices = ", ".join(repr(m.value) for m in config.ExecutionMode)
+                raise ValueError(f"invalid choice: {value!r} (choose from {choices})") from error
 
-            return super().__new__(cls, value)
+            return super().__new__(cls, mode.value)
 
     declusor_arguments: Final = (
         Host.arg_name,
@@ -183,16 +186,15 @@ class DeclusorParser(util.Parser):
             )
 
         available_plugins = manager.names()
+        default_plugin = (
+            config.DEFAULT_DECLUSOR_PLUGIN.value
+            if config.DEFAULT_DECLUSOR_PLUGIN.value in available_plugins
+            else (available_plugins[0] if available_plugins else None)
+        )
+        plugin_name: str | None = preliminary_args.plugin or default_plugin
 
-        if not available_plugins:
+        if not plugin_name:
             raise config.ParserError("No client plugin available.")
-
-        default_plugin = config.DEFAULT_DECLUSOR_PLUGIN.value
-
-        if default_plugin not in available_plugins:
-            default_plugin = available_plugins[0]
-
-        plugin_name: str = preliminary_args.plugin or default_plugin
 
         if plugin_name not in available_plugins:
             choices = ", ".join(repr(name) for name in available_plugins)
@@ -204,7 +206,7 @@ class DeclusorParser(util.Parser):
         args = self.parse_args(argv)
 
         plugin_options = {key: value for key, value in vars(args).items() if key not in self.declusor_arguments}
-        plugin_filesystem = contract.PluginFilesystem.from_root(args.assets_dir)
+        plugin_filesystem = contract.PluginFilesystem.from_root(args.assets_dir) if args.assets_dir is not None else None
 
         options: contract.ParsedArguments = Plugin.extract_options(plugin_options)
 
@@ -213,7 +215,7 @@ class DeclusorParser(util.Parser):
             args.port,
             options,
             filesystem=plugin_filesystem,
-            mode=args.mode,
+            mode=config.ExecutionMode(args.mode),
         )
 
         Plugin.validate(plugin_config)
