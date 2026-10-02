@@ -1,3 +1,4 @@
+import secrets
 from collections.abc import Iterable
 from pathlib import Path
 
@@ -36,3 +37,17 @@ def validate_file_relative(filepath: str | Path, base_dir: str | Path) -> bool:
     base_dir = Path(base_dir).resolve()
 
     return filepath.is_relative_to(base_dir)
+
+
+def generate_nonce(nbytes: int = 16) -> str:
+    """Generate a cryptographically secure hexadecimal nonce token.
+
+    Args:
+        nbytes: Number of random bytes to generate (default: 16, producing a
+            32-character hex string).
+
+    Returns:
+        Hexadecimal string token.
+    """
+
+    return secrets.token_hex(nbytes)

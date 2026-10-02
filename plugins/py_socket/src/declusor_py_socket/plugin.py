@@ -3,7 +3,7 @@ from pathlib import Path
 
 from declusor import config, contract, util
 
-from .connection import PySocketConnection, PySocketProfile
+from .connection import DEFAULT_CONNECTION_TIMEOUT, PySocketConnection, PySocketRenderer
 
 _DEFAULT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -85,13 +85,8 @@ class PySocketRuntime(contract.IPluginRuntime):
 
     def __init__(self, plugin_config: contract.PluginConfig[PySocketConfig], /) -> None:
         self._plugin_config = plugin_config
-
-        self._profile = PySocketProfile(
-            name=plugin_config.kind,
-            ack_server_raw=config.DEFAULT_SERVER_ACK,
-            ack_client_raw=util.hash_sha256(config.DEFAULT_CLIENT_ACK_SEED),
-        )
-
+        self._renderer = PySocketRenderer()
+        self._expected_ack = util.hash_sha256(config.DEFAULT_CLIENT_ACK_SEED)
         self._processor = PySocketProcessor(plugin_config.filesystem)
 
     @property
@@ -107,7 +102,7 @@ class PySocketRuntime(contract.IPluginRuntime):
         rendered_bytes = self._processor.render_launcher(
             self._plugin_config.host,
             self._plugin_config.port,
-            self._profile.ack_client_raw,
+            self._expected_ack,
         )
 
         return contract.LauncherDelivery(script=rendered_bytes)
@@ -115,7 +110,13 @@ class PySocketRuntime(contract.IPluginRuntime):
     def create_connection(self, transport: contract.ITransport, /) -> contract.IConnection:
         """Create a py_socket connection for an accepted transport channel."""
 
-        return PySocketConnection(transport, self._profile, self._processor)
+        return PySocketConnection(
+            transport,
+            self._renderer,
+            self._processor,
+            expected_ack=self._expected_ack,
+            timeout=self._plugin_config.timeout or DEFAULT_CONNECTION_TIMEOUT,
+        )
 
 
 class PySocketProcessor(contract.IPluginProcessor):

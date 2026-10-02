@@ -13,6 +13,7 @@ from .connection import (
     ConnectionState,
     IConnection,
     IConnectionProfile,
+    IOperationRenderer,
 )
 from .controller import (
     ArgumentDefinitions,
@@ -70,6 +71,7 @@ __all__ = [
     "IControllerRequest",
     "IInputSource",
     "InvalidOperation",
+    "IOperationRenderer",
     "IPluginExtension",
     "IPluginProcessor",
     "IPluginRuntime",

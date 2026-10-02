@@ -93,7 +93,7 @@ class BaseFileCommand[T: "ExecuteFileDTO | UploadFileDTO"](BaseStreamCommand):
         file_b64 = util.convert_to_base64(file_bytes)
 
         extra_args = self._operation_arguments()
-        script_data = session.connection.profile.render_operation_command(
+        script_data = session.connection.renderer.render_operation_command(
             self._opcode,
             file_b64,
             *extra_args,

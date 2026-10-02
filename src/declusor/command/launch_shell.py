@@ -98,7 +98,7 @@ class LaunchShell(contract.ICommand):
                 command_request = input_source.read_raw()
 
                 if command_request:
-                    rendered = connection.profile.render_operation_command(
+                    rendered = connection.renderer.render_operation_command(
                         config.OperationCode.EXEC_COMMAND,
                         command_request,
                     )

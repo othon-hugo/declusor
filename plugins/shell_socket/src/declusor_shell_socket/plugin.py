@@ -3,7 +3,7 @@ from pathlib import Path
 
 from declusor import config, contract, util
 
-from .connection import ShellSocketConnection, ShellSocketProfile
+from .connection import DEFAULT_CONNECTION_TIMEOUT, ShellSocketConnection, ShellSocketRenderer
 
 _DEFAULT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -82,13 +82,8 @@ class ShellSocketRuntime(contract.IPluginRuntime):
 
     def __init__(self, plugin_config: contract.PluginConfig[ShellSocketConfig], /) -> None:
         self._plugin_config = plugin_config
-
-        self._profile = ShellSocketProfile(
-            name=plugin_config.kind,
-            ack_server_raw=config.DEFAULT_SERVER_ACK,
-            ack_client_raw=util.hash_sha256(config.DEFAULT_CLIENT_ACK_SEED),
-        )
-
+        self._renderer = ShellSocketRenderer()
+        self._expected_ack = util.hash_sha256(config.DEFAULT_CLIENT_ACK_SEED)
         self._processor = ShellSocketProcessor(plugin_config.filesystem)
 
     @property
@@ -104,7 +99,7 @@ class ShellSocketRuntime(contract.IPluginRuntime):
         rendered_bytes = self._processor.render_launcher(
             self._plugin_config.host,
             self._plugin_config.port,
-            self._profile.ack_client_raw,
+            self._expected_ack,
         )
 
         return contract.LauncherDelivery(script=rendered_bytes)
@@ -112,7 +107,12 @@ class ShellSocketRuntime(contract.IPluginRuntime):
     def create_connection(self, transport: contract.ITransport, /) -> contract.IConnection:
         """Create a shell_socket connection for an accepted transport channel."""
 
-        return ShellSocketConnection(transport, self._profile, self._processor)
+        return ShellSocketConnection(
+            transport,
+            self._renderer,
+            self._processor,
+            timeout=self._plugin_config.timeout or DEFAULT_CONNECTION_TIMEOUT,
+        )
 
 
 class ShellSocketProcessor(contract.IPluginProcessor):

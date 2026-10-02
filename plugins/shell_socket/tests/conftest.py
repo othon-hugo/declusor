@@ -18,6 +18,8 @@ def make_shell_connection(
         ack: bytes = b"ack",
         framing_mode: config.FramingMode = config.FramingMode.EPHEMERAL_ENVELOPE,
         default_nonce: str | None = "test_nonce",
+        buffer_size: int = shell_socket.ShellSocketConnection.DEFAULT_BUFFER_SIZE,
+        timeout: float | None = shell_socket.DEFAULT_CONNECTION_TIMEOUT,
     ) -> tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]:
         launchers = tmp_path / "launchers"
         launchers.mkdir(exist_ok=True)
@@ -30,16 +32,20 @@ def make_shell_connection(
         modules.mkdir(exist_ok=True)
 
         trans = transport_connection or testing.DummyTransport(peer_address="127.0.0.1:9000")
-        profile = shell_socket.ShellSocketProfile(
-            name="test",
-            ack_server_raw=b"\x00",
-            ack_client_raw=ack,
-            _framing_mode=framing_mode,
-            _default_nonce=default_nonce,
-        )
+        renderer = shell_socket.ShellSocketRenderer()
         fs = contract.PluginFilesystem.from_root(tmp_path)
         files = shell_socket.ShellSocketProcessor(fs)
 
-        return shell_socket.ShellSocketConnection(trans, profile, files), trans
+        return (
+            shell_socket.ShellSocketConnection(
+                trans,
+                renderer,
+                files,
+                buffer_size=buffer_size,
+                fixed_nonce=default_nonce,
+                timeout=timeout,
+            ),
+            trans,
+        )
 
     return _create_connection

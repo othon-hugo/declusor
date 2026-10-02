@@ -126,6 +126,24 @@ class DeclusorParser(util.Parser):
 
             return super().__new__(cls, value)
 
+    class Timeout(float):
+        """Network socket operation timeout argument definition."""
+
+        arg_name: Final = "timeout"
+        arg_help: Final = "network socket timeout in seconds (e.g. 1.0, 5.0)"
+        arg_flags: Final = ("-t", "--timeout")
+
+        def __new__(cls, value: float | str) -> "DeclusorParser.Timeout":
+            try:
+                timeout = float(value)
+            except (TypeError, ValueError) as error:
+                raise ValueError(f"invalid timeout value: {value!r}") from error
+
+            if timeout <= 0:
+                raise ValueError("timeout must be greater than 0")
+
+            return super().__new__(cls, timeout)
+
     declusor_arguments: Final = (
         Host.arg_name,
         Port.arg_name,
@@ -135,6 +153,7 @@ class DeclusorParser(util.Parser):
         ExecutionMode.arg_name,
         LauncherOutput.arg_name,
         LauncherWrapper.arg_name,
+        Timeout.arg_name,
     )
 
     @staticmethod
@@ -231,6 +250,13 @@ class DeclusorParser(util.Parser):
             type=self.LauncherWrapper,
         )
 
+        self.add_argument(
+            *self.Timeout.arg_flags,
+            help=self.Timeout.arg_help,
+            default=None,
+            type=self.Timeout,
+        )
+
         self._is_configured = True
 
     def parse(
@@ -303,6 +329,7 @@ class DeclusorParser(util.Parser):
 
         return dataclasses.replace(
             plugin_config,
+            timeout=args.timeout,
             launcher_output_mode=output_mode,
             launcher_output_path=output_path,
             launcher_wrapper=args.launcher_wrapper,

@@ -231,3 +231,58 @@ def test_declusor_parser_empty_launcher_wrapper_raises() -> None:
 
     with pytest.raises(config.ParserError, match="--launcher-wrapper"):
         parser.parse(manager, ["127.0.0.1", "9000", "--launcher-wrapper", ""])
+
+
+def test_declusor_parser_default_timeout_is_none() -> None:
+    """Verify parser defaults timeout to None."""
+
+    testing.DummyPlugin.reset()
+    manager = core.PluginManager()
+    manager.register(testing.DummyPlugin)
+
+    parser = core.DeclusorParser(name="test_app")
+    plugin_config = parser.parse(manager, ["127.0.0.1", "9000", "-p", testing.DummyPlugin.name])
+
+    assert plugin_config.timeout is None
+
+
+def test_declusor_parser_explicit_timeout() -> None:
+    """Verify parser accepts -t and --timeout float values."""
+
+    testing.DummyPlugin.reset()
+    manager = core.PluginManager()
+    manager.register(testing.DummyPlugin)
+
+    parser = core.DeclusorParser(name="test_app")
+
+    cfg1 = parser.parse(manager, ["127.0.0.1", "9000", "-p", testing.DummyPlugin.name, "-t", "5.5"])
+    assert cfg1.timeout == 5.5
+
+    cfg2 = parser.parse(manager, ["127.0.0.1", "9000", "-p", testing.DummyPlugin.name, "--timeout", "10"])
+    assert cfg2.timeout == 10.0
+
+
+def test_declusor_parser_negative_timeout_raises() -> None:
+    """Verify parser raises ParserError when timeout is negative."""
+
+    testing.DummyPlugin.reset()
+    manager = core.PluginManager()
+    manager.register(testing.DummyPlugin)
+
+    parser = core.DeclusorParser(name="test_app")
+
+    with pytest.raises(config.ParserError, match="invalid Timeout value"):
+        parser.parse(manager, ["127.0.0.1", "9000", "-p", testing.DummyPlugin.name, "-t", "-1.0"])
+
+
+def test_declusor_parser_invalid_timeout_type_raises() -> None:
+    """Verify parser raises ParserError when timeout is not a valid float."""
+
+    testing.DummyPlugin.reset()
+    manager = core.PluginManager()
+    manager.register(testing.DummyPlugin)
+
+    parser = core.DeclusorParser(name="test_app")
+
+    with pytest.raises(config.ParserError):
+        parser.parse(manager, ["127.0.0.1", "9000", "-p", testing.DummyPlugin.name, "-t", "abc"])

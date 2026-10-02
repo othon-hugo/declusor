@@ -2,7 +2,7 @@ from collections.abc import Generator, Sequence
 from typing import Self
 
 from declusor import config, contract
-from declusor.testing.doubles.profile import DummyConnectionProfile
+from declusor.testing.doubles.profile import DummyOperationRenderer
 
 
 class DummyConnection(contract.IConnection):
@@ -10,11 +10,11 @@ class DummyConnection(contract.IConnection):
 
     def __init__(
         self,
-        client: contract.IConnectionProfile | None = None,
+        client: contract.IOperationRenderer | None = None,
         incoming_chunks: Sequence[bytes] | None = None,
         initial_state: contract.ConnectionState = contract.ConnectionState.CONNECTED,
     ) -> None:
-        self._client: contract.IConnectionProfile = client or DummyConnectionProfile()
+        self._client: contract.IOperationRenderer = client or DummyOperationRenderer()
         self._state: contract.ConnectionState = initial_state
         self._timeout: float | None = None
         self.written: list[bytes] = []
@@ -34,7 +34,11 @@ class DummyConnection(contract.IConnection):
         self._state = value
 
     @property
-    def profile(self) -> contract.IConnectionProfile:
+    def renderer(self) -> contract.IOperationRenderer:
+        return self._client
+
+    @property
+    def profile(self) -> contract.IOperationRenderer:
         return self._client
 
     @property

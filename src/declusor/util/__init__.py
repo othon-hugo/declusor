@@ -32,6 +32,7 @@ from .plugin import (
     import_plugin_from_file,
 )
 from .security import (
+    generate_nonce,
     validate_file_extension,
     validate_file_relative,
 )
@@ -54,6 +55,7 @@ __all__ = [
     "ensure_file_exists",
     "find_plugin_entry",
     "format_template",
+    "generate_nonce",
     "hash_md5",
     "hash_sha256",
     "hash_sha384",

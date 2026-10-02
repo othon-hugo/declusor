@@ -27,35 +27,20 @@ class ConnectionState(StrEnum):
     """Connection terminated gracefully or due to underlying network failure."""
 
 
-class IConnectionProfile(ABC):
-    """Immutable configuration profile for a remote client.
+class IOperationRenderer(ABC):
+    """Command syntax renderer for remote clients.
 
-    Holds protocol parameters (buffer sizes, timeouts, ACK values, supported
-    operations) and performs only pure string formatting. All I/O is
-    delegated to the ``IConnection`` implementation.
+    Translates abstract OperationCode tokens into agent-specific command
+    strings without performing network I/O.
     """
-
-    @property
-    @abstractmethod
-    def default_buffer_size(self) -> int:
-        """Receive buffer size in bytes used for socket reads."""
-
-        raise NotImplementedError
-
-    @property
-    @abstractmethod
-    def default_timeout(self) -> float | None:
-        """Default socket operation timeout in seconds, or ``None`` for no timeout."""
-
-        raise NotImplementedError
 
     @abstractmethod
     def render_operation_command(self, opcode: "OperationCode", /, *args: str) -> str | None:
-        """Build the shell command string for a given operation code.
+        """Build the command string for a given operation code.
 
         Maps an ``OperationCode`` to its client-side function name and appends
         each argument as a shell-quoted token. Returns ``None`` if the opcode
-        is not supported by this profile.
+        is not supported by this renderer.
 
         Args:
             opcode: The operation to invoke on the client.
@@ -66,6 +51,10 @@ class IConnectionProfile(ABC):
         """
 
         raise NotImplementedError
+
+
+# Backward-compatible alias for existing extensions
+IConnectionProfile = IOperationRenderer
 
 
 class IConnection(ABC):
@@ -95,14 +84,16 @@ class IConnection(ABC):
 
     @property
     @abstractmethod
-    def profile(self) -> "IConnectionProfile":
-        """The configuration profile for the connected client.
-
-        Returns:
-            The ``IProfile`` instance that was used to open this connection.
-        """
+    def renderer(self) -> IOperationRenderer:
+        """The command syntax renderer for this connection."""
 
         raise NotImplementedError
+
+    @property
+    def profile(self) -> IOperationRenderer:
+        """Backward-compatible alias for ``renderer``."""
+
+        return self.renderer
 
     @property
     @abstractmethod

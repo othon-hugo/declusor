@@ -7,7 +7,7 @@ from declusor import config
 def test_profile_supported_functions_are_immutable() -> None:
     """Verify supported functions mapping in shell_socket.ShellSocketProfile cannot be modified."""
 
-    profile = shell_socket.ShellSocketProfile(name="test", ack_server_raw=b"\x00", ack_client_raw=b"ack")
+    profile = shell_socket.ShellSocketProfile()
 
     with pytest.raises(TypeError):
         profile._supported_functions[config.OperationCode.EXEC_FILE] = "changed"  # type: ignore[index]
@@ -28,7 +28,7 @@ def test_profile_render_operation_command() -> None:
     rendered_spaces = profile.render_operation_command(config.OperationCode.STORE_FILE, "payload==", "path with spaces/file.sh")
     assert rendered_spaces == "store_base64_encoded_value payload== 'path with spaces/file.sh'"
 
-    empty_profile = shell_socket.ShellSocketProfile(name="empty", ack_server_raw=b"\x00", ack_client_raw=b"ack", _supported_functions={})
+    empty_profile = shell_socket.ShellSocketProfile(_supported_functions={})
     assert empty_profile.render_operation_command(config.OperationCode.STORE_FILE) is None
 
 

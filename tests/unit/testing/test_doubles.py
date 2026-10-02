@@ -50,12 +50,10 @@ def test_dummy_input_source_exception() -> None:
     assert input_source.read_command() == ""
 
 
-def test_dummy_connection_profile() -> None:
-    """DummyConnectionProfile exposes properties and formats rendered commands."""
+def test_dummy_operation_renderer() -> None:
+    """DummyOperationRenderer formats rendered commands and records calls."""
 
-    profile = testing.DummyConnectionProfile(name="test_p", buffer_size=1024, timeout=2.5)
-    assert profile.default_buffer_size == 1024
-    assert profile.default_timeout == 2.5
+    profile = testing.DummyOperationRenderer(name="test_p")
 
     default_rendered = profile.render_operation_command(config.OperationCode.EXEC_FILE, "arg1", "arg2")
     assert default_rendered == f"{config.OperationCode.EXEC_FILE.value} arg1 arg2"
@@ -63,6 +61,10 @@ def test_dummy_connection_profile() -> None:
     profile.set_rendered_command(config.OperationCode.STORE_FILE, "custom_store")
     assert profile.render_operation_command(config.OperationCode.STORE_FILE, "arg") == "custom_store"
     assert len(profile.render_calls) == 2
+
+    # Backward compatibility alias
+    alias = testing.DummyConnectionProfile()
+    assert isinstance(alias, testing.DummyOperationRenderer)
 
 
 def test_dummy_connection_lifecycle_and_io() -> None:
