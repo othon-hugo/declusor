@@ -1,4 +1,5 @@
 import queue
+from collections.abc import Sequence
 
 from declusor import config, contract
 
@@ -243,12 +244,22 @@ def create_memory_transport_pair(
 class MemoryTransportListener(contract.ITransportListener):
     """In-memory transport listener double for testing server lifecycles without sockets."""
 
-    def __init__(self, endpoint: str = "memory://listener") -> None:
-        """Initialize listener with local endpoint description."""
+    def __init__(
+        self,
+        endpoint: str = "memory://listener",
+        *,
+        incoming_transports: Sequence[contract.ITransport] | None = None,
+    ) -> None:
+        """Initialize listener with local endpoint description and optional queued transports."""
 
         self._endpoint = endpoint
         self._closed = False
         self._queue: queue.Queue[contract.ITransport] = queue.Queue()
+        self.accepted_count: int = 0
+
+        if incoming_transports is not None:
+            for t in incoming_transports:
+                self.enqueue_transport(t)
 
     @property
     def local_endpoint(self) -> str:
@@ -286,7 +297,9 @@ class MemoryTransportListener(contract.ITransportListener):
             raise config.ConnectionClosed("Cannot accept on closed listener.")
 
         try:
-            return self._queue.get(block=True, timeout=timeout)
+            transport = self._queue.get(block=True, timeout=timeout)
+            self.accepted_count += 1
+            return transport
         except queue.Empty as err:
             raise config.ConnectionTimeoutError(f"Timed out after {timeout}s waiting for incoming connection.") from err
 

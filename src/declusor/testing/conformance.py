@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from declusor import contract, util
+from declusor import config, contract, util
 from declusor.testing.doubles.transport import DummyTransport
 
 
@@ -43,8 +43,9 @@ def assert_conforms_to_client_plugin[T: contract.ParsedArguments](
         filesystem.launchers.mkdir(parents=True, exist_ok=True)
         filesystem.helpers.mkdir(parents=True, exist_ok=True)
         filesystem.modules.mkdir(parents=True, exist_ok=True)
-        (filesystem.launchers / f"{plugin_cls.name}_client.py").write_text("# client")
-        (filesystem.launchers / f"{plugin_cls.name}_client.sh").write_text("# client")
+        for ext in (".py", ".sh", ".bash", ".ps1", ".bat", ""):
+            (filesystem.launchers / f"{plugin_cls.name}_client{ext}").write_text("# client")
+            (filesystem.launchers / f"{plugin_cls.name}{ext}").write_text("# client")
         plugin_config = plugin_cls.build_config("127.0.0.1", 9000, options, filesystem=filesystem)
     else:
         plugin_config = plugin_cls.build_config("127.0.0.1", 9000, options)
@@ -64,13 +65,31 @@ def assert_conforms_to_client_plugin[T: contract.ParsedArguments](
     assert isinstance(runtime.launcher, contract.LauncherDelivery), "runtime.launcher must return a LauncherDelivery instance."
     assert isinstance(runtime.processor, contract.IPluginProcessor), "runtime.processor must implement IPluginProcessor."
 
-    # Invariant 6: Connection instantiation
+    # Invariant 6: Connection instantiation and behavioral lifecycle
     dummy_transport = DummyTransport()
     connection = runtime.create_connection(dummy_transport)
     assert isinstance(connection, contract.IConnection), f"create_connection must return IConnection, got {type(connection)}."
-    assert connection.state in (contract.ConnectionState.CREATED, contract.ConnectionState.CONNECTED), (
-        f"Initial state must be CREATED or CONNECTED, got {connection.state}."
+    initial_state = connection.state
+    assert initial_state in (contract.ConnectionState.CREATED, contract.ConnectionState.CONNECTED), (
+        f"Initial state must be CREATED or CONNECTED, got {initial_state}."
     )
+
+    connection.write(b"conformance_probe")
+    assert len(dummy_transport.written_bytes) > 0, "Transport must record bytes after connection.write()."
+
+    connection.close()
+    assert connection.state == contract.ConnectionState.CLOSED, f"Connection state after close() must be CLOSED, got {connection.state}."
+    assert dummy_transport.is_closed, "Transport must be closed after connection.close()."
+
+    # Idempotent close
+    connection.close()
+
+    # Reject operations on closed connection
+    with pytest.raises(config.ConnectionClosed):
+        connection.write(b"probe_after_close")
+
+    with pytest.raises(config.ConnectionError):
+        connection.handshake()
 
 
 class PluginConformanceTestSuite[T: contract.ParsedArguments]:

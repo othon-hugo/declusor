@@ -252,3 +252,99 @@ def test_launch_shell_instantiation_with_dto() -> None:
     cmd = command.LaunchShell(dto)
 
     assert cmd._dto.banner == "Welcome to shell"
+
+
+def test_launch_shell_missing_input_source_raises_invalid_operation(
+    dummy_connection: testing.DummyConnection,
+    dummy_view: testing.DummyView,
+    dummy_file_store: testing.DummyPluginFileStore,
+) -> None:
+    """LaunchShell raises InvalidOperation when session has no active input source."""
+
+    session_no_input = contract.SessionContext(
+        connection=dummy_connection,
+        view=dummy_view,
+        input_source=None,
+        plugin_processor=dummy_file_store,
+    )
+
+    cmd = command.LaunchShell(command.LaunchShellDTO())
+    with pytest.raises(config.InvalidOperation, match="Interactive shell requires an active input source"):
+        cmd.read_response(session_no_input)
+
+
+def test_launch_shell_lifecycle_with_banner_and_keyboard_interrupt(
+    dummy_connection: testing.DummyConnection,
+    dummy_view: testing.DummyView,
+    dummy_file_store: testing.DummyPluginFileStore,
+    dummy_profile: testing.DummyConnectionProfile,
+) -> None:
+    """LaunchShell displays banner, forwards inputs, handles KeyboardInterrupt, and cleans up."""
+
+    class ShellTestInputSource(contract.IInputSource):
+        def __init__(self, commands: list[str]) -> None:
+            self.commands = list(commands)
+
+        def read_command(self, prompt: str = "", /) -> str:
+            return ""
+
+        def read_raw(self, prompt: str = "", /) -> str:
+            if self.commands:
+                return self.commands.pop(0)
+            raise KeyboardInterrupt()
+
+        def setup_completer(self, command_routes: object, /) -> None:
+            pass
+
+    input_source = ShellTestInputSource(["uname -a\n", "whoami\n"])
+    session = contract.SessionContext(
+        connection=dummy_connection,
+        view=dummy_view,
+        input_source=input_source,
+        plugin_processor=dummy_file_store,
+    )
+
+    dummy_profile.set_rendered_command(config.OperationCode.EXEC_COMMAND, "rendered_exec")
+
+    dto = command.LaunchShellDTO(banner="=== Interactive Remote Shell ===")
+    cmd = command.LaunchShell(dto)
+
+    cmd.send_request(session)
+    cmd.read_response(session)
+
+    assert "=== Interactive Remote Shell ===" in dummy_view.messages
+    assert "[keyboard interrupt received]" in dummy_view.messages
+    assert len(dummy_connection.written) >= 2
+
+
+def test_launch_shell_restores_connection_timeout(
+    dummy_connection: testing.DummyConnection,
+    dummy_view: testing.DummyView,
+    dummy_file_store: testing.DummyPluginFileStore,
+) -> None:
+    """LaunchShell clears connection timeout during output streaming and restores it in cleanup."""
+
+    class ImmediateInterruptInputSource(contract.IInputSource):
+        def read_command(self, prompt: str = "", /) -> str:
+            return ""
+
+        def read_raw(self, prompt: str = "", /) -> str:
+            raise KeyboardInterrupt()
+
+        def setup_completer(self, command_routes: object, /) -> None:
+            pass
+
+    dummy_connection.timeout = 12.5
+    session = contract.SessionContext(
+        connection=dummy_connection,
+        view=dummy_view,
+        input_source=ImmediateInterruptInputSource(),
+        plugin_processor=dummy_file_store,
+    )
+
+    cmd = command.LaunchShell(command.LaunchShellDTO(banner=None))
+    cmd.send_request(session)
+    cmd.read_response(session)
+
+    assert dummy_connection.timeout == 12.5
+    assert "[keyboard interrupt received]" in dummy_view.messages

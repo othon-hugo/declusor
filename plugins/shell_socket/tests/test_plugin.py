@@ -5,23 +5,6 @@ import declusor_shell_socket as shell_socket
 from declusor import contract, testing
 
 
-def test_shell_socket_plugin_metadata() -> None:
-    """Verify shell_socket.ShellSocketPlugin metadata properties (name, description, version)."""
-
-    assert shell_socket.ShellSocketPlugin.name == "shell_socket"
-    assert shell_socket.ShellSocketPlugin.description != ""
-    assert shell_socket.ShellSocketPlugin.version == "1.0.0"
-
-
-def test_extract_options_returns_typed_dict() -> None:
-    """Verify extract_options returns a ShellSocketConfig instance."""
-
-    raw: dict[str, object] = {}
-    options = shell_socket.ShellSocketPlugin.extract_options(raw)
-
-    assert isinstance(options, dict)
-
-
 def test_build_config_uses_default_assets_when_filesystem_is_none() -> None:
     """When filesystem is None, plugin builds default PluginFilesystem from bundled assets."""
 

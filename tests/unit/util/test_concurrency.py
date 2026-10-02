@@ -70,3 +70,54 @@ def test_task_pool_cooperative_stop() -> None:
     pool.wait_all()
 
     assert executed is True
+
+
+def test_task_pool_context_manager_success() -> None:
+    """Verify TaskPool context manager executes cleanly when tasks succeed."""
+
+    pool = concurrency.TaskPool()
+    pool.add_task(lambda _: 100, name="ok-task")
+
+    with pool:
+        pool.wait_all()
+
+    assert pool.errors == []
+
+
+def test_task_pool_context_manager_raises_exception_group() -> None:
+    """Verify TaskPool context manager raises ExceptionGroup on task failure."""
+
+    def failing(stop_event: concurrency.TaskEvent) -> None:
+        raise RuntimeError("worker failed")
+
+    pool = concurrency.TaskPool()
+    pool.add_task(failing, name="bad-task")
+
+    with pytest.raises(ExceptionGroup) as exc_info:
+        with pool:
+            pool.wait_all()
+
+    assert len(exc_info.value.exceptions) == 1
+    assert isinstance(exc_info.value.exceptions[0], RuntimeError)
+
+
+def test_task_pool_return_all_thread_timeout() -> None:
+    """Verify return_all records TimeoutError when thread fails to exit within timeout."""
+
+    hang_event = concurrency.TaskEvent()
+
+    def hanging_task(stop_event: concurrency.TaskEvent) -> None:
+        while not hang_event.is_set():
+            time.sleep(0.005)
+
+    pool = concurrency.TaskPool()
+    pool.add_task(hanging_task, name="hanging-worker")
+    pool.start_all()
+
+    try:
+        tasks = list(pool.return_all(0.02))
+        assert len(tasks) == 1
+        assert isinstance(tasks[0].exception, TimeoutError)
+    finally:
+        hang_event.set()
+        time.sleep(0.02)

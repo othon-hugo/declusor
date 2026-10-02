@@ -14,7 +14,11 @@ from declusor.testing.doubles import (
     DummyRouter,
     DummySessionRunner,
     DummySocket,
+    DummyTransport,
     DummyView,
+    MemoryTransport,
+    MemoryTransportListener,
+    create_memory_transport_pair,
 )
 from declusor.testing.factories import (
     create_dummy_plugin_config,
@@ -111,7 +115,25 @@ def dummy_plugin_config() -> contract.PluginConfig[contract.ParsedArguments]:
     return create_dummy_plugin_config()
 
 
-dummy_plugin_config = dummy_plugin_config
+@pytest.fixture
+def dummy_transport() -> DummyTransport:
+    """Provide a fresh DummyTransport."""
+
+    return DummyTransport()
+
+
+@pytest.fixture
+def memory_transport_pair() -> tuple[MemoryTransport, MemoryTransport]:
+    """Provide a linked pair of in-memory transports."""
+
+    return create_memory_transport_pair()
+
+
+@pytest.fixture
+def memory_transport_listener() -> MemoryTransportListener:
+    """Provide a fresh MemoryTransportListener."""
+
+    return MemoryTransportListener()
 
 
 @pytest.fixture

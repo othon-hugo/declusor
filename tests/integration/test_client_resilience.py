@@ -175,6 +175,8 @@ def test_py_socket_resilience_realtime_streaming() -> None:
     finally:
         if raw_transport is not None:
             raw_transport.close()
+
         listener.close()
+
         proc.kill()
         proc.wait(timeout=5.0)

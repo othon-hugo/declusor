@@ -1,21 +1,29 @@
-from unittest.mock import patch
-
 from declusor import presentation
 
 
 def test_terminal_input_source_read_command() -> None:
-    """Verify read_command strips whitespace from input()."""
+    """Verify read_command strips whitespace from injected reader."""
 
-    source = presentation.TerminalInputSource()
+    prompts: list[str] = []
 
-    with patch("builtins.input", return_value="  command arg  "):
-        assert source.read_command("> ") == "command arg"
+    def fake_reader(prompt: str) -> str:
+        prompts.append(prompt)
+        return "  command arg  "
+
+    source = presentation.TerminalInputSource(reader=fake_reader)
+    assert source.read_command("> ") == "command arg"
+    assert prompts == ["> "]
 
 
 def test_terminal_input_source_read_raw() -> None:
-    """Verify read_raw appends newline to input()."""
+    """Verify read_raw appends newline to injected reader."""
 
-    source = presentation.TerminalInputSource()
+    prompts: list[str] = []
 
-    with patch("builtins.input", return_value="command arg"):
-        assert source.read_raw("> ") == "command arg\n"
+    def fake_reader(prompt: str) -> str:
+        prompts.append(prompt)
+        return "command arg"
+
+    source = presentation.TerminalInputSource(reader=fake_reader)
+    assert source.read_raw("> ") == "command arg\n"
+    assert prompts == ["> "]

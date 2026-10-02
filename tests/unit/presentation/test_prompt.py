@@ -255,3 +255,35 @@ def test_prompt_displays_controller_result_message_on_terminate(
     prompt.run()
 
     assert "Exiting session gracefully." in dummy_view.messages
+
+
+def test_prompt_unknown_route_writes_error_and_continues(
+    dummy_router: testing.DummyRouter,
+    test_session: contract.SessionContext,
+    dummy_input_source: testing.DummyInputSource,
+    dummy_view: testing.DummyView,
+) -> None:
+    """PromptLoop writes RouterError to view when route is unknown and continues processing next command."""
+
+    dummy_input_source.feed_inputs("nonexistent_command", "exit")
+
+    def exit_ctrl(
+        session: contract.SessionContext,
+        req: contract.IControllerRequest[contract.ControllerArguments],
+    ) -> contract.ControllerResult:
+        return contract.ControllerResult(action=contract.ControllerAction.TERMINATE)
+
+    dummy_router.connect("exit", exit_ctrl)
+
+    prompt = presentation.PromptLoop(
+        "test_cli",
+        router=dummy_router,
+        session=test_session,
+    )
+
+    prompt.run()
+
+    assert len(dummy_view.errors) == 1
+    assert isinstance(dummy_view.errors[0], config.RouterError)
+    assert "invalid route: 'nonexistent_command'" in str(dummy_view.errors[0])
+    assert dummy_router.locate_calls == ["nonexistent_command", "exit"]

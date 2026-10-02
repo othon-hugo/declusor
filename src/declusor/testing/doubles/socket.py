@@ -9,6 +9,8 @@ class DummySocket:
         incoming_bytes: bytes = b"",
         peer_name: tuple[str, int] = ("127.0.0.1", 9000),
         fileno_val: int = 42,
+        *,
+        timeout: float | None = None,
     ) -> None:
         self._incoming: bytearray = bytearray(incoming_bytes)
         self.recv_chunks: list[bytes] = []
@@ -16,15 +18,18 @@ class DummySocket:
         self.peer_name: tuple[str, int] = peer_name
         self.fileno_val: int = fileno_val
         self.closed: bool = False
-        self.timeout: float | None = None
+        self.timeout: float | None = timeout
         self.sendall_calls: list[bytes] = []
         self.send_calls: list[bytes] = []
         self.recv_calls: list[int] = []
         self.close_calls: int = 0
+        self.shutdown_calls: list[int] = []
+        self.shutdown_called: bool = False
         self.settimeout_calls: list[float | None] = []
         self.sendall_error: BaseException | None = None
         self.send_error: BaseException | None = None
         self.recv_error: BaseException | None = None
+        self.shutdown_error: BaseException | None = None
 
     @property
     def sent_bytes(self) -> bytes:
@@ -100,6 +105,20 @@ class DummySocket:
 
         self.close_calls += 1
         self.closed = True
+
+    def shutdown(self, how: int, /) -> None:
+        """Simulate socket shutdown."""
+
+        if self.shutdown_error is not None:
+            raise self.shutdown_error
+
+        self.shutdown_calls.append(how)
+        self.shutdown_called = True
+
+    def gettimeout(self) -> float | None:
+        """Return configured socket timeout."""
+
+        return self.timeout
 
     def fileno(self) -> int:
         """Return configured fake file descriptor."""

@@ -17,7 +17,7 @@ def test_handle_socket_exception_mapped_types() -> None:
     ]
 
     for exc, expected_msg in test_cases:
-        with pytest.raises(config.DeclusorException, match=expected_msg):
+        with pytest.raises(config.ConnectionError, match=expected_msg):
             network._handle_socket_exception(exc)
 
 
@@ -31,16 +31,16 @@ def test_handle_socket_exception_unmapped_type() -> None:
 
 
 def test_await_connection_bind_error() -> None:
-    """Verify await_connection raises DeclusorException on invalid port."""
+    """Verify await_connection raises ConnectionError on invalid port."""
 
-    with pytest.raises(config.DeclusorException, match="port must be 0-65535."):
+    with pytest.raises(config.ConnectionError, match="port must be 0-65535."):
         with network.await_connection("127.0.0.1", 999999):
             pass
 
 
 def test_await_connection_timeout() -> None:
-    """Verify await_connection raises DeclusorException on timeout."""
+    """Verify await_connection raises ConnectionError on timeout."""
 
-    with pytest.raises(config.DeclusorException, match="connection timed out"):
+    with pytest.raises(config.ConnectionError, match="connection timed out"):
         with network.await_connection("127.0.0.1", 0, timeout=0.01):
             pass

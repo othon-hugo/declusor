@@ -1,5 +1,5 @@
 import sys
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 
 from declusor import config, core
 from declusor.main.terminal import run_terminal_app
@@ -10,6 +10,7 @@ def main(
     *,
     application: core.Application | None = None,
     plugin_manager: core.PluginManager | None = None,
+    application_factory: Callable[..., core.Application] | None = None,
 ) -> int:
     """Main application composition root and entry point.
 
@@ -21,6 +22,7 @@ def main(
         argv: Optional command-line argument list. Defaults to sys.argv[1:].
         application: Optional application instance for test injection.
         plugin_manager: Optional pre-configured plugin manager instance.
+        application_factory: Optional factory creating Application when omitted.
 
     Returns:
         Process exit code. ``0`` for success, ``1`` for runtime error, ``2`` for usage error.
@@ -42,6 +44,7 @@ def main(
                     plugin_config,
                     plugin_manager=manager,
                     application=application,
+                    application_factory=application_factory,
                 )
             case _:
                 print(

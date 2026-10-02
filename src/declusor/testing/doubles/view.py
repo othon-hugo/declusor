@@ -41,3 +41,13 @@ class DummyView(contract.IView):
         """Capture transmitted raw bytes."""
 
         self.binary_data.append(data)
+
+    def reset(self) -> None:
+        """Clear all captured messages, errors, warnings, and binary data."""
+
+        self.messages.clear()
+        self.binary_data.clear()
+        self.errors.clear()
+        self.warnings.clear()
+        self.info_messages.clear()
+        self.success_messages.clear()

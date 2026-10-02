@@ -1,5 +1,3 @@
-from unittest.mock import patch
-
 import pytest
 
 from declusor import config, main, testing
@@ -17,12 +15,15 @@ def test_main_success(dummy_app: testing.DummyApplication) -> None:
 
 
 def test_main_defaults_to_terminal_application_when_omitted(dummy_app: testing.DummyApplication) -> None:
-    """Verify main creates a TerminalApplication by default when none is passed."""
+    """Verify main creates a TerminalApplication via factory when none is passed."""
 
-    with patch("declusor.app.create_terminal_application", return_value=dummy_app):
-        exit_code = main.main(["127.0.0.1", "9000"])
-        assert exit_code == 0
-        assert len(dummy_app.run_calls) == 1
+    exit_code = main.main(
+        ["127.0.0.1", "9000"],
+        plugin_manager=dummy_app.plugin_manager,
+        application_factory=lambda **_: dummy_app,
+    )
+    assert exit_code == 0
+    assert len(dummy_app.run_calls) == 1
 
 
 def test_main_parser_error(
@@ -61,10 +62,9 @@ def test_main_keyboard_interrupt(dummy_app: testing.DummyApplication) -> None:
 def test_main_explicit_cli_mode(dummy_app: testing.DummyApplication) -> None:
     """Verify main executes TerminalApplication when --mode cli is specified."""
 
-    with patch("declusor.app.create_terminal_application", return_value=dummy_app):
-        exit_code = main.main(["127.0.0.1", "9000", "--mode", "cli"])
-        assert exit_code == 0
-        assert len(dummy_app.run_calls) == 1
+    exit_code = main.main(["127.0.0.1", "9000", "--mode", "cli"], application=dummy_app)
+    assert exit_code == 0
+    assert len(dummy_app.run_calls) == 1
 
 
 def test_main_unsupported_mode_prints_error_and_returns_1(capsys: pytest.CaptureFixture[str]) -> None:

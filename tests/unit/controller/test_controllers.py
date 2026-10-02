@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from declusor import config, contract, controller, testing, util
 
 
@@ -251,3 +253,71 @@ def test_call_help_reflects_dynamically_added_routes(
     assert isinstance(result, contract.ControllerResult)
     assert result.action == contract.ControllerAction.CONTINUE
     assert dummy_view.messages == ["dynamic : Dynamic command description."]
+
+
+def test_call_command_empty_request_raises_parser_error(test_session: contract.SessionContext) -> None:
+    """call_command raises ParserError when required command argument is omitted."""
+
+    req = testing.create_dummy_controller_request("", controller.CommandArguments)
+    with pytest.raises(config.ParserError):
+        controller.call_command(test_session, req)
+
+
+def test_call_execute_empty_request_raises_parser_error(test_session: contract.SessionContext) -> None:
+    """call_execute raises ParserError when required filepath argument is omitted."""
+
+    req = testing.create_dummy_controller_request("", controller.ExecuteArguments)
+    with pytest.raises(config.ParserError):
+        controller.call_execute(test_session, req)
+
+
+def test_call_execute_nonexistent_file_raises_invalid_operation(test_session: contract.SessionContext) -> None:
+    """call_execute raises InvalidOperation when script file does not exist."""
+
+    req = testing.create_dummy_controller_request("/tmp/nonexistent_script_987654.sh", controller.ExecuteArguments)
+    with pytest.raises(config.InvalidOperation):
+        controller.call_execute(test_session, req)
+
+
+def test_call_upload_empty_request_raises_parser_error(test_session: contract.SessionContext) -> None:
+    """call_upload raises ParserError when required filepath argument is omitted."""
+
+    req = testing.create_dummy_controller_request("", controller.UploadArguments)
+    with pytest.raises(config.ParserError):
+        controller.call_upload(test_session, req)
+
+
+def test_call_upload_nonexistent_file_raises_invalid_operation(test_session: contract.SessionContext) -> None:
+    """call_upload raises InvalidOperation when upload source file does not exist."""
+
+    req = testing.create_dummy_controller_request("/tmp/nonexistent_upload_987654.bin", controller.UploadArguments)
+    with pytest.raises(config.InvalidOperation):
+        controller.call_upload(test_session, req)
+
+
+def test_call_code_empty_request_raises_parser_error(test_session: contract.SessionContext) -> None:
+    """call_code raises ParserError when required code argument is omitted."""
+
+    req = testing.create_dummy_controller_request("", controller.CodeArguments)
+    with pytest.raises(config.ParserError):
+        controller.call_code(test_session, req)
+
+
+def test_call_load_empty_request_raises_parser_error(test_session: contract.SessionContext) -> None:
+    """call_load raises ParserError when required module argument is omitted."""
+
+    req = testing.create_dummy_controller_request("", controller.LoadArguments)
+    with pytest.raises(config.ParserError):
+        controller.call_load(test_session, req)
+
+
+def test_call_load_missing_module_raises_invalid_operation(
+    test_session: contract.SessionContext,
+    dummy_file_store: testing.DummyPluginFileStore,
+) -> None:
+    """call_load raises InvalidOperation when requested module cannot be loaded by the store."""
+
+    dummy_file_store.load_module_error = config.InvalidOperation("Module missing")
+    req = testing.create_dummy_controller_request("discovery/missing_module", controller.LoadArguments)
+    with pytest.raises(config.InvalidOperation, match="Module missing"):
+        controller.call_load(test_session, req)
