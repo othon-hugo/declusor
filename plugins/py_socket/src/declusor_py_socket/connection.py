@@ -231,6 +231,6 @@ class PySocketConnection(contract.IConnection):
 
 DEFAULT_PY_SOCKET = PySocketProfile(
     name="Python Socket",
-    ack_server_raw=config.Settings.DEFAULT_SERVER_ACK,
-    ack_client_raw=util.hash_sha256(config.Settings.DEFAULT_CLIENT_ACK_SEED),
+    ack_server_raw=config.DEFAULT_SERVER_ACK,
+    ack_client_raw=util.hash_sha256(config.DEFAULT_CLIENT_ACK_SEED),
 )

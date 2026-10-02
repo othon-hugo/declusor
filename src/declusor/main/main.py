@@ -31,8 +31,8 @@ def main(
     try:
         manager = plugin_manager or (application.plugin_manager if application is not None else core.PluginManager().discover())
         parser = core.DeclusorParser(
-            config.Settings.PROJECT_NAME,
-            config.Settings.PROJECT_DESCRIPTION,
+            config.PROJECT_NAME,
+            config.PROJECT_DESCRIPTION,
         )
         plugin_config = parser.parse(manager, args)
 

@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from declusor import command, config, contract, testing
+from declusor import command, config, contract, testing, util
 
 
 def test_execute_command_lifecycle(
@@ -134,8 +134,33 @@ def test_upload_file_lifecycle(
     test_session.execute(cmd)
 
     assert len(dummy_profile.render_calls) == 1
-    assert dummy_profile.render_calls[0][0] == config.OperationCode.STORE_FILE
+    assert dummy_profile.render_calls[0] == (config.OperationCode.STORE_FILE, (util.convert_to_base64(b"content"),))
     assert dummy_connection.written == [b"rendered_upload_script"]
+    assert len(dummy_view.binary_data) == 2
+
+
+def test_upload_file_lifecycle_with_destination(
+    tmp_path: Path,
+    test_session: contract.SessionContext,
+    dummy_connection: testing.DummyConnection,
+    dummy_view: testing.DummyView,
+    dummy_profile: testing.DummyConnectionProfile,
+) -> None:
+    """UploadFile includes destination in profile render arguments when specified."""
+
+    data_file = tmp_path / "data.bin"
+    data_file.write_bytes(b"content")
+
+    dummy_profile.set_rendered_command(config.OperationCode.STORE_FILE, "rendered_upload_dest")
+
+    dto = command.UploadFileDTO(filepath=data_file, destination="/tmp/remote_payload.bin")
+    cmd = command.UploadFile(dto)
+
+    test_session.execute(cmd)
+
+    assert len(dummy_profile.render_calls) == 1
+    assert dummy_profile.render_calls[0] == (config.OperationCode.STORE_FILE, (util.convert_to_base64(b"content"), "/tmp/remote_payload.bin"))
+    assert dummy_connection.written == [b"rendered_upload_dest"]
     assert len(dummy_view.binary_data) == 2
 
 

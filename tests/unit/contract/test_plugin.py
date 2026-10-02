@@ -4,7 +4,7 @@ from declusor import config, contract
 
 
 def test_plugin_config_default_mode(tmp_path: Path) -> None:
-    """Verify PluginConfig defaults mode to Settings.DEFAULT_EXECUTION_MODE."""
+    """Verify PluginConfig defaults mode to config.DEFAULT_EXECUTION_MODE."""
 
     fs = contract.PluginFilesystem.from_root(tmp_path)
     plugin_config = contract.PluginConfig(

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from declusor import config, contract, controller, testing
+from declusor import config, contract, controller, testing, util
 
 
 def test_call_exit_returns_terminate_action(test_session: contract.SessionContext) -> None:
@@ -64,6 +64,26 @@ def test_call_upload_file_with_dto(
     result = controller.call_upload(test_session, req)
 
     assert dummy_connection.written == [b"rendered_test_upload"]
+    assert result.action == contract.ControllerAction.CONTINUE
+
+
+def test_call_upload_file_with_destination(
+    tmp_path: Path,
+    test_session: contract.SessionContext,
+    dummy_connection: testing.DummyConnection,
+    dummy_profile: testing.DummyConnectionProfile,
+) -> None:
+    """call_upload must forward destination to UploadFileDTO when provided in request."""
+
+    test_file = tmp_path / "upload.bin"
+    test_file.write_bytes(b"data")
+    dummy_profile.set_rendered_command(config.OperationCode.STORE_FILE, "rendered_dest_upload")
+
+    req = testing.create_dummy_controller_request(f"{test_file} /tmp/dest.bin", controller.UploadArguments)
+    result = controller.call_upload(test_session, req)
+
+    assert dummy_connection.written == [b"rendered_dest_upload"]
+    assert dummy_profile.render_calls[-1] == (config.OperationCode.STORE_FILE, (util.convert_to_base64(b"data"), "/tmp/dest.bin"))
     assert result.action == contract.ControllerAction.CONTINUE
 
 

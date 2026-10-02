@@ -9,9 +9,6 @@ class DeclusorPlugins(StrEnum):
     """Cross-platform Python socket client transport plugin."""
 
 
-DEFAULT_DECLUSOR_PLUGIN = DeclusorPlugins.SHELL_SOCKET
-
-
 class ExecutionMode(StrEnum):
     """Enumeration of application execution modes."""
 
@@ -50,9 +47,6 @@ class ExecutionMode(StrEnum):
         valid_modes = ", ".join(repr(m.value) for m in cls)
 
         raise ValueError(f"Invalid execution mode: '{value}'. Choose from: {valid_modes}")
-
-
-DEFAULT_EXECUTION_MODE = ExecutionMode.CLI
 
 
 class OperationCode(StrEnum):
