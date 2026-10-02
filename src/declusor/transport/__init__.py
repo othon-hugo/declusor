@@ -7,6 +7,12 @@ from declusor.config import (
 from .listener import (
     TcpListener,
 )
+from .pipeline import (
+    TransportLayerFactory,
+    TransportLayerRegistry,
+    TransportPipeline,
+    default_transport_registry,
+)
 from .socket import (
     SocketTransport,
 )
@@ -18,7 +24,11 @@ __all__ = [
     "ConnectionClosed",
     "ConnectionError",
     "ConnectionTimeoutError",
+    "default_transport_registry",
     "SocketTransport",
     "TcpListener",
+    "TransportLayerFactory",
+    "TransportLayerRegistry",
+    "TransportPipeline",
     "XorTransport",
 ]

@@ -58,6 +58,9 @@ class PluginConfig[T: ParsedArguments]:
     launcher_wrapper: str | None = None
     """Optional shell invocation wrapper template."""
 
+    transport_layers: tuple[str, ...] = ()
+    """Ordered sequence of transport layer names to wrap around accepted transports."""
+
 
 @dataclass(frozen=True)
 class PluginFilesystem:

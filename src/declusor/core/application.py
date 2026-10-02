@@ -31,6 +31,7 @@ class Application:
         input_source: contract.IInputSource | None = None,
         listener_factory: TransportListenerFactory | None = None,
         launcher_renderer: LauncherRenderer | None = None,
+        transport_registry: transport.TransportLayerRegistry | None = None,
     ) -> None:
         """Create an application with configured dependencies and session runner.
 
@@ -42,6 +43,7 @@ class Application:
             input_source: Optional operator input source interface.
             listener_factory: Optional factory producing an ITransportListener for network connections.
             launcher_renderer: Optional renderer responsible for delivering client launcher.
+            transport_registry: Optional registry managing composable transport layers.
         """
 
         self._router = router
@@ -51,8 +53,15 @@ class Application:
         self._input_source = input_source
         self._listener_factory = listener_factory or transport.TcpListener
         self._launcher_renderer = launcher_renderer or LauncherRenderer(self._view)
+        self._transport_registry = transport_registry or transport.default_transport_registry()
 
         self._connect_routes()
+
+    @property
+    def transport_registry(self) -> transport.TransportLayerRegistry:
+        """Registry managing available composable transport layers."""
+
+        return self._transport_registry
 
     @property
     def plugin_manager(self) -> "PluginManager":
@@ -97,7 +106,10 @@ class Application:
         with self._listener_factory(config.host, config.port) as listener:
             incoming_transport = listener.accept()
 
-            with plugin_runtime.create_connection(incoming_transport) as connection:
+            pipeline = self._transport_registry.build_pipeline(config.transport_layers)
+            wrapped_transport = pipeline.wrap(incoming_transport)
+
+            with plugin_runtime.create_connection(wrapped_transport) as connection:
                 connection.handshake()
 
                 session = contract.SessionContext(
