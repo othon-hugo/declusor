@@ -16,6 +16,6 @@ The **transport** package provides concrete implementations of the transport abs
 ## Design Principles
 
 1. **Clean Exception Translation** — low-level OS networking errors (`BrokenPipeError`, `ConnectionResetError`, `TimeoutError`, `socket.error`) are deterministically caught and translated into domain exceptions (`ConnectionClosed`, `ConnectionTimeoutError`, `ConnectionError`).
-2. **Pure Interface Composition** — decorators such as `XorTransport` directly implement `ITransport` and wrap an underlying `ITransport`, avoiding deep inheritance trees.
+2. **Composable Transport Layers** — the `ITransportLayer` abstract base provides delegation of lifecycle properties and resource management, so decorators like `XorTransport` only implement `read()` and `write()`. Layers stack naturally: `AESTransport(XorTransport(SocketTransport(sock)))`.
 3. **Stream Segmentation Immunity** — stream ciphers track independent egress (`_write_offset`) and ingress (`_read_offset`) cursors, ensuring that arbitrary TCP packet fragmentation never corrupts or desynchronizes communications.
 4. **Idempotent Resource Management** — all transports and listeners provide idempotent `close()` methods and full context manager (`with`) support.

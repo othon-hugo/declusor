@@ -133,6 +133,68 @@ class ITransport(ABC):
         self.close()
 
 
+class ITransportLayer(ITransport, ABC):
+    """Abstract base for transport decorators that wrap an underlying transport.
+
+    Provides delegation of lifecycle properties (``is_closed``, ``timeout``,
+    ``peer_address``) and resource management (``close()``) to the underlying
+    transport. Subclasses implement only ``read()`` and ``write()`` to
+    transform the byte stream.
+
+    This enables composable transport stacking where each layer intercepts and
+    transforms data while delegating connection lifecycle to the base transport::
+
+        raw     = SocketTransport(sock)
+        xored   = XorTransport(raw, key=b"secret")
+        # xored.read()  → decrypts bytes from raw.read()
+        # xored.write() → encrypts bytes via raw.write()
+    """
+
+    def __init__(self, transport: ITransport, /) -> None:
+        """Initialize the transport layer with an underlying transport.
+
+        Args:
+            transport: The transport to wrap and delegate lifecycle operations to.
+        """
+
+        self._transport = transport
+
+    @property
+    def underlying(self) -> ITransport:
+        """The wrapped transport instance."""
+
+        return self._transport
+
+    @property
+    def is_closed(self) -> bool:
+        """Return True if the underlying transport is closed."""
+
+        return self._transport.is_closed
+
+    @property
+    def timeout(self) -> float | None:
+        """Transport I/O timeout delegated from underlying transport."""
+
+        return self._transport.timeout
+
+    @timeout.setter
+    def timeout(self, value: float | None, /) -> None:
+        """Set transport I/O timeout on the underlying transport."""
+
+        self._transport.timeout = value
+
+    @property
+    def peer_address(self) -> str:
+        """Remote endpoint address delegated from underlying transport."""
+
+        return self._transport.peer_address
+
+    def close(self) -> None:
+        """Close the underlying transport."""
+
+        self._transport.close()
+
+
 class ITransportListener(ABC):
     """Listens for and accepts incoming transport connections."""
 

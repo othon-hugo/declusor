@@ -47,6 +47,7 @@ from .session import (
 )
 from .transport import (
     ITransport,
+    ITransportLayer,
     ITransportListener,
 )
 from .view import (
@@ -78,6 +79,7 @@ __all__ = [
     "IRouter",
     "ISessionRunner",
     "ITransport",
+    "ITransportLayer",
     "ITransportListener",
     "IView",
     "LauncherDelivery",
