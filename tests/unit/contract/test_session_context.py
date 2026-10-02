@@ -7,7 +7,7 @@ def test_session_context_initialization_and_properties(
     dummy_input_source: testing.DummyInputSource,
     dummy_file_store: testing.DummyPluginFileStore,
 ) -> None:
-    """SessionContext should properly hold and expose connection, view, input, and files."""
+    """SessionContext should properly hold and expose connection, view, input, and plugin."""
 
     session = contract.SessionContext(
         connection=dummy_connection,

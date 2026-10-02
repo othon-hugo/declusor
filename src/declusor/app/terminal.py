@@ -54,7 +54,7 @@ def create_terminal_application(
     router = core.Router()
     view = presentation.TerminalView()
     manager = plugin_manager or core.PluginManager().discover(search_dirs)
-    session_runner = presentation.PromptLoop(config.Settings.PROJECT_NAME)
+    session_runner = presentation.PromptLoop(config.PROJECT_NAME)
     input_source = presentation.TerminalInputSource()
 
     return TerminalApplication(

@@ -10,17 +10,42 @@ class UploadFileDTO:
     """Data transfer object containing parameters for file upload.
 
     Encapsulates and validates the path to a local file to be uploaded and stored
-    on the remote client without execution.
+    on the remote client without execution, along with an optional remote destination path.
 
     Raises:
-        InvalidOperation: If the specified file does not exist or is not a regular file.
+        InvalidOperation: If the local file does not exist, is not a regular file,
+            or if paths are empty, contain null bytes, or contain control characters.
     """
 
     filepath: Path | str
+    """Validated, absolute or relative ``Path`` to an existing local file."""
+
+    destination: str | None = None
+    """Optional remote destination file path."""
 
     def __post_init__(self) -> None:
+        raw_path = str(self.filepath).strip()
+        if not raw_path:
+            raise config.InvalidOperation("File path cannot be empty.")
+
+        if "\0" in raw_path:
+            raise config.InvalidOperation("File path cannot contain null bytes.")
+
         validated_path = util.ensure_file_exists(Path(self.filepath))
         object.__setattr__(self, "filepath", validated_path)
+
+        if self.destination is not None:
+            clean_dest = self.destination.strip()
+            if not clean_dest:
+                raise config.InvalidOperation("Destination path cannot be empty.")
+
+            if "\0" in clean_dest:
+                raise config.InvalidOperation("Destination path cannot contain null bytes.")
+
+            if any(ord(c) < 32 for c in clean_dest):
+                raise config.InvalidOperation("Destination path cannot contain control characters or newlines.")
+
+            object.__setattr__(self, "destination", clean_dest)
 
 
 class UploadFile(BaseFileCommand[UploadFileDTO]):
@@ -39,3 +64,11 @@ class UploadFile(BaseFileCommand[UploadFileDTO]):
         """
 
         super().__init__(dto, opcode=config.OperationCode.STORE_FILE)
+
+    def _operation_arguments(self) -> tuple[str, ...]:
+        """Return destination path if configured for file upload."""
+
+        if self._dto.destination:
+            return (self._dto.destination,)
+
+        return ()

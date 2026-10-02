@@ -7,6 +7,9 @@ class UploadArguments(contract.ControllerArguments):
     filepath: str
     """Path to local file to encode and store on the remote system."""
 
+    destination: str | None
+    """Optional destination path on the remote system."""
+
 
 def call_upload(
     session: contract.SessionContext,
@@ -14,9 +17,12 @@ def call_upload(
 ) -> contract.ControllerResult:
     """Upload a file from the local system to the remote system."""
 
-    arguments, _ = req.parse_arguments({"filepath": str})
+    arguments, _ = req.parse_arguments({"filepath": str, "destination": str | None})
 
-    dto = command.UploadFileDTO(filepath=arguments["filepath"])
+    dto = command.UploadFileDTO(
+        filepath=arguments["filepath"],
+        destination=arguments.get("destination"),
+    )
     session.execute(command.UploadFile(dto))
 
     return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
