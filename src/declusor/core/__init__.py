@@ -11,7 +11,7 @@ from declusor.config import (
 from .application import (
     Application,
 )
-from .launcher_renderer import (
+from .launcher import (
     LauncherRenderer,
 )
 from .parser import (
