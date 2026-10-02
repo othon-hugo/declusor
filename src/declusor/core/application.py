@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from declusor import contract, controller, transport
 
-from .launcher_renderer import LauncherRenderer
+from .launcher import LauncherRenderer
 
 if TYPE_CHECKING:
     from .plugin import PluginManager
