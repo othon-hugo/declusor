@@ -73,7 +73,7 @@ class LoadModule(BaseStreamCommand):
         module_bytes = session.plugin.load_module(module_path)
         module_b64 = util.convert_to_base64(module_bytes)
 
-        rendered = session.connection.profile.render_operation_command(
+        rendered = session.connection.renderer.render_operation_command(
             config.OperationCode.LOAD_MODULE,
             module_b64,
         )

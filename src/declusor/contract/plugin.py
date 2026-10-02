@@ -46,6 +46,9 @@ class PluginConfig[T: ParsedArguments]:
     mode: config.ExecutionMode = config.DEFAULT_EXECUTION_MODE
     """Application execution mode (e.g. CLI, API, MCP, HTTP)."""
 
+    timeout: float | None = None
+    """Default network socket operation timeout in seconds."""
+
     launcher_output_mode: config.LauncherOutputMode = config.DEFAULT_LAUNCHER_OUTPUT_MODE
     """Delivery mode for the generated client launcher."""
 

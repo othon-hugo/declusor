@@ -6,34 +6,18 @@ from typing import Final
 
 from declusor import config, contract, util
 
+DEFAULT_CONNECTION_TIMEOUT: Final[float | None] = 1.0
+
 
 @dataclass(frozen=True)
-class PySocketProfile(contract.IConnectionProfile):
-    """Immutable configuration profile for a Python-socket reverse-shell client.
+class PySocketRenderer(contract.IOperationRenderer):
+    """Translates OperationCode values to Python function call syntax.
 
-    Configures the operation templates and protocol parameters for a Python
+    Maps abstract operation codes to concrete Python helper invocations for an
     agent that evaluates payloads natively in its own runtime (via ``exec``) or
-    through the OS shell (via ``subprocess``). This profile is pure data — it
+    through the OS shell (via ``subprocess``). This renderer is pure data — it
     never performs I/O.
     """
-
-    name: str
-    """Name of the profile, used for display purposes."""
-
-    ack_server_raw: bytes
-    """Acknowledgment byte sequence sent by the server."""
-
-    ack_client_raw: bytes
-    """Acknowledgment byte sequence sent by the client."""
-
-    _default_timeout: Final[float | None] = 1.0
-    """Timeout in seconds for socket operations. Set to None for no timeout."""
-
-    _framing_mode: Final[config.FramingMode] = config.FramingMode.CHUNKED_TLV
-    """Framing strategy used by this profile."""
-
-    _default_buffer_size: Final[int] = 2**8
-    """Size of the read buffer. Must be > 0."""
 
     _supported_functions: Final[Mapping[config.OperationCode, str]] = field(
         default_factory=lambda: MappingProxyType(
@@ -48,30 +32,6 @@ class PySocketProfile(contract.IConnectionProfile):
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "_supported_functions", MappingProxyType(dict(self._supported_functions)))
-
-        if self._default_buffer_size <= 0:
-            raise config.ConnectionError("buffer_size must be > 0")
-
-        if self.default_timeout and self.default_timeout < 0:
-            raise config.ConnectionError("connection_timeout must be >= 0 or None")
-
-    @property
-    def framing_mode(self) -> config.FramingMode:
-        """Framing strategy used by this profile."""
-
-        return self._framing_mode
-
-    @property
-    def default_buffer_size(self) -> int:
-        """Default buffer size for socket reads."""
-
-        return self._default_buffer_size
-
-    @property
-    def default_timeout(self) -> float | None:
-        """Default timeout for socket operations in seconds."""
-
-        return self._default_timeout
 
     @property
     def supported_functions(self) -> Mapping[config.OperationCode, str]:
@@ -101,23 +61,30 @@ class PySocketProfile(contract.IConnectionProfile):
         return f"{function_name}()"
 
 
+PySocketProfile = PySocketRenderer
+
+
 class PySocketConnection(contract.IConnection):
     """``IConnection`` implementation for a Python-socket reverse-shell client."""
 
     def __init__(
         self,
         transport: contract.ITransport,
-        profile: PySocketProfile,
+        renderer: contract.IOperationRenderer,
         files: contract.IPluginProcessor,
         /,
+        *,
+        expected_ack: bytes = util.hash_sha256(config.DEFAULT_CLIENT_ACK_SEED),
+        timeout: float | None = DEFAULT_CONNECTION_TIMEOUT,
     ) -> None:
-        self._profile = profile
+        self._renderer = renderer
         self._files = files
         self._transport = transport
+        self._expected_ack = expected_ack
         self._state = contract.ConnectionState.CREATED
 
-        if profile.default_timeout is not None:
-            self._transport.timeout = profile.default_timeout
+        if timeout is not None:
+            self._transport.timeout = timeout
 
     @property
     def state(self) -> contract.ConnectionState:
@@ -126,10 +93,16 @@ class PySocketConnection(contract.IConnection):
         return self._state
 
     @property
-    def profile(self) -> PySocketProfile:
-        """The connection profile."""
+    def renderer(self) -> contract.IOperationRenderer:
+        """The command syntax renderer."""
 
-        return self._profile
+        return self._renderer
+
+    @property
+    def profile(self) -> contract.IOperationRenderer:
+        """Backward-compatible alias for renderer."""
+
+        return self._renderer
 
     @property
     def timeout(self) -> float | None:
@@ -150,7 +123,7 @@ class PySocketConnection(contract.IConnection):
         self._state = contract.ConnectionState.INITIALIZING
         self.write(self._files.helpers)
 
-        expected_ack = self._profile.ack_client_raw
+        expected_ack = self._expected_ack
         try:
             received_ack = self._transport.read_exact(len(expected_ack))
             if received_ack != expected_ack:
@@ -229,8 +202,4 @@ class PySocketConnection(contract.IConnection):
         self._transport.close()
 
 
-DEFAULT_PY_SOCKET = PySocketProfile(
-    name="Python Socket",
-    ack_server_raw=config.DEFAULT_SERVER_ACK,
-    ack_client_raw=util.hash_sha256(config.DEFAULT_CLIENT_ACK_SEED),
-)
+DEFAULT_PY_SOCKET = PySocketRenderer()

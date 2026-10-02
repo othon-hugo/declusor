@@ -1,7 +1,9 @@
 from .connection import (
+    DEFAULT_CONNECTION_TIMEOUT,
     DEFAULT_SHELL_SOCKET,
     ShellSocketConnection,
     ShellSocketProfile,
+    ShellSocketRenderer,
 )
 from .plugin import (
     ShellSocketPlugin,
@@ -10,10 +12,12 @@ from .plugin import (
 )
 
 __all__ = [
+    "DEFAULT_CONNECTION_TIMEOUT",
     "DEFAULT_SHELL_SOCKET",
     "ShellSocketConnection",
     "ShellSocketProcessor",
     "ShellSocketPlugin",
     "ShellSocketProfile",
+    "ShellSocketRenderer",
     "ShellSocketRuntime",
 ]

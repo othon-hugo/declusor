@@ -55,7 +55,7 @@ class ExecuteCommand(BaseStreamCommand):
         session.connection.write(self._payload(session))
 
     def _payload(self, session: contract.SessionContext, /) -> bytes:
-        rendered = session.connection.profile.render_operation_command(
+        rendered = session.connection.renderer.render_operation_command(
             config.OperationCode.EXEC_COMMAND,
             self._dto.command_line,
         )

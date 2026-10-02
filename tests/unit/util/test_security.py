@@ -35,3 +35,24 @@ def test_validate_file_relative_outside(tmp_path: Path) -> None:
 
     assert security.validate_file_relative(outside, base) is False
     assert security.validate_file_relative(traversal, base) is False
+
+
+def test_generate_nonce_default_length() -> None:
+    """Verify default nonce generates 32 hex chars (16 bytes) with high entropy."""
+
+    nonce1 = security.generate_nonce()
+    nonce2 = security.generate_nonce()
+
+    assert len(nonce1) == 32
+    assert len(nonce2) == 32
+    assert nonce1 != nonce2
+    int(nonce1, 16)
+
+
+def test_generate_nonce_custom_length() -> None:
+    """Verify generate_nonce honors custom byte lengths."""
+
+    nonce = security.generate_nonce(nbytes=8)
+
+    assert len(nonce) == 16
+    int(nonce, 16)

@@ -11,9 +11,9 @@ def test_py_socket_connection_write_sends_tlv_frame(
     """Verify PySocketConnection transmits data with 5-byte TLV framing."""
 
     dummy_trans = testing.DummyTransport()
-    profile = py_socket.PySocketProfile(name="test", ack_server_raw=b"\x00", ack_client_raw=b"\xab" * 32)
+    renderer = py_socket.PySocketRenderer()
 
-    conn = py_socket.PySocketConnection(dummy_trans, profile, dummy_file_store)
+    conn = py_socket.PySocketConnection(dummy_trans, renderer, dummy_file_store)
     conn.write(b"data")
 
     expected_frame = struct.pack(">BI", config.ChannelType.STDOUT, 4) + b"data"
@@ -27,8 +27,8 @@ def test_py_socket_connection_read_tlv_frames(
     """Verify PySocketConnection streams chunks until PROCESS_EXIT frame."""
 
     dummy_trans = testing.DummyTransport()
-    profile = py_socket.PySocketProfile(name="test", ack_server_raw=b"\x00", ack_client_raw=b"\xab" * 32)
-    conn = py_socket.PySocketConnection(dummy_trans, profile, dummy_file_store)
+    renderer = py_socket.PySocketRenderer()
+    conn = py_socket.PySocketConnection(dummy_trans, renderer, dummy_file_store)
 
     frame1 = struct.pack(">BI", config.ChannelType.STDOUT, 6) + b"hello "
     frame2 = struct.pack(">BI", config.ChannelType.STDOUT, 5) + b"world"
@@ -47,8 +47,8 @@ def test_py_socket_connection_handshake(
 
     dummy_trans = testing.DummyTransport()
     ack = b"\xab" * 32
-    profile = py_socket.PySocketProfile(name="test", ack_server_raw=b"\x00", ack_client_raw=ack)
-    conn = py_socket.PySocketConnection(dummy_trans, profile, dummy_file_store)
+    renderer = py_socket.PySocketRenderer()
+    conn = py_socket.PySocketConnection(dummy_trans, renderer, dummy_file_store, expected_ack=ack)
 
     dummy_trans.push_incoming(ack)
     conn.handshake()
@@ -64,9 +64,9 @@ def test_py_socket_connection_close_is_idempotent(
     """Verify closing PySocketConnection multiple times is idempotent."""
 
     dummy_trans = testing.DummyTransport()
-    profile = py_socket.PySocketProfile(name="test", ack_server_raw=b"\x00", ack_client_raw=b"\xab" * 32)
+    renderer = py_socket.PySocketRenderer()
 
-    conn = py_socket.PySocketConnection(dummy_trans, profile, dummy_file_store)
+    conn = py_socket.PySocketConnection(dummy_trans, renderer, dummy_file_store)
     conn.close()
     conn.close()
 

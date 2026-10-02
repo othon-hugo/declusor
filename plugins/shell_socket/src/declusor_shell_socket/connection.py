@@ -1,41 +1,23 @@
-import secrets
-from collections.abc import Generator, Mapping
+from collections.abc import Callable, Generator, Mapping
 from dataclasses import dataclass, field
 from types import MappingProxyType
+from typing import Final
 
 from declusor import config, contract, util
 
+DEFAULT_CONNECTION_TIMEOUT: Final[float | None] = 1.0
+
 
 @dataclass(frozen=True)
-class ShellSocketProfile(contract.IConnectionProfile):
-    """Immutable configuration profile for a shell-over-socket client.
+class ShellSocketRenderer(contract.IOperationRenderer):
+    """Translates OperationCode values to Bash shell command strings.
 
-    All fields are set at construction time; the dataclass is frozen to prevent
-    accidental mutation. This class is pure data — it never performs I/O.
+    Maps abstract operation codes to concrete Bash helper function invocations
+    executed by the client process. This renderer is pure data — it never
+    performs I/O.
     """
 
-    name: str
-    """Name of the profile, used for display purposes."""
-
-    ack_server_raw: bytes
-    """Acknowledgment byte sequence sent by the server."""
-
-    ack_client_raw: bytes
-    """Acknowledgment byte sequence sent by the client."""
-
-    _default_timeout: float | None = 1.0
-    """Timeout in seconds for socket operations. Set to None for no timeout."""
-
-    _framing_mode: config.FramingMode = config.FramingMode.EPHEMERAL_ENVELOPE
-    """Framing strategy used by this profile."""
-
-    _default_nonce: str | None = None
-    """Default or fixed nonce for deterministic testing."""
-
-    _default_buffer_size: int = 2**8
-    """Size of the buffer to use when reading from the socket. Must be > 0."""
-
-    _supported_functions: Mapping[config.OperationCode, str] = field(
+    _supported_functions: Final[Mapping[config.OperationCode, str]] = field(
         default_factory=lambda: MappingProxyType(
             {
                 config.OperationCode.STORE_FILE: "store_base64_encoded_value",
@@ -49,35 +31,11 @@ class ShellSocketProfile(contract.IConnectionProfile):
     def __post_init__(self) -> None:
         object.__setattr__(self, "_supported_functions", MappingProxyType(dict(self._supported_functions)))
 
-        if self._default_buffer_size <= 0:
-            raise config.ConnectionError("buffer_size must be > 0")
-
-        if self.default_timeout and self.default_timeout < 0:
-            raise config.ConnectionError("connection_timeout must be >= 0 or None")
-
     @property
-    def framing_mode(self) -> config.FramingMode:
-        """Framing strategy used by this profile."""
+    def supported_functions(self) -> Mapping[config.OperationCode, str]:
+        """Mapping of supported operation codes to their corresponding function names."""
 
-        return self._framing_mode
-
-    @property
-    def default_nonce(self) -> str | None:
-        """Default or fixed nonce for deterministic testing."""
-
-        return self._default_nonce
-
-    @property
-    def default_buffer_size(self) -> int:
-        """Default buffer size for socket reads."""
-
-        return self._default_buffer_size
-
-    @property
-    def default_timeout(self) -> float | None:
-        """Default timeout for socket operations in seconds."""
-
-        return self._default_timeout
+        return self._supported_functions
 
     def render_operation_command(self, opcode: "config.OperationCode", /, *args: str) -> str | None:
         """Build the shell command string for a given operation code.
@@ -101,24 +59,41 @@ class ShellSocketProfile(contract.IConnectionProfile):
         return function_name + (" " + " ".join(util.quote(a) for a in args) if args else "")
 
 
+ShellSocketProfile = ShellSocketRenderer
+
+
 class ShellSocketConnection(contract.IConnection):
     """``IConnection`` implementation for a Bash-over-TCP reverse-shell client."""
+
+    DEFAULT_BUFFER_SIZE: Final[int] = 2**8
+    """Size of the buffer to use when reading from the socket. Must be > 0."""
 
     def __init__(
         self,
         transport: contract.ITransport,
-        profile: ShellSocketProfile,
+        renderer: contract.IOperationRenderer,
         files: contract.IPluginProcessor,
         /,
+        *,
+        buffer_size: int = DEFAULT_BUFFER_SIZE,
+        fixed_nonce: str | None = None,
+        nonce_factory: Callable[[], str] = util.generate_nonce,
+        timeout: float | None = DEFAULT_CONNECTION_TIMEOUT,
     ) -> None:
-        self._profile = profile
-        self._files = files
-        self._transport = transport
-        self._state = contract.ConnectionState.CREATED
-        self._current_nonce: str | None = profile.default_nonce
+        if buffer_size <= 0:
+            raise config.ConnectionError("buffer_size must be > 0")
 
-        if profile.default_timeout is not None:
-            self._transport.timeout = profile.default_timeout
+        self._transport = transport
+        self._renderer = renderer
+        self._files = files
+        self._buffer_size = buffer_size
+        self._fixed_nonce = fixed_nonce
+        self._nonce_factory = nonce_factory
+        self._state = contract.ConnectionState.CREATED
+        self._current_nonce: str | None = fixed_nonce
+
+        if timeout is not None:
+            self._transport.timeout = timeout
 
     @property
     def state(self) -> contract.ConnectionState:
@@ -127,10 +102,16 @@ class ShellSocketConnection(contract.IConnection):
         return self._state
 
     @property
-    def profile(self) -> ShellSocketProfile:
-        """The connection profile."""
+    def renderer(self) -> contract.IOperationRenderer:
+        """The connection operation renderer."""
 
-        return self._profile
+        return self._renderer
+
+    @property
+    def profile(self) -> contract.IOperationRenderer:
+        """Deprecated backward-compatible alias for :attr:`renderer`."""
+
+        return self._renderer
 
     @property
     def current_nonce(self) -> str | None:
@@ -171,7 +152,7 @@ class ShellSocketConnection(contract.IConnection):
         if self._state == contract.ConnectionState.CLOSED:
             raise config.ConnectionClosed("Connection is closed.")
 
-        self._current_nonce = nonce or self._profile.default_nonce or secrets.token_hex(16)
+        self._current_nonce = nonce or self._fixed_nonce or self._nonce_factory()
         payload = self._current_nonce.encode("ascii") + b"\x00" + data + b"\x00"
 
         try:
@@ -194,7 +175,7 @@ class ShellSocketConnection(contract.IConnection):
 
         while True:
             try:
-                chunk = self._transport.read(self._profile.default_buffer_size)
+                chunk = self._transport.read(self._buffer_size)
             except (config.ConnectionClosed, config.ConnectionTimeoutError, config.ConnectionError) as error:
                 raise config.ConnectionClosed(f"Connection interrupted during read: {error}") from error
 
@@ -236,9 +217,4 @@ class ShellSocketConnection(contract.IConnection):
         self._transport.close()
 
 
-DEFAULT_SHELL_SOCKET = ShellSocketProfile(
-    name="Shell Socket",
-    ack_server_raw=config.DEFAULT_SERVER_ACK,
-    ack_client_raw=util.hash_sha256(config.DEFAULT_CLIENT_ACK_SEED),
-    _framing_mode=config.FramingMode.EPHEMERAL_ENVELOPE,
-)
+DEFAULT_SHELL_SOCKET = ShellSocketRenderer()
