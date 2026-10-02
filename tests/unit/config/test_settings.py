@@ -5,9 +5,12 @@ from declusor import config, contract, core, testing
 
 
 def test_settings_constants() -> None:
-    """Verify core Settings class constants."""
+    """Verify module-level constants."""
 
-    assert config.Settings.PROJECT_NAME == "declusor"
+    assert config.PROJECT_NAME == "declusor"
+    assert "payload" in config.PROJECT_DESCRIPTION.lower()
+    assert config.DEFAULT_SERVER_ACK == b"\x00"
+    assert config.DEFAULT_CLIENT_ACK_SEED == b"declusor"
 
 
 def test_plugin_filesystem_attributes(tmp_path: Path) -> None:
@@ -24,24 +27,13 @@ def test_plugin_filesystem_attributes(tmp_path: Path) -> None:
     assert paths.modules == assets_dir / "modules"
 
 
-def test_base_path_contains_only_application_and_plugin_directories() -> None:
-    """BasePath must only declare root and plugin discovery directories."""
+def test_root_and_plugin_directories() -> None:
+    """Module must declare root and plugin discovery directories."""
 
-    assert isinstance(config.BasePath.ROOT_DIR, Path)
-    assert isinstance(config.BasePath.PLUGINS_DIR, Path)
-    assert isinstance(config.BasePath.USER_DIR, Path)
-    assert isinstance(config.BasePath.USER_PLUGINS_DIR, Path)
-
-    # Invariant: monolithic data paths are completely eliminated from BasePath
-    assert not hasattr(config.BasePath, "DATA_DIR")
-    assert not hasattr(config.BasePath, "LAUNCHERS_DIR")
-    assert not hasattr(config.BasePath, "HELPERS_DIR")
-    assert not hasattr(config.BasePath, "MODULES_DIR")
-    assert not hasattr(config.BasePath, "CLIENTS_DIR")
-    assert not hasattr(config.BasePath, "LIBRARY_DIR")
-    assert not hasattr(config.BasePath, "DATA_PATHS")
-    assert not hasattr(config.BasePath, "USER_DATA_DIR")
-    assert not hasattr(config.BasePath, "USER_DATA_PATHS")
+    assert isinstance(config.ROOT_DIR, Path)
+    assert isinstance(config.PLUGINS_DIR, Path)
+    assert isinstance(config.USER_DIR, Path)
+    assert isinstance(config.USER_PLUGINS_DIR, Path)
 
 
 class DummyPathConfig(contract.ParsedArguments, total=False):

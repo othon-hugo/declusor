@@ -238,7 +238,7 @@ class ShellSocketConnection(contract.IConnection):
 
 DEFAULT_SHELL_SOCKET = ShellSocketProfile(
     name="Shell Socket",
-    ack_server_raw=config.Settings.DEFAULT_SERVER_ACK,
-    ack_client_raw=util.hash_sha256(config.Settings.DEFAULT_CLIENT_ACK_SEED),
+    ack_server_raw=config.DEFAULT_SERVER_ACK,
+    ack_client_raw=util.hash_sha256(config.DEFAULT_CLIENT_ACK_SEED),
     _framing_mode=config.FramingMode.EPHEMERAL_ENVELOPE,
 )

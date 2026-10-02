@@ -13,7 +13,7 @@ class PromptLoop(contract.ISessionRunner):
 
     def __init__(
         self,
-        name: str = config.Settings.PROJECT_NAME,
+        name: str = config.PROJECT_NAME,
         /,
         *,
         router: contract.IRouter | None = None,

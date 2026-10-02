@@ -53,6 +53,21 @@ def test_ensure_file_exists(tmp_path: Path) -> None:
     assert resolved == target.resolve()
 
 
+@pytest.mark.parametrize("invalid_path", ["", "   ", "\t\n"])
+def test_ensure_file_exists_rejects_empty(invalid_path: str) -> None:
+    """Verify ensure_file_exists rejects empty or whitespace-only paths."""
+
+    with pytest.raises(config.InvalidOperation, match="File path cannot be empty"):
+        storage.ensure_file_exists(invalid_path)
+
+
+def test_ensure_file_exists_rejects_null_bytes() -> None:
+    """Verify ensure_file_exists rejects paths containing null bytes."""
+
+    with pytest.raises(config.InvalidOperation, match="File path cannot contain null bytes"):
+        storage.ensure_file_exists("/tmp/file\x00.txt")
+
+
 def test_ensure_directory_exists(tmp_path: Path) -> None:
     """Verify ensure_directory_exists resolves Path or raises."""
 
@@ -69,3 +84,18 @@ def test_ensure_directory_exists(tmp_path: Path) -> None:
     file_as_dir.write_text("not a dir")
     with pytest.raises(config.InvalidOperation, match="is not a directory"):
         storage.ensure_directory_exists(file_as_dir)
+
+
+@pytest.mark.parametrize("invalid_path", ["", "   ", "\t\n"])
+def test_ensure_directory_exists_rejects_empty(invalid_path: str) -> None:
+    """Verify ensure_directory_exists rejects empty or whitespace-only paths."""
+
+    with pytest.raises(config.InvalidOperation, match="Directory path cannot be empty"):
+        storage.ensure_directory_exists(invalid_path)
+
+
+def test_ensure_directory_exists_rejects_null_bytes() -> None:
+    """Verify ensure_directory_exists rejects paths containing null bytes."""
+
+    with pytest.raises(config.InvalidOperation, match="Directory path cannot contain null bytes"):
+        storage.ensure_directory_exists("/tmp/dir\x00")

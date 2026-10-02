@@ -85,8 +85,8 @@ class ShellSocketRuntime(contract.IPluginRuntime):
 
         self._profile = ShellSocketProfile(
             name=plugin_config.kind,
-            ack_server_raw=config.Settings.DEFAULT_SERVER_ACK,
-            ack_client_raw=util.hash_sha256(config.Settings.DEFAULT_CLIENT_ACK_SEED),
+            ack_server_raw=config.DEFAULT_SERVER_ACK,
+            ack_client_raw=util.hash_sha256(config.DEFAULT_CLIENT_ACK_SEED),
         )
 
         self._processor = ShellSocketProcessor(plugin_config.filesystem)

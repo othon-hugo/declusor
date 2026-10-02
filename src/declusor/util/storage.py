@@ -51,8 +51,16 @@ def ensure_file_exists(filepath: str | Path, /) -> Path:
         Path: The resolved file path.
 
     Raises:
-        InvalidOperation: If the file does not exist or is not a file.
+        InvalidOperation: If the file does not exist, is not a file, is empty,
+            or contains null bytes.
     """
+
+    raw_path = str(filepath).strip()
+    if not raw_path:
+        raise config.InvalidOperation("File path cannot be empty.")
+
+    if "\0" in raw_path:
+        raise config.InvalidOperation("File path cannot contain null bytes.")
 
     filepath = Path(filepath).resolve()
 
@@ -75,8 +83,16 @@ def ensure_directory_exists(dirpath: str | Path, /) -> Path:
         Path: The resolved directory path.
 
     Raises:
-        InvalidOperation: If the directory does not exist or is not a directory.
+        InvalidOperation: If the directory does not exist, is not a directory, is empty,
+            or contains null bytes.
     """
+
+    raw_path = str(dirpath).strip()
+    if not raw_path:
+        raise config.InvalidOperation("Directory path cannot be empty.")
+
+    if "\0" in raw_path:
+        raise config.InvalidOperation("Directory path cannot contain null bytes.")
 
     dirpath = Path(dirpath).resolve()
 

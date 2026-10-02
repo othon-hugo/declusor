@@ -13,13 +13,21 @@ class ExecuteFileDTO:
     uploaded, and executed on the remote client.
 
     Raises:
-        InvalidOperation: If the specified file does not exist or is not a regular file.
+        InvalidOperation: If the file path is empty, contains null bytes, does not exist,
+            or is not a regular file.
     """
 
     filepath: Path | str
     """Validated, absolute or relative ``Path`` to an existing local file."""
 
     def __post_init__(self) -> None:
+        raw_path = str(self.filepath).strip()
+        if not raw_path:
+            raise config.InvalidOperation("File path cannot be empty.")
+
+        if "\0" in raw_path:
+            raise config.InvalidOperation("File path cannot contain null bytes.")
+
         validated_path = util.ensure_file_exists(Path(self.filepath))
         object.__setattr__(self, "filepath", validated_path)
 

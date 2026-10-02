@@ -244,9 +244,9 @@ class PluginManager(PluginRegistry):
         """Run the multi-tier plugin discovery engine.
 
         Precedence order (later overrides earlier):
-        1. Built-in repository directory (``BasePath.PLUGINS_DIR``).
+        1. Built-in repository directory (``config.PLUGINS_DIR``).
         2. Installed Python Entry Points (``declusor.plugins``).
-        3. User drop-in directory (``BasePath.USER_PLUGINS_DIR``).
+        3. User drop-in directory (``config.USER_PLUGINS_DIR``).
         4. Explicit custom search directories passed to ``search_dirs``.
 
         Args:
@@ -258,16 +258,16 @@ class PluginManager(PluginRegistry):
         """
 
         # Tier 1: Built-in repository plugins
-        if config.BasePath.PLUGINS_DIR.exists():
-            self.load_from_directory(config.BasePath.PLUGINS_DIR, source_label="built-in", allow_override=True)
+        if config.PLUGINS_DIR.exists():
+            self.load_from_directory(config.PLUGINS_DIR, source_label="built-in", allow_override=True)
 
         # Tier 2: Entry points (pip packages)
         if enable_entry_points:
             self.load_from_entry_points(allow_override=True)
 
         # Tier 3: User drop-in directory (~/.declusor/plugins)
-        if config.BasePath.USER_PLUGINS_DIR.exists():
-            self.load_from_directory(config.BasePath.USER_PLUGINS_DIR, source_label="user-dropin", allow_override=True)
+        if config.USER_PLUGINS_DIR.exists():
+            self.load_from_directory(config.USER_PLUGINS_DIR, source_label="user-dropin", allow_override=True)
 
         # Tier 4: Explicit custom search directories (CLI flags, highest precedence)
         if search_dirs:

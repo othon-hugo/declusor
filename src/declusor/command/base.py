@@ -68,6 +68,14 @@ class BaseFileCommand[T: "ExecuteFileDTO | UploadFileDTO"](BaseStreamCommand):
 
         session.connection.write(self._payload(session))
 
+    def _operation_arguments(self) -> tuple[str, ...]:
+        """Return optional additional arguments to pass to the operation command renderer.
+
+        Subclasses may override this method to provide extra arguments (e.g. destination path).
+        """
+
+        return ()
+
     def _payload(self, session: contract.SessionContext, /) -> bytes:
         """Format the file content into an encoded remote client command.
 
@@ -84,9 +92,11 @@ class BaseFileCommand[T: "ExecuteFileDTO | UploadFileDTO"](BaseStreamCommand):
         file_bytes = util.load_file(self._dto.filepath)
         file_b64 = util.convert_to_base64(file_bytes)
 
+        extra_args = self._operation_arguments()
         script_data = session.connection.profile.render_operation_command(
             self._opcode,
             file_b64,
+            *extra_args,
         )
 
         if not script_data:

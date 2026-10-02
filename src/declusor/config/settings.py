@@ -1,34 +1,34 @@
 from pathlib import Path
 from typing import Final
 
+from .enums import DeclusorPlugins, ExecutionMode
 
-class Settings:
-    """Configuration settings for Declusor."""
+PROJECT_NAME: Final[str] = "declusor"
+"""Name of the project."""
 
-    PROJECT_NAME: Final[str] = "declusor"
-    """Name of the project."""
+PROJECT_DESCRIPTION: Final[str] = "A fast, modular, and extensible reverse-shell framework and payload delivery handler."
+"""Short description of the project."""
 
-    PROJECT_DESCRIPTION: Final[str] = "a versatile tool for delivering Bash payloads to Linux systems."
-    """Short description of the project."""
+ROOT_DIR: Final[Path] = Path(__file__).resolve().parents[3]
+"""Normalized root directory of the project."""
 
-    DEFAULT_SERVER_ACK: Final[bytes] = b"\x00"
-    """Default server acknowledgment byte sequence."""
+PLUGINS_DIR: Final[Path] = (ROOT_DIR / "plugins").resolve()
+"""Root plugins directory for built-in and repository-level plugins."""
 
-    DEFAULT_CLIENT_ACK_SEED: Final[bytes] = b"declusor"
-    """Default client acknowledgment seed used for SHA-256 calculation."""
+USER_DIR: Final[Path] = (Path.home() / ".declusor").resolve()
+"""Default user-level configuration and runtime directory."""
 
+USER_PLUGINS_DIR: Final[Path] = (USER_DIR / "plugins").resolve()
+"""Default user-level plugins directory for drop-in extensions."""
 
-class BasePath:
-    """Base paths for Declusor project directories."""
+DEFAULT_SERVER_ACK: Final[bytes] = b"\x00"
+"""Default server acknowledgment byte sequence."""
 
-    ROOT_DIR = Path(__file__).resolve().parents[3]
-    """Normalized root directory of the project."""
+DEFAULT_CLIENT_ACK_SEED: Final[bytes] = b"declusor"
+"""Default client acknowledgment seed used for SHA-256 calculation."""
 
-    PLUGINS_DIR = (ROOT_DIR / "plugins").resolve()
-    """Root plugins directory for built-in and repository-level plugins."""
+DEFAULT_DECLUSOR_PLUGIN = DeclusorPlugins.SHELL_SOCKET
+"""[...]"""
 
-    USER_DIR = (Path.home() / ".declusor").resolve()
-    """Default user-level configuration and runtime directory."""
-
-    USER_PLUGINS_DIR = (USER_DIR / "plugins").resolve()
-    """Default user-level plugins directory for drop-in extensions."""
+DEFAULT_EXECUTION_MODE = ExecutionMode.CLI
+"""[...]"""
