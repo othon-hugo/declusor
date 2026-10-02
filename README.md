@@ -92,10 +92,28 @@ On startup, Declusor initializes the listener and **prints the exact one-liner l
 
 | Client Plugin     | Flag              | Target OS             | Execution Mechanism                                                    |
 | :---------------- | :---------------- | :-------------------- | :--------------------------------------------------------------------- |
-| **Shell Socket**  | `-c shell_socket` | Linux / POSIX         | Native `/dev/tcp` file descriptor; zero external dependencies          |
-| **Python Socket** | `-c py_socket`    | Linux, macOS, Windows | In-memory `exec()` with persistent session scope & subprocess fallback |
+| **Shell Socket**  | `-p shell_socket` | Linux / POSIX         | Native `/dev/tcp` file descriptor; zero external dependencies          |
+| **Python Socket** | `-p py_socket`    | Linux, macOS, Windows | In-memory `exec()` with persistent session scope & subprocess fallback |
 
-### 3. Interact with the Session
+### 3. Launcher Delivery Options
+
+Operators can control how client stagers are presented or exported via global delivery flags:
+
+```bash
+# Print launcher to terminal (default)
+declusor 0.0.0.0 4444 -p shell_socket
+
+# Suppress launcher output (silent mode for automation/scripts)
+declusor 0.0.0.0 4444 -p shell_socket --launcher-output silent
+
+# Write launcher directly to a file
+declusor 0.0.0.0 4444 -p py_socket --launcher-output file:/tmp/stager.py
+
+# Wrap launcher in an execution template ($DECLUSOR_SCRIPT placeholder)
+declusor 0.0.0.0 4444 -p py_socket --launcher-wrapper "python3 -c '$DECLUSOR_SCRIPT'"
+```
+
+### 4. Interact with the Session
 
 Once your target connects back, Declusor drops you into an interactive session:
 
@@ -105,7 +123,7 @@ help    : Display detailed information about available commands or a specific co
 load    : Load a payload module from your local system and execute it on the remote system.
 command : Execute a single command on the remote system.
 shell   : Initiate an interactive shell session on the remote system.
-upload  : Upload a file from the local system to the remote system.
+upload  : Upload a file from the local system to the remote system (optional destination).
 execute : Execute a program or script from the local system on the remote system.
 exit    : Terminate the session and exit the program.
 ```
@@ -268,8 +286,8 @@ plugins/<plugin_name>/
 ├── README.md                     # Documentation (## Modules and ## Design Principles)
 ├── src/declusor_<plugin_name>/   # Core transport and runtime implementation
 │   ├── __init__.py               # Public exports (__all__ = ["<PluginClass>"])
-│   ├── plugin.py                 # Implements IPlugin & IPluginRuntime
-│   └── connection.py             # Implements IConnection, IConnectionProfile, IClientFileStore
+│   ├── plugin.py                 # Implements IPluginExtension, IPluginRuntime, and IPluginProcessor
+│   └── connection.py             # Implements IConnection and IConnectionProfile
 ├── assets/                       # Bundled stagers and operational payloads
 │   ├── launchers/                # Client bootstrap templates (e.g. client.sh, client.py)
 │   ├── helpers/                  # In-memory initialization libraries (sent during handshake)
