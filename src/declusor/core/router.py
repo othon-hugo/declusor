@@ -1,5 +1,5 @@
 from declusor import contract
-from declusor.config import RouterError
+from declusor.config import DuplicateRouteError, RouterError
 
 
 class Router(contract.IRouter):
@@ -7,7 +7,7 @@ class Router(contract.IRouter):
 
     Routes are registered via ``connect`` and dispatched via ``locate``.
     The route name is stripped of surrounding whitespace before storage.
-    Duplicate registration raises ``ValueError``; unknown lookup raises
+    Duplicate registration raises ``DuplicateRouteError``; unknown lookup raises
     ``RouterError``.
     """
 
@@ -36,13 +36,13 @@ class Router(contract.IRouter):
         """Register *controller* under *route*.
 
         Raises:
-            ValueError: If *route* is already registered.
+            DuplicateRouteError: If *route* is already registered.
         """
 
         route = route.strip()
 
         if route in self._route_table:
-            raise ValueError("route already exists.")
+            raise DuplicateRouteError(route, "route already exists.")
 
         self._route_table[route] = controller
 

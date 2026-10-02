@@ -1,6 +1,9 @@
 from declusor.config import (
+    DuplicateRouteError,
+    LauncherDeliveryError,
     ParserError,
     PluginError,
+    PluginNotFoundError,
     PluginValidationError,
     RouterError,
 )
@@ -26,10 +29,13 @@ from .router import (
 __all__ = [
     "Application",
     "DeclusorParser",
+    "DuplicateRouteError",
+    "LauncherDeliveryError",
     "LauncherRenderer",
     "ParserError",
     "PluginError",
     "PluginManager",
+    "PluginNotFoundError",
     "PluginRegistry",
     "PluginType",
     "PluginValidationError",

@@ -46,14 +46,13 @@ class PluginRegistry:
             Plugin associated with ``name``.
 
         Raises:
-            config.ParserError: If no plugin matches ``name``.
+            config.PluginNotFoundError: If no plugin matches ``name``.
         """
 
         try:
             return self._plugins[name]
         except KeyError as e:
-            available = ", ".join(self.names())
-            raise config.ParserError(f"Unknown client {name!r}. Available clients: {available}") from e
+            raise config.PluginNotFoundError(name, available_plugins=self.names()) from e
 
     def names(self) -> tuple[str, ...]:
         """Return the registered client identifiers.

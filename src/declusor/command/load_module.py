@@ -20,7 +20,11 @@ class LoadModuleDTO:
 
     def __post_init__(self) -> None:
         if not self.module_name or not self.module_name.strip():
-            raise config.InvalidOperation("Module name cannot be empty.")
+            raise config.CommandValidationError(
+                "Module name cannot be empty.",
+                field="module_name",
+                value=self.module_name,
+            )
 
         object.__setattr__(self, "module_name", self.module_name.strip())
 

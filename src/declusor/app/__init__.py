@@ -4,6 +4,6 @@ from .terminal import (
 )
 
 __all__ = [
-    "TerminalApplication",
     "create_terminal_application",
+    "TerminalApplication",
 ]

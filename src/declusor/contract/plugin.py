@@ -266,10 +266,10 @@ class LauncherDelivery:
         """Validate delivery envelope invariants."""
 
         if self.output_mode is config.LauncherOutputMode.FILE and self.output_path is None:
-            raise config.DeclusorException("output_path must be set when output_mode is FILE.")
+            raise config.LauncherDeliveryError("output_path must be set when output_mode is FILE.")
 
         if self.output_path is not None and self.output_mode is not config.LauncherOutputMode.FILE:
-            raise config.DeclusorException("output_path is only valid when output_mode is FILE.")
+            raise config.LauncherDeliveryError("output_path is only valid when output_mode is FILE.", output_path=self.output_path)
 
     @property
     def text(self) -> str:

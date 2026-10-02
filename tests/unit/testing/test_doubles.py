@@ -238,8 +238,9 @@ def test_dummy_router() -> None:
     router.set_route_usage("sample", "Overridden usage")
     assert router.help("sample") == "Overridden usage"
 
-    with pytest.raises(ValueError, match="route already exists"):
+    with pytest.raises(config.DuplicateRouteError, match="route already exists") as exc_info:
         router.connect("sample", sample_controller)
+    assert isinstance(exc_info.value, ValueError)
 
     with pytest.raises(config.RouterError):
         router.locate("nonexistent")

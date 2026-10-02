@@ -20,7 +20,7 @@ class ExecuteCodeDTO:
 
     def __post_init__(self) -> None:
         if not self.code or not self.code.strip():
-            raise config.InvalidOperation("Code cannot be empty.")
+            raise config.CommandValidationError("Code cannot be empty.", field="code", value=self.code)
 
 
 class ExecuteCode(BaseStreamCommand):

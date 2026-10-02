@@ -22,8 +22,8 @@ def test_router_connect_and_locate() -> None:
     assert router.locate("  test  ") is dummy_controller
 
 
-def test_router_duplicate_connect_raises_value_error() -> None:
-    """Verify registering the same route twice raises ValueError."""
+def test_router_duplicate_connect_raises_duplicate_route_error() -> None:
+    """Verify registering the same route twice raises DuplicateRouteError (subclass of ValueError and RouterError)."""
 
     router = core.Router()
 
@@ -35,8 +35,12 @@ def test_router_duplicate_connect_raises_value_error() -> None:
 
     router.connect("test", dummy_controller)
 
-    with pytest.raises(ValueError, match="route already exists"):
+    with pytest.raises(config.DuplicateRouteError, match="route already exists") as exc_info:
         router.connect("test", dummy_controller)
+
+    assert isinstance(exc_info.value, ValueError)
+    assert isinstance(exc_info.value, config.RouterError)
+    assert exc_info.value.route == "test"
 
 
 def test_router_locate_unknown_raises_router_error() -> None:

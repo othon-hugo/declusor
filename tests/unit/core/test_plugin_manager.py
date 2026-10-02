@@ -165,12 +165,12 @@ def test_register_duplicate_with_override_replaces() -> None:
     assert manager.get_source("dummy_test") == "override"
 
 
-def test_get_unknown_plugin_raises_parser_error() -> None:
-    """Verify that retrieving an unregistered plugin name raises ParserError."""
+def test_get_unknown_plugin_raises_plugin_not_found_error() -> None:
+    """Verify that retrieving an unregistered plugin name raises PluginNotFoundError."""
 
     manager = core.PluginManager()
 
-    with pytest.raises(config.ParserError, match="Unknown client 'unknown'"):
+    with pytest.raises(config.PluginNotFoundError, match="Unknown client 'unknown'"):
         manager.get("unknown")
 
 
