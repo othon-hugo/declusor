@@ -25,4 +25,4 @@ def call_upload(
     )
     session.execute(command.UploadFile(dto))
 
-    return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
+    return contract.ControllerResult.for_continuation()

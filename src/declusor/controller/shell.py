@@ -14,4 +14,4 @@ def call_shell(
     dto = command.LaunchShellDTO()
     session.execute(command.LaunchShell(dto))
 
-    return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
+    return contract.ControllerResult.for_continuation()

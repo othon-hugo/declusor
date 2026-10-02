@@ -19,4 +19,4 @@ def call_code(
     dto = command.ExecuteCodeDTO(code=arguments["code"])
     session.execute(command.ExecuteCode(dto))
 
-    return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
+    return contract.ControllerResult.for_continuation()
