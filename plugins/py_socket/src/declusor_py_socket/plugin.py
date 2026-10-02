@@ -101,8 +101,8 @@ class PySocketRuntime(contract.IPluginRuntime):
         return self._processor
 
     @property
-    def launcher(self) -> str:
-        """Return the rendered Python client launcher script."""
+    def launcher(self) -> contract.LauncherDelivery:
+        """Return the rendered Python client launcher delivery envelope."""
 
         rendered_bytes = self._processor.render_launcher(
             self._plugin_config.host,
@@ -110,7 +110,7 @@ class PySocketRuntime(contract.IPluginRuntime):
             self._profile.ack_client_raw,
         )
 
-        return rendered_bytes.decode("utf-8")
+        return contract.LauncherDelivery(script=rendered_bytes)
 
     def create_connection(self, transport: contract.ITransport, /) -> contract.IConnection:
         """Create a py_socket connection for an accepted transport channel."""

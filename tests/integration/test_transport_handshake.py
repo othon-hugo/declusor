@@ -16,7 +16,7 @@ def test_shell_socket_handshake_and_command_execution() -> None:
     config = plugin_class.build_config("127.0.0.1", port, options)
     runtime = plugin_class.build_runtime(config)
 
-    proc = subprocess.Popen(["bash", "-c", runtime.launcher])
+    proc = subprocess.Popen(["bash", "-c", runtime.launcher.text])
     raw_transport: contract.ITransport | None = None
 
     try:
@@ -73,7 +73,7 @@ def test_py_socket_handshake_and_command_execution() -> None:
     plugin_config = plugin_class.build_config("127.0.0.1", port, options)
     runtime = plugin_class.build_runtime(plugin_config)
 
-    proc = subprocess.Popen([sys.executable, "-c", runtime.launcher])
+    proc = subprocess.Popen([sys.executable, "-c", runtime.launcher.text])
     raw_transport: contract.ITransport | None = None
 
     try:

@@ -9,6 +9,19 @@ class DeclusorPlugins(StrEnum):
     """Cross-platform Python socket client transport plugin."""
 
 
+class LauncherOutputMode(StrEnum):
+    """Enumeration of output delivery modes for the generated client launcher."""
+
+    TERMINAL = "terminal"
+    """Write launcher to the operator view (default behaviour)."""
+
+    SILENT = "silent"
+    """Suppress all launcher output."""
+
+    FILE = "file"
+    """Write launcher to a file path declared in LauncherDelivery.output_path."""
+
+
 class ExecutionMode(StrEnum):
     """Enumeration of application execution modes."""
 

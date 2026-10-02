@@ -1,3 +1,4 @@
+import dataclasses
 from collections.abc import Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Final
@@ -85,6 +86,46 @@ class DeclusorParser(util.Parser):
 
             return super().__new__(cls, mode.value)
 
+    class LauncherOutput(str):
+        """Launcher output mode argument definition."""
+
+        arg_name: Final = "launcher_output"
+        arg_help: Final = "client launcher delivery output mode: 'terminal', 'silent', or 'file:<path>' (default: 'terminal')"
+        arg_flags: Final = ("--launcher-output",)
+        arg_default: Final = config.DEFAULT_LAUNCHER_OUTPUT_MODE.value
+
+        def __new__(cls, value: str) -> "DeclusorParser.LauncherOutput":
+            if not value:
+                raise ValueError("launcher output cannot be empty")
+
+            normalized = value.strip()
+            lower = normalized.lower()
+            if lower == config.LauncherOutputMode.TERMINAL.value:
+                return super().__new__(cls, config.LauncherOutputMode.TERMINAL.value)
+            if lower == config.LauncherOutputMode.SILENT.value:
+                return super().__new__(cls, config.LauncherOutputMode.SILENT.value)
+            if lower.startswith("file:"):
+                path_str = normalized[5:].strip()
+                if not path_str:
+                    raise ValueError("output path cannot be empty in 'file:<path>' launcher output mode")
+                return super().__new__(cls, normalized)
+
+            valid = f"{config.LauncherOutputMode.TERMINAL.value!r}, {config.LauncherOutputMode.SILENT.value!r}, or 'file:<path>'"
+            raise ValueError(f"invalid launcher output mode: {value!r} (expected {valid})")
+
+    class LauncherWrapper(str):
+        """Launcher shell wrapper template argument definition."""
+
+        arg_name: Final = "launcher_wrapper"
+        arg_help: Final = "shell invocation wrapper template containing '$DECLUSOR_SCRIPT' (e.g. \"python3 -c '$DECLUSOR_SCRIPT'\")"
+        arg_flags: Final = ("--launcher-wrapper",)
+
+        def __new__(cls, value: str) -> "DeclusorParser.LauncherWrapper":
+            if not value:
+                raise ValueError("launcher wrapper cannot be empty")
+
+            return super().__new__(cls, value)
+
     declusor_arguments: Final = (
         Host.arg_name,
         Port.arg_name,
@@ -92,7 +133,31 @@ class DeclusorParser(util.Parser):
         AssetsDir.arg_name,
         PluginDir.arg_name,
         ExecutionMode.arg_name,
+        LauncherOutput.arg_name,
+        LauncherWrapper.arg_name,
     )
+
+    @staticmethod
+    def parse_launcher_output(value: str) -> tuple[config.LauncherOutputMode, Path | None]:
+        """Convert a validated launcher output string into mode and optional destination path.
+
+        Args:
+            value: Validated launcher output string ('terminal', 'silent', or 'file:<path>').
+
+        Returns:
+            Tuple of (LauncherOutputMode, Path | None).
+        """
+
+        normalized = value.strip()
+        lower = normalized.lower()
+        if lower == config.LauncherOutputMode.TERMINAL.value:
+            return config.LauncherOutputMode.TERMINAL, None
+        if lower == config.LauncherOutputMode.SILENT.value:
+            return config.LauncherOutputMode.SILENT, None
+        if lower.startswith("file:"):
+            return config.LauncherOutputMode.FILE, Path(normalized[5:].strip())
+
+        raise ValueError(f"invalid launcher output mode: {value!r}")
 
     def __init__(self, name: str, description: str = "") -> None:
         """Create a parser for command-line arguments.
@@ -150,6 +215,20 @@ class DeclusorParser(util.Parser):
             choices=self.ExecutionMode.arg_choices,
             default=self.ExecutionMode.arg_default,
             type=self.ExecutionMode,
+        )
+
+        self.add_argument(
+            *self.LauncherOutput.arg_flags,
+            help=self.LauncherOutput.arg_help,
+            default=self.LauncherOutput.arg_default,
+            type=self.LauncherOutput,
+        )
+
+        self.add_argument(
+            *self.LauncherWrapper.arg_flags,
+            help=self.LauncherWrapper.arg_help,
+            default=None,
+            type=self.LauncherWrapper,
         )
 
         self._is_configured = True
@@ -220,4 +299,11 @@ class DeclusorParser(util.Parser):
 
         Plugin.validate(plugin_config)
 
-        return plugin_config
+        output_mode, output_path = self.parse_launcher_output(args.launcher_output)
+
+        return dataclasses.replace(
+            plugin_config,
+            launcher_output_mode=output_mode,
+            launcher_output_path=output_path,
+            launcher_wrapper=args.launcher_wrapper,
+        )

@@ -33,6 +33,7 @@ from .plugin import (
     IPluginExtension,
     IPluginProcessor,
     IPluginRuntime,
+    LauncherDelivery,
     PluginConfig,
     PluginFilesystem,
 )
@@ -77,6 +78,7 @@ __all__ = [
     "ITransport",
     "ITransportListener",
     "IView",
+    "LauncherDelivery",
     "ParsedArguments",
     "PluginConfig",
     "PluginFilesystem",

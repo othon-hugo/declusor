@@ -69,7 +69,9 @@ def test_build_runtime_renders_bundled_launcher_with_parameters() -> None:
     cfg = py_socket.PySocketPlugin.build_config("192.168.1.50", 5555, options)
     runtime = py_socket.PySocketPlugin.build_runtime(cfg)
 
-    script = runtime.launcher
+    delivery = runtime.launcher
+    assert isinstance(delivery, contract.LauncherDelivery)
+    script = delivery.text
     assert "192.168.1.50" in script
     assert "5555" in script
     assert "$HOST" not in script
