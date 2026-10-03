@@ -33,7 +33,7 @@ pytest tests/unit/transport/ -v
 pytest tests/unit/command/ -v
 pytest tests/unit/controller/ -v
 pytest tests/unit/presentation/ -v
-pytest tests/integration/ -v
+pytest tests/e2e/ -v
 ```
 
 Run static type checking across source, plugins, and tests:
