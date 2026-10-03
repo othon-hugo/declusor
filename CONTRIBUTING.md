@@ -4,68 +4,86 @@ Thank you for your interest in contributing to **Declusor**! This document provi
 
 ## Architectural Overview & Boundaries
 
-Declusor is architected around clean, decoupled layers with strict unidirectional dependency flow:
+Declusor is architected around clean, decoupled layers with strict unidirectional downwards dependency flow:
+
+```text
+main (Composition Root)
+  ├── app (Application Flavors & Bootstrap)
+  ├── core (Infrastructure, Registries, Routing, Parser)
+  ├── transport (Physical Transports, Listeners, Decorators)
+  ├── controller (Application Layer & Handlers)
+  ├── command (Encapsulated Operations & DTOs)
+  ├── presentation (Terminal REPL & Console View)
+  └── contract (Domain Interfaces & State Machines)
+        ├── util (Stateless Primitives & Helpers)
+        └── config (Constants, Enums, Settings, Exceptions)
+```
 
 ### Foundations
 
 1. **`config` (Foundation Base)**:
-   - Depends strictly on the standard library.
-   - Centralizes domain exceptions, configuration constants, settings, and enums.
-2. **`util` (Stateless Primitives)**:
+   - Zero dependencies on any other package in `declusor`.
+   - Centralizes domain exceptions (`DeclusorException`), operational enums (`OperationCode`, `ConnectionState`, `ControllerAction`), paths, and settings.
+2. **`util` (Stateless Primitives & Helpers)**:
    - Depends only on `config` and standard library primitives.
-   - Pure, stateless helpers (encoding, network, concurrency) with zero domain knowledge.
-   - Used by infrastructure, presentation, commands, and plugins; never imported or depended upon by `contract`.
+   - Pure, stateless helpers (encoding, network, concurrency, security, storage) with zero domain knowledge.
    - Uses generic `TypeVar` annotations instead of importing contracts from higher layers.
 
 ### Domain
 
-3. **`contract` (Domain Layer)**:
-   - Depends strictly on `config` (exceptions, settings, enums) and standard library primitives (`abc`, `typing`).
-   - Defines pure abstractions (`ABC`), protocol state machines, and session context boundaries.
-   - Zero dependencies on `util`, concrete implementation packages, presentation, or external plugins.
+3. **`contract` (Domain Interfaces & State Machines)**:
+   - Depends strictly on `config` and `util`.
+   - Pure interfaces (`@abstractmethod`), state machines (`IConnection`), stream contracts (`ITransport`, `ITransportListener`), and session coordinators (`SessionContext`).
+   - Zero dependencies on implementation packages (`core`, `transport`, `command`, `controller`, `presentation`, `app`, `main`, or `plugins`).
+
+### Physical Transport
+
+4. **`transport` (Physical Transports, Listeners & Composable Decorators)**:
+   - Depends only on `contract`, `util`, and `config`.
+   - Encapsulates physical byte-stream I/O (`SocketTransport`, `TcpListener`) and composable decorators (`XorTransport`, `TransportPipeline`).
+   - Completely isolates OS network mechanics from session-layer protocols.
 
 ### Application
 
-4. **`command` (Command Operations)**:
-   - Depends on `contract` and foundation layers.
-   - Encapsulates discrete executable operations via immutable, self-validating DTOs.
-   - Fully decoupled from runtime transport mechanics and operator terminal I/O.
-5. **`controller` (Application Handlers)**:
-   - Depends on `contract` and `command`.
-   - Thin application handlers that parse requests, construct command DTOs, and coordinate dispatching.
-   - Emits structured lifecycle signals instead of control-flow exceptions.
+5. **`command` (Command Operations & Immutable DTOs)**:
+   - Depends on `contract`, `util`, and `config`.
+   - Encapsulates discrete executable operations via immutable, self-validating DTOs (`ExecuteCommandDTO`, `ExecuteFileDTO`, etc.).
+   - Decoupled from runtime transport mechanics and operator terminal I/O.
+6. **`controller` (Application Handlers & Lifecycle Signals)**:
+   - Depends on `command`, `contract`, `util`, and `config`.
+   - Thin application handlers that parse requests, construct command DTOs, and coordinate dispatching via `SessionContext.execute()`.
+   - Emits structured `ControllerResult(action=ControllerAction.CONTINUE | TERMINATE)` lifecycle signals instead of control-flow exceptions.
 
-### Infrastructure
+### Infrastructure & Presentation
 
-6. **`core` (Infrastructure Services)**:
-   - Implements infrastructure contracts defined in `contract` (CLI parser, routing, plugin registry).
+7. **`core` (Infrastructure Services, Routing & Parser)**:
+   - Implements infrastructure contracts defined in `contract` (`Router`, `DeclusorParser`, `PluginManager`, `Application`).
    - Manages dynamic multi-tier plugin discovery and enforces contract validation barriers.
-   - Operates strictly on plugin abstractions with zero knowledge of concrete transport packages.
+8. **`presentation` (User Interface & Terminal REPL)**:
+   - Depends on `contract`, `util`, and `config`.
+   - Manages interactive terminal REPL loops (`PromptLoop`), readline input (`TerminalInputSource`), autocompletion, and stream formatting (`TerminalView`).
+   - Communicates with controllers exclusively through route dispatching and lifecycle signals.
 
-### Presentation
+### Bootstrap & Composition Root
 
-7. **`presentation` (User Interface & Delivery)**:
-   - Depends on `contract` and foundation layers.
-   - Manages interactive terminal REPL loops, readline history, and stream formatting.
-   - Communicates with the application layer exclusively through route dispatching and lifecycle signals.
+9. **`app` (Application Flavors & Bootstrap)**:
+   - Assembles application targets (e.g. `terminal`) by composing `core`, `transport`, `presentation`, and `controller`.
+   - Exposes clean bootstrap factories (`create_terminal_application`) with fine-grained dependency injection (`listener_factory`, `launcher_renderer`).
+10. **`main` (Composition Root)**:
+    - The sole layer aware of all system components.
+    - Discovers plugins, wires routers, injects dependencies, and bootstraps application lifecycles.
+    - Traps unhandled errors, isolates dual-channel streams (`stdout` vs `stderr`), and maps to deterministic exit codes.
 
-### Composition Root
+### Testing SDK & Autonomous Plugins
 
-8. **`main` (Composition Root)**:
-   - The sole layer aware of all system components.
-   - Discovers plugins, wires routers, injects dependencies, and bootstraps application lifecycles.
-   - Traps unhandled errors, displays user-friendly diagnostics, and maps to deterministic exit codes.
-
-### Ecosystem & Verification
-
-9. **`plugins` (Autonomous Packages)**:
-   - Independent, self-contained packages residing outside the core application loop.
-   - Strictly implement domain contracts.
-   - Bundle their own isolated stager templates, helper libraries, and colocated test suites.
-10. **`testing` (Public Testing SDK)**:
+11. **`testing` (Public Testing SDK)**:
     - Published test harness supplying deterministic, fully-typed test doubles and fixtures.
-    - Provides reusable conformance suites to verify contract invariants.
+    - Provides reusable conformance suites (`PluginConformanceTestSuite`) to verify contract invariants.
     - Replaces unconstrained `MagicMock` sprawl with contract-compliant in-memory implementations.
+12. **`plugins` (Autonomous Packages)**:
+    - Independent, self-contained packages residing in `plugins/<plugin_name>/` outside the core application loop.
+    - Strictly implement domain contracts (`IPluginExtension`, `IPluginRuntime`, `IPluginProcessor`, `IConnectionProfile`).
+    - Bundle their own isolated stager templates, helper libraries, and colocated test suites.
 
 ## Development Setup
 
@@ -186,13 +204,89 @@ Every package directory must maintain a `README.md` containing at least:
 - `mypy src plugins tests` must pass with zero errors under `--strict`.
 - Never use untyped `Any` where a generic `TypeVar`, `Protocol`, or explicit union can be defined.
 
+### Dynamic Signature Introspection
+
+When composing or delegating to application, listener, or transport factories that accept optional keyword arguments (such as `listener_factory` or `launcher_renderer`), dynamically inspect the factory's parameters using `inspect.signature`:
+
+```python
+import inspect
+
+# CORRECT: Introspecting factory parameters dynamically
+params = inspect.signature(factory).parameters
+kwargs: dict[str, object] = {}
+if "listener_factory" in params:
+    kwargs["listener_factory"] = custom_listener_factory
+app = factory(transport, **kwargs)
+```
+
+```python
+# FORBIDDEN: Fragile try-except TypeError dispatching
+try:
+    app = factory(transport, listener_factory=custom_listener_factory)
+except TypeError:
+    # Danger: This catches and masks genuine TypeErrors raised INSIDE the factory!
+    app = factory(transport)
+```
+
 ## Testing Guidelines
+
+### Class-Based Test Suite Grouping
+
+All test cases across unit, integration, and e2e test suites **must** be organized into cohesive, intention-revealing test classes:
+
+- Group tests by unit under test, operation, or lifecycle phase (`class Test<Component><Aspect>:` or `class Test<UnitOfWork>:`).
+- Every test method inside a test class must accept `self`, return `None`, and follow the naming standard:
+  `def test_<action>__<condition>__<expected_outcome>(self) -> None:`
+- Loose top-level test functions are strictly forbidden.
+
+```python
+from declusor import testing
+
+
+class TestTerminalViewOutput:
+    """Verify output formatting and semantic level filtering."""
+
+    def test_view_write__binary_payload__flushes_raw_buffer(self, dummy_view: testing.DummyView) -> None:
+        """Ensure raw binary output writes directly to buffer without text transformation."""
+
+        dummy_view.write_binary(b"frame_data\n")
+        assert dummy_view.binary_data == [b"frame_data\n"]
+```
 
 ### Mock-Free Deterministic Test Doubles
 
-Do **not** use unconstrained `unittest.mock.MagicMock` or fragile monkeypatching to satisfy core contracts. Use the typed doubles provided by `declusor.testing`.
+Do **not** use unconstrained `unittest.mock.MagicMock` or fragile monkeypatching to satisfy core contracts. Use the typed doubles provided by `declusor.testing`:
+
+- `testing.DummyView`: Simulates output presentation, capturing messages, errors, warnings, info, success, and binary data.
+- `testing.DummyInputSource`: Simulates operator input queues and command reading.
+- `testing.DummyConnection`: Full state machine (`CREATED` -> `CONNECTED` -> `CLOSED`), frame recording, and chunk streaming.
+- `testing.DummyConnectionProfile`: Script rendering and command formatting.
+- `testing.DummyPluginFileStore`: In-memory file, library, and module streaming.
+- `testing.DummyPluginRuntime`: Deterministic connection creation.
+- `testing.DummyPlugin`: Self-contained plugin for discovery and registration tests.
+- `testing.DummyRouter`: Route inspection, usage docs, and deterministic dispatching.
+- `testing.DummySocket`: In-memory byte buffers simulating socket send/recv without OS network binding.
+- `testing.DummyTransport`: In-memory `ITransport` implementation recording frames and handling closed state.
+- `testing.MemoryTransport` & `testing.MemoryTransportListener`: Complete in-memory transport pair and listener for physical transport testing.
+- `testing.DummyApplication`: In-memory CLI execution double tracking `parse` and `run` calls.
 
 Standard pytest fixtures are pre-registered via `pytest_plugins = ["declusor.testing.pytest_plugin"]`.
+
+### Memory-Isolated Test Execution
+
+Executing all 1,300+ tests in a single monolithic `pytest` command process accumulates imported module namespaces, in-memory caches, dynamic plugin bytecode, and fixture lifecycles, causing process memory saturation and container OOM crashes.
+
+Always execute tests using partitioned sessions:
+
+- `make test-unit`: Runs component-level unit tests across all 11 core packages.
+- `make test-e2e`: Runs interactive REPL and CLI integration scenarios.
+- `make test-plugins`: Runs autonomous plugin tests in an isolated process.
+- `make test`: Runs `test-unit`, `test-e2e`, and `test-plugins` sequentially in separate Python processes.
+- Granular iterative testing: `.venv/bin/pytest tests/unit/<package_name> -v`.
+
+### CLI & Dual-Channel Stream Isolation
+
+When testing CLI composition roots (`main(argv)`), always use dual-stream redirection (`contextlib.redirect_stdout` and `contextlib.redirect_stderr`) to isolate terminal output, verify error messages deterministically, and prevent stream leakage across test runners.
 
 ### Colocated Plugin Tests & Conformance
 

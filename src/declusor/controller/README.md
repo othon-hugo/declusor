@@ -12,7 +12,7 @@ input, delegate to command objects, and present output.
 | `execute` | Execute a local script remotely                      |
 | `exit`    | Request session termination                          |
 | `help`    | Build the help controller                            |
-| `load`    | Load an operator-selected module from `data/modules` |
+| `load`    | Load an operator-selected module from the plugin's file store |
 | `shell`   | Open an interactive shell session                    |
 | `upload`  | Upload a local file remotely                         |
 
