@@ -1,7 +1,9 @@
+import base64
 import subprocess
-import sys
 
-from declusor import config, contract, core, transport
+import declusor_shell_socket as shell_socket
+
+from declusor import contract, transport
 
 
 def test_shell_socket_handshake_and_command_execution() -> None:
@@ -10,11 +12,9 @@ def test_shell_socket_handshake_and_command_execution() -> None:
     listener = transport.TcpListener("127.0.0.1", 0)
     port = listener.port
 
-    manager = core.PluginManager().discover()
-    plugin_class = manager.get("shell_socket")
-    options = plugin_class.extract_options({})
-    config = plugin_class.build_config("127.0.0.1", port, options)
-    runtime = plugin_class.build_runtime(config)
+    options = shell_socket.ShellSocketPlugin.extract_options({})
+    plugin_config = shell_socket.ShellSocketPlugin.build_config("127.0.0.1", port, options)
+    runtime = shell_socket.ShellSocketPlugin.build_runtime(plugin_config)
 
     proc = subprocess.Popen(["bash", "-c", runtime.launcher.text])
     raw_transport: contract.ITransport | None = None
@@ -42,8 +42,6 @@ def test_shell_socket_handshake_and_command_execution() -> None:
         response = b"".join(connection.read())
         assert b"shell_still_alive" in response
 
-        import base64
-
         b64_script = base64.b64encode(b"echo in_memory_script_works").decode()
         connection.write(f"execute_base64_encoded_value {b64_script}\n".encode())
         response = b"".join(connection.read())
@@ -61,57 +59,46 @@ def test_shell_socket_handshake_and_command_execution() -> None:
         proc.wait(timeout=5.0)
 
 
-def test_py_socket_handshake_and_command_execution() -> None:
-    """Verify py_socket launcher connects, completes handshake, and executes commands."""
+def test_shell_socket_resilience_empty_and_special_chars() -> None:
+    """Verify shell_socket recovers from empty inputs, trailing spaces, and quotes."""
 
     listener = transport.TcpListener("127.0.0.1", 0)
     port = listener.port
 
-    manager = core.PluginManager().discover()
-    plugin_class = manager.get("py_socket")
-    options = plugin_class.extract_options({})
-    plugin_config = plugin_class.build_config("127.0.0.1", port, options)
-    runtime = plugin_class.build_runtime(plugin_config)
+    options = shell_socket.ShellSocketPlugin.extract_options({})
+    plugin_config = shell_socket.ShellSocketPlugin.build_config("127.0.0.1", port, options)
+    runtime = shell_socket.ShellSocketPlugin.build_runtime(plugin_config)
 
-    proc = subprocess.Popen([sys.executable, "-c", runtime.launcher.text])
+    proc = subprocess.Popen(["bash", "-c", runtime.launcher.text])
     raw_transport: contract.ITransport | None = None
 
     try:
         raw_transport = listener.accept(timeout=5.0)
-
         connection = runtime.create_connection(raw_transport)
-        state: contract.ConnectionState = connection.state
-        assert state == contract.ConnectionState.CREATED
-
         connection.handshake()
-        state = connection.state
-        assert state == contract.ConnectionState.CONNECTED
 
-        rendered_cmd = connection.profile.render_operation_command(
-            config.OperationCode.EXEC_COMMAND,
-            "echo py_shell_handshake_ok",
-        )
-        assert rendered_cmd is not None
-        connection.write(rendered_cmd.encode())
-        response = b"".join(connection.read())
-        assert b"py_shell_handshake_ok" in response
+        # Repeated empty inputs must not terminate the shell
+        connection.write(b"")
+        assert b"".join(connection.read()) == b""
 
-        rendered_py = connection.profile.render_operation_command(
-            config.OperationCode.EXEC_CODE,
-            "#!/usr/bin/env python\nprint('py_native_ok')\n",
-        )
-        assert rendered_py is not None
-        connection.write(rendered_py.encode())
+        connection.write(b"   \n")
+        assert b"".join(connection.read()) == b""
+
+        # Special characters and quote escaping
+        connection.write(b"echo 'special $PATH & \"quotes\"'\n")
         response = b"".join(connection.read())
-        assert b"py_native_ok" in response
+        assert b'special $PATH & "quotes"' in response
+
+        # In-memory execution without touching disk
+        b64_script = base64.b64encode(b"VAR='resilient_shell'; echo $VAR").decode()
+        connection.write(f"execute_base64_encoded_value {b64_script}\n".encode())
+        response = b"".join(connection.read())
+        assert b"resilient_shell" in response
 
         connection.close()
-        state = connection.state
-        assert state == contract.ConnectionState.CLOSED
     finally:
         if raw_transport is not None:
             raw_transport.close()
-
         listener.close()
         proc.kill()
         proc.wait(timeout=5.0)
