@@ -9,6 +9,8 @@
 .PHONY: lint
 .PHONY: type-check
 .PHONY: test
+.PHONY: test-unit
+.PHONY: test-e2e
 .PHONY: check
 .PHONY: test-plugins
 .PHONY: test-plugin
@@ -93,13 +95,31 @@ lint:
 type-check:
 	$(EXEC)mypy .
 
-test:
-	$(EXEC)pytest
+test: test-unit test-e2e test-plugins
+
+test-unit:
+	@for dir in tests/unit/*; do \
+		if [ -d "$$dir" ] && [ "$$(basename "$$dir")" != "__pycache__" ]; then \
+			echo "==> Running unit tests in $$dir..."; \
+			$(EXEC)pytest "$$dir" || exit 1; \
+		fi; \
+	done
+
+test-e2e:
+	@if [ -d "tests/e2e" ]; then \
+		echo "==> Running e2e tests..."; \
+		$(EXEC)pytest tests/e2e || exit 1; \
+	fi
 
 check: format-check lint type-check test
 
 test-plugins:
-	$(EXEC)pytest plugins/
+	@for p in plugins/*; do \
+		if [ -d "$$p/tests" ]; then \
+			echo "==> Running plugin tests in $$p/tests..."; \
+			$(EXEC)pytest "$$p/tests" || exit 1; \
+		fi; \
+	done
 
 test-plugin:
 	$(EXEC)pytest $(PLUGIN_TEST_PATH)

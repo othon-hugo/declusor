@@ -245,7 +245,7 @@ class DeclusorParser(util.Parser):
         self.add_argument(
             *self.PluginDir.arg_flags,
             help=self.PluginDir.arg_help,
-            type=self.Plugin,
+            type=self.PluginDir,
             default=None,
         )
 

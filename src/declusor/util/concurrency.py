@@ -1,6 +1,7 @@
 from collections.abc import Callable, Generator, Iterator
 from dataclasses import dataclass
 from threading import Event, Thread
+from types import TracebackType
 from typing import Any, Literal, Self
 
 TaskHandler = Callable[["TaskEvent"], Any]
@@ -122,12 +123,17 @@ class TaskPool:
 
         return self
 
-    def __exit__(self, exc_t: type[BaseException] | None, exc_v: BaseException | None, exc_tb: Exception | None) -> Literal[False]:
+    def __exit__(
+        self,
+        exc_t: type[BaseException] | None,
+        exc_v: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> Literal[False]:
         for _ in self.return_all():
             pass
 
         if errors := self.errors:
-            raise ExceptionGroup("One or more exceptions occurred during thread execution.", errors) from exc_tb
+            raise ExceptionGroup("One or more exceptions occurred during thread execution.", errors) from exc_v
 
         return False
 

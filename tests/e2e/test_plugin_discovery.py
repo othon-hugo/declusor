@@ -3,23 +3,25 @@ from pathlib import Path
 from declusor import app
 
 
-def test_create_application_discovers_builtin_plugins() -> None:
-    """Application factory must discover built-in plugins automatically."""
+class TestPluginDiscoveryE2E:
+    """End-to-end integration tests for plugin discovery mechanisms."""
 
-    declusor_app = app.create_terminal_application()
-    available = declusor_app.plugin_manager.names()
+    def test_create_application_discovers_builtin_plugins(self) -> None:
+        """Application factory must discover built-in plugins automatically."""
 
-    assert "shell_socket" in available
-    assert "py_socket" in available
+        declusor_app = app.create_terminal_application()
+        available = declusor_app.plugin_manager.names()
 
+        assert "shell_socket" in available
+        assert "py_socket" in available
 
-def test_create_application_discovers_custom_plugins_via_search_dirs(tmp_path: Path) -> None:
-    """Application factory must incorporate custom search directories."""
+    def test_create_application_discovers_custom_plugins_via_search_dirs(self, tmp_path: Path) -> None:
+        """Application factory must incorporate custom search directories."""
 
-    custom_plugin_dir = tmp_path / "extra_client"
-    custom_plugin_dir.mkdir()
+        custom_plugin_dir = tmp_path / "extra_client"
+        custom_plugin_dir.mkdir()
 
-    plugin_code = """
+        plugin_code = """
 from collections.abc import Mapping
 from declusor import contract
 
@@ -51,11 +53,11 @@ class ExtraClientPlugin(contract.IPluginExtension[ExtraClientConfig]):
     def build_runtime(cls, plugin_config, /):
         return None
 """
-    (custom_plugin_dir / "plugin.py").write_text(plugin_code, encoding="utf-8")
+        (custom_plugin_dir / "plugin.py").write_text(plugin_code, encoding="utf-8")
 
-    declusor_app = app.create_terminal_application(search_dirs=[tmp_path])
-    available = declusor_app.plugin_manager.names()
+        declusor_app = app.create_terminal_application(search_dirs=[tmp_path])
+        available = declusor_app.plugin_manager.names()
 
-    assert "shell_socket" in available
-    assert "py_socket" in available
-    assert "extra_client" in available
+        assert "shell_socket" in available
+        assert "py_socket" in available
+        assert "extra_client" in available

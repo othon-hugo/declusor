@@ -6,9 +6,10 @@ class PromptLoop(contract.ISessionRunner):
     """Interactive command-line loop that reads, routes, and dispatches user input.
 
     Displays a ``[name] `` prefix on each input line. Handles ``KeyboardInterrupt``
-    during input (stops the loop) and during command execution (skips to next
-    iteration). Handles ``ControllerAction.TERMINATE`` for clean exit without exceptions.
-    ``DeclusorException`` errors are printed to the view without terminating the connection.
+    or ``EOFError`` during input (stops the loop) and ``KeyboardInterrupt`` during
+    command execution (skips to next iteration). Handles ``ControllerAction.TERMINATE``
+    for clean exit without exceptions. ``DeclusorException`` errors are printed to
+    the view without terminating the connection.
     """
 
     def __init__(
@@ -68,7 +69,7 @@ class PromptLoop(contract.ISessionRunner):
         while True:
             try:
                 command_line = self._read_command(active_session)
-            except KeyboardInterrupt:
+            except (KeyboardInterrupt, EOFError):
                 break
 
             try:
@@ -116,9 +117,13 @@ class PromptLoop(contract.ISessionRunner):
             RouterError: If the route is not registered.
         """
 
+        stripped_line = command_line.strip()
+        if not stripped_line:
+            raise config.PromptError(command_line, "empty route")
+
         result: contract.ControllerResult | contract.ControllerAction | None = None
 
-        match command_line.split(" ", 1):
+        match stripped_line.split(" ", 1):
             case [route, argument]:
                 result = router.locate(route)(session, ControllerRequest(argument.strip()))
             case [route]:

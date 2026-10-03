@@ -1,3 +1,5 @@
+"""Unit tests for controller contracts and data structures."""
+
 from dataclasses import FrozenInstanceError
 
 import pytest
@@ -5,69 +7,153 @@ import pytest
 from declusor import contract
 
 
-def test_icontroller_request_is_abstract() -> None:
-    """IControllerRequest cannot be instantiated directly without abstract implementations."""
+class TestControllerAction:
+    """Tests for ControllerAction string enumeration."""
 
-    with pytest.raises(TypeError, match="Can't instantiate abstract class"):
-        contract.IControllerRequest()  # type: ignore[abstract]
+    def test_controller_action__enum_members__match_expected_string_values(self) -> None:
+        """Verify ControllerAction enum members match expected string values."""
 
+        from enum import StrEnum
 
-def test_controller_action_enum_members() -> None:
-    """ControllerAction must declare CONTINUE and TERMINATE members."""
+        assert issubclass(contract.ControllerAction, StrEnum)
+        assert contract.ControllerAction.CONTINUE.value == "CONTINUE"
+        assert contract.ControllerAction.TERMINATE.value == "TERMINATE"
+        assert len(contract.ControllerAction) == 2
 
-    assert contract.ControllerAction.CONTINUE == "CONTINUE"
-    assert contract.ControllerAction.TERMINATE == "TERMINATE"
+    def test_controller_action__str_instance__is_subclass_and_instance_of_str(self) -> None:
+        """Verify ControllerAction members are string instances."""
 
-
-def test_controller_result_defaults() -> None:
-    """ControllerResult must default action to CONTINUE and message to None."""
-
-    result = contract.ControllerResult()
-
-    assert result.action == contract.ControllerAction.CONTINUE
-    assert result.message is None
+        assert isinstance(contract.ControllerAction.CONTINUE, str)
+        assert isinstance(contract.ControllerAction.TERMINATE, str)
 
 
-def test_controller_result_explicit_values() -> None:
-    """ControllerResult must store provided action and message."""
+class TestControllerResult:
+    """Tests for ControllerResult dataclass."""
 
-    result = contract.ControllerResult(
-        action=contract.ControllerAction.TERMINATE,
-        message="Session closed.",
-    )
+    def test_controller_result__equality_and_factory_helpers__match_default_construction(self) -> None:
+        """Verify factory classmethods create instances equal to explicit constructor calls."""
 
-    assert result.action == contract.ControllerAction.TERMINATE
-    assert result.message == "Session closed."
+        assert contract.ControllerResult() == contract.ControllerResult.for_continuation()
+        assert contract.ControllerResult(action=contract.ControllerAction.TERMINATE, message="Done") == contract.ControllerResult.for_termination(
+            "Done"
+        )
+
+    def test_controller_result__default_instantiation__sets_default_action_and_none_message(self) -> None:
+        """Verify ControllerResult defaults action to CONTINUE and message to None."""
+
+        result = contract.ControllerResult()
+
+        assert result.action == contract.ControllerAction.CONTINUE
+        assert result.message is None
+
+    def test_controller_result__explicit_arguments__preserves_provided_attributes(self) -> None:
+        """Verify ControllerResult stores explicitly provided action and message."""
+
+        result = contract.ControllerResult(
+            action=contract.ControllerAction.TERMINATE,
+            message="Session closed.",
+        )
+
+        assert result.action == contract.ControllerAction.TERMINATE
+        assert result.message == "Session closed."
+
+    def test_controller_result__attribute_mutation__raises_frozen_instance_error(self) -> None:
+        """Verify ControllerResult is frozen and rejects attribute mutation."""
+
+        result = contract.ControllerResult()
+
+        with pytest.raises(FrozenInstanceError):
+            result.message = "mutated"  # type: ignore[misc]
+
+    def test_controller_result_for_continuation__without_message__returns_continue_with_none_message(self) -> None:
+        """Verify for_continuation factory creates CONTINUE result with default None message."""
+
+        result = contract.ControllerResult.for_continuation()
+
+        assert result.action == contract.ControllerAction.CONTINUE
+        assert result.message is None
+
+    def test_controller_result_for_continuation__with_message__returns_continue_with_message(self) -> None:
+        """Verify for_continuation factory creates CONTINUE result with provided message."""
+
+        result = contract.ControllerResult.for_continuation("In progress.")
+
+        assert result.action == contract.ControllerAction.CONTINUE
+        assert result.message == "In progress."
+
+    def test_controller_result_for_termination__without_message__returns_terminate_with_none_message(self) -> None:
+        """Verify for_termination factory creates TERMINATE result with default None message."""
+
+        result = contract.ControllerResult.for_termination()
+
+        assert result.action == contract.ControllerAction.TERMINATE
+        assert result.message is None
+
+    def test_controller_result_for_termination__with_message__returns_terminate_with_message(self) -> None:
+        """Verify for_termination factory creates TERMINATE result with provided message."""
+
+        result = contract.ControllerResult.for_termination("Goodbye!")
+
+        assert result.action == contract.ControllerAction.TERMINATE
+        assert result.message == "Goodbye!"
 
 
-def test_controller_result_is_immutable() -> None:
-    """ControllerResult must be frozen and reject attribute mutation."""
+class TestIControllerRequest:
+    """Tests for IControllerRequest abstract base class."""
 
-    result = contract.ControllerResult()
+    def test_icontroller_request__direct_instantiation__raises_type_error(self) -> None:
+        """Verify IControllerRequest cannot be instantiated directly."""
 
-    with pytest.raises(FrozenInstanceError):
-        result.message = "mutated"  # type: ignore[misc]
+        with pytest.raises(TypeError, match="Can't instantiate abstract class"):
+            contract.IControllerRequest()  # type: ignore[abstract]
+
+    def test_icontroller_request__concrete_subclass__satisfies_abstract_contract(self) -> None:
+        """Verify concrete subclass implementing abstract members functions correctly."""
+
+        class _ConcreteRequest(contract.IControllerRequest[contract.ControllerArguments]):
+            """Concrete test double for IControllerRequest."""
+
+            def __init__(self, line: str) -> None:
+                self._line = line
+
+            @property
+            def request_line(self) -> str:
+                return self._line
+
+            def parse_arguments(
+                self,
+                definitions: contract.ArgumentDefinitions,
+                allow_unknown: bool = False,
+            ) -> tuple[contract.ControllerArguments, list[str]]:
+                return {}, []
+
+        request = _ConcreteRequest("status --verbose")
+
+        assert request.request_line == "status --verbose"
+        parsed, unknown = request.parse_arguments({})
+        assert parsed == {}
+        assert unknown == []
 
 
-def test_controller_result_factory_for_continuation() -> None:
-    """ControllerResult.for_continuation must create a CONTINUE result with optional message."""
+class TestControllerArguments:
+    """Tests for ControllerArguments TypedDict."""
 
-    default_result = contract.ControllerResult.for_continuation()
-    assert default_result.action == contract.ControllerAction.CONTINUE
-    assert default_result.message is None
+    def test_controller_arguments__subclass_instantiation__behaves_as_typed_dictionary(self) -> None:
+        """Verify ControllerArguments subclass allows structured dictionary access."""
 
-    custom_result = contract.ControllerResult.for_continuation("In progress.")
-    assert custom_result.action == contract.ControllerAction.CONTINUE
-    assert custom_result.message == "In progress."
+        class _SampleArguments(contract.ControllerArguments):
+            query: str
+            limit: int
 
+        arguments: _SampleArguments = {"query": "SELECT 1", "limit": 10}
 
-def test_controller_result_factory_for_termination() -> None:
-    """ControllerResult.for_termination must create a TERMINATE result with optional message."""
+        assert arguments["query"] == "SELECT 1"
+        assert arguments["limit"] == 10
 
-    default_result = contract.ControllerResult.for_termination()
-    assert default_result.action == contract.ControllerAction.TERMINATE
-    assert default_result.message is None
+    def test_controller_arguments__empty_instance__behaves_as_empty_dictionary(self) -> None:
+        """Verify base ControllerArguments can be initialized as an empty dictionary."""
 
-    custom_result = contract.ControllerResult.for_termination("Goodbye!")
-    assert custom_result.action == contract.ControllerAction.TERMINATE
-    assert custom_result.message == "Goodbye!"
+        arguments: contract.ControllerArguments = {}
+
+        assert len(arguments) == 0
+        assert dict(arguments) == {}
