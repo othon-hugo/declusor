@@ -1,3 +1,4 @@
+import io
 import sys
 from typing import BinaryIO, TextIO
 
@@ -15,7 +16,16 @@ class TerminalView(contract.IView):
     ) -> None:
         self._stdout: TextIO = stdout if stdout is not None else sys.stdout
         self._stderr: TextIO = stderr if stderr is not None else sys.stderr
-        self._buffer: BinaryIO = buffer if buffer is not None else getattr(self._stdout, "buffer", sys.stdout.buffer)
+
+        if buffer is not None:
+            self._buffer: BinaryIO = buffer
+        else:
+            stdout_buffer = getattr(self._stdout, "buffer", None)
+            if stdout_buffer is not None:
+                self._buffer = stdout_buffer
+            else:
+                sys_buffer = getattr(sys.stdout, "buffer", None)
+                self._buffer = sys_buffer if sys_buffer is not None else io.BytesIO()
 
     def write_message(self, message: str, /) -> None:
         """Display a plain informational message to standard output.

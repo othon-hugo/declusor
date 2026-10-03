@@ -39,7 +39,7 @@ class DummyPluginRuntime(contract.IPluginRuntime):
         """Return configured connection or new DummyConnection instance."""
 
         self.received_transports.append(transport)
-        conn = self.connection_to_return or DummyConnection()
+        conn = self.connection_to_return or DummyConnection(transport=transport)
         self.created_connections.append(conn)
 
         return conn

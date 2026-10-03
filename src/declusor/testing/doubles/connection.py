@@ -13,10 +13,12 @@ class DummyConnection(contract.IConnection):
         client: contract.IOperationRenderer | None = None,
         incoming_chunks: Sequence[bytes] | None = None,
         initial_state: contract.ConnectionState = contract.ConnectionState.CONNECTED,
+        transport: contract.ITransport | None = None,
     ) -> None:
         self._client: contract.IOperationRenderer = client or DummyOperationRenderer()
         self._state: contract.ConnectionState = initial_state
         self._timeout: float | None = None
+        self._transport: contract.ITransport | None = transport
         self.written: list[bytes] = []
         self.incoming_chunks: list[bytes] = list(incoming_chunks) if incoming_chunks is not None else [b"chunk1\n", b"chunk2\n"]
         self.initialize_called: bool = False
@@ -73,6 +75,9 @@ class DummyConnection(contract.IConnection):
     def write(self, content: bytes, /) -> None:
         """Record transmitted bytes."""
 
+        if self._state == contract.ConnectionState.CLOSED:
+            raise config.ConnectionClosed("Connection is not open.")
+
         if self._state != contract.ConnectionState.CONNECTED:
             raise config.ConnectionError("Connection is not open.")
 
@@ -80,12 +85,16 @@ class DummyConnection(contract.IConnection):
             raise self.write_error
 
         self.written.append(content)
+        if self._transport is not None:
+            self._transport.write(content)
 
     def close(self) -> None:
         """Simulate closing transport resources."""
 
         self.closed = True
         self._state = contract.ConnectionState.CLOSED
+        if self._transport is not None:
+            self._transport.close()
 
     def __enter__(self) -> Self:
         return self

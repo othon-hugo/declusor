@@ -4,19 +4,19 @@ from declusor.config import (
     ConnectionTimeoutError,
 )
 
-from .listener import (
-    TcpListener,
-)
 from .pipeline import (
     TransportLayerFactory,
     TransportLayerRegistry,
     TransportPipeline,
     default_transport_registry,
 )
-from .socket import (
+from .socket_transport import (
     SocketTransport,
 )
-from .xor import (
+from .tcp_listener import (
+    TcpListener,
+)
+from .xor_transport import (
     XorTransport,
 )
 

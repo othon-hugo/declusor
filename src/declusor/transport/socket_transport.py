@@ -1,5 +1,5 @@
 import contextlib
-import socket as _socket
+import socket
 
 from declusor import config, contract
 
@@ -12,10 +12,10 @@ class SocketTransport(contract.ITransport):
     defined in declusor.config.
     """
 
-    def __init__(self, sock: _socket.socket, /) -> None:
+    def __init__(self, sock: socket.socket, /) -> None:
         """Initialize the transport with an active socket."""
 
-        self._socket = sock
+        self.socket = sock
         self._closed = False
 
     @property
@@ -28,20 +28,20 @@ class SocketTransport(contract.ITransport):
     def timeout(self) -> float | None:
         """Transport I/O timeout in seconds, or None for indefinite blocking."""
 
-        return self._socket.gettimeout()
+        return self.socket.gettimeout()
 
     @timeout.setter
     def timeout(self, value: float | None, /) -> None:
         """Set transport I/O timeout in seconds, or None for indefinite blocking."""
 
-        self._socket.settimeout(value)
+        self.socket.settimeout(value)
 
     @property
     def peer_address(self) -> str:
         """Representation of the remote endpoint (e.g. '192.168.1.10:4444')."""
 
         try:
-            peer = self._socket.getpeername()
+            peer = self.socket.getpeername()
             if isinstance(peer, tuple) and len(peer) >= 2:
                 return f"{peer[0]}:{peer[1]}"
             return str(peer)
@@ -49,10 +49,10 @@ class SocketTransport(contract.ITransport):
             return "unknown"
 
     @property
-    def raw_socket(self) -> _socket.socket:
+    def rawsocket(self) -> socket.socket:
         """Access the underlying OS socket."""
 
-        return self._socket
+        return self.socket
 
     def read(self, max_bytes: int = 4096, /) -> bytes:
         """Read up to max_bytes from the socket.
@@ -70,7 +70,7 @@ class SocketTransport(contract.ITransport):
             raise config.ConnectionClosed("Cannot read from closed transport.")
 
         try:
-            data = self._socket.recv(max_bytes)
+            data = self.socket.recv(max_bytes)
             if not data:
                 return b""
             return data
@@ -100,7 +100,7 @@ class SocketTransport(contract.ITransport):
             return
 
         try:
-            self._socket.sendall(data)
+            self.socket.sendall(data)
         except TimeoutError as err:
             raise config.ConnectionTimeoutError(f"Socket write timed out: {err}") from err
         except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError) as err:
@@ -117,7 +117,7 @@ class SocketTransport(contract.ITransport):
 
         self._closed = True
         with contextlib.suppress(OSError):
-            self._socket.shutdown(_socket.SHUT_RDWR)
+            self.socket.shutdown(socket.SHUT_RDWR)
 
         with contextlib.suppress(OSError):
-            self._socket.close()
+            self.socket.close()

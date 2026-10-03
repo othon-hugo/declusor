@@ -38,7 +38,8 @@ class TerminalInputSource(contract.IInputSource):
             The raw input string including trailing newline.
         """
 
-        return self._reader(prompt) + "\n"
+        raw_line = self._reader(prompt)
+        return raw_line if raw_line.endswith("\n") else f"{raw_line}\n"
 
     def setup_completer(self, command_routes: Sequence[str], /) -> None:
         """Set up the readline completer for command line input.
@@ -64,7 +65,8 @@ class TerminalInputSource(contract.IInputSource):
             target_dir = searching_dir if searching_dir else "."
 
             try:
-                for filename in glob.glob(searching_file + "*", root_dir=target_dir):
+                pattern = glob.escape(searching_file) + "*"
+                for filename in glob.glob(pattern, root_dir=target_dir):
                     filepath = os.path.join(target_dir, filename)
 
                     match_string = os.path.join(searching_dir, filename)
@@ -76,13 +78,17 @@ class TerminalInputSource(contract.IInputSource):
             except OSError:
                 pass
 
+            files.sort()
             return files
 
         def _complete_line(text: str, state: int) -> str | None:
             def _find_file(text: str, state: int) -> str | None:
                 matches = _search_file(text)
 
-                return (matches + [None])[state]
+                if state < len(matches):
+                    return matches[state]
+
+                return None
 
             def _find_command(text: str, state: int) -> str | None:
                 matches = [line for line in command_routes if line.startswith(text)]
@@ -94,7 +100,7 @@ class TerminalInputSource(contract.IInputSource):
 
             try:
                 line_buffer = readline.get_line_buffer()
-                commands = line_buffer.split(" ", 1)
+                commands = line_buffer.lstrip().split(" ", 1)
             except Exception:
                 return None
 
@@ -126,7 +132,7 @@ class TerminalInputSource(contract.IInputSource):
         self._history_file = history_file
 
         if self._history_file.exists():
-            with suppress(FileNotFoundError, PermissionError):
+            with suppress(OSError):
                 readline.read_history_file(str(self._history_file))
 
         atexit.register(self._save_history)
@@ -135,5 +141,5 @@ class TerminalInputSource(contract.IInputSource):
         """Save history to file."""
 
         if readline and self._history_file:
-            with suppress(FileNotFoundError, PermissionError):
+            with suppress(OSError):
                 readline.write_history_file(str(self._history_file))

@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
 from declusor import config, contract, core, presentation, transport
@@ -16,6 +16,7 @@ class TerminalApplication(core.Application):
         plugin_manager: core.PluginManager,
         session_runner: contract.ISessionRunner,
         input_source: contract.IInputSource | None = None,
+        listener_factory: Callable[[str, int], contract.ITransportListener] | None = None,
         launcher_renderer: core.LauncherRenderer | None = None,
         transport_registry: transport.TransportLayerRegistry | None = None,
     ) -> None:
@@ -27,6 +28,7 @@ class TerminalApplication(core.Application):
             plugin_manager: Plugin manager containing the available client plugins.
             session_runner: Session runner executing interaction workflows over active sessions.
             input_source: Operator input source interface reading commands.
+            listener_factory: Optional factory producing an ITransportListener for network connections.
             launcher_renderer: Optional renderer responsible for delivering client launcher.
             transport_registry: Optional registry managing composable transport layers.
         """
@@ -37,9 +39,34 @@ class TerminalApplication(core.Application):
             plugin_manager=plugin_manager,
             session_runner=session_runner,
             input_source=input_source,
+            listener_factory=listener_factory,
             launcher_renderer=launcher_renderer,
             transport_registry=transport_registry,
         )
+
+    @property
+    def router(self) -> contract.IRouter:
+        """Active command router resolving interactive commands to controller actions."""
+
+        return self._router
+
+    @property
+    def view(self) -> contract.IView:
+        """Operator presentation view interface."""
+
+        return self._view
+
+    @property
+    def session_runner(self) -> contract.ISessionRunner:
+        """Active session runner executing prompt workflows."""
+
+        return self._session_runner
+
+    @property
+    def input_source(self) -> contract.IInputSource | None:
+        """Operator input source interface reading commands, or None if omitted."""
+
+        return self._input_source
 
 
 def create_terminal_application(
@@ -47,6 +74,12 @@ def create_terminal_application(
     *,
     plugin_manager: core.PluginManager | None = None,
     transport_registry: transport.TransportLayerRegistry | None = None,
+    listener_factory: Callable[[str, int], contract.ITransportListener] | None = None,
+    launcher_renderer: core.LauncherRenderer | None = None,
+    router: contract.IRouter | None = None,
+    view: contract.IView | None = None,
+    input_source: contract.IInputSource | None = None,
+    session_runner: contract.ISessionRunner | None = None,
 ) -> TerminalApplication:
     """Create a TerminalApplication with discovered plugins and terminal components.
 
@@ -54,22 +87,30 @@ def create_terminal_application(
         search_dirs: Optional sequence of paths to search for plugins.
         plugin_manager: Optional existing plugin manager instance.
         transport_registry: Optional transport layer registry instance.
+        listener_factory: Optional factory producing an ITransportListener for network connections.
+        launcher_renderer: Optional renderer responsible for delivering client launcher.
+        router: Optional command router instance.
+        view: Optional presentation view interface.
+        input_source: Optional input source interface.
+        session_runner: Optional session runner executing interaction workflows.
 
     Returns:
         Fully composed TerminalApplication ready to execute.
     """
 
-    router = core.Router()
-    view = presentation.TerminalView()
+    active_router = router or core.Router()
+    active_view = view or presentation.TerminalView()
     manager = plugin_manager or core.PluginManager().discover(search_dirs)
-    session_runner = presentation.PromptLoop(config.PROJECT_NAME)
-    input_source = presentation.TerminalInputSource()
+    active_session_runner = session_runner or presentation.PromptLoop(config.PROJECT_NAME)
+    active_input_source = input_source or presentation.TerminalInputSource()
 
     return TerminalApplication(
-        router,
-        view,
+        active_router,
+        active_view,
         plugin_manager=manager,
-        session_runner=session_runner,
-        input_source=input_source,
+        session_runner=active_session_runner,
+        input_source=active_input_source,
+        listener_factory=listener_factory,
+        launcher_renderer=launcher_renderer,
         transport_registry=transport_registry,
     )

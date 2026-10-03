@@ -1,119 +1,159 @@
 import pytest
 
-from declusor import contract, testing
+from declusor import contract
+from declusor.testing import DummyTransport
+
+# [Test Doubles]
 
 
-class PassthroughTransport(contract.ITransportLayer):
-    """Minimal concrete ITransportLayer for testing delegation."""
+class ConcreteTransportLayer(contract.ITransportLayer):
+    """Minimal concrete implementation of ITransportLayer forwarding read and write."""
 
     def read(self, max_bytes: int = 4096, /) -> bytes:
-        """Forward read directly to the underlying transport."""
+        """Forward read operation directly to underlying transport."""
 
         return self._transport.read(max_bytes)
 
     def write(self, data: bytes, /) -> None:
-        """Forward write directly to the underlying transport."""
+        """Forward write operation directly to underlying transport."""
 
         self._transport.write(data)
 
 
-def test_transport_layer_delegates_is_closed() -> None:
-    """ITransportLayer.is_closed must delegate to underlying transport."""
-
-    inner = testing.DummyTransport()
-    layer = PassthroughTransport(inner)
-
-    assert not layer.is_closed
-    inner.close()
-    assert layer.is_closed
+# [Test Cases]
 
 
-def test_transport_layer_delegates_timeout() -> None:
-    """ITransportLayer.timeout must delegate get and set to underlying transport."""
+class TestITransportLayer:
+    """Test suite for ITransportLayer base decorator contract."""
 
-    inner = testing.DummyTransport()
-    layer = PassthroughTransport(inner)
+    def test_transport_layer_inheritance__inherits_from_itransport(self) -> None:
+        """Verify ITransportLayer subclasses ITransport base contract."""
 
-    assert layer.timeout is None
-    layer.timeout = 2.5
-    assert layer.timeout == 2.5
-    assert inner.timeout == 2.5
+        assert issubclass(contract.ITransportLayer, contract.ITransport)
 
+    def test_transport_layer_direct_instantiation__raises_type_error(self) -> None:
+        """Verify ITransportLayer cannot be instantiated directly due to abstract read and write."""
 
-def test_transport_layer_delegates_peer_address() -> None:
-    """ITransportLayer.peer_address must delegate to underlying transport."""
+        inner = DummyTransport()
 
-    inner = testing.DummyTransport(peer_address="10.0.0.1:8080")
-    layer = PassthroughTransport(inner)
+        with pytest.raises(TypeError, match="Can't instantiate abstract class"):
+            contract.ITransportLayer(inner)  # type: ignore[abstract]
 
-    assert layer.peer_address == "10.0.0.1:8080"
+    def test_transport_layer_underlying_property__returns_wrapped_transport(self) -> None:
+        """Verify underlying property returns the wrapped transport instance."""
 
+        inner = DummyTransport()
+        layer = ConcreteTransportLayer(inner)
 
-def test_transport_layer_delegates_close() -> None:
-    """ITransportLayer.close must close the underlying transport."""
+        assert layer.underlying is inner
 
-    inner = testing.DummyTransport()
-    layer = PassthroughTransport(inner)
+    def test_transport_layer_is_closed__delegates_to_underlying_transport(self) -> None:
+        """Verify is_closed property delegates directly to underlying transport."""
 
-    layer.close()
-    assert inner.is_closed
-    assert layer.is_closed
+        inner = DummyTransport()
+        layer = ConcreteTransportLayer(inner)
 
+        assert layer.is_closed is False
 
-def test_transport_layer_exposes_underlying() -> None:
-    """ITransportLayer.underlying must return the wrapped transport."""
+        inner.close()
 
-    inner = testing.DummyTransport()
-    layer = PassthroughTransport(inner)
+        assert layer.is_closed is True
 
-    assert layer.underlying is inner
+    def test_transport_layer_timeout_getter__delegates_to_underlying_transport(self) -> None:
+        """Verify timeout getter delegates directly to underlying transport."""
 
+        inner = DummyTransport()
+        layer = ConcreteTransportLayer(inner)
 
-def test_transport_layer_passthrough_read_write() -> None:
-    """PassthroughTransport must transparently forward read and write."""
+        assert layer.timeout is None
 
-    inner = testing.DummyTransport(incoming_data=b"hello")
-    layer = PassthroughTransport(inner)
+        inner.timeout = 2.5
 
-    layer.write(b"outbound")
-    assert inner.written_bytes == b"outbound"
+        assert layer.timeout == 2.5
 
-    received = layer.read(4096)
-    assert received == b"hello"
+    def test_transport_layer_timeout_setter__delegates_to_underlying_transport(self) -> None:
+        """Verify timeout setter mutates timeout on underlying transport."""
 
+        inner = DummyTransport()
+        layer = ConcreteTransportLayer(inner)
 
-def test_transport_layer_context_manager() -> None:
-    """ITransportLayer must support context manager protocol via ITransport."""
+        layer.timeout = 4.0
 
-    inner = testing.DummyTransport()
+        assert inner.timeout == 4.0
+        assert layer.timeout == 4.0
 
-    with PassthroughTransport(inner) as layer:
-        assert not layer.is_closed
+    def test_transport_layer_peer_address__delegates_to_underlying_transport(self) -> None:
+        """Verify peer_address property delegates directly to underlying transport."""
 
-    assert inner.is_closed
+        inner = DummyTransport(peer_address="192.168.1.100:9999")
+        layer = ConcreteTransportLayer(inner)
 
+        assert layer.peer_address == "192.168.1.100:9999"
 
-def test_transport_layer_double_stacking() -> None:
-    """Two stacked ITransportLayer instances must delegate correctly."""
+    def test_transport_layer_close__delegates_to_underlying_transport(self) -> None:
+        """Verify close method delegates directly to underlying transport."""
 
-    inner = testing.DummyTransport(incoming_data=b"deep")
-    layer1 = PassthroughTransport(inner)
-    layer2 = PassthroughTransport(layer1)
+        inner = DummyTransport()
+        layer = ConcreteTransportLayer(inner)
 
-    layer2.write(b"stacked")
-    assert inner.written_bytes == b"stacked"
+        layer.close()
 
-    received = layer2.read(4096)
-    assert received == b"deep"
+        assert inner.is_closed is True
+        assert layer.is_closed is True
 
-    assert layer2.underlying is layer1
-    assert layer1.underlying is inner
+    def test_transport_layer_context_manager_scope__closes_underlying_transport_on_exit(self) -> None:
+        """Verify context manager protocol closes the underlying transport on exit."""
 
+        inner = DummyTransport()
 
-def test_transport_layer_is_abstract() -> None:
-    """ITransportLayer cannot be instantiated directly."""
+        with ConcreteTransportLayer(inner) as layer:
+            assert layer.is_closed is False
+            assert inner.is_closed is False
 
-    inner = testing.DummyTransport()
+        assert inner.is_closed is True
+        assert layer.is_closed is True
 
-    with pytest.raises(TypeError, match="Can't instantiate abstract class"):
-        contract.ITransportLayer(inner)  # type: ignore[abstract]
+    def test_transport_layer_context_manager_scope__exception_raised__closes_on_exit(self) -> None:
+        """Verify context manager closes underlying transport even when exception is raised."""
+
+        inner = DummyTransport()
+
+        with pytest.raises(RuntimeError, match="layer failure"):
+            with ConcreteTransportLayer(inner) as layer:
+                raise RuntimeError("layer failure")
+
+        assert inner.is_closed is True
+        assert layer.is_closed is True
+
+    def test_transport_layer_stacked_layers__delegate_lifecycle_recursively(self) -> None:
+        """Verify nested transport layers delegate lifecycle operations through the stack."""
+
+        inner = DummyTransport(incoming_data=b"nested_payload")
+        layer1 = ConcreteTransportLayer(inner)
+        layer2 = ConcreteTransportLayer(layer1)
+
+        assert layer2.underlying is layer1
+        assert layer1.underlying is inner
+
+        layer2.write(b"outbound_nested")
+
+        assert inner.written_bytes == b"outbound_nested"
+        assert layer2.read(4096) == b"nested_payload"
+
+        layer2.close()
+
+        assert inner.is_closed is True
+        assert layer1.is_closed is True
+        assert layer2.is_closed is True
+
+    def test_transport_layer_read_and_write__forwards_through_underlying_transport(self) -> None:
+        """Verify concrete transport layer forwards read and write payloads."""
+
+        inner = DummyTransport(incoming_data=b"stream_bytes")
+        layer = ConcreteTransportLayer(inner)
+
+        layer.write(b"payload_bytes")
+        received = layer.read(4096)
+
+        assert inner.written_bytes == b"payload_bytes"
+        assert received == b"stream_bytes"
