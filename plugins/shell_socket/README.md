@@ -6,9 +6,9 @@ For detailed specification of wire framing, nonces, and session transitions, see
 
 ## Modules
 
-| Module       | Responsibility                                                                                                           |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| `connection` | Reverse-shell connection transport (`ShellSocketConnection`) and protocol profile (`ShellSocketProfile`)                 |
+| Module       | Responsibility                                                                                                                 |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `connection` | Reverse-shell connection transport (`ShellSocketConnection`) and protocol profile (`ShellSocketProfile`)                       |
 | `plugin`     | Entry-point plugin (`ShellSocketPlugin`), runtime adapter (`ShellSocketRuntime`), and asset processor (`ShellSocketProcessor`) |
 
 ## Architecture & Protocol Flow

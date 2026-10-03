@@ -5,16 +5,16 @@ input, delegate to command objects, and present output.
 
 ## Modules
 
-| Module    | Responsibility                                       |
-| --------- | ---------------------------------------------------- |
-| `code`    | Execute native client runtime code remotely          |
-| `command` | Execute a shell command remotely                     |
-| `execute` | Execute a local script remotely                      |
-| `exit`    | Request session termination                          |
-| `help`    | Build the help controller                            |
-| `load`    | Load an operator-selected module from `data/modules` |
-| `shell`   | Open an interactive shell session                    |
-| `upload`  | Upload a local file remotely                         |
+| Module    | Responsibility                                                |
+| --------- | ------------------------------------------------------------- |
+| `code`    | Execute native client runtime code remotely                   |
+| `command` | Execute a shell command remotely                              |
+| `execute` | Execute a local script remotely                               |
+| `exit`    | Request session termination                                   |
+| `help`    | Build the help controller                                     |
+| `load`    | Load an operator-selected module from the plugin's file store |
+| `shell`   | Open an interactive shell session                             |
+| `upload`  | Upload a local file remotely                                  |
 
 ## Design Principles
 

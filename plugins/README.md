@@ -6,13 +6,13 @@ This directory houses the built-in client plugins distributed with Declusor. Bec
 
 Every plugin is an autonomous package that implements the contracts defined in `declusor.contract`:
 
-| Contract             | Responsibility                                                                                       |
-| -------------------- | ---------------------------------------------------------------------------------------------------- |
-| `IPluginExtension`   | Registers CLI flags, parses options, validates configuration, and builds the runtime.                |
-| `IPluginRuntime`     | Produces `LauncherDelivery` and instantiates the `IConnection` for an accepted socket.               |
-| `IConnection`        | Manages the framed read/write protocol and lifecycle state (`ConnectionState`).                      |
-| `IPluginProcessor`   | Loads initialization helpers, bootstrap templates, and on-demand discovery modules.                  |
-| `IConnectionProfile` | Holds timeouts, buffer sizes, and operation templates (`EXEC_FILE`, `STORE_FILE`, `LOAD_MODULE`).    |
+| Contract             | Responsibility                                                                                    |
+| -------------------- | ------------------------------------------------------------------------------------------------- |
+| `IPluginExtension`   | Registers CLI flags, parses options, validates configuration, and builds the runtime.             |
+| `IPluginRuntime`     | Produces `LauncherDelivery` and instantiates the `IConnection` for an accepted socket.            |
+| `IConnection`        | Manages the framed read/write protocol and lifecycle state (`ConnectionState`).                   |
+| `IPluginProcessor`   | Loads initialization helpers, bootstrap templates, and on-demand discovery modules.               |
+| `IConnectionProfile` | Holds timeouts, buffer sizes, and operation templates (`EXEC_FILE`, `STORE_FILE`, `LOAD_MODULE`). |
 
 ## How Plugins are Discovered
 
@@ -135,12 +135,11 @@ Plugin authors can use Declusor's built-in testing SDK to verify compliance:
 
 ```python
 import pytest
-from declusor import contract
-from declusor.testing import PluginConformanceTestSuite
+from declusor import contract, testing
 from declusor_my_plugin.plugin import MyOptions, MyPlugin
 
 
-class TestMyPluginConformance(PluginConformanceTestSuite[MyOptions]):
+class TestMyPluginConformance(testing.PluginConformanceTestSuite[MyOptions]):
     @pytest.fixture
     def plugin_class(self) -> type[contract.IPluginExtension[MyOptions]]:
         return MyPlugin
@@ -149,7 +148,8 @@ class TestMyPluginConformance(PluginConformanceTestSuite[MyOptions]):
 Execute verification using `make`:
 
 ```bash
-make test-plugin PLUGIN=my_plugin
+make check-plugin PLUGIN=my_plugin  # Full quality check (format, lint, strict mypy, tests)
+make test-plugin PLUGIN=my_plugin   # Run dedicated unit and conformance tests
 ```
 
 ### 4. Test Live with Declusor

@@ -14,5 +14,5 @@ The **app** package provides concrete application implementations and target fla
 ## Design Principles
 
 1. **Concrete Target Isolation** — encapsulates specific runtime presentation and input dependencies away from generic core services.
-2. **Pre-Wired Bootstrap** — provides ergonomic factory function (`create_terminal_application`) with sensible defaults and automated plugin discovery.
+2. **Pre-Wired Bootstrap & Orchestration** — provides ergonomic factory function (`create_terminal_application`) with sensible defaults, automated plugin discovery, and comprehensive dependency injection for headless test and agent orchestration.
 3. **Extensible Topology** — designed for modular growth where new application targets (e.g. MCP, headless scripts, API daemons) can be introduced as sibling modules without modifying existing application workflows.

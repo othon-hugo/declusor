@@ -31,44 +31,69 @@ It emphasizes modularity, separation of concerns, and strict dependency inversio
 - Application controllers return explicit lifecycle signals (`CONTINUE`, `TERMINATE`) wrapped in structured result objects.
 - Normal control flow is never driven by exceptions; domain exceptions represent exceptional errors and propagate to central handlers for deterministic reporting and process exit codes.
 
+### Dynamic Signature Introspection
+
+- Application and transport factories dynamically inspect parameter signatures via `inspect.signature` rather than relying on fragile exception-catching.
+- This allows flexible dependency injection (e.g. `listener_factory`, `launcher_renderer`) while propagating genuine internal errors transparently.
+
+### Dual-Channel Stream Isolation
+
+- Console I/O strictly isolates raw binary streaming (`sys.stdout.buffer`) from formatted human-readable text output (`sys.stdout`).
+- Presentation formatters and CLI drivers prevent binary corruption and ensure deterministic dual-stream assertion in automated test environments.
+
 ### First-Class Testing SDK & Mock-Free Verification
 
-- Reusable test infrastructure is shipped as a first-class package within the project.
-- Tests rely on deterministic, fully-typed test doubles and automated contract conformance suites rather than fragile, untyped mock monkeypatching.
+- Reusable test infrastructure is shipped as a first-class package within the project (`declusor.testing`).
+- Tests rely on deterministic, fully-typed test doubles (`DummyView`, `DummyConnection`, `DummyTransport`, `MemoryTransport`, `DummyRouter`, etc.) and automated contract conformance suites (`PluginConformanceTestSuite`) rather than fragile, untyped mock monkeypatching.
+- The test suite is organized into 100% class-grouped suites (`class Test<Component><Aspect>:`) and executed across memory-isolated Python sessions.
 
 ## Layer Architecture & Dependency Model
 
-- **Composition Root**
-  - **`main`**: CLI entrypoint, dependency injection, service wiring, runtime plugin discovery, and process lifecycle.
-    - _Depends on_: `presentation`, `controller`, `core`, `app`
-    - _Dynamic discovery_: discovers plugins via entry-points and directory scanning without static coupling.
-  - **`app`**: Application flavors and bootstrap factories (e.g. `terminal`).
-    - _Depends on_: `core`, `transport`, `presentation`, `controller`, `contract`
+Dependencies flow strictly downward from composition roots to foundational primitives:
+
+```text
+main (Composition Root)
+  ├── app (Application Flavors & Bootstrap)
+  ├── core (Infrastructure, Registries, Routing, Parser)
+  ├── transport (Physical Transports, Listeners, Decorators)
+  ├── controller (Application Layer & Handlers)
+  ├── command (Encapsulated Operations & DTOs)
+  ├── presentation (Terminal REPL & Console View)
+  └── contract (Domain Interfaces & State Machines)
+        ├── util (Stateless Primitives & Helpers)
+        └── config (Constants, Enums, Settings, Exceptions)
+```
+
+- **Composition Root & Application Bootstrap**
+  - **`main`**: CLI entrypoint, argument parsing, error trapping, exit code mapping, and dynamic application execution.
+    - _Depends on_: `app`, `core`, `presentation`, `contract`, `util`, `config`
+  - **`app`**: Application flavors and bootstrap factories (e.g. `create_terminal_application`).
+    - _Depends on_: `core`, `transport`, `presentation`, `controller`, `contract`, `config`
 - **Presentation**
-  - **`presentation`**: Terminal REPL interactive loop, line-editing (readline), and stream formatting.
+  - **`presentation`**: Terminal REPL interactive prompt loop, readline input source, autocomplete completer, and console view.
     - _Depends on_: `contract`, `util`, `config`
 - **Application**
-  - **`controller`**: Application flow orchestration, argument parsing into commands, and lifecycle signal emission.
-    - _Depends on_: `command`, `contract`
-  - **`command`**: Encapsulated discrete operations via immutable, self-validating DTOs.
-    - _Depends on_: `contract`, `config`
+  - **`controller`**: Application flow handlers, request parsing, command DTO instantiation, and structured `ControllerResult` signal emission.
+    - _Depends on_: `command`, `contract`, `util`, `config`
+  - **`command`**: Encapsulated discrete operations via immutable, self-validating DTOs (`ExecuteCommand`, `UploadFile`, etc.).
+    - _Depends on_: `contract`, `util`, `config`
 - **Infrastructure & Transport**
-  - **`core`**: Infrastructure implementations (CLI parser, routing, plugin registry and discovery engine).
+  - **`core`**: Infrastructure services (`DeclusorParser`, `Router`, `PluginManager`, `LauncherRenderer`, `Application`).
     - _Depends on_: `contract`, `transport`, `util`, `config`
-  - **`transport`**: Concrete network byte-stream channels (`SocketTransport`, `TcpListener`) and composable stream ciphers (`XorTransport`).
+  - **`transport`**: Physical network byte-stream channels (`SocketTransport`, `TcpListener`) and composable decorators (`XorTransport`, `TransportPipeline`).
     - _Depends on_: `contract`, `util`, `config`
 - **Domain**
-  - **`contract`**: Domain abstractions (`ABC`), protocol state machines (`IConnection`), stream contracts (`ITransport`, `ITransportListener`), and session context boundaries.
+  - **`contract`**: Pure domain interfaces (`@abstractmethod`), protocol state machines (`IConnection`), stream contracts (`ITransport`, `ITransportListener`), and session coordinator (`SessionContext`).
     - _Depends on_: `config` (zero dependencies on `util` or implementation layers)
 - **Foundations**
-  - **`util`**: Pure, stateless helpers (encoding, network, concurrency) with generic `TypeVar` signatures.
+  - **`util`**: Pure, stateless helpers (encoding, network, concurrency, security, storage) using generic `TypeVar` signatures.
     - _Depends on_: `config`
-  - **`config`**: Foundation base centralizing domain exceptions, constants, paths, settings, and enums.
-    - _Depends on_: Standard library strictly
+  - **`config`**: Foundation base centralizing domain exceptions (`DeclusorException`), operational enums (`OperationCode`, `ConnectionState`), settings, and paths.
+    - _Depends on_: Standard library strictly (zero internal dependencies)
 - **Ecosystem & Verification**
   - **`plugins`**: Autonomous, self-contained transport packages implementing `contract` interfaces.
     - _Depends on_: `contract`, `config`, `util`
-  - **`testing`**: Public test harness supplying typed doubles (`MemoryTransport`, `DummyTransport`, `DummyView`, `DummyConnection`, etc.) and reusable conformance suites.
+  - **`testing`**: Public test harness supplying typed doubles and reusable conformance suites.
     - _Depends on_: `contract`, `config`
 
 ### Dependency Rules & Directional Invariants
@@ -76,8 +101,8 @@ It emphasizes modularity, separation of concerns, and strict dependency inversio
 | Source Layer (From)               | Target Layer (To)                                            | Permitted? | Rule                                                                          |
 | :-------------------------------- | :----------------------------------------------------------- | :--------: | :---------------------------------------------------------------------------- |
 | `main`, `app`                     | `core`, `transport`, `controller`, `presentation`            |  **Yes**   | Composition roots wire concrete components and start execution.               |
-| `controller`                      | `command`, `contract`                                        |  **Yes**   | Controllers translate requests into commands and dispatch via domain session. |
-| `command`, `core`, `presentation` | `contract`                                                   |  **Yes**   | Components implement or consume domain interfaces.                            |
+| `controller`                      | `command`, `contract`, `util`, `config`                      |  **Yes**   | Controllers translate requests into commands and dispatch via domain session. |
+| `command`, `core`, `presentation` | `contract`, `util`, `config`                                 |  **Yes**   | Components implement or consume domain interfaces.                            |
 | `transport`                       | `contract`, `util`, `config`                                 |  **Yes**   | Transports implement domain stream contracts and use base utilities/config.   |
 | `contract`                        | `config`                                                     |  **Yes**   | Domain interfaces rely strictly on base exceptions, settings, and enums.      |
 | `util`                            | `config`                                                     |  **Yes**   | Pure utilities depend only on base exceptions and constants.                  |
@@ -189,7 +214,10 @@ sequenceDiagram
 
 ## Architecture Quality & Safety Invariants
 
-1. **Strict Type Safety**: The entire codebase (core framework, native plugins, and test suites) is verified under strict static type checking with zero untyped public APIs.
+1. **Strict Type Safety**: The entire codebase (core framework, native plugins, and test suites) is verified under strict static type checking with zero untyped public APIs (`mypy --strict src plugins tests`).
 2. **Mock-Free Testing**: Internal and external tests use typed test doubles and conformance suites, preventing test fragility caused by mock drift.
-3. **Fail-Fast Validation**: Inputs, file paths, and plugin descriptors are validated at system boundaries before entering core execution paths.
-4. **Sandboxed File Operations**: All filesystem interactions enforce path-traversal safeguards and extension constraints.
+3. **Class-Based Test Suite Grouping**: All unit, integration, and e2e test files group test cases into intention-revealing test classes (`class Test<Component><Aspect>:`). Loose top-level test functions are strictly forbidden.
+4. **Memory-Isolated Test Execution**: Automated testing executes across partitioned, memory-isolated processes (`make test-unit`, `make test-e2e`, `make test-plugins`), eliminating memory accumulation and container OOM risks.
+5. **Dual-Channel Stream Isolation**: Complete physical separation of raw binary payloads (`sys.stdout.buffer`) from formatted console output (`sys.stdout`).
+6. **Fail-Fast Validation**: Inputs, file paths, and plugin descriptors are validated at system boundaries before entering core execution paths.
+7. **Sandboxed File Operations**: All filesystem interactions enforce path-traversal safeguards and extension constraints.

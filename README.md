@@ -310,12 +310,14 @@ For complete packaging tutorials, asset overlay mechanics, and step-by-step guid
 
 Declusor adheres to strict **Clean Architecture** and **Dependency Inversion** principles:
 
-- **Unidirectional Layer Boundaries**: Dependencies flow downward into pure domain contracts (`declusor.contract`). Core framework code never imports concrete plugins.
+- **Strict 11-Tier Downward Hierarchy**: Dependencies flow downward through 11 cleanly separated layers from composition roots (`main`, `app`) down to foundational primitives (`config`, `util`), with pure domain contracts (`contract`) completely decoupled from concrete plugins.
+- **Dynamic Signature Introspection**: Application and transport factories dynamically inspect parameter signatures via `inspect.signature`, enabling flexible headless dependency injection (`listener_factory`, `launcher_renderer`) without fragile exception-catching.
+- **Dual-Channel Stream Isolation**: Physical separation of raw binary payloads (`sys.stdout.buffer`) from formatted console output (`sys.stdout`) guarantees zero stream corruption or terminal bleeding.
 - **Pluggable & Composable Transports**: The transport layer (`declusor.transport`) isolates physical network mechanics behind `ITransport` and `ITransportListener`, supporting composable decorator pipelines (e.g. XOR obfuscation) without touching session logic.
 - **Fail-Fast Invariants**: Immutable Command DTOs validate parameters at the boundary, preventing invalid operations from propagating into transports.
 - **Deterministic Flow Control**: Controllers return explicit lifecycle signals (`CONTINUE`, `TERMINATE`) rather than relying on control-flow exceptions.
 - **Mock-Free Determinism**: Test suites utilize in-memory duplex transports (`MemoryTransport`, `MemoryTransportListener`), enabling full end-to-end handshake and lifecycle tests without binding real network ports or relying on fragile monkeypatching.
-- **100% Strict Static Typing**: Fully typed with strict mypy enforcement across core, native plugins, and tests.
+- **Memory-Isolated Conformance & 100% Strict Typing**: Over 1,360 precision tests running across memory-isolated test sessions (`make test-unit`, `make test-e2e`, `make test-plugins`), organized into 100% class-based test suites under strict Mypy type enforcement.
 
 Read the complete architectural specification in [ARCHITECTURE.md](ARCHITECTURE.md).
 
@@ -323,11 +325,15 @@ Read the complete architectural specification in [ARCHITECTURE.md](ARCHITECTURE.
 
 Contributions from both humans and autonomous agents are warmly welcomed! Please read our [CONTRIBUTING.md](CONTRIBUTING.md) guide before opening a pull request.
 
+All contributions must pass the verification gate with zero warnings or errors:
+
+```bash
+make check  # Runs format-check, lint, strict mypy type analysis, and all memory-isolated test suites
+```
+
 ## License
 
 This project is open-source software licensed under the [MIT License](LICENSE).
-
----
 
 > [!WARNING]
 > **Legal Disclaimer**: Declusor is intended solely for educational purposes and authorized security research. The authors assume no liability for misuse. Executing this software against systems without explicit, prior written authorization is strictly prohibited.
