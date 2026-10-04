@@ -6,179 +6,179 @@ import declusor_py_socket as py_socket
 from declusor import config, contract, transport
 
 
-def test_py_socket_handshake_and_command_execution() -> None:
-    """Verify py_socket launcher connects, completes handshake, and executes commands."""
+class TestPySocketIntegration:
+    """End-to-end integration tests spawning native py_socket reverse clients."""
 
-    listener = transport.TcpListener("127.0.0.1", 0)
-    port = listener.port
+    def test_py_socket__handshake_and_command_execution__succeeds(self) -> None:
+        """Verify py_socket launcher connects, completes handshake, and executes commands."""
 
-    options = py_socket.PySocketPlugin.extract_options({})
-    plugin_config = py_socket.PySocketPlugin.build_config("127.0.0.1", port, options)
-    runtime = py_socket.PySocketPlugin.build_runtime(plugin_config)
+        listener = transport.TcpListener("127.0.0.1", 0)
+        port = listener.port
 
-    proc = subprocess.Popen([sys.executable, "-c", runtime.launcher.text])
-    raw_transport: contract.ITransport | None = None
+        options = py_socket.PySocketPlugin.extract_options({})
+        plugin_config = py_socket.PySocketPlugin.build_config("127.0.0.1", port, options)
+        runtime = py_socket.PySocketPlugin.build_runtime(plugin_config)
 
-    try:
-        raw_transport = listener.accept(timeout=5.0)
+        proc = subprocess.Popen([sys.executable, "-c", runtime.launcher.text])
+        raw_transport: contract.ITransport | None = None
 
-        connection = runtime.create_connection(raw_transport)
-        state: contract.ConnectionState = connection.state
-        assert state == contract.ConnectionState.CREATED
+        try:
+            raw_transport = listener.accept(timeout=5.0)
 
-        connection.handshake()
-        state = connection.state
-        assert state == contract.ConnectionState.CONNECTED
+            connection = runtime.create_connection(raw_transport)
+            state: contract.ConnectionState = connection.state
+            assert state == contract.ConnectionState.CREATED
 
-        rendered_cmd = connection.profile.render_operation_command(
-            config.OperationCode.EXEC_COMMAND,
-            "echo py_shell_handshake_ok",
-        )
-        assert rendered_cmd is not None
-        connection.write(rendered_cmd.encode())
-        response = b"".join(connection.read())
-        assert b"py_shell_handshake_ok" in response
+            connection.handshake()
+            state = connection.state
+            assert state == contract.ConnectionState.CONNECTED
 
-        rendered_py = connection.profile.render_operation_command(
-            config.OperationCode.EXEC_CODE,
-            "#!/usr/bin/env python\nprint('py_native_ok')\n",
-        )
-        assert rendered_py is not None
-        connection.write(rendered_py.encode())
-        response = b"".join(connection.read())
-        assert b"py_native_ok" in response
+            rendered_cmd = connection.profile.render_operation_command(
+                config.OperationCode.EXEC_COMMAND,
+                "echo py_shell_handshake_ok",
+            )
+            assert rendered_cmd is not None
+            connection.write(rendered_cmd.encode())
+            response = b"".join(connection.read())
+            assert b"py_shell_handshake_ok" in response
 
-        connection.close()
-        state = connection.state
-        assert state == contract.ConnectionState.CLOSED
-    finally:
-        if raw_transport is not None:
-            raw_transport.close()
+            rendered_py = connection.profile.render_operation_command(
+                config.OperationCode.EXEC_CODE,
+                "#!/usr/bin/env python\nprint('py_native_ok')\n",
+            )
+            assert rendered_py is not None
+            connection.write(rendered_py.encode())
+            response = b"".join(connection.read())
+            assert b"py_native_ok" in response
 
-        listener.close()
-        proc.kill()
-        proc.wait(timeout=5.0)
+            connection.close()
+            state = connection.state
+            assert state == contract.ConnectionState.CLOSED
+        finally:
+            if raw_transport is not None:
+                raw_transport.close()
 
+            listener.close()
+            proc.kill()
+            proc.wait(timeout=5.0)
 
-def test_py_socket_resilience_sys_exit_trap() -> None:
-    """Verify py_socket catches sys.exit() and preserves the reverse shell agent."""
+    def test_py_socket__sys_exit_trap__preserves_reverse_shell_agent(self) -> None:
+        """Verify py_socket catches sys.exit() and preserves the reverse shell agent."""
 
-    listener = transport.TcpListener("127.0.0.1", 0)
-    port = listener.port
+        listener = transport.TcpListener("127.0.0.1", 0)
+        port = listener.port
 
-    options = py_socket.PySocketPlugin.extract_options({})
-    plugin_config = py_socket.PySocketPlugin.build_config("127.0.0.1", port, options)
-    runtime = py_socket.PySocketPlugin.build_runtime(plugin_config)
+        options = py_socket.PySocketPlugin.extract_options({})
+        plugin_config = py_socket.PySocketPlugin.build_config("127.0.0.1", port, options)
+        runtime = py_socket.PySocketPlugin.build_runtime(plugin_config)
 
-    proc = subprocess.Popen([sys.executable, "-c", runtime.launcher.text])
-    raw_transport: contract.ITransport | None = None
+        proc = subprocess.Popen([sys.executable, "-c", runtime.launcher.text])
+        raw_transport: contract.ITransport | None = None
 
-    try:
-        raw_transport = listener.accept(timeout=5.0)
-        connection = runtime.create_connection(raw_transport)
-        connection.handshake()
+        try:
+            raw_transport = listener.accept(timeout=5.0)
+            connection = runtime.create_connection(raw_transport)
+            connection.handshake()
 
-        # Trigger SystemExit
-        connection.write(b"import sys\nsys.exit(42)\n")
-        response = b"".join(connection.read())
-        assert b"[py_socket error] SystemExit: 42" in response
+            # Trigger SystemExit
+            connection.write(b"import sys\nsys.exit(42)\n")
+            response = b"".join(connection.read())
+            assert b"[py_socket error] SystemExit: 42" in response
 
-        # Verify client is still running and receptive
-        connection.write(b"print('agent_still_alive')\n")
-        response = b"".join(connection.read())
-        assert b"agent_still_alive" in response
+            # Verify client is still running and receptive
+            connection.write(b"print('agent_still_alive')\n")
+            response = b"".join(connection.read())
+            assert b"agent_still_alive" in response
 
-        connection.close()
-    finally:
-        if raw_transport is not None:
-            raw_transport.close()
-        listener.close()
-        proc.kill()
-        proc.wait(timeout=5.0)
+            connection.close()
+        finally:
+            if raw_transport is not None:
+                raw_transport.close()
+            listener.close()
+            proc.kill()
+            proc.wait(timeout=5.0)
 
+    def test_py_socket__comments_and_docstrings__executes_script_in_memory(self) -> None:
+        """Verify py_socket executes scripts starting with comments and docstrings in-memory."""
 
-def test_py_socket_resilience_comments_and_docstrings() -> None:
-    """Verify py_socket executes scripts starting with comments and docstrings in-memory."""
+        listener = transport.TcpListener("127.0.0.1", 0)
+        port = listener.port
 
-    listener = transport.TcpListener("127.0.0.1", 0)
-    port = listener.port
+        options = py_socket.PySocketPlugin.extract_options({})
+        plugin_config = py_socket.PySocketPlugin.build_config("127.0.0.1", port, options)
+        runtime = py_socket.PySocketPlugin.build_runtime(plugin_config)
 
-    options = py_socket.PySocketPlugin.extract_options({})
-    plugin_config = py_socket.PySocketPlugin.build_config("127.0.0.1", port, options)
-    runtime = py_socket.PySocketPlugin.build_runtime(plugin_config)
+        proc = subprocess.Popen([sys.executable, "-c", runtime.launcher.text])
+        raw_transport: contract.ITransport | None = None
 
-    proc = subprocess.Popen([sys.executable, "-c", runtime.launcher.text])
-    raw_transport: contract.ITransport | None = None
+        try:
+            raw_transport = listener.accept(timeout=5.0)
+            connection = runtime.create_connection(raw_transport)
+            connection.handshake()
 
-    try:
-        raw_transport = listener.accept(timeout=5.0)
-        connection = runtime.create_connection(raw_transport)
-        connection.handshake()
+            script = (
+                "# File: test_script.py\n"
+                "# Description: testing comments\n"
+                '"""\n'
+                "Module docstring\n"
+                '"""\n'
+                "import os\n"
+                'result = f"python_pid_{os.getpid()}"\n'
+                "print(result)\n"
+            )
 
-        script = (
-            "# File: test_script.py\n"
-            "# Description: testing comments\n"
-            '"""\n'
-            "Module docstring\n"
-            '"""\n'
-            "import os\n"
-            'result = f"python_pid_{os.getpid()}"\n'
-            "print(result)\n"
-        )
+            connection.write(script.encode())
+            response = b"".join(connection.read())
+            assert b"python_pid_" in response
 
-        connection.write(script.encode())
-        response = b"".join(connection.read())
-        assert b"python_pid_" in response
+            connection.close()
+        finally:
+            if raw_transport is not None:
+                raw_transport.close()
+            listener.close()
+            proc.kill()
+            proc.wait(timeout=5.0)
 
-        connection.close()
-    finally:
-        if raw_transport is not None:
-            raw_transport.close()
-        listener.close()
-        proc.kill()
-        proc.wait(timeout=5.0)
+    def test_py_socket__realtime_streaming__streams_subprocess_output_chunks(self) -> None:
+        """Verify py_socket streams subprocess command output without deadlocking or buffering all."""
 
+        listener = transport.TcpListener("127.0.0.1", 0)
+        port = listener.port
 
-def test_py_socket_resilience_realtime_streaming() -> None:
-    """Verify py_socket streams subprocess command output without deadlocking or buffering all."""
+        options = py_socket.PySocketPlugin.extract_options({})
+        plugin_config = py_socket.PySocketPlugin.build_config("127.0.0.1", port, options)
+        runtime = py_socket.PySocketPlugin.build_runtime(plugin_config)
 
-    listener = transport.TcpListener("127.0.0.1", 0)
-    port = listener.port
+        proc = subprocess.Popen([sys.executable, "-c", runtime.launcher.text])
+        raw_transport: contract.ITransport | None = None
 
-    options = py_socket.PySocketPlugin.extract_options({})
-    plugin_config = py_socket.PySocketPlugin.build_config("127.0.0.1", port, options)
-    runtime = py_socket.PySocketPlugin.build_runtime(plugin_config)
+        try:
+            raw_transport = listener.accept(timeout=5.0)
+            connection = runtime.create_connection(raw_transport)
+            connection.handshake()
 
-    proc = subprocess.Popen([sys.executable, "-c", runtime.launcher.text])
-    raw_transport: contract.ITransport | None = None
+            # Command that outputs distinct lines rendered via connection profile
+            raw_cmd = "echo stream_chunk_1; echo stream_chunk_2; echo stream_chunk_3\n"
+            rendered = connection.profile.render_operation_command(
+                config.OperationCode.EXEC_COMMAND,
+                raw_cmd,
+            )
+            assert rendered is not None
+            connection.write(rendered.encode())
 
-    try:
-        raw_transport = listener.accept(timeout=5.0)
-        connection = runtime.create_connection(raw_transport)
-        connection.handshake()
+            chunks = list(connection.read())
+            combined = b"".join(chunks)
 
-        # Command that outputs distinct lines rendered via connection profile
-        raw_cmd = "echo stream_chunk_1; echo stream_chunk_2; echo stream_chunk_3\n"
-        rendered = connection.profile.render_operation_command(
-            config.OperationCode.EXEC_COMMAND,
-            raw_cmd,
-        )
-        assert rendered is not None
-        connection.write(rendered.encode())
+            assert b"stream_chunk_1" in combined
+            assert b"stream_chunk_2" in combined
+            assert b"stream_chunk_3" in combined
 
-        chunks = list(connection.read())
-        combined = b"".join(chunks)
+            connection.close()
+        finally:
+            if raw_transport is not None:
+                raw_transport.close()
 
-        assert b"stream_chunk_1" in combined
-        assert b"stream_chunk_2" in combined
-        assert b"stream_chunk_3" in combined
+            listener.close()
 
-        connection.close()
-    finally:
-        if raw_transport is not None:
-            raw_transport.close()
-
-        listener.close()
-
-        proc.kill()
-        proc.wait(timeout=5.0)
+            proc.kill()
+            proc.wait(timeout=5.0)
