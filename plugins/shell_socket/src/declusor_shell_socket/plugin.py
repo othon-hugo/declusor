@@ -1,5 +1,6 @@
 from collections.abc import Mapping
 from pathlib import Path
+from typing import Final
 
 from declusor import config, contract, util
 
@@ -80,6 +81,8 @@ class ShellSocketPlugin(contract.IPluginExtension[ShellSocketConfig]):
 class ShellSocketRuntime(contract.IPluginRuntime):
     """Runtime adapter between shell_socket configuration and its transport."""
 
+    DEFAULT_WRAPPER_TEMPLATE: Final[str] = "(echo '$DECLUSOR_SCRIPT'|base64 -d|bash)"
+
     def __init__(self, plugin_config: contract.PluginConfig[ShellSocketConfig], /) -> None:
         self._plugin_config = plugin_config
         self._renderer = ShellSocketRenderer()
@@ -102,7 +105,10 @@ class ShellSocketRuntime(contract.IPluginRuntime):
             self._expected_ack,
         )
 
-        return contract.LauncherDelivery(script=rendered_bytes)
+        return contract.LauncherDelivery(
+            script=rendered_bytes,
+            wrapper_template=self.DEFAULT_WRAPPER_TEMPLATE,
+        )
 
     def create_connection(self, transport: contract.ITransport, /) -> contract.IConnection:
         """Create a shell_socket connection for an accepted transport channel."""
@@ -147,7 +153,7 @@ class ShellSocketProcessor(contract.IPluginProcessor):
         return b"\n".join(all_helpers.values())
 
     def render_launcher(self, host: str, port: int, acknowledge: bytes, /) -> bytes:
-        """Read and render the client bootstrap script.
+        """Read, interpolate, and Base64-encode the client launcher script.
 
         Args:
             host: Host address embedded in the client script.
@@ -155,7 +161,7 @@ class ShellSocketProcessor(contract.IPluginProcessor):
             acknowledge: Client acknowledgment bytes embedded in the script.
 
         Returns:
-            The rendered client bootstrap script as bytes.
+            The Base64-encoded client bootstrap script as ASCII bytes.
         """
 
         launcher_path = self._filesystem.launchers / "shell_socket_client.sh"
@@ -174,7 +180,9 @@ class ShellSocketProcessor(contract.IPluginProcessor):
             DECLUSOR_ACKNOWLEDGE=hex_ack,
         )
 
-        return rendered.encode("utf-8")
+        encoded = util.convert_to_base64(rendered.strip().encode("utf-8"))
+
+        return encoded.encode("ascii")
 
     def find_helper(self, helper_name: str, /) -> Path | None:
         """Resolve a single helper library by name or relative path."""

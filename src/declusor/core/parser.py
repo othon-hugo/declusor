@@ -271,12 +271,13 @@ class DeclusorParser(util.Parser):
             type=self.LauncherOutput,
         )
 
-        self.add_argument(
-            *self.LauncherWrapper.arg_flags,
-            help=self.LauncherWrapper.arg_help,
-            default=None,
-            type=self.LauncherWrapper,
-        )
+        # Future feature: launcher wrapper CLI override is disabled for now.
+        # self.add_argument(
+        #     *self.LauncherWrapper.arg_flags,
+        #     help=self.LauncherWrapper.arg_help,
+        #     default=None,
+        #     type=self.LauncherWrapper,
+        # )
 
         self.add_argument(
             *self.Timeout.arg_flags,
@@ -436,12 +437,13 @@ class DeclusorParser(util.Parser):
         """Apply global CLI overrides to plugin configuration."""
 
         output_mode, output_path = self.parse_launcher_output(args.launcher_output)
+        launcher_wrapper = getattr(args, "launcher_wrapper", None)  # Future feature: launcher wrapper CLI override
 
         return dataclasses.replace(
             plugin_config,
             timeout=args.timeout,
             launcher_output_mode=output_mode,
             launcher_output_path=output_path,
-            launcher_wrapper=args.launcher_wrapper,
+            launcher_wrapper=launcher_wrapper,
             transport_layers=transport_layers,
         )

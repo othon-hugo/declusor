@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from declusor import config
+from declusor import config, util
 
 if TYPE_CHECKING:
     from declusor.contract.connection import IConnection
@@ -280,10 +280,19 @@ class LauncherDelivery:
 
         return self.script.decode("utf-8")
 
-    def __str__(self) -> str:
-        """Return the decoded script text for string formatting and CLI output."""
+    @property
+    def wrapped_text(self) -> str:
+        """Return the script formatted with wrapper_template, or raw text if no wrapper is set."""
 
-        return self.text
+        if self.wrapper_template is None:
+            return self.text
+
+        return util.format_template(self.wrapper_template, DECLUSOR_SCRIPT=self.text)
+
+    def __str__(self) -> str:
+        """Return the decoded script text or wrapped command for string formatting and CLI output."""
+
+        return self.wrapped_text
 
 
 class IPluginRuntime(ABC):

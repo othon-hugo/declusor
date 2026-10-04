@@ -622,6 +622,7 @@ class TestDeclusorParserLauncherWrapper:
 
         assert plugin_config.launcher_wrapper is None
 
+    @pytest.mark.skip(reason="--launcher-wrapper CLI option is temporarily disabled as a future feature")
     def test_parse__explicit_launcher_wrapper__sets_wrapper_template(self) -> None:
         """Specifying --launcher-wrapper populates launcher_wrapper in config."""
 
@@ -644,6 +645,7 @@ class TestDeclusorParserLauncherWrapper:
 
         assert plugin_config.launcher_wrapper == "python3 -c '$DECLUSOR_SCRIPT'"
 
+    @pytest.mark.skip(reason="--launcher-wrapper CLI option is temporarily disabled as a future feature")
     def test_parse__empty_launcher_wrapper__raises_parser_error(self) -> None:
         """Passing an empty string for --launcher-wrapper raises ParserError."""
 

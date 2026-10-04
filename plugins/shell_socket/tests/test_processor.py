@@ -1,3 +1,4 @@
+import base64
 from pathlib import Path
 
 import declusor_shell_socket as shell_socket
@@ -142,5 +143,6 @@ class TestShellSocketProcessor:
         processor = shell_socket.ShellSocketProcessor(fs)
 
         rendered = processor.render_launcher("127.0.0.1", 9000, b"\x01\x02")
+        decoded = base64.b64decode(rendered).decode("utf-8")
 
-        assert rendered == b"connect 127.0.0.1 9000 \\x01\\x02"
+        assert decoded == "connect 127.0.0.1 9000 \\x01\\x02"

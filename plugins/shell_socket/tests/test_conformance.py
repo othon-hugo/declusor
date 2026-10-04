@@ -17,8 +17,10 @@ class TestShellSocketConformance(testing.PluginConformanceTestSuite[shell_socket
     def sample_options(self, tmp_path: Path) -> dict[str, Path]:
         launcher = tmp_path / "client.sh"
         launcher.write_text("test")
+
         helpers = tmp_path / "helpers"
         helpers.mkdir(exist_ok=True)
+
         modules = tmp_path / "modules"
         modules.mkdir(exist_ok=True)
 

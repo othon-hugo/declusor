@@ -1,3 +1,4 @@
+import base64
 from pathlib import Path
 
 import declusor_shell_socket as shell_socket
@@ -58,12 +59,17 @@ class TestShellSocketPluginRuntime:
 
         delivery = runtime.launcher
         assert isinstance(delivery, contract.LauncherDelivery)
-        script = delivery.text
-        assert "/dev/tcp/192.168.1.50/5555" in script
-        assert "$DECLUSOR_HOST" not in script
-        assert "$DECLUSOR_PORT" not in script
-        assert "$DECLUSOR_ACKNOWLEDGE" not in script
-        assert "$data" in script  # Runtime bash variable is preserved
+        assert delivery.wrapper_template == shell_socket.ShellSocketRuntime.DEFAULT_WRAPPER_TEMPLATE
+        assert "(echo '" in delivery.wrapped_text
+        assert "|base64 -d|bash)" in delivery.wrapped_text
+        assert delivery.text in delivery.wrapped_text
+
+        decoded = base64.b64decode(delivery.script).decode("utf-8")
+        assert "/dev/tcp/192.168.1.50/5555" in decoded
+        assert "$DECLUSOR_HOST" not in decoded
+        assert "$DECLUSOR_PORT" not in decoded
+        assert "$DECLUSOR_ACKNOWLEDGE" not in decoded
+        assert "$data" in decoded  # Runtime bash variable is preserved
 
     def test_build_runtime__creates_connection__returns_shell_socket_connection_instance(self) -> None:
         """Verify runtime creates a valid shell_socket.ShellSocketConnection instance."""

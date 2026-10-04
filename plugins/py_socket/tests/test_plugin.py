@@ -1,3 +1,4 @@
+import base64
 from pathlib import Path
 
 import declusor_py_socket as py_socket
@@ -58,15 +59,20 @@ class TestPySocketPluginRuntime:
 
         delivery = runtime.launcher
         assert isinstance(delivery, contract.LauncherDelivery)
-        script = delivery.text
-        assert "192.168.1.50" in script
-        assert "5555" in script
-        assert "$HOST" not in script
-        assert "$PORT" not in script
-        assert "$ACKNOWLEDGE" not in script
-        assert "$DECLUSOR_HOST" not in script
-        assert "$DECLUSOR_PORT" not in script
-        assert "$DECLUSOR_ACKNOWLEDGE" not in script
+        assert delivery.wrapper_template == py_socket.PySocketRuntime.DEFAULT_WRAPPER_TEMPLATE
+        assert "import base64" in delivery.wrapped_text
+        assert "exec(base64.b64decode(" in delivery.wrapped_text
+        assert delivery.text in delivery.wrapped_text
+
+        decoded = base64.b64decode(delivery.script).decode("utf-8")
+        assert "192.168.1.50" in decoded
+        assert "5555" in decoded
+        assert "$HOST" not in decoded
+        assert "$PORT" not in decoded
+        assert "$ACKNOWLEDGE" not in decoded
+        assert "$DECLUSOR_HOST" not in decoded
+        assert "$DECLUSOR_PORT" not in decoded
+        assert "$DECLUSOR_ACKNOWLEDGE" not in decoded
 
     def test_build_runtime__creates_connection__returns_py_socket_connection_instance(self) -> None:
         """Verify runtime creates a valid py_socket.PySocketConnection instance."""

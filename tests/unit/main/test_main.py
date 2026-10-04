@@ -70,8 +70,6 @@ class TestMainDispatch:
                 "12.5",
                 "--launcher-output",
                 "silent",
-                "--launcher-wrapper",
-                "bash -c '$DECLUSOR_SCRIPT'",
             ],
             application=dummy_app,
         )
@@ -81,7 +79,7 @@ class TestMainDispatch:
         parsed_config = dummy_app.run_calls[0]
         assert parsed_config.timeout == 12.5
         assert parsed_config.launcher_output_mode == config.LauncherOutputMode.SILENT
-        assert parsed_config.launcher_wrapper == "bash -c '$DECLUSOR_SCRIPT'"
+        assert parsed_config.launcher_wrapper is None
 
     def test_main_keyword_only__rejects_positional_application(
         self,

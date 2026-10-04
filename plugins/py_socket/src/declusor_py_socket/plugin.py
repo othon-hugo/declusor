@@ -1,7 +1,8 @@
 from collections.abc import Mapping
 from pathlib import Path
+from typing import Final
 
-from declusor import config, contract, util
+from declusor import config, contract, lang, util
 
 from .connection import PySocketConnection, PySocketRenderer
 
@@ -83,6 +84,8 @@ class PySocketPlugin(contract.IPluginExtension[PySocketConfig]):
 class PySocketRuntime(contract.IPluginRuntime):
     """Runtime adapter between Python client configuration and its transport."""
 
+    DEFAULT_WRAPPER_TEMPLATE: Final[str] = "python3 -c 'import base64;exec(base64.b64decode(\"$DECLUSOR_SCRIPT\"))'"
+
     def __init__(self, plugin_config: contract.PluginConfig[PySocketConfig], /) -> None:
         self._plugin_config = plugin_config
         self._renderer = PySocketRenderer()
@@ -105,7 +108,10 @@ class PySocketRuntime(contract.IPluginRuntime):
             self._expected_ack,
         )
 
-        return contract.LauncherDelivery(script=rendered_bytes)
+        return contract.LauncherDelivery(
+            script=rendered_bytes,
+            wrapper_template=self.DEFAULT_WRAPPER_TEMPLATE,
+        )
 
     def create_connection(self, transport: contract.ITransport, /) -> contract.IConnection:
         """Create a py_socket connection for an accepted transport channel."""
@@ -151,7 +157,7 @@ class PySocketProcessor(contract.IPluginProcessor):
         return b"\n\n".join(all_helpers.values())
 
     def render_launcher(self, host: str, port: int, acknowledge: bytes, /) -> bytes:
-        """Read and render the Python client bootstrap launcher script."""
+        """Read, interpolate, sanitize, and Base64-encode the client launcher script."""
 
         launcher_path = self._filesystem.launchers / "py_socket_client.py"
 
@@ -171,7 +177,10 @@ class PySocketProcessor(contract.IPluginProcessor):
             DECLUSOR_ACKNOWLEDGE=hex_ack,
         )
 
-        return rendered.encode("utf-8")
+        sanitized = lang.python.sanitize_source(rendered)
+        encoded = util.convert_to_base64(sanitized.encode("utf-8"))
+
+        return encoded.encode("ascii")
 
     def find_helper(self, helper_name: str, /) -> Path | None:
         """Resolve a single helper library by name or relative path."""

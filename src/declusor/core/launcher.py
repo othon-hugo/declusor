@@ -23,8 +23,7 @@ class LauncherRenderer:
             DeclusorException: If delivering the launcher to a file fails.
         """
 
-        payload = delivery.script.decode("utf-8")
-        output = self._apply_wrapper(payload, delivery.wrapper_template)
+        output = delivery.wrapped_text
 
         match delivery.output_mode:
             case config.LauncherOutputMode.TERMINAL:

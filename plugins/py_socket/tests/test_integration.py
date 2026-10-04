@@ -1,4 +1,5 @@
 import base64
+import shlex
 import subprocess
 import sys
 
@@ -10,6 +11,15 @@ from declusor import config, contract, lang, transport
 class TestPySocketIntegration:
     """End-to-end integration tests spawning native py_socket reverse clients."""
 
+    @staticmethod
+    def _spawn_launcher(launcher: contract.LauncherDelivery) -> subprocess.Popen[bytes]:
+        """Spawn the launcher using its wrapped execution command with current test python."""
+
+        cmd = shlex.split(launcher.wrapped_text)
+        cmd[0] = sys.executable
+
+        return subprocess.Popen(cmd)
+
     def test_py_socket__handshake_and_command_execution__succeeds(self) -> None:
         """Verify py_socket launcher connects, completes handshake, and executes commands."""
 
@@ -20,7 +30,7 @@ class TestPySocketIntegration:
         plugin_config = py_socket.PySocketPlugin.build_config("127.0.0.1", port, options)
         runtime = py_socket.PySocketPlugin.build_runtime(plugin_config)
 
-        proc = subprocess.Popen([sys.executable, "-c", runtime.launcher.text])
+        proc = self._spawn_launcher(runtime.launcher)
         raw_transport: contract.ITransport | None = None
 
         try:
@@ -73,7 +83,7 @@ class TestPySocketIntegration:
         plugin_config = py_socket.PySocketPlugin.build_config("127.0.0.1", port, options)
         runtime = py_socket.PySocketPlugin.build_runtime(plugin_config)
 
-        proc = subprocess.Popen([sys.executable, "-c", runtime.launcher.text])
+        proc = self._spawn_launcher(runtime.launcher)
         raw_transport: contract.ITransport | None = None
 
         try:
@@ -109,7 +119,7 @@ class TestPySocketIntegration:
         plugin_config = py_socket.PySocketPlugin.build_config("127.0.0.1", port, options)
         runtime = py_socket.PySocketPlugin.build_runtime(plugin_config)
 
-        proc = subprocess.Popen([sys.executable, "-c", runtime.launcher.text])
+        proc = self._spawn_launcher(runtime.launcher)
         raw_transport: contract.ITransport | None = None
 
         try:
@@ -150,7 +160,7 @@ class TestPySocketIntegration:
         plugin_config = py_socket.PySocketPlugin.build_config("127.0.0.1", port, options)
         runtime = py_socket.PySocketPlugin.build_runtime(plugin_config)
 
-        proc = subprocess.Popen([sys.executable, "-c", runtime.launcher.text])
+        proc = self._spawn_launcher(runtime.launcher)
         raw_transport: contract.ITransport | None = None
 
         try:
@@ -194,7 +204,7 @@ class TestPySocketIntegration:
         plugin_config = py_socket.PySocketPlugin.build_config("127.0.0.1", port, options)
         runtime = py_socket.PySocketPlugin.build_runtime(plugin_config)
 
-        proc = subprocess.Popen([sys.executable, "-c", runtime.launcher.text])
+        proc = self._spawn_launcher(runtime.launcher)
         raw_transport: contract.ITransport | None = None
 
         try:
@@ -230,7 +240,7 @@ class TestPySocketIntegration:
         plugin_config = py_socket.PySocketPlugin.build_config("127.0.0.1", port, options)
         runtime = py_socket.PySocketPlugin.build_runtime(plugin_config)
 
-        proc = subprocess.Popen([sys.executable, "-c", runtime.launcher.text])
+        proc = self._spawn_launcher(runtime.launcher)
         raw_transport: contract.ITransport | None = None
 
         try:
@@ -266,7 +276,7 @@ class TestPySocketIntegration:
         plugin_config = py_socket.PySocketPlugin.build_config("127.0.0.1", port, options)
         runtime = py_socket.PySocketPlugin.build_runtime(plugin_config)
 
-        proc = subprocess.Popen([sys.executable, "-c", runtime.launcher.text])
+        proc = self._spawn_launcher(runtime.launcher)
         raw_transport: contract.ITransport | None = None
 
         try:

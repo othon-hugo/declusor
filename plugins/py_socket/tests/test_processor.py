@@ -1,3 +1,4 @@
+import base64
 from pathlib import Path
 
 import declusor_py_socket as py_socket
@@ -142,5 +143,33 @@ class TestPySocketProcessor:
         processor = py_socket.PySocketProcessor(fs)
 
         rendered = processor.render_launcher("127.0.0.1", 9000, b"\x01\x02")
+        decoded = base64.b64decode(rendered).decode("utf-8")
 
-        assert rendered == b"HOST = '127.0.0.1'\nPORT = int('9000')\nACK = bytes.fromhex('0102')"
+        assert decoded == "HOST = '127.0.0.1'\nPORT = int('9000')\nACK = bytes.fromhex('0102')"
+
+    def test_render_launcher__sanitizes_comments_docstrings_annotations_and_asserts(self, tmp_path: Path) -> None:
+        """Verify render_launcher strips comments, docstrings, type annotations, and asserts."""
+
+        launchers = tmp_path / "launchers"
+        launchers.mkdir(parents=True)
+        launcher = launchers / "py_socket_client.py"
+        launcher.write_text(
+            '# Development comment\n"""Module docstring."""\n'
+            'def ping(val: int) -> bool:\n    """Function docstring."""\n    assert val > 0\n    return True\n'
+            "HOST = '$HOST'\n",
+            encoding="utf-8",
+        )
+
+        fs = contract.PluginFilesystem.from_root(tmp_path)
+        processor = py_socket.PySocketProcessor(fs)
+
+        rendered = processor.render_launcher("127.0.0.1", 9000, b"\x01\x02")
+        decoded = base64.b64decode(rendered).decode("utf-8")
+
+        assert "Development comment" not in decoded
+        assert "Module docstring" not in decoded
+        assert "Function docstring" not in decoded
+        assert "assert val > 0" not in decoded
+        assert ": int" not in decoded
+        assert "-> bool" not in decoded
+        assert "HOST = '127.0.0.1'" in decoded

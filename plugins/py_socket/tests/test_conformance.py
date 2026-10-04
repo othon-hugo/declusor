@@ -17,8 +17,10 @@ class TestPySocketConformance(testing.PluginConformanceTestSuite[py_socket.plugi
     def sample_options(self, tmp_path: Path) -> dict[str, Path]:
         launcher = tmp_path / "py_socket_client.py"
         launcher.write_text("# py_socket test launcher")
+
         helpers = tmp_path / "helpers"
         helpers.mkdir(exist_ok=True)
+
         modules = tmp_path / "modules"
         modules.mkdir(exist_ok=True)
 

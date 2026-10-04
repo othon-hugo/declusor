@@ -19,7 +19,7 @@ class TestShellSocketIntegration:
         plugin_config = shell_socket.ShellSocketPlugin.build_config("127.0.0.1", port, options)
         runtime = shell_socket.ShellSocketPlugin.build_runtime(plugin_config)
 
-        proc = subprocess.Popen(["bash", "-c", runtime.launcher.text])
+        proc = subprocess.Popen(["bash", "-c", runtime.launcher.wrapped_text])
         raw_transport: contract.ITransport | None = None
 
         try:
@@ -71,7 +71,7 @@ class TestShellSocketIntegration:
         plugin_config = shell_socket.ShellSocketPlugin.build_config("127.0.0.1", port, options)
         runtime = shell_socket.ShellSocketPlugin.build_runtime(plugin_config)
 
-        proc = subprocess.Popen(["bash", "-c", runtime.launcher.text])
+        proc = subprocess.Popen(["bash", "-c", runtime.launcher.wrapped_text])
         raw_transport: contract.ITransport | None = None
 
         try:

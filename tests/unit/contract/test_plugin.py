@@ -123,6 +123,25 @@ class TestLauncherDelivery:
 
         assert delivery.wrapper_template == template
 
+    def test_launcher_delivery_wrapped_text__with_wrapper_template__substitutes_script(self) -> None:
+        """Verify wrapped_text formats script payload into wrapper_template."""
+
+        delivery = contract.LauncherDelivery(
+            script=b"print('hello')",
+            wrapper_template="python3 -c '$DECLUSOR_SCRIPT'",
+        )
+
+        assert delivery.wrapped_text == "python3 -c 'print('hello')'"
+        assert str(delivery) == delivery.wrapped_text
+
+    def test_launcher_delivery_wrapped_text__without_wrapper_template__returns_raw_text(self) -> None:
+        """Verify wrapped_text returns raw text unchanged when wrapper_template is None."""
+
+        delivery = contract.LauncherDelivery(script=b"echo raw")
+
+        assert delivery.wrapped_text == "echo raw"
+        assert str(delivery) == "echo raw"
+
     def test_launcher_delivery_file_mode__with_output_path__instantiates_successfully(self, tmp_path: Path) -> None:
         """Verify LauncherDelivery allows FILE mode when output_path is provided."""
 

