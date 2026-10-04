@@ -19,7 +19,7 @@ def make_shell_connection(
         framing_mode: config.FramingMode = config.FramingMode.EPHEMERAL_ENVELOPE,
         default_nonce: str | None = "test_nonce",
         buffer_size: int = shell_socket.ShellSocketConnection.DEFAULT_BUFFER_SIZE,
-        timeout: float | None = shell_socket.DEFAULT_CONNECTION_TIMEOUT,
+        timeout: float | None = config.DEFAULT_CONNECTION_TIMEOUT,
         connected: bool = False,
     ) -> tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]:
         launchers = tmp_path / "launchers"

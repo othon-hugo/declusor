@@ -3,7 +3,7 @@ from pathlib import Path
 
 from declusor import config, contract, util
 
-from .connection import DEFAULT_CONNECTION_TIMEOUT, PySocketConnection, PySocketRenderer
+from .connection import PySocketConnection, PySocketRenderer
 
 _DEFAULT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -115,7 +115,7 @@ class PySocketRuntime(contract.IPluginRuntime):
             self._renderer,
             self._processor,
             expected_ack=self._expected_ack,
-            timeout=self._plugin_config.timeout or DEFAULT_CONNECTION_TIMEOUT,
+            timeout=self._plugin_config.timeout or config.DEFAULT_CONNECTION_TIMEOUT,
         )
 
 

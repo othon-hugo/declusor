@@ -1,9 +1,16 @@
 from .connection import (
-    DEFAULT_CONNECTION_TIMEOUT,
     DEFAULT_PY_SOCKET,
     PySocketConnection,
     PySocketProfile,
     PySocketRenderer,
+)
+from .in_memory import (
+    can_deserialize_code,
+    check_bytecode_compatibility,
+    compile_and_serialize,
+    compile_source,
+    deserialize_code,
+    serialize_code,
 )
 from .plugin import (
     PySocketPlugin,
@@ -12,7 +19,6 @@ from .plugin import (
 )
 
 __all__ = [
-    "DEFAULT_CONNECTION_TIMEOUT",
     "DEFAULT_PY_SOCKET",
     "PySocketConnection",
     "PySocketPlugin",
@@ -20,4 +26,10 @@ __all__ = [
     "PySocketProfile",
     "PySocketRenderer",
     "PySocketRuntime",
+    "can_deserialize_code",
+    "check_bytecode_compatibility",
+    "compile_and_serialize",
+    "compile_source",
+    "deserialize_code",
+    "serialize_code",
 ]

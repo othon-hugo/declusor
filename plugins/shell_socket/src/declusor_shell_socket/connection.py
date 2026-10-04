@@ -5,8 +5,6 @@ from typing import Final
 
 from declusor import config, contract, util
 
-DEFAULT_CONNECTION_TIMEOUT: Final[float | None] = 1.0
-
 
 @dataclass(frozen=True)
 class ShellSocketRenderer(contract.IOperationRenderer):
@@ -78,7 +76,7 @@ class ShellSocketConnection(contract.IConnection):
         buffer_size: int = DEFAULT_BUFFER_SIZE,
         fixed_nonce: str | None = None,
         nonce_factory: Callable[[], str] = util.generate_nonce,
-        timeout: float | None = DEFAULT_CONNECTION_TIMEOUT,
+        timeout: float | None = config.DEFAULT_CONNECTION_TIMEOUT,
     ) -> None:
         if buffer_size <= 0:
             raise config.ConnectionError("buffer_size must be > 0")

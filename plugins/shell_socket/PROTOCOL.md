@@ -56,6 +56,8 @@ The server monitors the incoming stream, immediately yielding output chunks to t
 
 ### Sequence Diagram
 
+The sequence diagram illustrates the three-stage protocol lifecycle spanning handshake delivery, interactive command-delimiter streaming, and graceful teardown.
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -97,6 +99,8 @@ sequenceDiagram
 
 ### Connection State Machine & Method Invariants
 
+The connection state machine enforces strict lifecycle transitions and method access invariants across `CREATED`, `INITIALIZING`, `CONNECTED`, and `CLOSED` states.
+
 ```mermaid
 stateDiagram-v2
     [*] --> CREATED: __init__()
@@ -132,13 +136,12 @@ stateDiagram-v2
     end note
 ```
 
-| Method | Permitted States | Disallowed States & Error Behavior | Resulting State |
-| :--- | :--- | :--- | :--- |
-| `handshake()` | `CREATED` | `CLOSED` $\rightarrow$ `ConnectionError`<br>`CONNECTED` $\rightarrow$ `ConnectionError`<br>`INITIALIZING` $\rightarrow$ `ConnectionError` | `CONNECTED` (or `CLOSED` on failure) |
-| `write(data)` | `CONNECTED` (`INITIALIZING` internal) | `CLOSED` $\rightarrow$ `ConnectionClosed`<br>`CREATED` $\rightarrow$ `ConnectionError` | Unchanged |
-| `read()` | `CONNECTED` (`INITIALIZING` internal) | `CLOSED` $\rightarrow$ `ConnectionClosed`<br>`CREATED` $\rightarrow$ `ConnectionError` | Unchanged |
-| `close()` | `CREATED`, `INITIALIZING`, `CONNECTED`, `CLOSED` | None (Idempotent) | `CLOSED` |
-
+| Method        | `CREATED`         | `INITIALIZING`     | `CONNECTED`       | `CLOSED`           | Resulting State                      |
+| :------------ | :---------------- | :----------------- | :---------------- | :----------------- | :----------------------------------- |
+| `handshake()` | Allowed           | `ConnectionError`  | `ConnectionError` | `ConnectionError`  | `CONNECTED` (or `CLOSED` on failure) |
+| `write(data)` | `ConnectionError` | Allowed (internal) | Allowed           | `ConnectionClosed` | Unchanged                            |
+| `read()`      | `ConnectionError` | Allowed (internal) | Allowed           | `ConnectionClosed` | Unchanged                            |
+| `close()`     | Allowed           | Allowed            | Allowed           | Allowed (No-op)    | `CLOSED`                             |
 
 ## Reference Client Implementation
 

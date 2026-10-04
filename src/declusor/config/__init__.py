@@ -30,6 +30,7 @@ from .exceptions import (
 )
 from .settings import (
     DEFAULT_CLIENT_ACK_SEED,
+    DEFAULT_CONNECTION_TIMEOUT,
     DEFAULT_DECLUSOR_PLUGIN,
     DEFAULT_EXECUTION_MODE,
     DEFAULT_LAUNCHER_OUTPUT_MODE,
@@ -56,6 +57,7 @@ __all__ = [
     "DeclusorPlugins",
     "DeclusorWarning",
     "DEFAULT_CLIENT_ACK_SEED",
+    "DEFAULT_CONNECTION_TIMEOUT",
     "DEFAULT_DECLUSOR_PLUGIN",
     "DEFAULT_EXECUTION_MODE",
     "DEFAULT_LAUNCHER_OUTPUT_MODE",

@@ -1,3 +1,4 @@
+import json
 import struct
 from collections.abc import Generator, Mapping
 from dataclasses import dataclass, field
@@ -6,7 +7,7 @@ from typing import Final
 
 from declusor import config, contract, util
 
-DEFAULT_CONNECTION_TIMEOUT: Final[float | None] = 1.0
+from . import in_memory
 
 
 @dataclass(frozen=True)
@@ -75,13 +76,15 @@ class PySocketConnection(contract.IConnection):
         /,
         *,
         expected_ack: bytes = util.hash_sha256(config.DEFAULT_CLIENT_ACK_SEED),
-        timeout: float | None = DEFAULT_CONNECTION_TIMEOUT,
+        timeout: float | None = config.DEFAULT_CONNECTION_TIMEOUT,
     ) -> None:
         self._renderer = renderer
         self._files = files
         self._transport = transport
         self._expected_ack = expected_ack
         self._state = contract.ConnectionState.CREATED
+        self._client_runtime: Mapping[str, object] | None = None
+        self._is_bytecode_compatible: bool = False
 
         if timeout is not None:
             self._transport.timeout = timeout
@@ -91,6 +94,18 @@ class PySocketConnection(contract.IConnection):
         """Current lifecycle state of the connection."""
 
         return self._state
+
+    @property
+    def client_runtime(self) -> Mapping[str, object] | None:
+        """Client runtime metadata negotiated during handshake, if available."""
+
+        return self._client_runtime
+
+    @property
+    def is_bytecode_compatible(self) -> bool:
+        """Whether the remote agent's Python bytecode format matches the server."""
+
+        return self._is_bytecode_compatible
 
     @property
     def renderer(self) -> contract.IOperationRenderer:
@@ -114,17 +129,89 @@ class PySocketConnection(contract.IConnection):
     def timeout(self, value: float | None) -> None:
         self._transport.timeout = value
 
+    def prepare_helpers_payload(self) -> bytes:
+        """Prepare the helper library bundle in the negotiated encoding.
+
+        If the remote agent is bytecode-compatible, compiles the concatenated
+        helpers and serializes them using marshal. Otherwise, encodes the raw
+        helpers as UTF-8 source code for target-side in-memory compilation.
+        """
+
+        helpers_source = self._files.helpers.decode(errors="replace")
+
+        if self._is_bytecode_compatible:
+            try:
+                return in_memory.compile_and_serialize(helpers_source, "<helpers>")
+            except SyntaxError:
+                pass
+
+        return helpers_source.encode("utf-8")
+
+    def send_python_payload(self, source: str, filename: str = "<remote>") -> None:
+        """Send a Python payload in the negotiated desired encoding.
+
+        If the remote client is bytecode compatible, compiles and marshals the payload.
+        Otherwise, sends the UTF-8 source string for target-side in-memory compilation.
+        """
+
+        if self._is_bytecode_compatible:
+            try:
+                payload = in_memory.compile_and_serialize(source, filename)
+                self.write(payload)
+                return
+            except SyntaxError:
+                pass
+
+        self.write(source.encode("utf-8"))
+
     def handshake(self) -> None:
-        """Perform the Python agent initialization handshake."""
+        """Perform the Python agent initialization handshake.
+
+        Negotiates Python bytecode compatibility with the remote client, transmits
+        the helper bundle in the negotiated desired encoding (precompiled marshaled
+        bytecode if compatible, UTF-8 source otherwise), and verifies the client ACK token.
+        """
 
         self.ensure_can_handshake()
 
         self._state = contract.ConnectionState.INITIALIZING
-        self.write(self._files.helpers)
 
+        # Step 1: Read client runtime metadata TLV frame (channel 1)
+        try:
+            header = self._transport.read_exact(5)
+
+            _, length = struct.unpack(">BI", header)
+
+            raw_meta = self._transport.read_exact(length) if length > 0 else b"{}"
+            metadata = json.loads(raw_meta.decode("utf-8", errors="replace"))
+
+            if isinstance(metadata, dict):
+                self._client_runtime = metadata
+                self._is_bytecode_compatible = in_memory.check_bytecode_compatibility(
+                    metadata.get("magic", ""),
+                    metadata.get("version", []),
+                    metadata.get("implementation", "CPython"),
+                )
+            else:
+                self._is_bytecode_compatible = False
+        except (config.ConnectionClosed, config.ConnectionTimeoutError, config.ConnectionError) as error:
+            raise config.ConnectionHandshakeError(
+                "Failed reading client runtime metadata during handshake.",
+                expected_ack=self._expected_ack,
+            ) from error
+        except Exception:
+            self._is_bytecode_compatible = False
+
+        # Step 2: Transmit helper libraries in the negotiated desired encoding
+        helpers_payload = self.prepare_helpers_payload()
+        self.write(helpers_payload)
+
+        # Step 3: Read and verify 32-byte client ACK token
         expected_ack = self._expected_ack
+
         try:
             received_ack = self._transport.read_exact(len(expected_ack))
+
             if received_ack != expected_ack:
                 raise config.ConnectionHandshakeError(
                     "Invalid client ACK during session initialization.",

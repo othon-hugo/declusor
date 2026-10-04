@@ -7,6 +7,7 @@ The `py_socket` plugin provides a cross-platform reverse-shell client capable of
 | Module       | Responsibility                                                                                                        |
 | ------------ | --------------------------------------------------------------------------------------------------------------------- |
 | `connection` | Python socket connection transport (`PySocketConnection`) and protocol profile (`PySocketProfile`)                    |
+| `in_memory`  | In-memory compilation, serialization (`marshal.dumps`/`loads`), and runtime compatibility checking                    |
 | `plugin`     | Entry-point plugin (`PySocketPlugin`), runtime adapter (`PySocketRuntime`), and asset processor (`PySocketProcessor`) |
 
 ## Architecture & Execution Flow
@@ -53,8 +54,15 @@ sequenceDiagram
     participant PyAgent as Python Agent Loop
 
     Server->>Sock: Connect TCP Socket
-    Server->>Sock: Helper Libraries Bundle as TLV Frame (channel=0x01)
-    PyAgent->>PyAgent: exec() helpers into _SESSION_SCOPE
+    PyAgent->>Sock: Client Runtime Metadata Frame (version, magic, platform)
+    Server->>Server: Evaluate is_bytecode_compatible
+    alt Bytecode Compatible
+        Server->>Sock: Marshaled Bytecode Helpers Frame (channel=0x01)
+        PyAgent->>PyAgent: marshal.loads() & exec in _SESSION_SCOPE
+    else Bytecode Incompatible
+        Server->>Sock: UTF-8 Source Helpers Frame (channel=0x01)
+        PyAgent->>PyAgent: compile() & exec in _SESSION_SCOPE
+    end
     PyAgent->>Sock: Send 32-Byte Client ACK Token
     Note over Server,PyAgent: Handshake Complete (State: CONNECTED)
 
@@ -74,7 +82,8 @@ sequenceDiagram
 ## Design Principles
 
 1. **Pure Python Standard Library** — Requires zero external dependencies, guaranteeing out-of-the-box compatibility on Linux, macOS, and Windows.
-2. **Dual-Mode Execution** — Dynamically evaluates Python code in-memory within a persistent `_SESSION_SCOPE` or streams shell commands via subprocess pipes.
+2. **Dual-Mode & In-Memory Execution** — Dynamically negotiates bytecode compatibility during handshake, executing precompiled marshaled code objects or compiled Python source directly in-memory within a persistent `_SESSION_SCOPE` without touching disk, or streaming shell commands via subprocess pipes.
 3. **Real-Time Subprocess Streaming** — Streams subprocess command output in 4KB chunks immediately without blocking execution or buffering complete outputs in memory.
 4. **Agent Resilience & SystemExit Protection** — Wraps in-memory execution in traps catching both `Exception` and `SystemExit`, preventing client termination when scripts call `sys.exit()`.
 5. **Contract Conformance** — Strictly adheres to `IPluginExtension`, `IPluginRuntime`, and `IConnection` interfaces.
+

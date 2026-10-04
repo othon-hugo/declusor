@@ -1,3 +1,4 @@
+import base64
 import subprocess
 import sys
 
@@ -180,5 +181,109 @@ class TestPySocketIntegration:
 
             listener.close()
 
+            proc.kill()
+            proc.wait(timeout=5.0)
+
+    def test_py_socket__marshaled_code_execution__executes_in_memory(self) -> None:
+        """Verify client executes marshaled code objects transmitted directly over the transport."""
+
+        listener = transport.TcpListener("127.0.0.1", 0)
+        port = listener.port
+
+        options = py_socket.PySocketPlugin.extract_options({})
+        plugin_config = py_socket.PySocketPlugin.build_config("127.0.0.1", port, options)
+        runtime = py_socket.PySocketPlugin.build_runtime(plugin_config)
+
+        proc = subprocess.Popen([sys.executable, "-c", runtime.launcher.text])
+        raw_transport: contract.ITransport | None = None
+
+        try:
+            raw_transport = listener.accept(timeout=5.0)
+            connection = runtime.create_connection(raw_transport)
+            assert isinstance(connection, py_socket.PySocketConnection)
+            connection.handshake()
+
+            assert connection.is_bytecode_compatible is True
+
+            # Compile and serialize Python code object
+            payload = py_socket.compile_and_serialize("print('in_memory_bytecode_success')\n")
+            connection.write(payload)
+
+            response = b"".join(connection.read())
+            assert b"in_memory_bytecode_success" in response
+
+            connection.close()
+        finally:
+            if raw_transport is not None:
+                raw_transport.close()
+            listener.close()
+            proc.kill()
+            proc.wait(timeout=5.0)
+
+    def test_py_socket__execute_base64_marshaled_code__executes_without_temporary_file(self) -> None:
+        """Verify execute_base64_encoded_value runs marshaled code objects in memory."""
+
+        listener = transport.TcpListener("127.0.0.1", 0)
+        port = listener.port
+
+        options = py_socket.PySocketPlugin.extract_options({})
+        plugin_config = py_socket.PySocketPlugin.build_config("127.0.0.1", port, options)
+        runtime = py_socket.PySocketPlugin.build_runtime(plugin_config)
+
+        proc = subprocess.Popen([sys.executable, "-c", runtime.launcher.text])
+        raw_transport: contract.ITransport | None = None
+
+        try:
+            raw_transport = listener.accept(timeout=5.0)
+            connection = runtime.create_connection(raw_transport)
+            connection.handshake()
+
+            # Base64 encode marshaled code object
+            raw_bytecode = py_socket.compile_and_serialize("print('base64_marshaled_ok')\n")
+            b64_str = base64.b64encode(raw_bytecode).decode("ascii")
+
+            cmd = f"execute_base64_encoded_value('{b64_str}')"
+            connection.write(cmd.encode("utf-8"))
+
+            response = b"".join(connection.read())
+            assert b"base64_marshaled_ok" in response
+
+            connection.close()
+        finally:
+            if raw_transport is not None:
+                raw_transport.close()
+            listener.close()
+            proc.kill()
+            proc.wait(timeout=5.0)
+
+    def test_py_socket__send_python_payload__succeeds(self) -> None:
+        """Verify send_python_payload compiles and executes code seamlessly on client."""
+
+        listener = transport.TcpListener("127.0.0.1", 0)
+        port = listener.port
+
+        options = py_socket.PySocketPlugin.extract_options({})
+        plugin_config = py_socket.PySocketPlugin.build_config("127.0.0.1", port, options)
+        runtime = py_socket.PySocketPlugin.build_runtime(plugin_config)
+
+        proc = subprocess.Popen([sys.executable, "-c", runtime.launcher.text])
+        raw_transport: contract.ITransport | None = None
+
+        try:
+            raw_transport = listener.accept(timeout=5.0)
+            connection = runtime.create_connection(raw_transport)
+            assert isinstance(connection, py_socket.PySocketConnection)
+            connection.handshake()
+
+            connection.send_python_payload("print('send_python_payload_verified')\n")
+
+            response = b"".join(connection.read())
+            assert b"send_python_payload_verified" in response
+
+            connection.close()
+        finally:
+            if raw_transport is not None:
+                raw_transport.close()
+            listener.close()
             proc.kill()
             proc.wait(timeout=5.0)

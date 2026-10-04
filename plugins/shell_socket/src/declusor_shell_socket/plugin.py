@@ -3,7 +3,7 @@ from pathlib import Path
 
 from declusor import config, contract, util
 
-from .connection import DEFAULT_CONNECTION_TIMEOUT, ShellSocketConnection, ShellSocketRenderer
+from .connection import ShellSocketConnection, ShellSocketRenderer
 
 _DEFAULT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -111,7 +111,7 @@ class ShellSocketRuntime(contract.IPluginRuntime):
             transport,
             self._renderer,
             self._processor,
-            timeout=self._plugin_config.timeout or DEFAULT_CONNECTION_TIMEOUT,
+            timeout=self._plugin_config.timeout or config.DEFAULT_CONNECTION_TIMEOUT,
         )
 
 

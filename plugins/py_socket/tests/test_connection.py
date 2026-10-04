@@ -1,4 +1,7 @@
+import importlib.util
+import json
 import struct
+import sys
 
 import declusor_py_socket as py_socket
 import pytest
@@ -6,24 +9,62 @@ import pytest
 from declusor import config, contract, testing
 
 
+def _make_metadata_frame(magic: bytes | None = None, version: list[int] | None = None) -> bytes:
+    meta_dict = {
+        "version": version or list(sys.version_info[:3]),
+        "magic": (magic or importlib.util.MAGIC_NUMBER).hex(),
+        "platform": sys.platform,
+        "implementation": "CPython",
+    }
+    encoded = json.dumps(meta_dict).encode("utf-8")
+    return struct.pack(">BI", config.ChannelType.STDOUT, len(encoded)) + encoded
+
+
 class TestPySocketConnectionLifecycle:
     """Tests for PySocketConnection lifecycle transitions and property accessors."""
 
-    def test_handshake__when_successful__transitions_to_connected(
+    def test_handshake__when_successful_and_bytecode_compatible__transitions_to_connected(
         self,
         dummy_file_store: testing.DummyPluginFileStore,
     ) -> None:
-        """Verify PySocketConnection transmits helpers and transitions to CONNECTED on valid ACK."""
+        """Verify PySocketConnection transmits marshaled helpers when client bytecode is compatible."""
 
         dummy_trans = testing.DummyTransport()
         ack = b"\xab" * 32
         renderer = py_socket.PySocketRenderer()
         conn = py_socket.PySocketConnection(dummy_trans, renderer, dummy_file_store, expected_ack=ack)
 
-        dummy_trans.push_incoming(ack)
+        meta = _make_metadata_frame()
+        dummy_trans.push_incoming(meta + ack)
         conn.handshake()
 
         assert conn.state == contract.ConnectionState.CONNECTED
+        assert conn.is_bytecode_compatible is True
+        assert conn.client_runtime is not None
+
+        expected_helpers = py_socket.compile_and_serialize(dummy_file_store.helpers.decode(), "<helpers>")
+        expected_helpers_frame = struct.pack(">BI", config.ChannelType.STDOUT, len(expected_helpers)) + expected_helpers
+        assert dummy_trans.write_history == [expected_helpers_frame]
+
+    def test_handshake__when_bytecode_incompatible__transmits_source_helpers(
+        self,
+        dummy_file_store: testing.DummyPluginFileStore,
+    ) -> None:
+        """Verify PySocketConnection transmits UTF-8 source helpers when bytecode is incompatible."""
+
+        dummy_trans = testing.DummyTransport()
+        ack = b"\xab" * 32
+        renderer = py_socket.PySocketRenderer()
+        conn = py_socket.PySocketConnection(dummy_trans, renderer, dummy_file_store, expected_ack=ack)
+
+        mismatched_magic = b"\x00\x00\x00\x00"
+        meta = _make_metadata_frame(magic=mismatched_magic)
+        dummy_trans.push_incoming(meta + ack)
+        conn.handshake()
+
+        assert conn.state == contract.ConnectionState.CONNECTED
+        assert conn.is_bytecode_compatible is False
+
         expected_helpers_frame = struct.pack(">BI", config.ChannelType.STDOUT, len(dummy_file_store.helpers)) + dummy_file_store.helpers
         assert dummy_trans.write_history == [expected_helpers_frame]
 
@@ -37,7 +78,9 @@ class TestPySocketConnectionLifecycle:
         ack = b"\xab" * 32
         renderer = py_socket.PySocketRenderer()
         conn = py_socket.PySocketConnection(dummy_trans, renderer, dummy_file_store, expected_ack=ack)
-        dummy_trans.push_incoming(ack)
+
+        meta = _make_metadata_frame()
+        dummy_trans.push_incoming(meta + ack)
         conn.handshake()
 
         with pytest.raises(config.ConnectionError, match="Connection is already initialized"):
@@ -69,24 +112,91 @@ class TestPySocketConnectionLifecycle:
         renderer = py_socket.PySocketRenderer()
         conn = py_socket.PySocketConnection(dummy_trans, renderer, dummy_file_store, expected_ack=expected_ack)
 
-        dummy_trans.push_incoming(corrupted_ack)
+        meta = _make_metadata_frame()
+        dummy_trans.push_incoming(meta + corrupted_ack)
 
         with pytest.raises(config.ConnectionHandshakeError, match="Invalid client ACK during session initialization"):
             conn.handshake()
 
-    def test_handshake__when_transport_fails__raises_connection_handshake_error(
+    def test_handshake__when_metadata_transport_fails__raises_connection_handshake_error(
         self,
         dummy_file_store: testing.DummyPluginFileStore,
     ) -> None:
-        """Verify handshake raises ConnectionHandshakeError when transport write or read fails."""
+        """Verify handshake raises ConnectionHandshakeError when reading metadata frame fails."""
 
         dummy_trans = testing.DummyTransport()
-        dummy_trans.simulate_error_on_next_read(config.ConnectionError("read ACK failed"))
+        dummy_trans.simulate_error_on_next_read(config.ConnectionError("read metadata failed"))
         renderer = py_socket.PySocketRenderer()
         conn = py_socket.PySocketConnection(dummy_trans, renderer, dummy_file_store)
 
+        with pytest.raises(config.ConnectionHandshakeError, match="Failed reading client runtime metadata"):
+            conn.handshake()
+
+    def test_handshake__when_ack_transport_fails__raises_connection_handshake_error(
+        self,
+        dummy_file_store: testing.DummyPluginFileStore,
+    ) -> None:
+        """Verify handshake raises ConnectionHandshakeError when reading ACK fails."""
+
+        class FailingAckTransport(testing.DummyTransport):
+            def write(self, data: bytes, /) -> None:
+                super().write(data)
+                self.simulate_error_on_next_read(config.ConnectionError("read ACK failed"))
+
+        trans = FailingAckTransport()
+        renderer = py_socket.PySocketRenderer()
+        conn = py_socket.PySocketConnection(trans, renderer, dummy_file_store)
+
+        meta = _make_metadata_frame()
+        trans.push_incoming(meta)
+
         with pytest.raises(config.ConnectionHandshakeError, match="Failed waiting for client ACK"):
             conn.handshake()
+
+    def test_send_python_payload__when_bytecode_compatible__transmits_marshaled_bytecode(
+        self,
+        dummy_file_store: testing.DummyPluginFileStore,
+    ) -> None:
+        """Verify send_python_payload transmits marshaled bytecode when connection is bytecode compatible."""
+
+        dummy_trans = testing.DummyTransport()
+        renderer = py_socket.PySocketRenderer()
+        conn = py_socket.PySocketConnection(dummy_trans, renderer, dummy_file_store)
+        conn._state = contract.ConnectionState.CONNECTED
+        conn._is_bytecode_compatible = True
+
+        conn.send_python_payload("answer = 42\n")
+
+        # Extract payload from TLV frame
+        written = dummy_trans.written_bytes
+        _, length = struct.unpack(">BI", written[:5])
+        payload = written[5 : 5 + length]
+
+        assert py_socket.can_deserialize_code(payload) is True
+        code = py_socket.deserialize_code(payload)
+        scope: dict[str, object] = {}
+        exec(code, scope)
+        assert scope["answer"] == 42
+
+    def test_send_python_payload__when_incompatible__transmits_utf8_source(
+        self,
+        dummy_file_store: testing.DummyPluginFileStore,
+    ) -> None:
+        """Verify send_python_payload transmits UTF-8 source string when bytecode incompatible."""
+
+        dummy_trans = testing.DummyTransport()
+        renderer = py_socket.PySocketRenderer()
+        conn = py_socket.PySocketConnection(dummy_trans, renderer, dummy_file_store)
+        conn._state = contract.ConnectionState.CONNECTED
+        conn._is_bytecode_compatible = False
+
+        conn.send_python_payload("answer = 42\n")
+
+        written = dummy_trans.written_bytes
+        _, length = struct.unpack(">BI", written[:5])
+        payload = written[5 : 5 + length]
+
+        assert payload == b"answer = 42\n"
 
     def test_close__repeated_calls__is_idempotent(
         self,
