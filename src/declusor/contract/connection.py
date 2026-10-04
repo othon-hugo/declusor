@@ -3,6 +3,8 @@ from collections.abc import Generator
 from enum import StrEnum
 from typing import TYPE_CHECKING, Self
 
+from declusor import config
+
 if TYPE_CHECKING:
     from declusor.config import OperationCode
 
@@ -25,6 +27,69 @@ class ConnectionState(StrEnum):
 
     CLOSED = "CLOSED"
     """Connection terminated gracefully or due to underlying network failure."""
+
+    @property
+    def is_created(self) -> bool:
+        """Indicate whether the connection state is CREATED."""
+
+        return self == ConnectionState.CREATED
+
+    @property
+    def is_initializing(self) -> bool:
+        """Indicate whether the connection state is INITIALIZING."""
+
+        return self == ConnectionState.INITIALIZING
+
+    @property
+    def is_connected(self) -> bool:
+        """Indicate whether the connection state is CONNECTED."""
+
+        return self == ConnectionState.CONNECTED
+
+    @property
+    def is_closed(self) -> bool:
+        """Indicate whether the connection state is CLOSED."""
+
+        return self == ConnectionState.CLOSED
+
+    @property
+    def can_handshake(self) -> bool:
+        """Indicate whether protocol handshake can be initiated in this state."""
+
+        return self == ConnectionState.CREATED
+
+    @property
+    def can_perform_io(self) -> bool:
+        """Indicate whether read or write operations can be performed in this state."""
+
+        return self in (ConnectionState.CONNECTED, ConnectionState.INITIALIZING)
+
+    def ensure_can_handshake(self) -> None:
+        """Assert that this state permits protocol handshake.
+
+        Raises:
+            ConnectionError: If connection is closed or already initialized.
+        """
+
+        if self.is_closed:
+            raise config.ConnectionError("Cannot initialize a closed connection.")
+
+        if not self.can_handshake:
+            raise config.ConnectionError("Connection is already initialized.")
+
+    def ensure_can_perform_io(self) -> None:
+        """Assert that this state permits write or read operations.
+
+        Raises:
+            ConnectionClosed: If connection is closed.
+            ConnectionError: If connection is in CREATED state prior to handshake.
+        """
+
+        if self.is_closed:
+            raise config.ConnectionClosed("Connection is closed.")
+
+        if not self.can_perform_io:
+            raise config.ConnectionError("Cannot perform I/O on connection that is not connected.")
 
 
 class IOperationRenderer(ABC):
@@ -81,6 +146,61 @@ class IConnection(ABC):
         """Current lifecycle state of the connection."""
 
         raise NotImplementedError
+
+    @property
+    def is_created(self) -> bool:
+        """Indicate whether the connection is in the CREATED state."""
+
+        return self.state.is_created
+
+    @property
+    def is_initializing(self) -> bool:
+        """Indicate whether protocol handshake is currently in progress."""
+
+        return self.state.is_initializing
+
+    @property
+    def is_connected(self) -> bool:
+        """Indicate whether the connection is in the active CONNECTED state."""
+
+        return self.state.is_connected
+
+    @property
+    def is_closed(self) -> bool:
+        """Indicate whether the connection has been closed."""
+
+        return self.state.is_closed
+
+    @property
+    def can_handshake(self) -> bool:
+        """Indicate whether protocol handshake can be performed on the connection."""
+
+        return self.state.can_handshake
+
+    @property
+    def can_perform_io(self) -> bool:
+        """Indicate whether write and read operations can be performed on the connection."""
+
+        return self.state.can_perform_io
+
+    def ensure_can_handshake(self) -> None:
+        """Assert that connection state permits protocol handshake.
+
+        Raises:
+            ConnectionError: If connection is closed or already initialized.
+        """
+
+        self.state.ensure_can_handshake()
+
+    def ensure_can_perform_io(self) -> None:
+        """Assert that connection state permits write or read operations.
+
+        Raises:
+            ConnectionClosed: If connection is closed.
+            ConnectionError: If connection is in CREATED state prior to handshake.
+        """
+
+        self.state.ensure_can_perform_io()
 
     @property
     @abstractmethod

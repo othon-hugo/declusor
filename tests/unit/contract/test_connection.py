@@ -2,7 +2,7 @@ from collections.abc import Generator
 
 import pytest
 
-from declusor import contract
+from declusor import config, contract
 from declusor.testing import DummyConnection, DummyOperationRenderer
 
 # [Test Doubles]
@@ -23,7 +23,6 @@ class ConcreteConnection(contract.IConnection):
         self._renderer: contract.IOperationRenderer = renderer or DummyOperationRenderer()
         self._state: contract.ConnectionState = contract.ConnectionState.CREATED
         self._timeout: float | None = None
-        self.is_closed: bool = False
 
     @property
     def state(self) -> contract.ConnectionState:
@@ -60,7 +59,6 @@ class ConcreteConnection(contract.IConnection):
     def close(self) -> None:
         """Close connection resources."""
 
-        self.is_closed = True
         self._state = contract.ConnectionState.CLOSED
 
 
@@ -81,6 +79,79 @@ class TestConnectionState:
         assert contract.ConnectionState.CONNECTED.value == "CONNECTED"
         assert contract.ConnectionState.CLOSED.value == "CLOSED"
         assert len(contract.ConnectionState) == 4
+
+    def test_connection_state_predicates__evaluate_expected_booleans(self) -> None:
+        """Verify semantic predicates on each ConnectionState member."""
+
+        created = contract.ConnectionState.CREATED
+        assert created.is_created is True
+        assert created.is_initializing is False
+        assert created.is_connected is False
+        assert created.is_closed is False
+        assert created.can_handshake is True
+        assert created.can_perform_io is False
+
+        initializing = contract.ConnectionState.INITIALIZING
+        assert initializing.is_created is False
+        assert initializing.is_initializing is True
+        assert initializing.is_connected is False
+        assert initializing.is_closed is False
+        assert initializing.can_handshake is False
+        assert initializing.can_perform_io is True
+
+        connected = contract.ConnectionState.CONNECTED
+        assert connected.is_created is False
+        assert connected.is_initializing is False
+        assert connected.is_connected is True
+        assert connected.is_closed is False
+        assert connected.can_handshake is False
+        assert connected.can_perform_io is True
+
+        closed = contract.ConnectionState.CLOSED
+        assert closed.is_created is False
+        assert closed.is_initializing is False
+        assert closed.is_connected is False
+        assert closed.is_closed is True
+        assert closed.can_handshake is False
+        assert closed.can_perform_io is False
+
+    def test_connection_state_ensure_can_handshake__on_created__succeeds(self) -> None:
+        """Verify ensure_can_handshake succeeds when state is CREATED."""
+
+        contract.ConnectionState.CREATED.ensure_can_handshake()
+
+    def test_connection_state_ensure_can_handshake__on_closed__raises_connection_error(self) -> None:
+        """Verify ensure_can_handshake raises ConnectionError when state is CLOSED."""
+
+        with pytest.raises(config.ConnectionError, match="Cannot initialize a closed connection."):
+            contract.ConnectionState.CLOSED.ensure_can_handshake()
+
+    def test_connection_state_ensure_can_handshake__on_connected_or_initializing__raises_connection_error(self) -> None:
+        """Verify ensure_can_handshake raises ConnectionError when already initialized."""
+
+        with pytest.raises(config.ConnectionError, match="Connection is already initialized."):
+            contract.ConnectionState.CONNECTED.ensure_can_handshake()
+
+        with pytest.raises(config.ConnectionError, match="Connection is already initialized."):
+            contract.ConnectionState.INITIALIZING.ensure_can_handshake()
+
+    def test_connection_state_ensure_can_perform_io__on_connected_or_initializing__succeeds(self) -> None:
+        """Verify ensure_can_perform_io succeeds when state is CONNECTED or INITIALIZING."""
+
+        contract.ConnectionState.CONNECTED.ensure_can_perform_io()
+        contract.ConnectionState.INITIALIZING.ensure_can_perform_io()
+
+    def test_connection_state_ensure_can_perform_io__on_created__raises_connection_error(self) -> None:
+        """Verify ensure_can_perform_io raises ConnectionError when state is CREATED."""
+
+        with pytest.raises(config.ConnectionError, match="Cannot perform I/O on connection that is not connected."):
+            contract.ConnectionState.CREATED.ensure_can_perform_io()
+
+    def test_connection_state_ensure_can_perform_io__on_closed__raises_connection_closed(self) -> None:
+        """Verify ensure_can_perform_io raises ConnectionClosed when state is CLOSED."""
+
+        with pytest.raises(config.ConnectionClosed, match="Connection is closed."):
+            contract.ConnectionState.CLOSED.ensure_can_perform_io()
 
 
 class TestIOperationRenderer:
@@ -180,3 +251,51 @@ class TestIConnection:
 
         connection.timeout = None
         assert connection.timeout is None
+
+    def test_connection_lifecycle_predicates__delegate_to_state(self) -> None:
+        """Verify semantic lifecycle predicates delegate to underlying state."""
+
+        connection = ConcreteConnection()
+
+        assert connection.is_created is True
+        assert connection.is_initializing is False
+        assert connection.is_connected is False
+        assert connection.is_closed is False
+        assert connection.can_handshake is True
+        assert connection.can_perform_io is False
+
+        connection._state = contract.ConnectionState.CONNECTED
+        assert connection.is_created is False
+        assert connection.is_initializing is False
+        assert connection.is_connected is True
+        assert connection.is_closed is False
+        assert connection.can_handshake is False
+        assert connection.can_perform_io is True
+
+        connection.close()
+        assert connection.is_created is False
+        assert connection.is_initializing is False
+        assert connection.is_connected is False
+        assert connection.is_closed is True
+        assert connection.can_handshake is False
+        assert connection.can_perform_io is False
+
+    def test_connection_ensure_can_handshake_and_io__delegates_to_state(self) -> None:
+        """Verify ensure_can_handshake and ensure_can_perform_io delegate to state validations."""
+
+        connection = ConcreteConnection()
+
+        connection.ensure_can_handshake()
+        with pytest.raises(config.ConnectionError, match="Cannot perform I/O on connection that is not connected."):
+            connection.ensure_can_perform_io()
+
+        connection._state = contract.ConnectionState.CONNECTED
+        connection.ensure_can_perform_io()
+        with pytest.raises(config.ConnectionError, match="Connection is already initialized."):
+            connection.ensure_can_handshake()
+
+        connection.close()
+        with pytest.raises(config.ConnectionError, match="Cannot initialize a closed connection."):
+            connection.ensure_can_handshake()
+        with pytest.raises(config.ConnectionClosed, match="Connection is closed."):
+            connection.ensure_can_perform_io()

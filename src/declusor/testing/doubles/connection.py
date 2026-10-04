@@ -1,7 +1,7 @@
 from collections.abc import Generator, Sequence
 from typing import Self
 
-from declusor import config, contract
+from declusor import contract
 from declusor.testing.doubles.profile import DummyOperationRenderer
 
 
@@ -54,13 +54,8 @@ class DummyConnection(contract.IConnection):
     def handshake(self) -> None:
         """Simulate protocol handshake."""
 
+        self.ensure_can_handshake()
         self.initialize_called = True
-
-        if self._state == contract.ConnectionState.CLOSED:
-            raise config.ConnectionError("Cannot initialize a closed connection.")
-
-        if self._state in (contract.ConnectionState.CONNECTED, contract.ConnectionState.INITIALIZING):
-            raise config.ConnectionError("Connection is already initialized.")
 
         if self.initialize_error is not None:
             raise self.initialize_error
@@ -70,11 +65,7 @@ class DummyConnection(contract.IConnection):
     def read(self) -> Generator[bytes, None, None]:
         """Yield simulated incoming bytes chunks."""
 
-        if self._state == contract.ConnectionState.CLOSED:
-            raise config.ConnectionClosed("Connection is not open.")
-
-        if self._state not in (contract.ConnectionState.CONNECTED, contract.ConnectionState.INITIALIZING):
-            raise config.ConnectionError("Cannot perform I/O on connection that is not connected.")
+        self.ensure_can_perform_io()
 
         if self.read_error is not None:
             raise self.read_error
@@ -84,11 +75,7 @@ class DummyConnection(contract.IConnection):
     def write(self, content: bytes, /) -> None:
         """Record transmitted bytes."""
 
-        if self._state == contract.ConnectionState.CLOSED:
-            raise config.ConnectionClosed("Connection is not open.")
-
-        if self._state not in (contract.ConnectionState.CONNECTED, contract.ConnectionState.INITIALIZING):
-            raise config.ConnectionError("Cannot perform I/O on connection that is not connected.")
+        self.ensure_can_perform_io()
 
         if self.write_error is not None:
             raise self.write_error
@@ -99,6 +86,9 @@ class DummyConnection(contract.IConnection):
 
     def close(self) -> None:
         """Simulate closing transport resources."""
+
+        if self.is_closed:
+            return
 
         self.closed = True
         self._state = contract.ConnectionState.CLOSED

@@ -131,7 +131,7 @@ class TestDummyConnectionErrors:
         with pytest.raises(config.ConnectionError, match="Cannot initialize a closed connection"):
             conn.handshake()
 
-        with pytest.raises(config.ConnectionClosed, match="Connection is not open"):
+        with pytest.raises(config.ConnectionClosed, match="Connection is closed"):
             conn.write(b"data")
 
 

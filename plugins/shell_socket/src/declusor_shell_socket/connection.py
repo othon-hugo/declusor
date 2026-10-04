@@ -132,11 +132,7 @@ class ShellSocketConnection(contract.IConnection):
     def handshake(self) -> None:
         """Perform the client initialization handshake."""
 
-        if self._state == contract.ConnectionState.CLOSED:
-            raise config.ConnectionError("Cannot initialize a closed connection.")
-
-        if self._state in (contract.ConnectionState.CONNECTED, contract.ConnectionState.INITIALIZING):
-            raise config.ConnectionError("Connection is already initialized.")
+        self.ensure_can_handshake()
 
         self._state = contract.ConnectionState.INITIALIZING
         self.write(self._files.helpers)
@@ -152,11 +148,7 @@ class ShellSocketConnection(contract.IConnection):
     def write(self, data: bytes, /, *, nonce: str | None = None) -> None:
         """Send data to the remote client enclosed in an ephemeral transaction envelope."""
 
-        if self._state == contract.ConnectionState.CLOSED:
-            raise config.ConnectionClosed("Connection is closed.")
-
-        if self._state not in (contract.ConnectionState.CONNECTED, contract.ConnectionState.INITIALIZING):
-            raise config.ConnectionError("Cannot perform I/O on connection that is not connected.")
+        self.ensure_can_perform_io()
 
         self._current_nonce = nonce or self._fixed_nonce or self._nonce_factory()
         payload = self._current_nonce.encode("ascii") + b"\x00" + data + b"\x00"
@@ -169,11 +161,7 @@ class ShellSocketConnection(contract.IConnection):
     def read(self) -> Generator[bytes, None, None]:
         """Stream response chunks from the client until the ephemeral envelope delimiter."""
 
-        if self._state == contract.ConnectionState.CLOSED:
-            raise config.ConnectionClosed("Connection is closed.")
-
-        if self._state not in (contract.ConnectionState.CONNECTED, contract.ConnectionState.INITIALIZING):
-            raise config.ConnectionError("Cannot perform I/O on connection that is not connected.")
+        self.ensure_can_perform_io()
 
         if not self._current_nonce:
             raise config.ConnectionError("No active command nonce for read operation.")
@@ -219,7 +207,7 @@ class ShellSocketConnection(contract.IConnection):
     def close(self) -> None:
         """Close the underlying transport idempotently."""
 
-        if self._state == contract.ConnectionState.CLOSED:
+        if self.is_closed:
             return
 
         self._state = contract.ConnectionState.CLOSED

@@ -99,7 +99,7 @@ class LaunchShell(contract.ICommand):
             while not stop_event.is_set():
                 command_request = input_source.read_raw()
 
-                if connection.state == contract.ConnectionState.CLOSED:
+                if connection.is_closed:
                     stop_event.set()
                     break
 

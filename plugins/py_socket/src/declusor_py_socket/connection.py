@@ -117,11 +117,7 @@ class PySocketConnection(contract.IConnection):
     def handshake(self) -> None:
         """Perform the Python agent initialization handshake."""
 
-        if self._state == contract.ConnectionState.CLOSED:
-            raise config.ConnectionError("Cannot initialize a closed connection.")
-
-        if self._state in (contract.ConnectionState.CONNECTED, contract.ConnectionState.INITIALIZING):
-            raise config.ConnectionError("Connection is already initialized.")
+        self.ensure_can_handshake()
 
         self._state = contract.ConnectionState.INITIALIZING
         self.write(self._files.helpers)
@@ -148,11 +144,7 @@ class PySocketConnection(contract.IConnection):
     def write(self, data: bytes, /) -> None:
         """Send a TLV-framed payload to the remote Python agent."""
 
-        if self._state == contract.ConnectionState.CLOSED:
-            raise config.ConnectionClosed("Connection is closed.")
-
-        if self._state not in (contract.ConnectionState.CONNECTED, contract.ConnectionState.INITIALIZING):
-            raise config.ConnectionError("Cannot perform I/O on connection that is not connected.")
+        self.ensure_can_perform_io()
 
         frame = struct.pack(">BI", config.ChannelType.STDOUT, len(data)) + data
 
@@ -164,11 +156,7 @@ class PySocketConnection(contract.IConnection):
     def read(self) -> Generator[bytes, None, None]:
         """Stream response chunks from the Python agent until a PROCESS_EXIT frame."""
 
-        if self._state == contract.ConnectionState.CLOSED:
-            raise config.ConnectionClosed("Connection is closed.")
-
-        if self._state not in (contract.ConnectionState.CONNECTED, contract.ConnectionState.INITIALIZING):
-            raise config.ConnectionError("Cannot perform I/O on connection that is not connected.")
+        self.ensure_can_perform_io()
 
         while True:
             try:
@@ -213,7 +201,7 @@ class PySocketConnection(contract.IConnection):
     def close(self) -> None:
         """Close the underlying transport idempotently."""
 
-        if self._state == contract.ConnectionState.CLOSED:
+        if self.is_closed:
             return
 
         self._state = contract.ConnectionState.CLOSED

@@ -125,5 +125,5 @@ class TestCodeController:
         dummy_connection.close()
         req = testing.create_dummy_controller_request('"1 + 1"', code_module.CodeArguments)
 
-        with pytest.raises(config.ConnectionError, match="Connection is not open."):
+        with pytest.raises(config.ConnectionError, match="Connection is closed."):
             code_module.call_code(test_session, req)
