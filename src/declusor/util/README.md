@@ -3,7 +3,7 @@
 The **util** package provides stateless helper functions consumed across every layer of the application.
 
 > [!NOTE]
-> Depends only on `config` (for exceptions and constants) — no circular dependencies.
+> Depends only on Python standard library and `config` — zero circular dependencies.
 
 ## Modules
 
@@ -11,6 +11,7 @@ The **util** package provides stateless helper functions consumed across every l
 | ------------- | ----------------------------------------------------------------- |
 | `concurrency` | Thread-based cooperative concurrency for the interactive shell    |
 | `encoding`    | Data encoding, hashing, shell quoting, and template formatting    |
+| `lang`        | Language-specific compilation, AST pruning, and runtime helpers   |
 | `network`     | Context-manager socket listener with user-friendly error mapping  |
 | `parsing`     | Custom `argparse` subclass and type-aware argument parsing        |
 | `plugin`      | Dynamic entry discovery and module loading for autonomous plugins |

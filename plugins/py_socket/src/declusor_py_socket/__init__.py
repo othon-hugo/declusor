@@ -4,14 +4,6 @@ from .connection import (
     PySocketProfile,
     PySocketRenderer,
 )
-from .in_memory import (
-    can_deserialize_code,
-    check_bytecode_compatibility,
-    compile_and_serialize,
-    compile_source,
-    deserialize_code,
-    serialize_code,
-)
 from .plugin import (
     PySocketPlugin,
     PySocketProcessor,
@@ -26,10 +18,4 @@ __all__ = [
     "PySocketProfile",
     "PySocketRenderer",
     "PySocketRuntime",
-    "can_deserialize_code",
-    "check_bytecode_compatibility",
-    "compile_and_serialize",
-    "compile_source",
-    "deserialize_code",
-    "serialize_code",
 ]

@@ -4,7 +4,7 @@ import sys
 
 import declusor_py_socket as py_socket
 
-from declusor import config, contract, transport
+from declusor import config, contract, lang, transport
 
 
 class TestPySocketIntegration:
@@ -206,7 +206,7 @@ class TestPySocketIntegration:
             assert connection.is_bytecode_compatible is True
 
             # Compile and serialize Python code object
-            payload = py_socket.compile_and_serialize("print('in_memory_bytecode_success')\n")
+            payload = lang.python.compile_and_serialize("print('in_memory_bytecode_success')\n")
             connection.write(payload)
 
             response = b"".join(connection.read())
@@ -239,7 +239,7 @@ class TestPySocketIntegration:
             connection.handshake()
 
             # Base64 encode marshaled code object
-            raw_bytecode = py_socket.compile_and_serialize("print('base64_marshaled_ok')\n")
+            raw_bytecode = lang.python.compile_and_serialize("print('base64_marshaled_ok')\n")
             b64_str = base64.b64encode(raw_bytecode).decode("ascii")
 
             cmd = f"execute_base64_encoded_value('{b64_str}')"

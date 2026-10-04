@@ -7,7 +7,6 @@ The `py_socket` plugin provides a cross-platform reverse-shell client capable of
 | Module       | Responsibility                                                                                                        |
 | ------------ | --------------------------------------------------------------------------------------------------------------------- |
 | `connection` | Python socket connection transport (`PySocketConnection`) and protocol profile (`PySocketProfile`)                    |
-| `in_memory`  | In-memory compilation, serialization (`marshal.dumps`/`loads`), and runtime compatibility checking                    |
 | `plugin`     | Entry-point plugin (`PySocketPlugin`), runtime adapter (`PySocketRuntime`), and asset processor (`PySocketProcessor`) |
 
 ## Architecture & Execution Flow

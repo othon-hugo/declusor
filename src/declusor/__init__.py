@@ -11,6 +11,7 @@ from . import (
     transport,
     util,
 )
+from .util import lang
 
 __all__ = [
     "app",
@@ -19,6 +20,7 @@ __all__ = [
     "contract",
     "controller",
     "core",
+    "lang",
     "main",
     "presentation",
     "testing",

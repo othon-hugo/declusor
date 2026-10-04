@@ -1,3 +1,4 @@
+from . import lang
 from .concurrency import (
     Task,
     TaskEvent,
@@ -61,6 +62,7 @@ __all__ = [
     "hash_sha384",
     "hash_sha512",
     "import_plugin_from_file",
+    "lang",
     "load_file",
     "parse_command_arguments",
     "ParsedArguments",

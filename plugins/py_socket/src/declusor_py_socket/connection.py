@@ -7,8 +7,6 @@ from typing import Final
 
 from declusor import config, contract, util
 
-from . import in_memory
-
 
 @dataclass(frozen=True)
 class PySocketRenderer(contract.IOperationRenderer):
@@ -141,7 +139,7 @@ class PySocketConnection(contract.IConnection):
 
         if self._is_bytecode_compatible:
             try:
-                return in_memory.compile_and_serialize(helpers_source, "<helpers>")
+                return util.lang.python.compile_and_serialize(helpers_source, "<helpers>")
             except SyntaxError:
                 pass
 
@@ -156,7 +154,7 @@ class PySocketConnection(contract.IConnection):
 
         if self._is_bytecode_compatible:
             try:
-                payload = in_memory.compile_and_serialize(source, filename)
+                payload = util.lang.python.compile_and_serialize(source, filename)
                 self.write(payload)
                 return
             except SyntaxError:
@@ -187,7 +185,7 @@ class PySocketConnection(contract.IConnection):
 
             if isinstance(metadata, dict):
                 self._client_runtime = metadata
-                self._is_bytecode_compatible = in_memory.check_bytecode_compatibility(
+                self._is_bytecode_compatible = util.lang.python.check_bytecode_compatibility(
                     metadata.get("magic", ""),
                     metadata.get("version", []),
                     metadata.get("implementation", "CPython"),

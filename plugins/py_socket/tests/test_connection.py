@@ -6,7 +6,7 @@ import sys
 import declusor_py_socket as py_socket
 import pytest
 
-from declusor import config, contract, testing
+from declusor import config, contract, lang, testing
 
 
 def _make_metadata_frame(magic: bytes | None = None, version: list[int] | None = None) -> bytes:
@@ -16,7 +16,9 @@ def _make_metadata_frame(magic: bytes | None = None, version: list[int] | None =
         "platform": sys.platform,
         "implementation": "CPython",
     }
+
     encoded = json.dumps(meta_dict).encode("utf-8")
+
     return struct.pack(">BI", config.ChannelType.STDOUT, len(encoded)) + encoded
 
 
@@ -42,7 +44,7 @@ class TestPySocketConnectionLifecycle:
         assert conn.is_bytecode_compatible is True
         assert conn.client_runtime is not None
 
-        expected_helpers = py_socket.compile_and_serialize(dummy_file_store.helpers.decode(), "<helpers>")
+        expected_helpers = lang.python.compile_and_serialize(dummy_file_store.helpers.decode(), "<helpers>")
         expected_helpers_frame = struct.pack(">BI", config.ChannelType.STDOUT, len(expected_helpers)) + expected_helpers
         assert dummy_trans.write_history == [expected_helpers_frame]
 
@@ -172,11 +174,8 @@ class TestPySocketConnectionLifecycle:
         _, length = struct.unpack(">BI", written[:5])
         payload = written[5 : 5 + length]
 
-        assert py_socket.can_deserialize_code(payload) is True
-        code = py_socket.deserialize_code(payload)
-        scope: dict[str, object] = {}
-        exec(code, scope)
-        assert scope["answer"] == 42
+        expected_payload = lang.python.compile_and_serialize("answer = 42\n", "<remote>")
+        assert payload == expected_payload
 
     def test_send_python_payload__when_incompatible__transmits_utf8_source(
         self,
