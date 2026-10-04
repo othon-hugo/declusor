@@ -232,3 +232,14 @@ Scenario: Reject out-of-range listener port or non-positive backlog
   When the network listener is initialized
   Then initialization fails with an invalid argument error
 ```
+
+### DOM-22: Plugin Module Name Normalization Invariant
+
+Plugin file stores resolving on-demand modules must normalize module identifiers by stripping redundant leading `modules/` prefixes (`module_name.removeprefix("modules/").removeprefix(f"modules{os.sep}")`); this guarantees that both direct identifiers (`discovery/sysinfo`) and autocompleted asset paths (`modules/discovery/sysinfo.py`) resolve to valid module files within the plugin repository while strictly enforcing containment inside `filesystem.modules`.
+
+```gherkin
+Scenario: Normalize autocompleted module path prefix
+  Given a module load request specifying "modules/discovery/sysinfo.py"
+  When the plugin file store resolves the module
+  Then the module is resolved cleanly within the plugin's modules directory
+```

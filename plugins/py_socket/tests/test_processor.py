@@ -173,3 +173,31 @@ class TestPySocketProcessor:
         assert ": int" not in decoded
         assert "-> bool" not in decoded
         assert "HOST = '127.0.0.1'" in decoded
+
+    def test_find_module__with_extension_and_without_extension__finds_target_module(self, tmp_path: Path) -> None:
+        """find_module resolves target module path both with and without .py extension."""
+
+        modules = tmp_path / "modules" / "discovery"
+        modules.mkdir(parents=True)
+        mod_file = modules / "sysinfo.py"
+        mod_file.write_bytes(b"# sysinfo")
+
+        fs = contract.PluginFilesystem.from_root(tmp_path)
+        processor = py_socket.PySocketProcessor(fs)
+
+        assert processor.find_module("discovery/sysinfo") == mod_file
+        assert processor.find_module("discovery/sysinfo.py") == mod_file
+
+    def test_find_module__with_modules_prefix__normalizes_and_finds_module(self, tmp_path: Path) -> None:
+        """find_module strips leading modules/ prefix to support autocompleted asset paths."""
+
+        modules = tmp_path / "modules" / "discovery"
+        modules.mkdir(parents=True)
+        mod_file = modules / "sysinfo.py"
+        mod_file.write_bytes(b"# sysinfo")
+
+        fs = contract.PluginFilesystem.from_root(tmp_path)
+        processor = py_socket.PySocketProcessor(fs)
+
+        assert processor.find_module("modules/discovery/sysinfo") == mod_file
+        assert processor.find_module("modules/discovery/sysinfo.py") == mod_file

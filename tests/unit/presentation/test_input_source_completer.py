@@ -10,10 +10,14 @@ import pytest
 from declusor import presentation
 
 
-def _get_configured_completer(source: presentation.TerminalInputSource, routes: list[str]) -> Callable[[str, int], str | None]:
+def _get_configured_completer(
+    source: presentation.TerminalInputSource,
+    routes: list[str],
+    assets_dir: Path | None = None,
+) -> Callable[[str, int], str | None]:
     """Helper to configure completer and retrieve the bound readline completer function."""
 
-    source.setup_completer(routes)
+    source.setup_completer(routes, assets_dir)
     completer = readline.get_completer()
     assert completer is not None
     return completer
@@ -54,6 +58,14 @@ class TestTerminalInputSourceCompleterSetup:
 
         with pytest.raises(TypeError, match="positional-only"):
             source.setup_completer(command_routes=["help", "exit"])  # type: ignore[call-arg]
+
+    def test_terminal_input_source_setup_completer_assets_dir_keyword__raises_type_error(self) -> None:
+        """setup_completer enforces positional-only argument passing for assets_dir."""
+
+        source = presentation.TerminalInputSource()
+
+        with pytest.raises(TypeError, match="positional-only"):
+            source.setup_completer(["help", "exit"], assets_dir=Path("."))  # type: ignore[call-arg]
 
 
 class TestTerminalInputSourceCommandCompletion:
@@ -336,4 +348,121 @@ class TestTerminalInputSourceFileCompletion:
         monkeypatch.setattr(readline, "get_line_buffer", lambda: "upload ")
 
         assert completer("", 0) == "alpha.txt"
+        assert completer("", 1) is None
+
+
+class TestTerminalInputSourceAssetCompletion:
+    """Tests verifying asset directory autocompletion and command-aware scoping in TerminalInputSource."""
+
+    def test_terminal_input_source_complete_load__with_assets_modules__completes_from_modules_dir(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """load command autocompletes payload modules from the plugin's assets/modules directory."""
+
+        assets_dir = tmp_path / "assets"
+        modules_dir = assets_dir / "modules" / "discovery"
+        modules_dir.mkdir(parents=True)
+        (modules_dir / "system_info.py").write_bytes(b"")
+        (modules_dir / "dev_tools.py").write_bytes(b"")
+        (assets_dir / "helpers").mkdir()
+
+        source = presentation.TerminalInputSource()
+        completer = _get_configured_completer(source, ["load", "upload"], assets_dir=assets_dir)
+
+        monkeypatch.setattr(readline, "get_line_buffer", lambda: "load ")
+        assert completer("", 0) == "discovery/"
+        assert completer("", 1) is None
+
+        monkeypatch.setattr(readline, "get_line_buffer", lambda: "load discovery/")
+        assert completer("discovery/", 0) == "discovery/dev_tools.py"
+        assert completer("discovery/", 1) == "discovery/system_info.py"
+        assert completer("discovery/", 2) is None
+
+    def test_terminal_input_source_complete_load__with_assets_without_modules__completes_from_assets_root(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """load command falls back to assets directory root when modules subdirectory is absent."""
+
+        assets_dir = tmp_path / "assets"
+        assets_dir.mkdir()
+        (assets_dir / "payload.py").write_bytes(b"")
+
+        source = presentation.TerminalInputSource()
+        completer = _get_configured_completer(source, ["load"], assets_dir=assets_dir)
+
+        monkeypatch.setattr(readline, "get_line_buffer", lambda: "load ")
+        assert completer("", 0) == "payload.py"
+        assert completer("", 1) is None
+
+    def test_terminal_input_source_complete_load__with_explicit_host_prefix__completes_from_host_filesystem(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """load command respects explicit ./ prefix to complete from the operator host directory."""
+
+        assets_dir = tmp_path / "assets"
+        (assets_dir / "modules").mkdir(parents=True)
+        (assets_dir / "modules" / "asset_mod.py").write_bytes(b"")
+
+        host_dir = tmp_path / "host"
+        host_dir.mkdir()
+        (host_dir / "local_script.py").write_bytes(b"")
+
+        monkeypatch.chdir(host_dir)
+        source = presentation.TerminalInputSource()
+        completer = _get_configured_completer(source, ["load"], assets_dir=assets_dir)
+
+        monkeypatch.setattr(readline, "get_line_buffer", lambda: "load ./loc")
+        assert completer("./loc", 0) == "./local_script.py"
+        assert completer("./loc", 1) is None
+
+    def test_terminal_input_source_complete_upload__with_assets_dir__defaults_to_host_filesystem(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """upload command completes from the host working directory even when assets_dir is configured."""
+
+        assets_dir = tmp_path / "assets"
+        assets_dir.mkdir()
+        (assets_dir / "asset_file.bin").write_bytes(b"")
+
+        host_dir = tmp_path / "host"
+        host_dir.mkdir()
+        (host_dir / "upload_target.bin").write_bytes(b"")
+
+        monkeypatch.chdir(host_dir)
+        source = presentation.TerminalInputSource()
+        completer = _get_configured_completer(source, ["upload", "load"], assets_dir=assets_dir)
+
+        monkeypatch.setattr(readline, "get_line_buffer", lambda: "upload ")
+        assert completer("", 0) == "upload_target.bin"
+        assert completer("", 1) is None
+
+    def test_terminal_input_source_complete_execute__with_assets_dir__defaults_to_host_filesystem(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """execute command completes from the host working directory even when assets_dir is configured."""
+
+        assets_dir = tmp_path / "assets"
+        assets_dir.mkdir()
+        (assets_dir / "asset_script.sh").write_bytes(b"")
+
+        host_dir = tmp_path / "host"
+        host_dir.mkdir()
+        (host_dir / "run_me.sh").write_bytes(b"")
+
+        monkeypatch.chdir(host_dir)
+        source = presentation.TerminalInputSource()
+        completer = _get_configured_completer(source, ["execute"], assets_dir=assets_dir)
+
+        monkeypatch.setattr(readline, "get_line_buffer", lambda: "execute ")
+        assert completer("", 0) == "run_me.sh"
         assert completer("", 1) is None

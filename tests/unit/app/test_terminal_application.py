@@ -15,9 +15,11 @@ class CompleterInputSource(testing.DummyInputSource):
     def __init__(self, inputs: Sequence[str] | None = None) -> None:
         super().__init__(inputs)
         self.completer_routes: tuple[str, ...] | None = None
+        self.assets_dir: Path | None = None
 
-    def setup_completer(self, routes: tuple[str, ...], /) -> None:
+    def setup_completer(self, routes: tuple[str, ...], assets_dir: Path | None = None, /) -> None:
         self.completer_routes = routes
+        self.assets_dir = assets_dir
 
 
 class TestTerminalApplicationInitialization:
@@ -602,6 +604,7 @@ class TestTerminalApplicationLifecycle:
         terminal_app.run(plugin_config)
 
         assert input_source.completer_routes == router.routes
+        assert input_source.assets_dir == fs.assets
 
     def test_run__when_input_source_is_none__runs_cleanly(self, tmp_path: Path) -> None:
         """TerminalApplication.run executes cleanly when input_source is None."""

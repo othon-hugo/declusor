@@ -16,3 +16,4 @@ The **presentation** package implements the operator user interface and interact
 1. **View Layer Separation** — handles operator display and input formatting without business or network transport logic.
 2. **Signal-Driven Loop** — responds to `ControllerResult` and `ControllerAction` lifecycle signals without relying on control-flow exceptions.
 3. **Session-Context Binding** — passes the active `SessionContext` to routed controllers, enabling direct command execution.
+4. **Command-Aware Autocompletion** — `TerminalInputSource.setup_completer` accepts an optional `assets_dir` parameter, scoping `load` autocompletion directly to the active plugin's payload modules (`assets/modules/`) while preserving host filesystem navigation (`.` or explicit `./`, `/`) for host-directed operations (`upload`, `execute`).

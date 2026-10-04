@@ -41,17 +41,23 @@ class TerminalInputSource(contract.IInputSource):
         raw_line = self._reader(prompt)
         return raw_line if raw_line.endswith("\n") else f"{raw_line}\n"
 
-    def setup_completer(self, command_routes: Sequence[str], /) -> None:
+    def setup_completer(
+        self,
+        command_routes: Sequence[str],
+        assets_dir: Path | None = None,
+        /,
+    ) -> None:
         """Set up the readline completer for command line input.
 
         Args:
             command_routes: Sequence of available commands.
+            assets_dir: Optional base directory for client plugin assets.
         """
 
         if not readline:
             return
 
-        def _search_file(search_term: str) -> list[str]:
+        def _search_file(search_term: str, base_dir: Path | None = None) -> list[str]:
             """Search for files and directories matching the search term."""
 
             files: list[str] = []
@@ -62,7 +68,12 @@ class TerminalInputSource(contract.IInputSource):
             searching_dir = os.path.dirname(search_term)
             searching_file = os.path.basename(search_term)
 
-            target_dir = searching_dir if searching_dir else "."
+            is_explicit_host_path = search_term.startswith(("./", "../")) or os.path.isabs(search_term)
+
+            if is_explicit_host_path or base_dir is None:
+                target_dir = searching_dir if searching_dir else "."
+            else:
+                target_dir = os.path.join(base_dir, searching_dir) if searching_dir else str(base_dir)
 
             try:
                 pattern = glob.escape(searching_file) + "*"
@@ -82,8 +93,8 @@ class TerminalInputSource(contract.IInputSource):
             return files
 
         def _complete_line(text: str, state: int) -> str | None:
-            def _find_file(text: str, state: int) -> str | None:
-                matches = _search_file(text)
+            def _find_file(text: str, state: int, base_dir: Path | None = None) -> str | None:
+                matches = _search_file(text, base_dir=base_dir)
 
                 if state < len(matches):
                     return matches[state]
@@ -109,7 +120,17 @@ class TerminalInputSource(contract.IInputSource):
                     return _find_command(text, state)
                 case 2:
                     if commands[0] in command_routes:
-                        return _find_file(text, state)
+                        leading_cmd = commands[0]
+                        effective_base: Path | None = None
+
+                        if assets_dir is not None:
+                            if leading_cmd == "load":
+                                modules_dir = assets_dir / "modules"
+                                effective_base = modules_dir if modules_dir.is_dir() else assets_dir
+                            elif leading_cmd not in ("upload", "execute"):
+                                effective_base = assets_dir
+
+                        return _find_file(text, state, base_dir=effective_base)
                 case _:
                     return None
 

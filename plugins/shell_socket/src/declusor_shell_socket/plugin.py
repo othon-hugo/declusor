@@ -1,3 +1,4 @@
+import os
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Final
@@ -202,13 +203,14 @@ class ShellSocketProcessor(contract.IPluginProcessor):
     def find_module(self, module_name: str, /) -> Path | None:
         """Resolve an on-demand module by name or relative path."""
 
-        module_path = (self._filesystem.modules / module_name).resolve()
+        clean_name = module_name.removeprefix("modules/").removeprefix(f"modules{os.sep}")
+        module_path = (self._filesystem.modules / clean_name).resolve()
 
         if module_path.is_file():
             return module_path
 
         for ext in self._module_extensions:
-            candidate = (self._filesystem.modules / f"{module_name}{ext}").resolve()
+            candidate = (self._filesystem.modules / f"{clean_name}{ext}").resolve()
             if candidate.is_file():
                 return candidate
 

@@ -34,3 +34,14 @@ Scenario: Isolate diagnostic error messages from standard output
   When error diagnostic messages are emitted
   Then messages are written exclusively to standard error without contaminating standard output
 ```
+
+### XCT-04: Command-Aware Readline Input Completion & Asset Scoping
+
+Terminal input autocompletion must scope file searches dynamically based on command semantics and plugin assets: `load` autocompletes from the active plugin's `assets/modules/` directory when available, while `upload` and `execute` default to the host working directory, and explicit host paths (`./...`, `/...`) resolve against the local filesystem. `Application.run` supplies the active plugin assets directory via dynamic signature introspection.
+
+```gherkin
+Scenario: Scope load command autocomplete to plugin payload modules
+  Given an active session with a plugin defining an assets/modules repository
+  When the operator presses tab after typing "load "
+  Then autocomplete candidates are discovered from the plugin's modules directory rather than repository root
+```

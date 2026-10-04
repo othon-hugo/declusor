@@ -1,3 +1,4 @@
+import os
 from collections.abc import Mapping
 from pathlib import Path
 
@@ -74,10 +75,14 @@ class DummyPluginFileStore(contract.IPluginProcessor):
         if module_name in self.missing_modules:
             return None
 
-        if self.modules and module_name not in self.modules:
+        clean_name = module_name.removeprefix("modules/").removeprefix(f"modules{os.sep}")
+        if clean_name in self.missing_modules:
             return None
 
-        return (self._filesystem.modules / module_name).resolve()
+        if self.modules and module_name not in self.modules and clean_name not in self.modules:
+            return None
+
+        return (self._filesystem.modules / clean_name).resolve()
 
     def find_helper(self, helper_name: str, /) -> Path | None:
         """Return path to requested helper library."""

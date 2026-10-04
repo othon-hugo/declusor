@@ -58,6 +58,15 @@ class TestDummyPluginFileStore:
         with pytest.raises(config.InvalidOperation, match="render fail"):
             store.render_launcher("1.1.1.1", 1234, b"ack")
 
+    def test_find_module_modules_prefix_normalization(self) -> None:
+        """Ensure find_module normalizes module names prefixed with modules/."""
+
+        store = testing.DummyPluginFileStore(modules={"discovery/sysinfo": b"sysinfo"})
+
+        resolved = store.find_module("modules/discovery/sysinfo")
+        assert resolved is not None
+        assert resolved.name == "sysinfo"
+
 
 class TestDummyPluginRuntime:
     """Verify behavior of the DummyPluginRuntime double."""

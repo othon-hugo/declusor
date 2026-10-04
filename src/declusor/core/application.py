@@ -1,4 +1,5 @@
 import dataclasses
+import inspect
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
@@ -91,7 +92,13 @@ class Application:
         plugin_runtime = self._plugin_manager.get(config.kind).build_runtime(config)
 
         if self._input_source is not None and (setup_completer := getattr(self._input_source, "setup_completer", None)):
-            setup_completer(self._router.routes)
+            params = inspect.signature(setup_completer).parameters
+            positional_params = [p for p in params.values() if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)]
+
+            if len(positional_params) >= 2 or "assets_dir" in params:
+                setup_completer(self._router.routes, config.filesystem.assets)
+            else:
+                setup_completer(self._router.routes)
 
         delivery = plugin_runtime.launcher
         delivery = dataclasses.replace(
