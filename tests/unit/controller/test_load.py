@@ -31,13 +31,13 @@ class TestLoadController:
         test_session: contract.SessionContext,
         dummy_connection: testing.DummyConnection,
         dummy_file_store: testing.DummyPluginFileStore,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
         dummy_view: testing.DummyView,
     ) -> None:
         """call_load loads module from plugin store, transmits rendered payload, and returns CONTINUE."""
 
         dummy_file_store.set_module("discovery/sysinfo", b"sysinfo_bytes")
-        dummy_profile.set_rendered_command(config.OperationCode.LOAD_MODULE, "rendered_sysinfo_load")
+        dummy_renderer.set_rendered_command(config.OperationCode.LOAD_MODULE, "rendered_sysinfo_load")
         req = testing.create_dummy_controller_request("discovery/sysinfo", load_module.LoadArguments)
 
         result = load_module.call_load(test_session, req)
@@ -53,12 +53,12 @@ class TestLoadController:
         test_session: contract.SessionContext,
         dummy_connection: testing.DummyConnection,
         dummy_file_store: testing.DummyPluginFileStore,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """call_load normalizes whitespace in module identifiers before lookup."""
 
         dummy_file_store.set_module("network/portscan", b"portscan_payload")
-        dummy_profile.set_rendered_command(config.OperationCode.LOAD_MODULE, "rendered_portscan")
+        dummy_renderer.set_rendered_command(config.OperationCode.LOAD_MODULE, "rendered_portscan")
         req = testing.create_dummy_controller_request("  network/portscan  ", load_module.LoadArguments)
 
         result = load_module.call_load(test_session, req)
@@ -140,12 +140,12 @@ class TestLoadController:
         self,
         test_session: contract.SessionContext,
         dummy_file_store: testing.DummyPluginFileStore,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """call_load raises InvalidOperation when client profile fails to render module script data."""
 
         dummy_file_store.set_module("discovery/sysinfo", b"payload")
-        dummy_profile.set_rendered_command(config.OperationCode.LOAD_MODULE, "")
+        dummy_renderer.set_rendered_command(config.OperationCode.LOAD_MODULE, "")
         req = testing.create_dummy_controller_request("discovery/sysinfo", load_module.LoadArguments)
 
         with pytest.raises(config.InvalidOperation, match="Failed to generate script data"):
@@ -156,12 +156,12 @@ class TestLoadController:
         test_session: contract.SessionContext,
         dummy_connection: testing.DummyConnection,
         dummy_file_store: testing.DummyPluginFileStore,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """call_load propagates connection write errors without swallowing them."""
 
         dummy_file_store.set_module("discovery/sysinfo", b"payload")
-        dummy_profile.set_rendered_command(config.OperationCode.LOAD_MODULE, "rendered_sysinfo")
+        dummy_renderer.set_rendered_command(config.OperationCode.LOAD_MODULE, "rendered_sysinfo")
         dummy_connection.write_error = config.ConnectionError("Transport failure")
         req = testing.create_dummy_controller_request("discovery/sysinfo", load_module.LoadArguments)
 

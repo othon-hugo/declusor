@@ -30,12 +30,12 @@ class TestCommandController:
         self,
         test_session: contract.SessionContext,
         dummy_connection: testing.DummyConnection,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
         dummy_view: testing.DummyView,
     ) -> None:
         """call_command executes ExecuteCommand via session, transmits payload, and returns CONTINUE."""
 
-        dummy_profile.set_rendered_command(config.OperationCode.EXEC_COMMAND, "rendered_whoami")
+        dummy_renderer.set_rendered_command(config.OperationCode.EXEC_COMMAND, "rendered_whoami")
         req = testing.create_dummy_controller_request("whoami", command_module.CommandArguments)
 
         result = command_module.call_command(test_session, req)
@@ -43,25 +43,25 @@ class TestCommandController:
         assert isinstance(result, contract.ControllerResult)
         assert result.action == contract.ControllerAction.CONTINUE
         assert dummy_connection.written == [b"rendered_whoami"]
-        assert dummy_profile.render_calls == [(config.OperationCode.EXEC_COMMAND, ("whoami",))]
+        assert dummy_renderer.render_calls == [(config.OperationCode.EXEC_COMMAND, ("whoami",))]
         assert dummy_view.binary_data == [b"chunk1\n", b"chunk2\n"]
 
     def test_call_command__command_with_flags_and_arguments__preserves_complete_string(
         self,
         test_session: contract.SessionContext,
         dummy_connection: testing.DummyConnection,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """call_command preserves complex command lines including flags, arguments, and quotes."""
 
         command_text = "grep -rn 'root' /etc/passwd"
-        dummy_profile.set_rendered_command(config.OperationCode.EXEC_COMMAND, f"rendered_{command_text}")
+        dummy_renderer.set_rendered_command(config.OperationCode.EXEC_COMMAND, f"rendered_{command_text}")
         req = testing.create_dummy_controller_request(f'"{command_text}"', command_module.CommandArguments)
 
         result = command_module.call_command(test_session, req)
 
         assert result.action == contract.ControllerAction.CONTINUE
-        assert dummy_profile.render_calls == [(config.OperationCode.EXEC_COMMAND, (command_text,))]
+        assert dummy_renderer.render_calls == [(config.OperationCode.EXEC_COMMAND, (command_text,))]
         assert dummy_connection.written == [f"rendered_{command_text}".encode()]
 
     def test_call_command__empty_request_line__raises_parser_error(

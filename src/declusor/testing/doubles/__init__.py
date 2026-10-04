@@ -19,7 +19,6 @@ from declusor.testing.doubles.plugins import (
     DummyPluginRuntime,
 )
 from declusor.testing.doubles.profile import (
-    DummyConnectionProfile,
     DummyOperationRenderer,
 )
 from declusor.testing.doubles.router import (
@@ -47,7 +46,6 @@ __all__ = [
     "DummyCommand",
     "DummyConfig",
     "DummyConnection",
-    "DummyConnectionProfile",
     "DummyInputSource",
     "DummyOperationRenderer",
     "DummyPlugin",

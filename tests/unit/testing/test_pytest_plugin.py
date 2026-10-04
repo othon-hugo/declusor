@@ -16,15 +16,15 @@ class TestPytestPluginFixtures:
         assert isinstance(dummy_view, testing.DummyView)
         assert isinstance(dummy_input_source, testing.DummyInputSource)
 
-    def test_connection_and_profile_fixtures(
+    def test_connection_and_renderer_fixtures(
         self,
         dummy_connection: testing.DummyConnection,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
-        """Ensure connection and profile fixtures inject initialized doubles."""
+        """Ensure connection and renderer fixtures inject initialized doubles."""
 
         assert isinstance(dummy_connection, testing.DummyConnection)
-        assert isinstance(dummy_profile, testing.DummyConnectionProfile)
+        assert isinstance(dummy_renderer, testing.DummyOperationRenderer)
 
     def test_filestore_and_session_fixtures(
         self,

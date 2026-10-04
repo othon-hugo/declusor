@@ -72,7 +72,7 @@ class TestPySocketPluginRuntime:
         assert "$ACKNOWLEDGE" not in decoded
         assert "$DECLUSOR_HOST" not in decoded
         assert "$DECLUSOR_PORT" not in decoded
-        assert "$DECLUSOR_ACKNOWLEDGE" not in decoded
+        assert "$DECLUSOR_ACK" not in decoded
 
     def test_build_runtime__creates_connection__returns_py_socket_connection_instance(self) -> None:
         """Verify runtime creates a valid py_socket.PySocketConnection instance."""

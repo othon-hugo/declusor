@@ -118,10 +118,6 @@ class IOperationRenderer(ABC):
         raise NotImplementedError
 
 
-# Backward-compatible alias for existing extensions
-IConnectionProfile = IOperationRenderer
-
-
 class IConnection(ABC):
     """Manages an active network session with a remote client.
 
@@ -208,12 +204,6 @@ class IConnection(ABC):
         """The command syntax renderer for this connection."""
 
         raise NotImplementedError
-
-    @property
-    def profile(self) -> IOperationRenderer:
-        """Backward-compatible alias for ``renderer``."""
-
-        return self.renderer
 
     @property
     @abstractmethod

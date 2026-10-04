@@ -82,7 +82,7 @@ main (Composition Root)
     - Replaces unconstrained `MagicMock` sprawl with contract-compliant in-memory implementations.
 12. **`plugins` (Autonomous Packages)**:
     - Independent, self-contained packages residing in `plugins/<plugin_name>/` outside the core application loop.
-    - Strictly implement domain contracts (`IPluginExtension`, `IPluginRuntime`, `IPluginProcessor`, `IConnectionProfile`).
+    - Strictly implement domain contracts (`IPluginExtension`, `IPluginRuntime`, `IPluginProcessor`, `IOperationRenderer`).
     - Bundle their own isolated stager templates, helper libraries, and colocated test suites.
 
 ## Development Setup
@@ -260,7 +260,7 @@ Do **not** use unconstrained `unittest.mock.MagicMock` or fragile monkeypatching
 - `testing.DummyView`: Simulates output presentation, capturing messages, errors, warnings, info, success, and binary data.
 - `testing.DummyInputSource`: Simulates operator input queues and command reading.
 - `testing.DummyConnection`: Full state machine (`CREATED` -> `CONNECTED` -> `CLOSED`), frame recording, and chunk streaming.
-- `testing.DummyConnectionProfile`: Script rendering and command formatting.
+- `testing.DummyOperationRenderer`: Script rendering and command formatting.
 - `testing.DummyPluginFileStore`: In-memory file, library, and module streaming.
 - `testing.DummyPluginRuntime`: Deterministic connection creation.
 - `testing.DummyPlugin`: Self-contained plugin for discovery and registration tests.
@@ -315,7 +315,7 @@ plugins/<plugin_name>/
 │   └── declusor_<plugin_name>/
 │       ├── __init__.py          # Exports: __all__ = ["<PluginClass>"]
 │       ├── plugin.py            # Implements IPluginExtension, IPluginRuntime, and IPluginProcessor
-│       └── connection.py        # Implements IConnection and IConnectionProfile
+│       └── connection.py        # Implements IConnection and IOperationRenderer
 ├── assets/                      # Bundled stagers and libraries
 │   ├── launchers/               # Bootstrap stagers
 │   ├── helpers/                 # Library files sent during session handshake

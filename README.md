@@ -286,7 +286,7 @@ plugins/<plugin_name>/
 ├── src/declusor_<plugin_name>/   # Core transport and runtime implementation
 │   ├── __init__.py               # Public exports (__all__ = ["<PluginClass>"])
 │   ├── plugin.py                 # Implements IPluginExtension, IPluginRuntime, and IPluginProcessor
-│   └── connection.py             # Implements IConnection and IConnectionProfile
+│   └── connection.py             # Implements IConnection and IOperationRenderer
 ├── assets/                       # Bundled stagers and operational payloads
 │   ├── launchers/                # Client bootstrap templates (e.g. client.sh, client.py)
 │   ├── helpers/                  # In-memory initialization libraries (sent during handshake)

@@ -1,7 +1,6 @@
 from .connection import (
     DEFAULT_PY_SOCKET,
     PySocketConnection,
-    PySocketProfile,
     PySocketRenderer,
 )
 from .plugin import (
@@ -15,7 +14,6 @@ __all__ = [
     "PySocketConnection",
     "PySocketPlugin",
     "PySocketProcessor",
-    "PySocketProfile",
     "PySocketRenderer",
     "PySocketRuntime",
 ]

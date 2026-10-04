@@ -32,7 +32,7 @@ class TestExecuteController:
         tmp_path: Path,
         test_session: contract.SessionContext,
         dummy_connection: testing.DummyConnection,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
         dummy_view: testing.DummyView,
     ) -> None:
         """call_execute reads script file, Base64 encodes content, renders payload, and returns CONTINUE."""
@@ -40,7 +40,7 @@ class TestExecuteController:
         script_file = tmp_path / "script.sh"
         script_file.write_text("echo 'hello from script'")
         expected_b64 = util.convert_to_base64(b"echo 'hello from script'")
-        dummy_profile.set_rendered_command(config.OperationCode.EXEC_FILE, "rendered_script_exec")
+        dummy_renderer.set_rendered_command(config.OperationCode.EXEC_FILE, "rendered_script_exec")
         req = testing.create_dummy_controller_request(str(script_file), execute_module.ExecuteArguments)
 
         result = execute_module.call_execute(test_session, req)
@@ -48,7 +48,7 @@ class TestExecuteController:
         assert isinstance(result, contract.ControllerResult)
         assert result.action == contract.ControllerAction.CONTINUE
         assert dummy_connection.written == [b"rendered_script_exec"]
-        assert dummy_profile.render_calls == [(config.OperationCode.EXEC_FILE, (expected_b64,))]
+        assert dummy_renderer.render_calls == [(config.OperationCode.EXEC_FILE, (expected_b64,))]
         assert dummy_view.binary_data == [b"chunk1\n", b"chunk2\n"]
 
     def test_call_execute__path_with_spaces__parses_and_executes_successfully(
@@ -56,7 +56,7 @@ class TestExecuteController:
         tmp_path: Path,
         test_session: contract.SessionContext,
         dummy_connection: testing.DummyConnection,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """call_execute correctly resolves quoted file paths containing whitespace characters."""
 
@@ -64,7 +64,7 @@ class TestExecuteController:
         spaced_dir.mkdir()
         script_file = spaced_dir / "target script.py"
         script_file.write_text("print('spaced path')")
-        dummy_profile.set_rendered_command(config.OperationCode.EXEC_FILE, "rendered_spaced")
+        dummy_renderer.set_rendered_command(config.OperationCode.EXEC_FILE, "rendered_spaced")
         req = testing.create_dummy_controller_request(f'"{script_file}"', execute_module.ExecuteArguments)
 
         result = execute_module.call_execute(test_session, req)

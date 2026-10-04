@@ -2,8 +2,7 @@ from collections.abc import Generator
 
 import pytest
 
-from declusor import config, contract
-from declusor.testing import DummyConnection, DummyOperationRenderer
+from declusor import config, contract, testing
 
 # [Test Doubles]
 
@@ -20,7 +19,7 @@ class ConcreteConnection(contract.IConnection):
         """Initialize concrete connection double."""
 
         super().__init__(connection)
-        self._renderer: contract.IOperationRenderer = renderer or DummyOperationRenderer()
+        self._renderer: contract.IOperationRenderer = renderer or testing.DummyOperationRenderer()
         self._state: contract.ConnectionState = contract.ConnectionState.CREATED
         self._timeout: float | None = None
 
@@ -155,24 +154,13 @@ class TestConnectionState:
 
 
 class TestIOperationRenderer:
-    """Test suite for IOperationRenderer and its IConnectionProfile alias."""
+    """Test suite for IOperationRenderer."""
 
     def test_operation_renderer_direct_instantiation__raises_type_error(self) -> None:
         """Verify IOperationRenderer cannot be instantiated directly."""
 
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
             contract.IOperationRenderer()  # type: ignore[abstract]
-
-    def test_connection_profile_alias__points_to_operation_renderer(self) -> None:
-        """Verify IConnectionProfile is an alias pointing to IOperationRenderer."""
-
-        assert contract.IConnectionProfile is contract.IOperationRenderer
-
-    def test_connection_profile_direct_instantiation__raises_type_error(self) -> None:
-        """Verify IConnectionProfile cannot be instantiated directly."""
-
-        with pytest.raises(TypeError, match="Can't instantiate abstract class"):
-            contract.IConnectionProfile()  # type: ignore[abstract]
 
 
 class TestIConnection:
@@ -196,7 +184,7 @@ class TestIConnection:
     def test_connection_handshake_with_underlying__delegates_to_underlying_connection(self) -> None:
         """Verify handshake delegates to underlying connection when present."""
 
-        underlying = DummyConnection(initial_state=contract.ConnectionState.CREATED)
+        underlying = testing.DummyConnection(initial_state=contract.ConnectionState.CREATED)
         connection = ConcreteConnection(underlying)
 
         assert underlying.initialize_called is False
@@ -206,14 +194,13 @@ class TestIConnection:
         assert underlying.initialize_called is True
         assert underlying.state == contract.ConnectionState.CONNECTED
 
-    def test_connection_profile_property__returns_renderer_instance(self) -> None:
-        """Verify profile property alias returns the renderer instance."""
+    def test_connection_renderer_property__returns_renderer_instance(self) -> None:
+        """Verify renderer property returns the renderer instance."""
 
-        renderer = DummyOperationRenderer()
+        renderer = testing.DummyOperationRenderer()
         connection = ConcreteConnection(renderer=renderer)
 
-        assert connection.profile is renderer
-        assert connection.profile is connection.renderer
+        assert connection.renderer is renderer
 
     def test_connection_context_manager_scope__returns_self_and_closes_on_exit(self) -> None:
         """Verify context manager protocol returns self and automatically invokes close on exit."""

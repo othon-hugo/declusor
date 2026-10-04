@@ -30,13 +30,13 @@ class TestCodeController:
         self,
         test_session: contract.SessionContext,
         dummy_connection: testing.DummyConnection,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
         dummy_view: testing.DummyView,
     ) -> None:
         """call_code executes ExecuteCode via session, transmits payload, and returns CONTINUE."""
 
         snippet = "import sys; print(sys.version)"
-        dummy_profile.set_rendered_command(config.OperationCode.EXEC_CODE, "rendered_sys_version")
+        dummy_renderer.set_rendered_command(config.OperationCode.EXEC_CODE, "rendered_sys_version")
         req = testing.create_dummy_controller_request(f'"{snippet}"', code_module.CodeArguments)
 
         result = code_module.call_code(test_session, req)
@@ -44,25 +44,25 @@ class TestCodeController:
         assert isinstance(result, contract.ControllerResult)
         assert result.action == contract.ControllerAction.CONTINUE
         assert dummy_connection.written == [b"rendered_sys_version"]
-        assert dummy_profile.render_calls == [(config.OperationCode.EXEC_CODE, (snippet,))]
+        assert dummy_renderer.render_calls == [(config.OperationCode.EXEC_CODE, (snippet,))]
         assert dummy_view.binary_data == [b"chunk1\n", b"chunk2\n"]
 
     def test_call_code__complex_multiline_snippet__preserves_complete_code(
         self,
         test_session: contract.SessionContext,
         dummy_connection: testing.DummyConnection,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """call_code preserves multiline code blocks and inner quotation."""
 
         snippet = "def greet(name):\n    return f'hello {name}'\nprint(greet('declusor'))"
-        dummy_profile.set_rendered_command(config.OperationCode.EXEC_CODE, "rendered_greet")
+        dummy_renderer.set_rendered_command(config.OperationCode.EXEC_CODE, "rendered_greet")
         req = testing.create_dummy_controller_request(f'"{snippet}"', code_module.CodeArguments)
 
         result = code_module.call_code(test_session, req)
 
         assert result.action == contract.ControllerAction.CONTINUE
-        assert dummy_profile.render_calls == [(config.OperationCode.EXEC_CODE, (snippet,))]
+        assert dummy_renderer.render_calls == [(config.OperationCode.EXEC_CODE, (snippet,))]
         assert dummy_connection.written == [b"rendered_greet"]
 
     def test_call_code__empty_request_line__raises_parser_error(

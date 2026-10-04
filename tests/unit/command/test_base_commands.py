@@ -132,7 +132,7 @@ class TestBaseFileCommand:
         tmp_path: Path,
         test_session: contract.SessionContext,
         dummy_connection: testing.DummyConnection,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """BaseFileCommand loads file, encodes base64, invokes renderer, and writes UTF-8 bytes."""
 
@@ -142,14 +142,14 @@ class TestBaseFileCommand:
 
         expected_b64 = util.convert_to_base64(file_content)
         rendered_command = "rendered_exec_file_payload"
-        dummy_profile.set_rendered_command(config.OperationCode.EXEC_FILE, rendered_command)
+        dummy_renderer.set_rendered_command(config.OperationCode.EXEC_FILE, rendered_command)
 
         dto = ExecuteFileDTO(filepath=script_file)
         command = ConcreteFileCommand(dto, opcode=config.OperationCode.EXEC_FILE)
 
         command.send_request(test_session)
 
-        assert dummy_profile.render_calls == [(config.OperationCode.EXEC_FILE, (expected_b64,))]
+        assert dummy_renderer.render_calls == [(config.OperationCode.EXEC_FILE, (expected_b64,))]
         assert dummy_connection.written == [rendered_command.encode("utf-8")]
 
     def test_base_file_command_send_request__overridden_operation_arguments__passes_extra_args_to_renderer(
@@ -157,7 +157,7 @@ class TestBaseFileCommand:
         tmp_path: Path,
         test_session: contract.SessionContext,
         dummy_connection: testing.DummyConnection,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """Subclass overriding _operation_arguments passes additional arguments to render_operation_command."""
 
@@ -169,7 +169,7 @@ class TestBaseFileCommand:
         destination_path = "/remote/dest/payload.bin"
         permission_flag = "--executable"
         rendered_command = "rendered_store_file_payload"
-        dummy_profile.set_rendered_command(config.OperationCode.STORE_FILE, rendered_command)
+        dummy_renderer.set_rendered_command(config.OperationCode.STORE_FILE, rendered_command)
 
         dto = ExecuteFileDTO(filepath=payload_file)
         command = CustomArgsFileCommand(
@@ -180,21 +180,21 @@ class TestBaseFileCommand:
 
         command.send_request(test_session)
 
-        assert dummy_profile.render_calls == [(config.OperationCode.STORE_FILE, (expected_b64, destination_path, permission_flag))]
+        assert dummy_renderer.render_calls == [(config.OperationCode.STORE_FILE, (expected_b64, destination_path, permission_flag))]
         assert dummy_connection.written == [rendered_command.encode("utf-8")]
 
     def test_base_file_command_send_request__renderer_returns_none__raises_invalid_operation(
         self,
         tmp_path: Path,
         test_session: contract.SessionContext,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """BaseFileCommand raises InvalidOperation when profile renderer returns None."""
 
         script_file = tmp_path / "script.sh"
         script_file.write_text("echo 'fail'")
 
-        dummy_profile.set_rendered_command(config.OperationCode.EXEC_FILE, None)
+        dummy_renderer.set_rendered_command(config.OperationCode.EXEC_FILE, None)
 
         dto = ExecuteFileDTO(filepath=script_file)
         command = ConcreteFileCommand(dto, opcode=config.OperationCode.EXEC_FILE)
@@ -208,14 +208,14 @@ class TestBaseFileCommand:
         self,
         tmp_path: Path,
         test_session: contract.SessionContext,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """BaseFileCommand raises InvalidOperation when profile renderer returns an empty string."""
 
         script_file = tmp_path / "script.sh"
         script_file.write_text("echo 'fail'")
 
-        dummy_profile.set_rendered_command(config.OperationCode.EXEC_FILE, "")
+        dummy_renderer.set_rendered_command(config.OperationCode.EXEC_FILE, "")
 
         dto = ExecuteFileDTO(filepath=script_file)
         command = ConcreteFileCommand(dto, opcode=config.OperationCode.EXEC_FILE)
@@ -231,7 +231,7 @@ class TestBaseFileCommand:
         test_session: contract.SessionContext,
         dummy_connection: testing.DummyConnection,
         dummy_view: testing.DummyView,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """Executing BaseFileCommand through SessionContext executes full request-response lifecycle."""
 
@@ -241,7 +241,7 @@ class TestBaseFileCommand:
 
         rendered_command = "rendered_lifecycle_file_payload"
         incoming_chunks = [b"lifecycle output 1\n", b"lifecycle output 2\n"]
-        dummy_profile.set_rendered_command(config.OperationCode.EXEC_FILE, rendered_command)
+        dummy_renderer.set_rendered_command(config.OperationCode.EXEC_FILE, rendered_command)
         dummy_connection.incoming_chunks = incoming_chunks
 
         dto = ExecuteFileDTO(filepath=script_file)

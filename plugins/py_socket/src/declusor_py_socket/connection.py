@@ -2,7 +2,6 @@ import json
 import struct
 from collections.abc import Generator, Mapping
 from dataclasses import dataclass, field
-from types import MappingProxyType
 from typing import Final
 
 from declusor import config, contract, util
@@ -12,55 +11,95 @@ from declusor import config, contract, util
 class PySocketRenderer(contract.IOperationRenderer):
     """Translates OperationCode values to Python function call syntax.
 
-    Maps abstract operation codes to concrete Python helper invocations for an
-    agent that evaluates payloads natively in its own runtime (via ``exec``) or
-    through the OS shell (via ``subprocess``). This renderer is pure data — it
-    never performs I/O.
+    Composes primitive helper calls (storage, execution, encoding) into
+    executable Python statements evaluated by the client launcher. This renderer
+    is pure data — it never performs I/O.
     """
 
-    _supported_functions: Final[Mapping[config.OperationCode, str]] = field(
-        default_factory=lambda: MappingProxyType(
+    _supported_operations: Final[frozenset[config.OperationCode]] = field(
+        default_factory=lambda: frozenset(
             {
-                config.OperationCode.STORE_FILE: "store_base64_encoded_value",
-                config.OperationCode.EXEC_FILE: "execute_base64_encoded_value",
-                config.OperationCode.LOAD_MODULE: "execute_base64_encoded_value",
+                config.OperationCode.EXEC_COMMAND,
+                config.OperationCode.EXEC_CODE,
+                config.OperationCode.EXEC_FILE,
+                config.OperationCode.STORE_FILE,
+                config.OperationCode.LOAD_MODULE,
             }
         )
     )
-    """Mapping of operation codes to Python helper function names."""
+    """Set of operation codes supported by this renderer."""
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "_supported_functions", MappingProxyType(dict(self._supported_functions)))
+        object.__setattr__(self, "_supported_operations", frozenset(self._supported_operations))
 
     @property
-    def supported_functions(self) -> Mapping[config.OperationCode, str]:
-        """Mapping of supported operation codes to Python helper function names."""
+    def supported_operations(self) -> frozenset[config.OperationCode]:
+        """Set of supported operation codes."""
 
-        return self._supported_functions
+        return self._supported_operations
 
     def render_operation_command(self, opcode: "config.OperationCode", /, *args: str) -> str | None:
-        """Build the Python function call string for a given operation code."""
+        """Build the Python execution statement for a given operation code."""
 
-        if opcode == config.OperationCode.EXEC_COMMAND:
-            command = args[0] if args else ""
-            return f"execute_system_command({command!r})"
-
-        if opcode == config.OperationCode.EXEC_CODE:
-            return args[0] if args else ""
-
-        function_name = self._supported_functions.get(opcode)
-
-        if not function_name:
+        if opcode not in self._supported_operations:
             return None
 
-        if args:
-            quoted_args = ", ".join(repr(a) for a in args)
-            return f"{function_name}({quoted_args})"
+        match opcode:
+            case config.OperationCode.EXEC_COMMAND:
+                return self._render_exec_command(*args)
+            case config.OperationCode.EXEC_CODE:
+                return self._render_exec_code(*args)
+            case config.OperationCode.STORE_FILE:
+                return self._render_store_file(*args)
+            case config.OperationCode.EXEC_FILE | config.OperationCode.LOAD_MODULE:
+                return self._render_payload_execution(*args)
+            case _:
+                return None
 
-        return f"{function_name}()"
+    def _render_exec_command(self, *args: str) -> str:
+        """Render system command execution statement."""
 
+        command = args[0].rstrip("\r\n") if args else ""
 
-PySocketProfile = PySocketRenderer
+        return f"execute_system_command({util.quote(command)})"
+
+    def _render_exec_code(self, *args: str) -> str:
+        """Render Python source code execution statement."""
+
+        code = args[0] if args else ""
+
+        return f"execute_source({code!r})"
+
+    def _render_store_file(self, *args: str) -> str | None:
+        """Render file storage statement decoding base64 payload."""
+
+        if not args:
+            return None
+
+        data_b64 = args[0]
+
+        if len(args) > 1 and args[1]:
+            return f"store_file(decode_base64({data_b64!r}), {args[1]!r})"
+
+        return f"store_file(decode_base64({data_b64!r}))"
+
+    def _render_payload_execution(self, *args: str) -> str | None:
+        """Render executable payload statement detecting script vs binary."""
+
+        if not args:
+            return None
+
+        data_b64 = args[0]
+
+        try:
+            raw_bytes = util.convert_base64_to_bytes(data_b64)
+            raw_bytes.decode("utf-8")
+
+            return f"execute_source(decode_base64({data_b64!r}).decode('utf-8'))"
+        except UnicodeDecodeError:
+            return f"execute_binary(store_file(decode_base64({data_b64!r})), cleanup=True)"
+        except Exception:
+            return f"execute_source(decode_base64({data_b64!r}).decode('utf-8'))"
 
 
 class PySocketConnection(contract.IConnection):
@@ -108,12 +147,6 @@ class PySocketConnection(contract.IConnection):
     @property
     def renderer(self) -> contract.IOperationRenderer:
         """The command syntax renderer."""
-
-        return self._renderer
-
-    @property
-    def profile(self) -> contract.IOperationRenderer:
-        """Backward-compatible alias for renderer."""
 
         return self._renderer
 
@@ -227,11 +260,16 @@ class PySocketConnection(contract.IConnection):
         self._state = contract.ConnectionState.CONNECTED
 
     def write(self, data: bytes, /) -> None:
-        """Send a TLV-framed payload to the remote Python agent."""
+        """Send a command payload to the remote Python agent over the STDIN bus."""
+
+        self.write_frame(config.ChannelType.STDIN, data)
+
+    def write_frame(self, channel: config.ChannelType | int, data: bytes, /) -> None:
+        """Send a TLV-framed payload on a specific bus to the remote Python agent."""
 
         self.ensure_can_perform_io()
 
-        frame = struct.pack(">BI", config.ChannelType.STDOUT, len(data)) + data
+        frame = struct.pack(">BI", channel, len(data)) + data
 
         try:
             self._transport.write(frame)

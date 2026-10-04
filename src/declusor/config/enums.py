@@ -95,19 +95,22 @@ class FramingMode(StrEnum):
 
 
 class ChannelType(IntEnum):
-    """Enumeration of multiplexed stream channel identifiers."""
+    """Enumeration of multiplexed stream transport buses (barramentos)."""
 
     PROCESS_EXIT = 0
     """Terminal signaling frame indicating remote command execution completion."""
 
     STDOUT = 1
-    """Standard output stream data from remote command or process execution."""
+    """Standard output stream bus from remote process execution."""
 
     STDERR = 2
-    """Standard error stream data from remote command or process execution."""
+    """Standard error stream bus from remote process execution."""
 
-    SIGNAL = 3
+    STDIN = 3
+    """Standard input and command transmission bus from server to client."""
+
+    SIGNAL = 4
     """Out-of-band operational signals and control messages (e.g. SIGINT, stop)."""
 
-    HEARTBEAT = 4
+    HEARTBEAT = 5
     """Periodic liveness probe frames verifying connection health."""

@@ -83,58 +83,58 @@ class TestExecuteCommand:
         self,
         test_session: contract.SessionContext,
         dummy_connection: testing.DummyConnection,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """ExecuteCommand invokes renderer with EXEC_COMMAND opcode and transmits rendered payload."""
 
         command_line = "uname -a"
         rendered_payload = "rendered_uname_command"
-        dummy_profile.set_rendered_command(config.OperationCode.EXEC_COMMAND, rendered_payload)
+        dummy_renderer.set_rendered_command(config.OperationCode.EXEC_COMMAND, rendered_payload)
 
         dto = ExecuteCommandDTO(command_line=command_line)
         command = ExecuteCommand(dto)
 
         command.send_request(test_session)
 
-        assert dummy_profile.render_calls == [(config.OperationCode.EXEC_COMMAND, (command_line,))]
+        assert dummy_renderer.render_calls == [(config.OperationCode.EXEC_COMMAND, (command_line,))]
         assert dummy_connection.written == [rendered_payload.encode("utf-8")]
 
     def test_execute_command_send_request__renderer_returns_none__falls_back_to_raw_command_bytes(
         self,
         test_session: contract.SessionContext,
         dummy_connection: testing.DummyConnection,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """ExecuteCommand transmits raw UTF-8 command bytes when renderer returns None."""
 
         command_line = "id"
-        dummy_profile.set_rendered_command(config.OperationCode.EXEC_COMMAND, None)
+        dummy_renderer.set_rendered_command(config.OperationCode.EXEC_COMMAND, None)
 
         dto = ExecuteCommandDTO(command_line=command_line)
         command = ExecuteCommand(dto)
 
         command.send_request(test_session)
 
-        assert dummy_profile.render_calls == [(config.OperationCode.EXEC_COMMAND, (command_line,))]
+        assert dummy_renderer.render_calls == [(config.OperationCode.EXEC_COMMAND, (command_line,))]
         assert dummy_connection.written == [command_line.encode("utf-8")]
 
     def test_execute_command_send_request__renderer_returns_empty_string__falls_back_to_raw_command_bytes(
         self,
         test_session: contract.SessionContext,
         dummy_connection: testing.DummyConnection,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """ExecuteCommand transmits raw UTF-8 command bytes when renderer returns an empty string."""
 
         command_line = "ls -la"
-        dummy_profile.set_rendered_command(config.OperationCode.EXEC_COMMAND, "")
+        dummy_renderer.set_rendered_command(config.OperationCode.EXEC_COMMAND, "")
 
         dto = ExecuteCommandDTO(command_line=command_line)
         command = ExecuteCommand(dto)
 
         command.send_request(test_session)
 
-        assert dummy_profile.render_calls == [(config.OperationCode.EXEC_COMMAND, (command_line,))]
+        assert dummy_renderer.render_calls == [(config.OperationCode.EXEC_COMMAND, (command_line,))]
         assert dummy_connection.written == [command_line.encode("utf-8")]
 
     def test_execute_command_read_response__stream_chunks__forwards_all_chunks_to_view(
@@ -160,7 +160,7 @@ class TestExecuteCommand:
         test_session: contract.SessionContext,
         dummy_connection: testing.DummyConnection,
         dummy_view: testing.DummyView,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """Executing ExecuteCommand via SessionContext coordinates both send_request and read_response."""
 
@@ -168,7 +168,7 @@ class TestExecuteCommand:
         rendered_command = "rendered_uname_output"
         output_chunks = [b"6.1.0-28-amd64\n"]
 
-        dummy_profile.set_rendered_command(config.OperationCode.EXEC_COMMAND, rendered_command)
+        dummy_renderer.set_rendered_command(config.OperationCode.EXEC_COMMAND, rendered_command)
         dummy_connection.incoming_chunks = output_chunks
 
         dto = ExecuteCommandDTO(command_line=command_line)
@@ -176,6 +176,6 @@ class TestExecuteCommand:
 
         test_session.execute(command)
 
-        assert dummy_profile.render_calls == [(config.OperationCode.EXEC_COMMAND, (command_line,))]
+        assert dummy_renderer.render_calls == [(config.OperationCode.EXEC_COMMAND, (command_line,))]
         assert dummy_connection.written == [rendered_command.encode("utf-8")]
         assert dummy_view.binary_data == output_chunks

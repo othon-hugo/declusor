@@ -12,7 +12,6 @@ from .command import (
 from .connection import (
     ConnectionState,
     IConnection,
-    IConnectionProfile,
     IOperationRenderer,
 )
 from .controller import (
@@ -68,7 +67,6 @@ __all__ = [
     "IArgumentParser",
     "ICommand",
     "IConnection",
-    "IConnectionProfile",
     "IControllerRequest",
     "IInputSource",
     "InvalidOperation",

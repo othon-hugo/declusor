@@ -79,58 +79,58 @@ class TestExecuteCode:
         self,
         test_session: contract.SessionContext,
         dummy_connection: testing.DummyConnection,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """ExecuteCode invokes renderer with EXEC_CODE opcode and transmits rendered payload."""
 
         code = "print('hello from client')"
         rendered_payload = "rendered_python_code_eval"
-        dummy_profile.set_rendered_command(config.OperationCode.EXEC_CODE, rendered_payload)
+        dummy_renderer.set_rendered_command(config.OperationCode.EXEC_CODE, rendered_payload)
 
         dto = ExecuteCodeDTO(code=code)
         command = ExecuteCode(dto)
 
         command.send_request(test_session)
 
-        assert dummy_profile.render_calls == [(config.OperationCode.EXEC_CODE, (code,))]
+        assert dummy_renderer.render_calls == [(config.OperationCode.EXEC_CODE, (code,))]
         assert dummy_connection.written == [rendered_payload.encode("utf-8")]
 
     def test_execute_code_send_request__renderer_returns_none__falls_back_to_raw_code_bytes(
         self,
         test_session: contract.SessionContext,
         dummy_connection: testing.DummyConnection,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """ExecuteCode transmits raw UTF-8 code bytes when renderer returns None."""
 
         code = "print('raw_code_fallback')"
-        dummy_profile.set_rendered_command(config.OperationCode.EXEC_CODE, None)
+        dummy_renderer.set_rendered_command(config.OperationCode.EXEC_CODE, None)
 
         dto = ExecuteCodeDTO(code=code)
         command = ExecuteCode(dto)
 
         command.send_request(test_session)
 
-        assert dummy_profile.render_calls == [(config.OperationCode.EXEC_CODE, (code,))]
+        assert dummy_renderer.render_calls == [(config.OperationCode.EXEC_CODE, (code,))]
         assert dummy_connection.written == [code.encode("utf-8")]
 
     def test_execute_code_send_request__renderer_returns_empty_string__falls_back_to_raw_code_bytes(
         self,
         test_session: contract.SessionContext,
         dummy_connection: testing.DummyConnection,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """ExecuteCode transmits raw UTF-8 code bytes when renderer returns an empty string."""
 
         code = "print('empty_string_fallback')"
-        dummy_profile.set_rendered_command(config.OperationCode.EXEC_CODE, "")
+        dummy_renderer.set_rendered_command(config.OperationCode.EXEC_CODE, "")
 
         dto = ExecuteCodeDTO(code=code)
         command = ExecuteCode(dto)
 
         command.send_request(test_session)
 
-        assert dummy_profile.render_calls == [(config.OperationCode.EXEC_CODE, (code,))]
+        assert dummy_renderer.render_calls == [(config.OperationCode.EXEC_CODE, (code,))]
         assert dummy_connection.written == [code.encode("utf-8")]
 
     def test_execute_code_read_response__stream_chunks__forwards_all_chunks_to_view(
@@ -156,7 +156,7 @@ class TestExecuteCode:
         test_session: contract.SessionContext,
         dummy_connection: testing.DummyConnection,
         dummy_view: testing.DummyView,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """Executing ExecuteCode via SessionContext coordinates both send_request and read_response."""
 
@@ -164,7 +164,7 @@ class TestExecuteCode:
         rendered_command = "rendered_lifecycle_code_eval"
         output_chunks = [b"full_lifecycle\n"]
 
-        dummy_profile.set_rendered_command(config.OperationCode.EXEC_CODE, rendered_command)
+        dummy_renderer.set_rendered_command(config.OperationCode.EXEC_CODE, rendered_command)
         dummy_connection.incoming_chunks = output_chunks
 
         dto = ExecuteCodeDTO(code=code)
@@ -172,6 +172,6 @@ class TestExecuteCode:
 
         test_session.execute(command)
 
-        assert dummy_profile.render_calls == [(config.OperationCode.EXEC_CODE, (code,))]
+        assert dummy_renderer.render_calls == [(config.OperationCode.EXEC_CODE, (code,))]
         assert dummy_connection.written == [rendered_command.encode("utf-8")]
         assert dummy_view.binary_data == output_chunks

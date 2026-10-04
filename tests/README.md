@@ -45,7 +45,7 @@ The public testing SDK provides pre-registered fixtures and typed doubles:
 | `DummyView`                                   | Simulates presentation output; captures `messages`, `errors`, `warnings`, `info`, and `binary_data`.                                         |
 | `DummyInputSource`                            | Simulates operator input queues and command reading; tracks prompt history and simulates EOF.                                                |
 | `DummyConnection`                             | Full state machine (`CREATED` -> `CONNECTED` -> `CLOSED`); records written frames and streams incoming chunks.                               |
-| `DummyConnectionProfile`                      | Simulates target opcode rendering (`EXEC_COMMAND`, `EXEC_CODE`, `LOAD_MODULE`).                                                              |
+| `DummyOperationRenderer`                      | Simulates target opcode rendering (`EXEC_COMMAND`, `EXEC_CODE`, `LOAD_MODULE`).                                                              |
 | `DummyPluginFileStore`                        | In-memory file, library, and module streaming for plugin asset staging.                                                                      |
 | `DummyPluginRuntime`                          | Deterministic connection creation injecting configured test doubles.                                                                         |
 | `DummyPlugin`                                 | Self-contained test plugin conforming to `IPluginExtension` for discovery and wiring tests.                                                  |

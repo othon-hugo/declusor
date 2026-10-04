@@ -85,13 +85,13 @@ class TestShellController:
     def test_call_shell__interactive_input__transmits_rendered_commands_over_connection(
         self,
         dummy_connection: testing.DummyConnection,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
         dummy_view: testing.DummyView,
         dummy_file_store: testing.DummyPluginFileStore,
     ) -> None:
         """call_shell forwards typed operator commands to connection before keyboard interrupt."""
 
-        dummy_profile.set_rendered_command(config.OperationCode.EXEC_COMMAND, "rendered_interactive_cmd")
+        dummy_renderer.set_rendered_command(config.OperationCode.EXEC_COMMAND, "rendered_interactive_cmd")
         scripted_input = ScriptedInputSource(["pwd"])
         session = contract.SessionContext(
             connection=dummy_connection,
@@ -105,7 +105,7 @@ class TestShellController:
 
         assert result.action == contract.ControllerAction.CONTINUE
         assert dummy_connection.written == [b"rendered_interactive_cmd"]
-        assert dummy_profile.render_calls == [(config.OperationCode.EXEC_COMMAND, ("pwd\n",))]
+        assert dummy_renderer.render_calls == [(config.OperationCode.EXEC_COMMAND, ("pwd\n",))]
 
     def test_call_shell__missing_input_source__raises_invalid_operation(
         self,

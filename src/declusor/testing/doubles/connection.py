@@ -40,10 +40,6 @@ class DummyConnection(contract.IConnection):
         return self._client
 
     @property
-    def profile(self) -> contract.IOperationRenderer:
-        return self._client
-
-    @property
     def timeout(self) -> float | None:
         return self._timeout
 

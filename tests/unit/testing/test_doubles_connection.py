@@ -155,9 +155,3 @@ class TestDummyOperationRenderer:
 
         result = renderer.render_operation_command(config.OperationCode.LOAD_MODULE, "mod.py")
         assert result == "custom_module_payload"
-
-    def test_connection_profile_alias_compatibility(self) -> None:
-        """Ensure DummyConnectionProfile alias inherits from DummyOperationRenderer."""
-
-        profile = testing.DummyConnectionProfile()
-        assert isinstance(profile, testing.DummyOperationRenderer)

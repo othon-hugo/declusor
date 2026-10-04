@@ -6,8 +6,8 @@ from declusor import contract
 from declusor.testing.doubles import (
     DummyApplication,
     DummyConnection,
-    DummyConnectionProfile,
     DummyInputSource,
+    DummyOperationRenderer,
     DummyPlugin,
     DummyPluginFileStore,
     DummyPluginRuntime,
@@ -41,17 +41,17 @@ def dummy_input_source() -> DummyInputSource:
 
 
 @pytest.fixture
-def dummy_profile() -> DummyConnectionProfile:
-    """Provide a fresh DummyConnectionProfile."""
+def dummy_renderer() -> DummyOperationRenderer:
+    """Provide a fresh DummyOperationRenderer."""
 
-    return DummyConnectionProfile()
+    return DummyOperationRenderer()
 
 
 @pytest.fixture
-def dummy_connection(dummy_profile: DummyConnectionProfile) -> DummyConnection:
-    """Provide a fresh DummyConnection backed by dummy_profile."""
+def dummy_connection(dummy_renderer: DummyOperationRenderer) -> DummyConnection:
+    """Provide a fresh DummyConnection backed by dummy_renderer."""
 
-    return DummyConnection(client=dummy_profile, initial_state=contract.ConnectionState.CONNECTED)
+    return DummyConnection(client=dummy_renderer, initial_state=contract.ConnectionState.CONNECTED)
 
 
 @pytest.fixture

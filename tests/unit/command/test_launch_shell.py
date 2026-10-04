@@ -290,14 +290,14 @@ class TestLaunchShell:
     def test_launch_shell_input_handler__renders_commands_and_transmits_payload(
         self,
         dummy_connection: testing.DummyConnection,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """Shell input handler formats command through renderer and writes payload to connection."""
 
         stop_event = util.TaskEvent()
         input_command = "uname -a\n"
         rendered_command = "RENDERED_EXEC uname -a\n"
-        dummy_profile.set_rendered_command(config.OperationCode.EXEC_COMMAND, rendered_command)
+        dummy_renderer.set_rendered_command(config.OperationCode.EXEC_COMMAND, rendered_command)
 
         input_source = StopAfterInputSource(stop_event, lines=[input_command])
         command = LaunchShell(LaunchShellDTO())
@@ -305,19 +305,19 @@ class TestLaunchShell:
 
         handler(stop_event)
 
-        assert dummy_profile.render_calls == [(config.OperationCode.EXEC_COMMAND, (input_command,))]
+        assert dummy_renderer.render_calls == [(config.OperationCode.EXEC_COMMAND, (input_command,))]
         assert dummy_connection.written == [rendered_command.encode("utf-8")]
 
     def test_launch_shell_input_handler__renderer_returns_none__falls_back_to_raw_command_bytes(
         self,
         dummy_connection: testing.DummyConnection,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """Shell input handler falls back to transmitting raw command bytes when renderer returns None."""
 
         stop_event = util.TaskEvent()
         input_command = "ps aux\n"
-        dummy_profile.set_rendered_command(config.OperationCode.EXEC_COMMAND, None)
+        dummy_renderer.set_rendered_command(config.OperationCode.EXEC_COMMAND, None)
 
         input_source = StopAfterInputSource(stop_event, lines=[input_command])
         command = LaunchShell(LaunchShellDTO())
@@ -325,19 +325,19 @@ class TestLaunchShell:
 
         handler(stop_event)
 
-        assert dummy_profile.render_calls == [(config.OperationCode.EXEC_COMMAND, (input_command,))]
+        assert dummy_renderer.render_calls == [(config.OperationCode.EXEC_COMMAND, (input_command,))]
         assert dummy_connection.written == [input_command.encode("utf-8")]
 
     def test_launch_shell_input_handler__renderer_returns_empty_string__falls_back_to_raw_command_bytes(
         self,
         dummy_connection: testing.DummyConnection,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """Shell input handler falls back to transmitting raw command bytes when renderer returns an empty string."""
 
         stop_event = util.TaskEvent()
         input_command = "id\n"
-        dummy_profile.set_rendered_command(config.OperationCode.EXEC_COMMAND, "")
+        dummy_renderer.set_rendered_command(config.OperationCode.EXEC_COMMAND, "")
 
         input_source = StopAfterInputSource(stop_event, lines=[input_command])
         command = LaunchShell(LaunchShellDTO())
@@ -345,13 +345,13 @@ class TestLaunchShell:
 
         handler(stop_event)
 
-        assert dummy_profile.render_calls == [(config.OperationCode.EXEC_COMMAND, (input_command,))]
+        assert dummy_renderer.render_calls == [(config.OperationCode.EXEC_COMMAND, (input_command,))]
         assert dummy_connection.written == [input_command.encode("utf-8")]
 
     def test_launch_shell_input_handler__empty_raw_input__skips_rendering_and_transmission(
         self,
         dummy_connection: testing.DummyConnection,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """Shell input handler gracefully skips rendering and transmission when read_raw returns an empty string."""
 
@@ -362,7 +362,7 @@ class TestLaunchShell:
 
         handler(stop_event)
 
-        assert dummy_profile.render_calls == []
+        assert dummy_renderer.render_calls == []
         assert dummy_connection.written == []
 
     def test_launch_shell_output_handler__streams_chunks_and_restores_connection_timeout(
@@ -561,7 +561,7 @@ class TestLaunchShell:
         dummy_connection: testing.DummyConnection,
         dummy_view: testing.DummyView,
         dummy_file_store: testing.DummyPluginFileStore,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """LaunchShell displays banner, forwards inputs, streams output, and terminates cleanly on interrupt."""
 
@@ -571,7 +571,7 @@ class TestLaunchShell:
 
         dummy_connection.timeout = initial_timeout
         dummy_connection.incoming_chunks = [b"uid=1000(dev) gid=1000(dev)\n"]
-        dummy_profile.set_rendered_command(config.OperationCode.EXEC_COMMAND, rendered_command)
+        dummy_renderer.set_rendered_command(config.OperationCode.EXEC_COMMAND, rendered_command)
 
         input_source = ScriptedShellInputSource(["id\n"])
         session = contract.SessionContext(

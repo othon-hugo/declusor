@@ -42,12 +42,12 @@ class TestPySocketProcessor:
 
         helpers = tmp_path / "helpers"
         helpers.mkdir(parents=True)
-        (helpers / "util.py").write_bytes(b"# helper util")
+        (helpers / "std.py").write_bytes(b"# helper std")
 
         fs = contract.PluginFilesystem.from_root(tmp_path)
         processor = py_socket.PySocketProcessor(fs)
 
-        assert processor.load_helper("util.py") == b"# helper util"
+        assert processor.load_helper("std.py") == b"# helper std"
 
     def test_load_helper__relative_path_traversal__raises_invalid_operation(self, tmp_path: Path) -> None:
         """Verify load_helper rejects relative dot-dot path traversal attempts."""
@@ -146,6 +146,35 @@ class TestPySocketProcessor:
         decoded = base64.b64decode(rendered).decode("utf-8")
 
         assert decoded == "HOST = '127.0.0.1'\nPORT = int('9000')\nACK = bytes.fromhex('0102')"
+
+    def test_render_launcher__substitutes_channel_template_variables(self, tmp_path: Path) -> None:
+        """Verify render_launcher formats channel placeholders with numeric ChannelType values."""
+
+        launchers = tmp_path / "launchers"
+        launchers.mkdir(parents=True)
+        launcher = launchers / "py_socket_client.py"
+        launcher.write_text(
+            "CH_EXIT = int('$DECLUSOR_CH_EXIT')\n"
+            "CH_STDOUT = int('$DECLUSOR_CH_STDOUT')\n"
+            "CH_STDERR = int('$DECLUSOR_CH_STDERR')\n"
+            "CH_STDIN = int('$DECLUSOR_CH_STDIN')\n"
+            "CH_SIGNAL = int('$DECLUSOR_CH_SIGNAL')\n"
+            "CH_HEARTBEAT = int('$DECLUSOR_CH_HEARTBEAT')\n",
+            encoding="utf-8",
+        )
+
+        fs = contract.PluginFilesystem.from_root(tmp_path)
+        processor = py_socket.PySocketProcessor(fs)
+
+        rendered = processor.render_launcher("127.0.0.1", 9000, b"\x01\x02")
+        decoded = base64.b64decode(rendered).decode("utf-8")
+
+        assert f"CH_EXIT = int('{int(config.ChannelType.PROCESS_EXIT)}')" in decoded
+        assert f"CH_STDOUT = int('{int(config.ChannelType.STDOUT)}')" in decoded
+        assert f"CH_STDERR = int('{int(config.ChannelType.STDERR)}')" in decoded
+        assert f"CH_STDIN = int('{int(config.ChannelType.STDIN)}')" in decoded
+        assert f"CH_SIGNAL = int('{int(config.ChannelType.SIGNAL)}')" in decoded
+        assert f"CH_HEARTBEAT = int('{int(config.ChannelType.HEARTBEAT)}')" in decoded
 
     def test_render_launcher__sanitizes_comments_docstrings_annotations_and_asserts(self, tmp_path: Path) -> None:
         """Verify render_launcher strips comments, docstrings, type annotations, and asserts."""

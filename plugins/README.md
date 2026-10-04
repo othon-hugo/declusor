@@ -12,7 +12,7 @@ Every plugin is an autonomous package that implements the contracts defined in `
 | `IPluginRuntime`     | Produces `LauncherDelivery` and instantiates the `IConnection` for an accepted socket.            |
 | `IConnection`        | Manages the framed read/write protocol and lifecycle state (`ConnectionState`).                   |
 | `IPluginProcessor`   | Loads initialization helpers, bootstrap templates, and on-demand discovery modules.               |
-| `IConnectionProfile` | Holds timeouts, buffer sizes, and operation templates (`EXEC_FILE`, `STORE_FILE`, `LOAD_MODULE`). |
+| `IOperationRenderer` | Renders command payloads for operations (`EXEC_COMMAND`, `EXEC_CODE`, `LOAD_MODULE`, `STORE_FILE`). |
 
 ## How Plugins are Discovered
 
@@ -59,7 +59,7 @@ my_plugin/
 │   └── declusor_my_plugin/
 │       ├── __init__.py       # Exports
 │       ├── plugin.py         # IPluginExtension, IPluginRuntime, and IPluginProcessor
-│       └── connection.py     # IConnection and IConnectionProfile implementation
+│       └── connection.py     # IConnection and IOperationRenderer implementation
 ├── assets/                   # Bundled stagers and libraries
 │   ├── launchers/
 │   ├── helpers/

@@ -35,7 +35,7 @@ class TestUploadController:
         tmp_path: Path,
         test_session: contract.SessionContext,
         dummy_connection: testing.DummyConnection,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
         dummy_view: testing.DummyView,
     ) -> None:
         """call_upload transmits Base64 file payload without destination when omitted."""
@@ -43,7 +43,7 @@ class TestUploadController:
         test_file = tmp_path / "upload.bin"
         test_file.write_bytes(b"binary-content-12345")
         expected_b64 = util.convert_to_base64(b"binary-content-12345")
-        dummy_profile.set_rendered_command(config.OperationCode.STORE_FILE, "rendered_upload")
+        dummy_renderer.set_rendered_command(config.OperationCode.STORE_FILE, "rendered_upload")
         req = testing.create_dummy_controller_request(str(test_file), upload_module.UploadArguments)
 
         result = upload_module.call_upload(test_session, req)
@@ -51,7 +51,7 @@ class TestUploadController:
         assert isinstance(result, contract.ControllerResult)
         assert result.action == contract.ControllerAction.CONTINUE
         assert dummy_connection.written == [b"rendered_upload"]
-        assert dummy_profile.render_calls == [(config.OperationCode.STORE_FILE, (expected_b64,))]
+        assert dummy_renderer.render_calls == [(config.OperationCode.STORE_FILE, (expected_b64,))]
         assert dummy_view.binary_data == [b"chunk1\n", b"chunk2\n"]
 
     def test_call_upload__filepath_and_destination__passes_destination_to_renderer(
@@ -59,7 +59,7 @@ class TestUploadController:
         tmp_path: Path,
         test_session: contract.SessionContext,
         dummy_connection: testing.DummyConnection,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """call_upload includes destination parameter in rendered operation command."""
 
@@ -67,7 +67,7 @@ class TestUploadController:
         test_file.write_bytes(b"payload")
         expected_b64 = util.convert_to_base64(b"payload")
         destination = "/tmp/target_remote.bin"
-        dummy_profile.set_rendered_command(config.OperationCode.STORE_FILE, "rendered_dest_upload")
+        dummy_renderer.set_rendered_command(config.OperationCode.STORE_FILE, "rendered_dest_upload")
         req = testing.create_dummy_controller_request(
             f"{test_file} {destination}",
             upload_module.UploadArguments,
@@ -77,14 +77,14 @@ class TestUploadController:
 
         assert result.action == contract.ControllerAction.CONTINUE
         assert dummy_connection.written == [b"rendered_dest_upload"]
-        assert dummy_profile.render_calls == [(config.OperationCode.STORE_FILE, (expected_b64, destination))]
+        assert dummy_renderer.render_calls == [(config.OperationCode.STORE_FILE, (expected_b64, destination))]
 
     def test_call_upload__paths_with_spaces__parses_and_uploads_correctly(
         self,
         tmp_path: Path,
         test_session: contract.SessionContext,
         dummy_connection: testing.DummyConnection,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """call_upload supports quoted file paths containing whitespace for both source and destination."""
 
@@ -94,7 +94,7 @@ class TestUploadController:
         source_file.write_bytes(b"spaced payload")
         expected_b64 = util.convert_to_base64(b"spaced payload")
         destination = "/var/log/spaced target.bin"
-        dummy_profile.set_rendered_command(config.OperationCode.STORE_FILE, "rendered_spaced_upload")
+        dummy_renderer.set_rendered_command(config.OperationCode.STORE_FILE, "rendered_spaced_upload")
         req = testing.create_dummy_controller_request(
             f'"{source_file}" "{destination}"',
             upload_module.UploadArguments,
@@ -103,7 +103,7 @@ class TestUploadController:
         result = upload_module.call_upload(test_session, req)
 
         assert result.action == contract.ControllerAction.CONTINUE
-        assert dummy_profile.render_calls == [(config.OperationCode.STORE_FILE, (expected_b64, destination))]
+        assert dummy_renderer.render_calls == [(config.OperationCode.STORE_FILE, (expected_b64, destination))]
 
     def test_call_upload__empty_request_line__raises_parser_error(
         self,

@@ -18,7 +18,6 @@ class TestTestingExports:
             "DummyCommand",
             "DummyConfig",
             "DummyConnection",
-            "DummyConnectionProfile",
             "DummyInputSource",
             "DummyOperationRenderer",
             "DummyPlugin",

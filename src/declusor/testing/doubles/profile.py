@@ -29,6 +29,3 @@ class DummyOperationRenderer(contract.IOperationRenderer):
         args_str = f" {' '.join(args)}" if args else ""
 
         return f"{opcode.value}{args_str}"
-
-
-DummyConnectionProfile = DummyOperationRenderer

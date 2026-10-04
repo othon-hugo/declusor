@@ -161,9 +161,10 @@ class TestChannelTypeEnum:
         assert config.ChannelType.PROCESS_EXIT.value == 0
         assert config.ChannelType.STDOUT.value == 1
         assert config.ChannelType.STDERR.value == 2
-        assert config.ChannelType.SIGNAL.value == 3
-        assert config.ChannelType.HEARTBEAT.value == 4
-        assert len(config.ChannelType) == 5
+        assert config.ChannelType.STDIN.value == 3
+        assert config.ChannelType.SIGNAL.value == 4
+        assert config.ChannelType.HEARTBEAT.value == 5
+        assert len(config.ChannelType) == 6
 
     def test_channel_type__subclass__is_int_enum(self) -> None:
         """Verify ChannelType is an IntEnum that behaves as an integer."""

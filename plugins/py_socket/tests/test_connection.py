@@ -45,7 +45,7 @@ class TestPySocketConnectionLifecycle:
         assert conn.client_runtime is not None
 
         expected_helpers = lang.python.compile_and_serialize(dummy_file_store.helpers.decode(), "<helpers>")
-        expected_helpers_frame = struct.pack(">BI", config.ChannelType.STDOUT, len(expected_helpers)) + expected_helpers
+        expected_helpers_frame = struct.pack(">BI", config.ChannelType.STDIN, len(expected_helpers)) + expected_helpers
         assert dummy_trans.write_history == [expected_helpers_frame]
 
     def test_handshake__when_bytecode_incompatible__transmits_source_helpers(
@@ -67,7 +67,7 @@ class TestPySocketConnectionLifecycle:
         assert conn.state == contract.ConnectionState.CONNECTED
         assert conn.is_bytecode_compatible is False
 
-        expected_helpers_frame = struct.pack(">BI", config.ChannelType.STDOUT, len(dummy_file_store.helpers)) + dummy_file_store.helpers
+        expected_helpers_frame = struct.pack(">BI", config.ChannelType.STDIN, len(dummy_file_store.helpers)) + dummy_file_store.helpers
         assert dummy_trans.write_history == [expected_helpers_frame]
 
     def test_handshake__when_already_connected__raises_connection_error(
@@ -171,9 +171,10 @@ class TestPySocketConnectionLifecycle:
 
         # Extract payload from TLV frame
         written = dummy_trans.written_bytes
-        _, length = struct.unpack(">BI", written[:5])
+        channel, length = struct.unpack(">BI", written[:5])
         payload = written[5 : 5 + length]
 
+        assert channel == config.ChannelType.STDIN
         expected_payload = lang.python.compile_and_serialize("answer = 42\n", "<remote>")
         assert payload == expected_payload
 
@@ -192,9 +193,10 @@ class TestPySocketConnectionLifecycle:
         conn.send_python_payload("answer = 42\n")
 
         written = dummy_trans.written_bytes
-        _, length = struct.unpack(">BI", written[:5])
+        channel, length = struct.unpack(">BI", written[:5])
         payload = written[5 : 5 + length]
 
+        assert channel == config.ChannelType.STDIN
         assert payload == b"answer = 42\n"
 
     def test_close__repeated_calls__is_idempotent(
@@ -241,7 +243,6 @@ class TestPySocketConnectionLifecycle:
         conn = py_socket.PySocketConnection(dummy_trans, renderer, dummy_file_store, timeout=1.5)
 
         assert conn.renderer is renderer
-        assert conn.profile is renderer
         assert conn.timeout == 1.5
         assert dummy_trans.timeout == 1.5
 
@@ -257,7 +258,7 @@ class TestPySocketConnectionIO:
         self,
         dummy_file_store: testing.DummyPluginFileStore,
     ) -> None:
-        """Verify write transmits data encapsulated in a 5-byte TLV frame."""
+        """Verify write transmits data encapsulated in a 5-byte TLV frame on the STDIN bus."""
 
         dummy_trans = testing.DummyTransport()
         renderer = py_socket.PySocketRenderer()
@@ -266,7 +267,24 @@ class TestPySocketConnectionIO:
 
         conn.write(b"data")
 
-        expected_frame = struct.pack(">BI", config.ChannelType.STDOUT, 4) + b"data"
+        expected_frame = struct.pack(">BI", config.ChannelType.STDIN, 4) + b"data"
+        assert dummy_trans.written_bytes == expected_frame
+        assert dummy_trans.write_history == [expected_frame]
+
+    def test_write_frame__with_custom_channel__sends_custom_channel_in_tlv_frame(
+        self,
+        dummy_file_store: testing.DummyPluginFileStore,
+    ) -> None:
+        """Verify write_frame transmits custom channel identifier in 5-byte TLV frame."""
+
+        dummy_trans = testing.DummyTransport()
+        renderer = py_socket.PySocketRenderer()
+        conn = py_socket.PySocketConnection(dummy_trans, renderer, dummy_file_store)
+        conn._state = contract.ConnectionState.CONNECTED
+
+        conn.write_frame(config.ChannelType.SIGNAL, b"data")
+
+        expected_frame = struct.pack(">BI", config.ChannelType.SIGNAL, 4) + b"data"
         assert dummy_trans.written_bytes == expected_frame
         assert dummy_trans.write_history == [expected_frame]
 

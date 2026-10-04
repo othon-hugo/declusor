@@ -6,39 +6,29 @@ The `py_socket` plugin provides a cross-platform reverse-shell client capable of
 
 | Module       | Responsibility                                                                                                        |
 | ------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `connection` | Python socket connection transport (`PySocketConnection`) and protocol profile (`PySocketProfile`)                    |
+| `connection` | Python socket connection transport (`PySocketConnection`) and operation renderer (`PySocketRenderer`)                 |
 | `plugin`     | Entry-point plugin (`PySocketPlugin`), runtime adapter (`PySocketRuntime`), and asset processor (`PySocketProcessor`) |
 
 ## Architecture & Execution Flow
 
-The remote client discriminates between native Python code and shell commands using multi-line heuristic analysis (supporting shebangs, leading comments, docstrings, statements, and registered session functions).
+Execution is organized around pure communication buses (`ChannelType`) with a strictly server-driven strategy:
+
+- **`PROCESS_EXIT` (`0x00` / `0`)**: Demarcation signal emitted by the client to indicate the end of an execution cycle.
+- **`STDOUT` (`0x01` / `1`)**: Standard output stream emitted by client execution.
+- **`STDERR` (`0x02` / `2`)**: Standard error stream emitted by client execution.
+- **`STDIN` (`0x03` / `3`)**: Standard input and payload bus carrying instructions and data from server to client launcher.
+- **`SIGNAL` (`0x04` / `4`)**: Asynchronous control signals (e.g. process termination).
+- **`HEARTBEAT` (`0x05` / `5`)**: Keepalive ping and pong telemetry frames.
+
+The server (`PySocketRenderer`) composes orthogonal client primitives (`store_file`, `execute_source`, `execute_binary`, `decode_base64`, `execute_system_command`) into ready-to-run statements. The client receives the payload on `STDIN` and executes it directly in `_SESSION_SCOPE` via native `compile()`/`exec()` or marshaled code objects without needing to classify or guess payload types.
 
 ```mermaid
 flowchart TD
-    START([Incoming TLV Command Frame]) --> STRIP[Strip Leading Comments & Docstrings]
-    STRIP --> PARSE_AST{Python Check: Shebang, Session Scope, Keywords}
-
-    PARSE_AST -->|Python Code| IN_MEMORY[In-Memory Execution]
-    PARSE_AST -->|Shell Syntax / Command| SUBPROC[Subprocess Real-Time Streaming]
-
-    subgraph In-Memory Pipeline
-        IN_MEMORY --> REDIRECT[Redirect stdout/stderr to buffer]
-        REDIRECT --> EXEC[exec payload in _SESSION_SCOPE]
-        EXEC --> CATCH[Catch Exception AND SystemExit]
-        CATCH --> RESTORE[Restore stdout/stderr]
-        RESTORE --> SEND_INMEM[Send STDOUT Frame 0x01]
-    end
-
-    subgraph Subprocess Streaming Pipeline
-        SUBPROC --> SPAWN[subprocess.Popen shell=True stdout=PIPE stderr=STDOUT]
-        SPAWN --> STREAM_LOOP{Read 4KB Chunk}
-        STREAM_LOOP -->|Data| SEND_CHUNK[Send STDOUT Frame 0x01] --> STREAM_LOOP
-        STREAM_LOOP -->|EOF| WAIT[proc.wait]
-    end
-
-    SEND_INMEM --> SEND_EXIT[Send PROCESS_EXIT Frame 0x00 with exit code]
-    WAIT --> SEND_EXIT
-    SEND_EXIT --> DONE([Wait for Next Frame])
+    START([Incoming TLV Frame on STDIN]) --> UNPACK[Unpack 1B Channel & 4B Length]
+    UNPACK --> EXEC[Execute in _SESSION_SCOPE via compile/exec or marshal.loads]
+    EXEC --> STREAM[Stream STDOUT / STDERR TLV Frames to Server]
+    STREAM --> EXIT[Send PROCESS_EXIT Frame 0x00]
+    EXIT --> DONE([Wait for Next Frame])
 ```
 
 ### Handshake & Command Protocol

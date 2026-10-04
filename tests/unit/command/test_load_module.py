@@ -203,7 +203,7 @@ class TestLoadModule:
         self,
         test_session: contract.SessionContext,
         dummy_file_store: testing.DummyPluginFileStore,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """LoadModule encodes payload to base64 and invokes renderer with LOAD_MODULE opcode."""
 
@@ -217,19 +217,19 @@ class TestLoadModule:
 
         command.send_request(test_session)
 
-        assert dummy_profile.render_calls == [(config.OperationCode.LOAD_MODULE, (expected_base64,))]
+        assert dummy_renderer.render_calls == [(config.OperationCode.LOAD_MODULE, (expected_base64,))]
 
     def test_load_module_send_request__renderer_returns_none__raises_invalid_operation(
         self,
         test_session: contract.SessionContext,
         dummy_file_store: testing.DummyPluginFileStore,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """LoadModule raises InvalidOperation when the profile renderer returns None."""
 
         module_name = "discovery/sysinfo"
         dummy_file_store.set_module(module_name, b"sample_bytes")
-        dummy_profile.set_rendered_command(config.OperationCode.LOAD_MODULE, None)
+        dummy_renderer.set_rendered_command(config.OperationCode.LOAD_MODULE, None)
 
         dto = LoadModuleDTO(module_name=module_name)
         command = LoadModule(dto)
@@ -241,13 +241,13 @@ class TestLoadModule:
         self,
         test_session: contract.SessionContext,
         dummy_file_store: testing.DummyPluginFileStore,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """LoadModule raises InvalidOperation when the profile renderer returns an empty string."""
 
         module_name = "discovery/sysinfo"
         dummy_file_store.set_module(module_name, b"sample_bytes")
-        dummy_profile.set_rendered_command(config.OperationCode.LOAD_MODULE, "")
+        dummy_renderer.set_rendered_command(config.OperationCode.LOAD_MODULE, "")
 
         dto = LoadModuleDTO(module_name=module_name)
         command = LoadModule(dto)
@@ -260,14 +260,14 @@ class TestLoadModule:
         test_session: contract.SessionContext,
         dummy_connection: testing.DummyConnection,
         dummy_file_store: testing.DummyPluginFileStore,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """LoadModule encodes rendered script data into UTF-8 bytes and writes to connection."""
 
         module_name = "discovery/sysinfo"
         rendered_script = "load_module_payload_data_v1"
         dummy_file_store.set_module(module_name, b"module_raw_bytes")
-        dummy_profile.set_rendered_command(config.OperationCode.LOAD_MODULE, rendered_script)
+        dummy_renderer.set_rendered_command(config.OperationCode.LOAD_MODULE, rendered_script)
 
         dto = LoadModuleDTO(module_name=module_name)
         command = LoadModule(dto)
@@ -300,7 +300,7 @@ class TestLoadModule:
         dummy_connection: testing.DummyConnection,
         dummy_view: testing.DummyView,
         dummy_file_store: testing.DummyPluginFileStore,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """Executing LoadModule via SessionContext coordinates both request transmission and response streaming."""
 
@@ -309,7 +309,7 @@ class TestLoadModule:
         response_chunks = [b"[+] module loaded\n", b"[+] status: active\n"]
 
         dummy_file_store.set_module(module_name, b"sample_payload")
-        dummy_profile.set_rendered_command(config.OperationCode.LOAD_MODULE, rendered_script)
+        dummy_renderer.set_rendered_command(config.OperationCode.LOAD_MODULE, rendered_script)
         dummy_connection.incoming_chunks = response_chunks
 
         dto = LoadModuleDTO(module_name=module_name)
@@ -318,6 +318,6 @@ class TestLoadModule:
         test_session.execute(command)
 
         assert dummy_file_store.load_module_calls == [module_name]
-        assert dummy_profile.render_calls[0][0] == config.OperationCode.LOAD_MODULE
+        assert dummy_renderer.render_calls[0][0] == config.OperationCode.LOAD_MODULE
         assert dummy_connection.written == [rendered_script.encode("utf-8")]
         assert dummy_view.binary_data == response_chunks

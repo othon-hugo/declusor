@@ -175,7 +175,13 @@ class PySocketProcessor(contract.IPluginProcessor):
             ACKNOWLEDGE=hex_ack,
             DECLUSOR_HOST=host,
             DECLUSOR_PORT=str(port),
-            DECLUSOR_ACKNOWLEDGE=hex_ack,
+            DECLUSOR_ACK=hex_ack,
+            DECLUSOR_CH_EXIT=str(int(config.ChannelType.PROCESS_EXIT)),
+            DECLUSOR_CH_STDOUT=str(int(config.ChannelType.STDOUT)),
+            DECLUSOR_CH_STDERR=str(int(config.ChannelType.STDERR)),
+            DECLUSOR_CH_STDIN=str(int(config.ChannelType.STDIN)),
+            DECLUSOR_CH_SIGNAL=str(int(config.ChannelType.SIGNAL)),
+            DECLUSOR_CH_HEARTBEAT=str(int(config.ChannelType.HEARTBEAT)),
         )
 
         sanitized = lang.python.sanitize_source(rendered)

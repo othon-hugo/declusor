@@ -198,13 +198,13 @@ class TestExecuteFile:
         tmp_path: Path,
         test_session: contract.SessionContext,
         dummy_connection: testing.DummyConnection,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """ExecuteFile reads file content, converts to base64, renders payload, and transmits to connection."""
 
         script_file = tmp_path / "script.sh"
         script_file.write_bytes(TEST_SCRIPT_CONTENT)
-        dummy_profile.set_rendered_command(config.OperationCode.EXEC_FILE, RENDERED_EXEC_PAYLOAD)
+        dummy_renderer.set_rendered_command(config.OperationCode.EXEC_FILE, RENDERED_EXEC_PAYLOAD)
 
         dto = ExecuteFileDTO(filepath=script_file)
         command = ExecuteFile(dto)
@@ -212,20 +212,20 @@ class TestExecuteFile:
         command.send_request(test_session)
 
         expected_b64 = util.convert_to_base64(TEST_SCRIPT_CONTENT)
-        assert dummy_profile.render_calls == [(config.OperationCode.EXEC_FILE, (expected_b64,))]
+        assert dummy_renderer.render_calls == [(config.OperationCode.EXEC_FILE, (expected_b64,))]
         assert dummy_connection.written == [RENDERED_EXEC_PAYLOAD.encode("utf-8")]
 
     def test_execute_file_send_request__renderer_returns_none__raises_invalid_operation(
         self,
         tmp_path: Path,
         test_session: contract.SessionContext,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """ExecuteFile raises InvalidOperation when the renderer returns None."""
 
         script_file = tmp_path / "script.sh"
         script_file.write_bytes(TEST_SCRIPT_CONTENT)
-        dummy_profile.set_rendered_command(config.OperationCode.EXEC_FILE, None)
+        dummy_renderer.set_rendered_command(config.OperationCode.EXEC_FILE, None)
 
         dto = ExecuteFileDTO(filepath=script_file)
         command = ExecuteFile(dto)
@@ -237,13 +237,13 @@ class TestExecuteFile:
         self,
         tmp_path: Path,
         test_session: contract.SessionContext,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """ExecuteFile raises InvalidOperation when the renderer returns an empty string."""
 
         script_file = tmp_path / "script.sh"
         script_file.write_bytes(TEST_SCRIPT_CONTENT)
-        dummy_profile.set_rendered_command(config.OperationCode.EXEC_FILE, "")
+        dummy_renderer.set_rendered_command(config.OperationCode.EXEC_FILE, "")
 
         dto = ExecuteFileDTO(filepath=script_file)
         command = ExecuteFile(dto)
@@ -278,13 +278,13 @@ class TestExecuteFile:
         test_session: contract.SessionContext,
         dummy_connection: testing.DummyConnection,
         dummy_view: testing.DummyView,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """ExecuteFile executes complete lifecycle via SessionContext, transmitting payload and streaming output."""
 
         script_file = tmp_path / "script.sh"
         script_file.write_bytes(TEST_SCRIPT_CONTENT)
-        dummy_profile.set_rendered_command(config.OperationCode.EXEC_FILE, RENDERED_EXEC_PAYLOAD)
+        dummy_renderer.set_rendered_command(config.OperationCode.EXEC_FILE, RENDERED_EXEC_PAYLOAD)
         stream_chunks = [b"execution chunk 1\n", b"execution chunk 2\n"]
         dummy_connection.incoming_chunks = stream_chunks
 
@@ -294,7 +294,7 @@ class TestExecuteFile:
         test_session.execute(command)
 
         expected_b64 = util.convert_to_base64(TEST_SCRIPT_CONTENT)
-        assert dummy_profile.render_calls == [(config.OperationCode.EXEC_FILE, (expected_b64,))]
+        assert dummy_renderer.render_calls == [(config.OperationCode.EXEC_FILE, (expected_b64,))]
         assert dummy_connection.written == [RENDERED_EXEC_PAYLOAD.encode("utf-8")]
         assert dummy_view.binary_data == stream_chunks
 
@@ -622,13 +622,13 @@ class TestUploadFile:
         tmp_path: Path,
         test_session: contract.SessionContext,
         dummy_connection: testing.DummyConnection,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """UploadFile invokes renderer with STORE_FILE opcode and encoded file content when destination is None."""
 
         payload_file = tmp_path / "payload.bin"
         payload_file.write_bytes(TEST_BINARY_CONTENT)
-        dummy_profile.set_rendered_command(config.OperationCode.STORE_FILE, RENDERED_UPLOAD_PAYLOAD)
+        dummy_renderer.set_rendered_command(config.OperationCode.STORE_FILE, RENDERED_UPLOAD_PAYLOAD)
 
         dto = UploadFileDTO(filepath=payload_file, destination=None)
         command = UploadFile(dto)
@@ -636,7 +636,7 @@ class TestUploadFile:
         command.send_request(test_session)
 
         expected_b64 = util.convert_to_base64(TEST_BINARY_CONTENT)
-        assert dummy_profile.render_calls == [(config.OperationCode.STORE_FILE, (expected_b64,))]
+        assert dummy_renderer.render_calls == [(config.OperationCode.STORE_FILE, (expected_b64,))]
         assert dummy_connection.written == [RENDERED_UPLOAD_PAYLOAD.encode("utf-8")]
 
     def test_upload_file_send_request__with_destination__invokes_renderer_with_content_and_destination(
@@ -644,13 +644,13 @@ class TestUploadFile:
         tmp_path: Path,
         test_session: contract.SessionContext,
         dummy_connection: testing.DummyConnection,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """UploadFile invokes renderer with STORE_FILE opcode, encoded content, and destination when provided."""
 
         payload_file = tmp_path / "payload.bin"
         payload_file.write_bytes(TEST_BINARY_CONTENT)
-        dummy_profile.set_rendered_command(config.OperationCode.STORE_FILE, RENDERED_UPLOAD_PAYLOAD)
+        dummy_renderer.set_rendered_command(config.OperationCode.STORE_FILE, RENDERED_UPLOAD_PAYLOAD)
 
         dto = UploadFileDTO(filepath=payload_file, destination=VALID_DESTINATION_PATH)
         command = UploadFile(dto)
@@ -658,7 +658,7 @@ class TestUploadFile:
         command.send_request(test_session)
 
         expected_b64 = util.convert_to_base64(TEST_BINARY_CONTENT)
-        assert dummy_profile.render_calls == [
+        assert dummy_renderer.render_calls == [
             (config.OperationCode.STORE_FILE, (expected_b64, VALID_DESTINATION_PATH)),
         ]
         assert dummy_connection.written == [RENDERED_UPLOAD_PAYLOAD.encode("utf-8")]
@@ -667,13 +667,13 @@ class TestUploadFile:
         self,
         tmp_path: Path,
         test_session: contract.SessionContext,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """UploadFile raises InvalidOperation when the renderer returns None."""
 
         payload_file = tmp_path / "payload.bin"
         payload_file.write_bytes(TEST_BINARY_CONTENT)
-        dummy_profile.set_rendered_command(config.OperationCode.STORE_FILE, None)
+        dummy_renderer.set_rendered_command(config.OperationCode.STORE_FILE, None)
 
         dto = UploadFileDTO(filepath=payload_file)
         command = UploadFile(dto)
@@ -685,13 +685,13 @@ class TestUploadFile:
         self,
         tmp_path: Path,
         test_session: contract.SessionContext,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """UploadFile raises InvalidOperation when the renderer returns an empty string."""
 
         payload_file = tmp_path / "payload.bin"
         payload_file.write_bytes(TEST_BINARY_CONTENT)
-        dummy_profile.set_rendered_command(config.OperationCode.STORE_FILE, "")
+        dummy_renderer.set_rendered_command(config.OperationCode.STORE_FILE, "")
 
         dto = UploadFileDTO(filepath=payload_file)
         command = UploadFile(dto)
@@ -726,13 +726,13 @@ class TestUploadFile:
         test_session: contract.SessionContext,
         dummy_connection: testing.DummyConnection,
         dummy_view: testing.DummyView,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """UploadFile executes complete lifecycle via SessionContext without destination, streaming output."""
 
         payload_file = tmp_path / "payload.bin"
         payload_file.write_bytes(TEST_BINARY_CONTENT)
-        dummy_profile.set_rendered_command(config.OperationCode.STORE_FILE, RENDERED_UPLOAD_PAYLOAD)
+        dummy_renderer.set_rendered_command(config.OperationCode.STORE_FILE, RENDERED_UPLOAD_PAYLOAD)
         stream_chunks = [b"upload ack chunk 1\n", b"upload ack chunk 2\n"]
         dummy_connection.incoming_chunks = stream_chunks
 
@@ -742,7 +742,7 @@ class TestUploadFile:
         test_session.execute(command)
 
         expected_b64 = util.convert_to_base64(TEST_BINARY_CONTENT)
-        assert dummy_profile.render_calls == [(config.OperationCode.STORE_FILE, (expected_b64,))]
+        assert dummy_renderer.render_calls == [(config.OperationCode.STORE_FILE, (expected_b64,))]
         assert dummy_connection.written == [RENDERED_UPLOAD_PAYLOAD.encode("utf-8")]
         assert dummy_view.binary_data == stream_chunks
 
@@ -752,13 +752,13 @@ class TestUploadFile:
         test_session: contract.SessionContext,
         dummy_connection: testing.DummyConnection,
         dummy_view: testing.DummyView,
-        dummy_profile: testing.DummyConnectionProfile,
+        dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
         """UploadFile executes complete lifecycle via SessionContext with destination, streaming output."""
 
         payload_file = tmp_path / "payload.bin"
         payload_file.write_bytes(TEST_BINARY_CONTENT)
-        dummy_profile.set_rendered_command(config.OperationCode.STORE_FILE, RENDERED_UPLOAD_PAYLOAD)
+        dummy_renderer.set_rendered_command(config.OperationCode.STORE_FILE, RENDERED_UPLOAD_PAYLOAD)
         stream_chunks = [b"upload dest ack 1\n", b"upload dest ack 2\n"]
         dummy_connection.incoming_chunks = stream_chunks
 
@@ -768,7 +768,7 @@ class TestUploadFile:
         test_session.execute(command)
 
         expected_b64 = util.convert_to_base64(TEST_BINARY_CONTENT)
-        assert dummy_profile.render_calls == [
+        assert dummy_renderer.render_calls == [
             (config.OperationCode.STORE_FILE, (expected_b64, VALID_DESTINATION_PATH)),
         ]
         assert dummy_connection.written == [RENDERED_UPLOAD_PAYLOAD.encode("utf-8")]

@@ -37,13 +37,14 @@ Every frame on the wire consists of a **5-byte fixed header** followed by a vari
 
 ### Channel Types
 
-| Channel Code | Identifier     |          Direction          | Payload Description                                                                |
-| :----------: | :------------- | :-------------------------: | :--------------------------------------------------------------------------------- |
-|    `0x00`    | `PROCESS_EXIT` | Client $\rightarrow$ Server | Terminal EOF frame signaling the completion of command execution.                  |
-|    `0x01`    | `STDOUT`       |       Bi-directional        | Server-to-Client command payload or Client-to-Server standard output stream chunk. |
-|    `0x02`    | `STDERR`       | Client $\rightarrow$ Server | Standard error stream chunk.                                                       |
-|    `0x03`    | `SIGNAL`       |       Bi-directional        | Out-of-band process signal (e.g. `SIGINT`, `SIGTERM`).                             |
-|    `0x04`    | `HEARTBEAT`    |       Bi-directional        | Keep-alive probe frame (payload length may be 0).                                  |
+| Channel Code | Identifier      |          Direction          | Payload Description                                               |
+| :----------: | :-------------- | :-------------------------: | :---------------------------------------------------------------- |
+|    `0x00`    | `PROCESS_EXIT`  | Client $\rightarrow$ Server | Terminal EOF frame signaling the completion of command execution. |
+|    `0x01`    | `STDOUT`        | Client $\rightarrow$ Server | Standard output stream chunk.                                     |
+|    `0x02`    | `STDERR`        | Client $\rightarrow$ Server | Standard error stream chunk.                                      |
+|    `0x03`    | `STDIN`         | Server $\rightarrow$ Client | Standard input and execution payload bus.                         |
+|    `0x04`    | `SIGNAL`        |       Bi-directional        | Out-of-band process signal (e.g. `SIGINT`, `SIGTERM`).            |
+|    `0x05`    | `HEARTBEAT`     |       Bi-directional        | Keep-alive probe frame (payload length may be 0).                 |
 
 ## Client Bootstrap & Launcher Delivery
 
@@ -88,29 +89,25 @@ sequenceDiagram
     Transport->>Server: Read exact 32 bytes & verify
     Note over Server,Client: Handshake Complete (State: CONNECTED)
 
-    Note over Server,Client: Stage 2: Command Dispatch & Streaming Loop
-    Server->>Transport: STDOUT Frame [channel=0x01, len=M, payload=command]
-    Transport->>Client: Deliver command frame
-
-    alt Python In-Memory Execution (Bytecode or Compiled Source)
-        Client->>Client: marshal.loads(payload) OR compile(source, "<remote>", "exec")
-        Client->>Client: exec(code, _SESSION_SCOPE) with stdout/stderr redirection
-        opt Output Generated
-            Client->>Transport: STDOUT Frame [channel=0x01, len=K, payload=output]
-            Transport->>Server: Yield output chunk
-        end
-        Client->>Transport: PROCESS_EXIT Frame [channel=0x00, len=0]
-        Transport->>Server: Close command stream, yield completed
-    else Subprocess Shell Execution
-        Client->>Client: subprocess.Popen(payload, shell=True)
+    Note over Server,Client: Stage 2: Server-Driven Execution over STDIN & Streaming Loop
+    Server->>Transport: STDIN Frame [channel=0x03, len=M, payload=composed_statement]
+    Transport->>Client: Deliver statement on STDIN bus
+    alt Python Evaluation (In-Memory)
+        Client->>Client: Evaluate in _SESSION_SCOPE (e.g. execute_source, store_file)
+    else Subprocess Execution (Real-Time Streaming)
+        Client->>Client: subprocess.Popen (via execute_system_command or execute_binary)
         loop Real-Time Chunk Streaming
             Client->>Transport: STDOUT Frame [channel=0x01, len=4096, payload=chunk]
-            Transport->>Server: Instantly yield chunk to session
+            Transport->>Server: Yield chunk
         end
         Client->>Client: proc.wait()
-        Client->>Transport: PROCESS_EXIT Frame [channel=0x00, len=0]
-        Transport->>Server: Close command stream, yield completed
     end
+    opt Buffered Output Generated
+        Client->>Transport: STDOUT Frame [channel=0x01, len=K, payload=output]
+        Transport->>Server: Yield output chunk
+    end
+    Client->>Transport: PROCESS_EXIT Frame [channel=0x00, len=0]
+    Transport->>Server: Close command stream, yield completed
 ```
 
 ### Connection State Machine & Method Invariants
