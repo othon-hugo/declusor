@@ -120,6 +120,9 @@ class PySocketConnection(contract.IConnection):
         if self._state == contract.ConnectionState.CLOSED:
             raise config.ConnectionError("Cannot initialize a closed connection.")
 
+        if self._state in (contract.ConnectionState.CONNECTED, contract.ConnectionState.INITIALIZING):
+            raise config.ConnectionError("Connection is already initialized.")
+
         self._state = contract.ConnectionState.INITIALIZING
         self.write(self._files.helpers)
 
@@ -148,6 +151,9 @@ class PySocketConnection(contract.IConnection):
         if self._state == contract.ConnectionState.CLOSED:
             raise config.ConnectionClosed("Connection is closed.")
 
+        if self._state not in (contract.ConnectionState.CONNECTED, contract.ConnectionState.INITIALIZING):
+            raise config.ConnectionError("Cannot perform I/O on connection that is not connected.")
+
         frame = struct.pack(">BI", config.ChannelType.STDOUT, len(data)) + data
 
         try:
@@ -160,6 +166,9 @@ class PySocketConnection(contract.IConnection):
 
         if self._state == contract.ConnectionState.CLOSED:
             raise config.ConnectionClosed("Connection is closed.")
+
+        if self._state not in (contract.ConnectionState.CONNECTED, contract.ConnectionState.INITIALIZING):
+            raise config.ConnectionError("Cannot perform I/O on connection that is not connected.")
 
         while True:
             try:

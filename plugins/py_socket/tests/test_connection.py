@@ -27,6 +27,22 @@ class TestPySocketConnectionLifecycle:
         expected_helpers_frame = struct.pack(">BI", config.ChannelType.STDOUT, len(dummy_file_store.helpers)) + dummy_file_store.helpers
         assert dummy_trans.write_history == [expected_helpers_frame]
 
+    def test_handshake__when_already_connected__raises_connection_error(
+        self,
+        dummy_file_store: testing.DummyPluginFileStore,
+    ) -> None:
+        """Verify handshake raises ConnectionError when connection is already connected."""
+
+        dummy_trans = testing.DummyTransport()
+        ack = b"\xab" * 32
+        renderer = py_socket.PySocketRenderer()
+        conn = py_socket.PySocketConnection(dummy_trans, renderer, dummy_file_store, expected_ack=ack)
+        dummy_trans.push_incoming(ack)
+        conn.handshake()
+
+        with pytest.raises(config.ConnectionError, match="Connection is already initialized"):
+            conn.handshake()
+
     def test_handshake__when_connection_is_closed__raises_connection_error(
         self,
         dummy_file_store: testing.DummyPluginFileStore,
@@ -137,12 +153,26 @@ class TestPySocketConnectionIO:
         dummy_trans = testing.DummyTransport()
         renderer = py_socket.PySocketRenderer()
         conn = py_socket.PySocketConnection(dummy_trans, renderer, dummy_file_store)
+        conn._state = contract.ConnectionState.CONNECTED
 
         conn.write(b"data")
 
         expected_frame = struct.pack(">BI", config.ChannelType.STDOUT, 4) + b"data"
         assert dummy_trans.written_bytes == expected_frame
         assert dummy_trans.write_history == [expected_frame]
+
+    def test_write__when_connection_is_created__raises_connection_error(
+        self,
+        dummy_file_store: testing.DummyPluginFileStore,
+    ) -> None:
+        """Verify write on CREATED connection raises ConnectionError before handshake."""
+
+        dummy_trans = testing.DummyTransport()
+        renderer = py_socket.PySocketRenderer()
+        conn = py_socket.PySocketConnection(dummy_trans, renderer, dummy_file_store)
+
+        with pytest.raises(config.ConnectionError, match="Cannot perform I/O on connection that is not connected"):
+            conn.write(b"data")
 
     def test_write__when_connection_is_closed__raises_connection_closed(
         self,
@@ -168,9 +198,23 @@ class TestPySocketConnectionIO:
         dummy_trans.simulate_error_on_next_write(config.ConnectionError("socket write failure"))
         renderer = py_socket.PySocketRenderer()
         conn = py_socket.PySocketConnection(dummy_trans, renderer, dummy_file_store)
+        conn._state = contract.ConnectionState.CONNECTED
 
         with pytest.raises(config.ConnectionError, match="Failed to write to connection"):
             conn.write(b"data")
+
+    def test_read__when_connection_is_created__raises_connection_error(
+        self,
+        dummy_file_store: testing.DummyPluginFileStore,
+    ) -> None:
+        """Verify read on CREATED connection raises ConnectionError before handshake."""
+
+        dummy_trans = testing.DummyTransport()
+        renderer = py_socket.PySocketRenderer()
+        conn = py_socket.PySocketConnection(dummy_trans, renderer, dummy_file_store)
+
+        with pytest.raises(config.ConnectionError, match="Cannot perform I/O on connection that is not connected"):
+            list(conn.read())
 
     def test_read__streams_stdout_chunks_until_process_exit(
         self,
@@ -181,6 +225,7 @@ class TestPySocketConnectionIO:
         dummy_trans = testing.DummyTransport()
         renderer = py_socket.PySocketRenderer()
         conn = py_socket.PySocketConnection(dummy_trans, renderer, dummy_file_store)
+        conn._state = contract.ConnectionState.CONNECTED
 
         frame1 = struct.pack(">BI", config.ChannelType.STDOUT, 6) + b"hello "
         frame2 = struct.pack(">BI", config.ChannelType.STDOUT, 5) + b"world"
@@ -200,6 +245,7 @@ class TestPySocketConnectionIO:
         dummy_trans = testing.DummyTransport()
         renderer = py_socket.PySocketRenderer()
         conn = py_socket.PySocketConnection(dummy_trans, renderer, dummy_file_store)
+        conn._state = contract.ConnectionState.CONNECTED
 
         err_frame = struct.pack(">BI", config.ChannelType.STDERR, 13) + b"error payload"
         exit_frame = struct.pack(">BI", config.ChannelType.PROCESS_EXIT, 0)
@@ -218,6 +264,7 @@ class TestPySocketConnectionIO:
         dummy_trans = testing.DummyTransport()
         renderer = py_socket.PySocketRenderer()
         conn = py_socket.PySocketConnection(dummy_trans, renderer, dummy_file_store)
+        conn._state = contract.ConnectionState.CONNECTED
 
         out_frame = struct.pack(">BI", config.ChannelType.STDOUT, 4) + b"done"
         exit_payload = b"exit code 0\n"
@@ -254,6 +301,7 @@ class TestPySocketConnectionIO:
         dummy_trans.simulate_error_on_next_read(config.ConnectionError("peer disconnected"))
         renderer = py_socket.PySocketRenderer()
         conn = py_socket.PySocketConnection(dummy_trans, renderer, dummy_file_store)
+        conn._state = contract.ConnectionState.CONNECTED
 
         with pytest.raises(config.ConnectionClosed, match="Connection interrupted during read"):
             list(conn.read())
@@ -268,6 +316,7 @@ class TestPySocketConnectionIO:
         dummy_trans.simulate_error_on_next_read(config.ConnectionTimeoutError("read timeout"))
         renderer = py_socket.PySocketRenderer()
         conn = py_socket.PySocketConnection(dummy_trans, renderer, dummy_file_store)
+        conn._state = contract.ConnectionState.CONNECTED
 
         with pytest.raises(config.ConnectionTimeoutError, match="read timeout"):
             list(conn.read())

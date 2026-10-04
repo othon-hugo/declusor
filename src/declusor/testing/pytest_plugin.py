@@ -51,7 +51,7 @@ def dummy_profile() -> DummyConnectionProfile:
 def dummy_connection(dummy_profile: DummyConnectionProfile) -> DummyConnection:
     """Provide a fresh DummyConnection backed by dummy_profile."""
 
-    return DummyConnection(client=dummy_profile)
+    return DummyConnection(client=dummy_profile, initial_state=contract.ConnectionState.CONNECTED)
 
 
 @pytest.fixture

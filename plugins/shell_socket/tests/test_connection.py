@@ -35,6 +35,19 @@ class TestShellSocketConnectionLifecycle:
         reclosed_state: contract.ConnectionState = conn.state
         assert reclosed_state == contract.ConnectionState.CLOSED
 
+    def test_handshake__when_already_connected__raises_connection_error(
+        self,
+        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+    ) -> None:
+        """Verify handshake raises ConnectionError when connection is already connected."""
+
+        conn, trans = make_shell_connection(default_nonce="fixed_handshake_nonce")
+        trans.push_incoming(b"__DECLUSOR_EOF_fixed_handshake_nonce__\n")
+        conn.handshake()
+
+        with pytest.raises(config.ConnectionError, match="Connection is already initialized"):
+            conn.handshake()
+
     def test_handshake__when_connection_is_closed__raises_connection_error(
         self,
         make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
@@ -153,6 +166,7 @@ class TestShellSocketConnectionLifecycle:
             fixed_nonce=None,
             nonce_factory=mock_nonce,
         )
+        conn._state = contract.ConnectionState.CONNECTED
 
         conn.write(b"data1")
         assert trans.written_bytes == b"generated_nonce_1\x00data1\x00"
@@ -172,10 +186,21 @@ class TestShellSocketConnectionIO:
     ) -> None:
         """Verify write transmits ephemeral nonce prefix followed by null-delimited payload."""
 
-        connection, trans = make_shell_connection(default_nonce="fixed_nonce")
+        connection, trans = make_shell_connection(default_nonce="fixed_nonce", connected=True)
 
         connection.write(b"command")
         assert trans.written_bytes == b"fixed_nonce\x00command\x00"
+
+    def test_write__when_connection_is_created__raises_connection_error(
+        self,
+        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+    ) -> None:
+        """Verify write on CREATED connection raises ConnectionError before handshake."""
+
+        conn, _ = make_shell_connection(connected=False)
+
+        with pytest.raises(config.ConnectionError, match="Cannot perform I/O on connection that is not connected"):
+            conn.write(b"command")
 
     def test_write__when_connection_is_closed__raises_connection_closed(
         self,
@@ -197,10 +222,21 @@ class TestShellSocketConnectionIO:
 
         trans = testing.DummyTransport()
         trans.simulate_error_on_next_write(config.ConnectionError("transport write failed"))
-        connection, _ = make_shell_connection(trans)
+        connection, _ = make_shell_connection(trans, connected=True)
 
         with pytest.raises(config.ConnectionError, match="Failed to write to connection"):
             connection.write(b"command")
+
+    def test_read__when_connection_is_created__raises_connection_error(
+        self,
+        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+    ) -> None:
+        """Verify read on CREATED connection raises ConnectionError before handshake."""
+
+        conn, _ = make_shell_connection(connected=False)
+
+        with pytest.raises(config.ConnectionError, match="Cannot perform I/O on connection that is not connected"):
+            list(conn.read())
 
     def test_read__when_connection_is_closed__raises_connection_closed(
         self,
@@ -237,6 +273,7 @@ class TestShellSocketConnectionIO:
             files,
             fixed_nonce=None,
         )
+        conn._state = contract.ConnectionState.CONNECTED
 
         with pytest.raises(config.ConnectionError, match="No active command nonce for read operation"):
             list(conn.read())
@@ -247,7 +284,7 @@ class TestShellSocketConnectionIO:
     ) -> None:
         """Verify write transmits ephemeral nonce prefix and read terminates at dynamic envelope."""
 
-        conn, trans = make_shell_connection()
+        conn, trans = make_shell_connection(connected=True)
         conn.write(b"ls -la", nonce="abcdef0123456789")
 
         assert trans.written_bytes == b"abcdef0123456789\x00ls -la\x00"
@@ -265,7 +302,7 @@ class TestShellSocketConnectionIO:
     ) -> None:
         """Verify read yields command output and terminates when envelope delimiter is split across reads."""
 
-        conn, trans = make_shell_connection()
+        conn, trans = make_shell_connection(connected=True)
         conn.write(b"id", nonce="split_test_nonce")
 
         delim = b"__DECLUSOR_EOF_split_test_nonce__\n"

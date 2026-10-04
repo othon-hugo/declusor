@@ -70,7 +70,11 @@ class ControlledStreamConnection(testing.DummyConnection):
     ) -> None:
         """Initialize connection double with timeout tracking and optional stop event."""
 
-        super().__init__(client=client, incoming_chunks=incoming_chunks)
+        super().__init__(
+            client=client,
+            incoming_chunks=incoming_chunks,
+            initial_state=contract.ConnectionState.CONNECTED,
+        )
         self.timeout = initial_timeout
         self.observed_timeout_during_read: float | None = -1.0
         self._stop_event = stop_event
@@ -389,21 +393,168 @@ class TestLaunchShell:
         self,
         dummy_view: testing.DummyView,
     ) -> None:
-        """Shell output handler restores original connection timeout even when read raises an exception."""
+        """Shell output handler restores original connection timeout even when read raises an unexpected exception."""
 
         stop_event = util.TaskEvent()
         initial_timeout = 18.0
-        connection = testing.DummyConnection()
+        connection = testing.DummyConnection(initial_state=contract.ConnectionState.CONNECTED)
         connection.timeout = initial_timeout
-        connection.read_error = config.ConnectionError("socket read error")
+        connection.read_error = RuntimeError("unexpected read crash")
 
         command = LaunchShell(LaunchShellDTO())
         handler = command._create_shell_output_handler(connection, dummy_view)
 
-        with pytest.raises(config.ConnectionError, match="socket read error"):
+        with pytest.raises(RuntimeError, match="unexpected read crash"):
             handler(stop_event)
 
         assert connection.timeout == initial_timeout
+
+    def test_launch_shell_output_handler__connection_closed__sets_stop_event_and_restores_timeout(
+        self,
+        dummy_view: testing.DummyView,
+    ) -> None:
+        """Shell output handler catches ConnectionClosed, signals cooperative stop event, and restores timeout."""
+
+        stop_event = util.TaskEvent()
+        initial_timeout = 15.0
+        connection = testing.DummyConnection(initial_state=contract.ConnectionState.CONNECTED)
+        connection.timeout = initial_timeout
+        connection.read_error = config.ConnectionClosed("remote connection terminated")
+
+        command = LaunchShell(LaunchShellDTO())
+        handler = command._create_shell_output_handler(connection, dummy_view)
+
+        handler(stop_event)
+
+        assert stop_event.is_set()
+        assert connection.timeout == initial_timeout
+
+    def test_launch_shell_output_handler__connection_error__sets_stop_event_and_restores_timeout(
+        self,
+        dummy_view: testing.DummyView,
+    ) -> None:
+        """Shell output handler catches ConnectionError, signals cooperative stop event, and restores timeout."""
+
+        stop_event = util.TaskEvent()
+        initial_timeout = 20.0
+        connection = testing.DummyConnection(initial_state=contract.ConnectionState.CONNECTED)
+        connection.timeout = initial_timeout
+        connection.read_error = config.ConnectionError("network reset during stream")
+
+        command = LaunchShell(LaunchShellDTO())
+        handler = command._create_shell_output_handler(connection, dummy_view)
+
+        handler(stop_event)
+
+        assert stop_event.is_set()
+        assert connection.timeout == initial_timeout
+
+    def test_launch_shell_input_handler__write_connection_closed__sets_stop_event_and_breaks(
+        self,
+        dummy_connection: testing.DummyConnection,
+    ) -> None:
+        """Shell input handler catches ConnectionClosed during transmission, signals stop event, and exits loop."""
+
+        stop_event = util.TaskEvent()
+        dummy_connection.write_error = config.ConnectionClosed("remote socket closed")
+        input_source = testing.DummyInputSource(["whoami\n", "id\n"])
+
+        command = LaunchShell(LaunchShellDTO())
+        handler = command._create_shell_input_handler(dummy_connection, input_source)
+
+        handler(stop_event)
+
+        assert stop_event.is_set()
+        assert len(dummy_connection.written) == 0
+
+    def test_launch_shell_input_handler__write_connection_error__sets_stop_event_and_breaks(
+        self,
+        dummy_connection: testing.DummyConnection,
+    ) -> None:
+        """Shell input handler catches ConnectionError during transmission, signals stop event, and exits loop."""
+
+        stop_event = util.TaskEvent()
+        dummy_connection.write_error = config.ConnectionError("network transport error")
+        input_source = testing.DummyInputSource(["whoami\n"])
+
+        command = LaunchShell(LaunchShellDTO())
+        handler = command._create_shell_input_handler(dummy_connection, input_source)
+
+        handler(stop_event)
+
+        assert stop_event.is_set()
+        assert len(dummy_connection.written) == 0
+
+    def test_launch_shell_input_handler__stop_event_already_set__does_not_read_or_write(
+        self,
+        dummy_connection: testing.DummyConnection,
+    ) -> None:
+        """Shell input handler exits immediately without reading or transmitting when stop event is already signaled."""
+
+        stop_event = util.TaskEvent()
+        stop_event.set()
+        input_source = testing.DummyInputSource(["whoami\n"])
+
+        command = LaunchShell(LaunchShellDTO())
+        handler = command._create_shell_input_handler(dummy_connection, input_source)
+
+        handler(stop_event)
+
+        assert len(input_source.prompts) == 0
+        assert len(dummy_connection.written) == 0
+
+    def test_launch_shell_input_handler__stop_event_set_after_input__terminates_loop_without_consuming_remaining_inputs(
+        self,
+        dummy_connection: testing.DummyConnection,
+    ) -> None:
+        """Shell input handler terminates loop on stop event and does not consume or transmit subsequent inputs."""
+
+        stop_event = util.TaskEvent()
+        input_source = StopAfterInputSource(stop_event, lines=["pwd\n", "ls\n"])
+
+        command = LaunchShell(LaunchShellDTO())
+        handler = command._create_shell_input_handler(dummy_connection, input_source)
+
+        handler(stop_event)
+
+        assert stop_event.is_set()
+        assert len(dummy_connection.written) == 1
+        assert dummy_connection.written == [b"EXECUTE_COMMAND pwd\n"]
+        assert input_source._inputs == ["ls\n"]
+
+    def test_launch_shell_input_handler__connection_closed_before_transmission__sets_stop_event_and_breaks(
+        self,
+        dummy_connection: testing.DummyConnection,
+    ) -> None:
+        """Shell input handler detects closed connection after read, signals stop event, and skips transmission."""
+
+        stop_event = util.TaskEvent()
+        dummy_connection.close()
+        input_source = testing.DummyInputSource(["whoami\n"])
+
+        command = LaunchShell(LaunchShellDTO())
+        handler = command._create_shell_input_handler(dummy_connection, input_source)
+
+        handler(stop_event)
+
+        assert stop_event.is_set()
+        assert len(dummy_connection.written) == 0
+
+    def test_launch_shell_read_response__eof_error__writes_termination_message_and_suppresses_exception(
+        self,
+        test_session: contract.SessionContext,
+        dummy_view: testing.DummyView,
+        dummy_input_source: testing.DummyInputSource,
+    ) -> None:
+        """LaunchShell intercepts EOFError cleanly, notifies view with termination message, and exits without re-raising."""
+
+        dummy_input_source.input_exception = EOFError()
+        dto = LaunchShellDTO()
+        command = LaunchShell(dto)
+
+        command.read_response(test_session)
+
+        assert "[interactive shell terminated]" in dummy_view.messages
 
     def test_launch_shell_lifecycle__bidirectional_streaming_and_graceful_shutdown(
         self,

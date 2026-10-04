@@ -125,7 +125,7 @@ class TestIConnection:
     def test_connection_handshake_with_underlying__delegates_to_underlying_connection(self) -> None:
         """Verify handshake delegates to underlying connection when present."""
 
-        underlying = DummyConnection()
+        underlying = DummyConnection(initial_state=contract.ConnectionState.CREATED)
         connection = ConcreteConnection(underlying)
 
         assert underlying.initialize_called is False

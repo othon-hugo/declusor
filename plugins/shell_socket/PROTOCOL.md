@@ -54,6 +54,8 @@ The server monitors the incoming stream, immediately yielding output chunks to t
 
 ## Session Lifecycle & State Machine
 
+### Sequence Diagram
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -92,6 +94,51 @@ sequenceDiagram
     Client->>Transport: Close FD 3 (exec 3>&-)
     Server->>Server: Socket closed, Transition to CLOSED state
 ```
+
+### Connection State Machine & Method Invariants
+
+```mermaid
+stateDiagram-v2
+    [*] --> CREATED: __init__()
+    CREATED --> INITIALIZING: handshake() initiated
+    INITIALIZING --> CONNECTED: Envelope delimiter confirmed
+    INITIALIZING --> CLOSED: Handshake failed / error
+    CONNECTED --> CLOSED: close() / socket disconnect
+    CREATED --> CLOSED: close()
+    CLOSED --> CLOSED: close() [Idempotent]
+
+    note right of CREATED
+        write() -> ConnectionError
+        read() -> ConnectionError
+        handshake() -> Permitted
+    end note
+
+    note right of INITIALIZING
+        Internal handshake write/read -> Permitted
+        handshake() -> ConnectionError
+    end note
+
+    note right of CONNECTED
+        write() -> Permitted
+        read() -> Permitted
+        handshake() -> ConnectionError
+    end note
+
+    note right of CLOSED
+        write() -> ConnectionClosed
+        read() -> ConnectionClosed
+        handshake() -> ConnectionError
+        close() -> No-op
+    end note
+```
+
+| Method | Permitted States | Disallowed States & Error Behavior | Resulting State |
+| :--- | :--- | :--- | :--- |
+| `handshake()` | `CREATED` | `CLOSED` $\rightarrow$ `ConnectionError`<br>`CONNECTED` $\rightarrow$ `ConnectionError`<br>`INITIALIZING` $\rightarrow$ `ConnectionError` | `CONNECTED` (or `CLOSED` on failure) |
+| `write(data)` | `CONNECTED` (`INITIALIZING` internal) | `CLOSED` $\rightarrow$ `ConnectionClosed`<br>`CREATED` $\rightarrow$ `ConnectionError` | Unchanged |
+| `read()` | `CONNECTED` (`INITIALIZING` internal) | `CLOSED` $\rightarrow$ `ConnectionClosed`<br>`CREATED` $\rightarrow$ `ConnectionError` | Unchanged |
+| `close()` | `CREATED`, `INITIALIZING`, `CONNECTED`, `CLOSED` | None (Idempotent) | `CLOSED` |
+
 
 ## Reference Client Implementation
 

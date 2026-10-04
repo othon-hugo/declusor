@@ -21,6 +21,14 @@ class TestDummyConnectionLifecycle:
         assert post_state == contract.ConnectionState.CONNECTED
         assert conn.initialize_called
 
+    def test_handshake_when_already_connected_raises_error(self) -> None:
+        """Ensure handshake() raises ConnectionError when connection is already connected."""
+
+        conn = testing.DummyConnection(initial_state=contract.ConnectionState.CONNECTED)
+
+        with pytest.raises(config.ConnectionError, match="Connection is already initialized"):
+            conn.handshake()
+
     def test_close_transitions_to_closed(self) -> None:
         """Ensure close() transitions state to CLOSED and marks closed flag."""
 
@@ -49,7 +57,7 @@ class TestDummyConnectionIO:
     def test_write_records_payloads(self) -> None:
         """Ensure write records transmitted byte chunks."""
 
-        conn = testing.DummyConnection()
+        conn = testing.DummyConnection(initial_state=contract.ConnectionState.CONNECTED)
         conn.write(b"payload 1")
         conn.write(b"payload 2")
 
@@ -58,7 +66,7 @@ class TestDummyConnectionIO:
     def test_read_streams_configured_chunks(self) -> None:
         """Ensure read streams default or custom chunk sequences."""
 
-        conn = testing.DummyConnection()
+        conn = testing.DummyConnection(initial_state=contract.ConnectionState.CONNECTED)
         chunks = list(conn.read())
 
         assert chunks == [b"chunk1\n", b"chunk2\n"]
@@ -79,16 +87,27 @@ class TestDummyConnectionErrors:
     def test_initialize_error_raises_on_handshake(self) -> None:
         """Ensure configured initialize_error fires on handshake()."""
 
-        conn = testing.DummyConnection()
+        conn = testing.DummyConnection(initial_state=contract.ConnectionState.CREATED)
         conn.initialize_error = config.ConnectionHandshakeError("handshake failed")
 
         with pytest.raises(config.ConnectionHandshakeError, match="handshake failed"):
             conn.handshake()
 
+    def test_unconnected_connection_rejects_read_and_write(self) -> None:
+        """Ensure CREATED connection refuses read and write operations."""
+
+        conn = testing.DummyConnection(initial_state=contract.ConnectionState.CREATED)
+
+        with pytest.raises(config.ConnectionError, match="Cannot perform I/O on connection that is not connected"):
+            conn.write(b"data")
+
+        with pytest.raises(config.ConnectionError, match="Cannot perform I/O on connection that is not connected"):
+            list(conn.read())
+
     def test_write_error_raises_on_write(self) -> None:
         """Ensure configured write_error fires on write()."""
 
-        conn = testing.DummyConnection()
+        conn = testing.DummyConnection(initial_state=contract.ConnectionState.CONNECTED)
         conn.write_error = config.ConnectionError("network write failed")
 
         with pytest.raises(config.ConnectionError, match="network write failed"):
@@ -97,7 +116,7 @@ class TestDummyConnectionErrors:
     def test_read_error_raises_on_read(self) -> None:
         """Ensure configured read_error fires when iterating read()."""
 
-        conn = testing.DummyConnection()
+        conn = testing.DummyConnection(initial_state=contract.ConnectionState.CONNECTED)
         conn.read_error = config.ConnectionTimeoutError("read timeout")
 
         with pytest.raises(config.ConnectionTimeoutError, match="read timeout"):

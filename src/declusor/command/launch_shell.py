@@ -73,6 +73,8 @@ class LaunchShell(contract.ICommand):
             input_forwarder(self._stop_event)
         except KeyboardInterrupt:
             session.view.write_message("[keyboard interrupt received]")
+        except EOFError:
+            session.view.write_message("[interactive shell terminated]")
         finally:
             self._task_pool.stop()
             self._task_pool.wait_all()
@@ -97,13 +99,22 @@ class LaunchShell(contract.ICommand):
             while not stop_event.is_set():
                 command_request = input_source.read_raw()
 
+                if connection.state == contract.ConnectionState.CLOSED:
+                    stop_event.set()
+                    break
+
                 if command_request:
                     rendered = connection.renderer.render_operation_command(
                         config.OperationCode.EXEC_COMMAND,
                         command_request,
                     )
                     payload = (rendered or command_request).encode()
-                    connection.write(payload)
+
+                    try:
+                        connection.write(payload)
+                    except (config.ConnectionClosed, config.ConnectionError):
+                        stop_event.set()
+                        break
 
         return _handle_request
 
@@ -133,8 +144,12 @@ class LaunchShell(contract.ICommand):
                 connection.timeout = None
 
                 while not stop_event.is_set():
-                    for chunk in connection.read():
-                        view.write_binary_data(chunk)
+                    try:
+                        for chunk in connection.read():
+                            view.write_binary_data(chunk)
+                    except (config.ConnectionClosed, config.ConnectionError):
+                        stop_event.set()
+                        break
             finally:
                 connection.timeout = previous_timeout
 

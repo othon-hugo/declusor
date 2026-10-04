@@ -135,6 +135,9 @@ class ShellSocketConnection(contract.IConnection):
         if self._state == contract.ConnectionState.CLOSED:
             raise config.ConnectionError("Cannot initialize a closed connection.")
 
+        if self._state in (contract.ConnectionState.CONNECTED, contract.ConnectionState.INITIALIZING):
+            raise config.ConnectionError("Connection is already initialized.")
+
         self._state = contract.ConnectionState.INITIALIZING
         self.write(self._files.helpers)
 
@@ -152,6 +155,9 @@ class ShellSocketConnection(contract.IConnection):
         if self._state == contract.ConnectionState.CLOSED:
             raise config.ConnectionClosed("Connection is closed.")
 
+        if self._state not in (contract.ConnectionState.CONNECTED, contract.ConnectionState.INITIALIZING):
+            raise config.ConnectionError("Cannot perform I/O on connection that is not connected.")
+
         self._current_nonce = nonce or self._fixed_nonce or self._nonce_factory()
         payload = self._current_nonce.encode("ascii") + b"\x00" + data + b"\x00"
 
@@ -165,6 +171,9 @@ class ShellSocketConnection(contract.IConnection):
 
         if self._state == contract.ConnectionState.CLOSED:
             raise config.ConnectionClosed("Connection is closed.")
+
+        if self._state not in (contract.ConnectionState.CONNECTED, contract.ConnectionState.INITIALIZING):
+            raise config.ConnectionError("Cannot perform I/O on connection that is not connected.")
 
         if not self._current_nonce:
             raise config.ConnectionError("No active command nonce for read operation.")

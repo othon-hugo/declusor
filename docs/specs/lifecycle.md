@@ -13,15 +13,20 @@ Scenario: Enforce strict forward connection state transitions
   Then the lifecycle state transitions strictly through CREATED -> INITIALIZING -> CONNECTED -> CLOSED
 ```
 
-### STA-02: Rejection of Handshake on Closed Connection
+### STA-02: Handshake Execution Restricted to Created State
 
-Initiating a handshake sequence on an already closed connection raises `ConnectionError` to prevent attempting network I/O or state re-entry on terminated transport sockets.
+Initiating a handshake sequence is valid only when a connection is in `CREATED` state; calling handshake on an already `CLOSED` connection, or re-initiating handshake when already `CONNECTED` or `INITIALIZING`, raises `ConnectionError` to prevent state re-entry or protocol corruption.
 
 ```gherkin
 Scenario: Reject handshake on terminated connection
   Given a connection whose lifecycle state is CLOSED
   When a handshake operation is initiated
   Then the operation fails with ConnectionError("Cannot initialize a closed connection.")
+
+Scenario: Reject handshake on already connected connection
+  Given a connection whose lifecycle state is CONNECTED or INITIALIZING
+  When a handshake operation is initiated
+  Then the operation fails with ConnectionError("Connection is already initialized.")
 ```
 
 ### STA-03: Rejection of I/O on Closed Connection
@@ -37,13 +42,18 @@ Scenario: Reject read and write operations on closed connection
 
 ### STA-04: Rejection of Command I/O Prior to Connected State
 
-Application commands must not transmit payload bytes across a connection until the handshake sequence has completed successfully (`state == CONNECTED`); pre-handshake command writes raise `ConnectionError`.
+Application commands must not transmit or read payload bytes across a connection until the handshake sequence has completed successfully (`state == CONNECTED`); pre-handshake command writes or reads raise `ConnectionError`.
 
 ```gherkin
 Scenario: Reject command writes prior to completing handshake
   Given a connection in CREATED state that has not completed its handshake
   When an application command attempts to write data across the connection
   Then writing fails with ConnectionError
+
+Scenario: Reject command reads prior to completing handshake
+  Given a connection in CREATED state that has not completed its handshake
+  When an application command attempts to read data across the connection
+  Then reading fails with ConnectionError
 ```
 
 ### STA-05: Idempotency of Connection Close

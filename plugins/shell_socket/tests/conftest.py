@@ -20,6 +20,7 @@ def make_shell_connection(
         default_nonce: str | None = "test_nonce",
         buffer_size: int = shell_socket.ShellSocketConnection.DEFAULT_BUFFER_SIZE,
         timeout: float | None = shell_socket.DEFAULT_CONNECTION_TIMEOUT,
+        connected: bool = False,
     ) -> tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]:
         launchers = tmp_path / "launchers"
         launchers.mkdir(exist_ok=True)
@@ -36,16 +37,17 @@ def make_shell_connection(
         fs = contract.PluginFilesystem.from_root(tmp_path)
         files = shell_socket.ShellSocketProcessor(fs)
 
-        return (
-            shell_socket.ShellSocketConnection(
-                trans,
-                renderer,
-                files,
-                buffer_size=buffer_size,
-                fixed_nonce=default_nonce,
-                timeout=timeout,
-            ),
+        conn = shell_socket.ShellSocketConnection(
             trans,
+            renderer,
+            files,
+            buffer_size=buffer_size,
+            fixed_nonce=default_nonce,
+            timeout=timeout,
         )
+        if connected:
+            conn._state = contract.ConnectionState.CONNECTED
+
+        return (conn, trans)
 
     return _create_connection

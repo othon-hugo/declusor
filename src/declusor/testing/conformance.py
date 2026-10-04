@@ -74,8 +74,14 @@ def assert_conforms_to_client_plugin[T: contract.ParsedArguments](
         f"Initial state must be CREATED or CONNECTED, got {initial_state}."
     )
 
-    connection.write(b"conformance_probe")
-    assert len(dummy_transport.written_bytes) > 0, "Transport must record bytes after connection.write()."
+    if connection.state == contract.ConnectionState.CREATED:
+        with pytest.raises(config.ConnectionError):
+            connection.write(b"conformance_probe")
+        with pytest.raises(config.ConnectionError):
+            list(connection.read())
+    else:
+        connection.write(b"conformance_probe")
+        assert len(dummy_transport.written_bytes) > 0, "Transport must record bytes after connection.write()."
 
     connection.close()
     assert connection.state == contract.ConnectionState.CLOSED, f"Connection state after close() must be CLOSED, got {connection.state}."
