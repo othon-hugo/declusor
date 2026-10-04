@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from declusor import contract, presentation
+from declusor import config, contract, presentation
 
 
 class RecordingReader:
@@ -23,6 +23,7 @@ class RecordingReader:
         if self._index < len(self.responses):
             response = self.responses[self._index]
             self._index += 1
+
             return response
 
         return ""
@@ -322,3 +323,29 @@ class TestTerminalInputSourceHistory:
         source._save_history()
 
         assert source._history_file == history_file
+
+
+class TestTerminalInputSourceConfiguration:
+    """Tests verifying configuration and blocklist properties of TerminalInputSource."""
+
+    def test_terminal_input_source_default_blocklists__match_config_defaults(self) -> None:
+        """TerminalInputSource defaults blocked_names and blocked_extensions to config constants."""
+
+        source = presentation.TerminalInputSource()
+
+        assert source.blocked_names == config.DEFAULT_COMPLETION_BLOCKED_NAMES
+        assert source.blocked_extensions == config.DEFAULT_COMPLETION_BLOCKED_EXTENSIONS
+
+    def test_terminal_input_source_custom_blocklists__stored_as_frozenset(self) -> None:
+        """TerminalInputSource converts custom blocked collections to immutable frozensets."""
+
+        custom_names = ["node_modules", "dist"]
+        custom_exts = [".tmp"]
+
+        source = presentation.TerminalInputSource(
+            blocked_names=custom_names,
+            blocked_extensions=custom_exts,
+        )
+
+        assert source.blocked_names == frozenset(custom_names)
+        assert source.blocked_extensions == frozenset(custom_exts)

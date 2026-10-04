@@ -41,3 +41,35 @@ DEFAULT_LAUNCHER_OUTPUT_MODE: Final[LauncherOutputMode] = LauncherOutputMode.TER
 
 DEFAULT_XOR_KEY: Final[bytes] = b"declusor"
 """Default obfuscation key for XOR transport layer."""
+
+DEFAULT_COMPLETION_BLOCKED_NAMES: Final[frozenset[str]] = frozenset(
+    {
+        "__pycache__",
+        ".git",
+        ".pytest_cache",
+        ".mypy_cache",
+        ".ruff_cache",
+        ".venv",
+        "venv",
+        ".env",
+        ".idea",
+        ".vscode",
+        ".tox",
+        ".coverage",
+        ".DS_Store",
+    }
+)
+"""Common file and directory names ignored during interactive autocomplete."""
+
+DEFAULT_COMPLETION_BLOCKED_EXTENSIONS: Final[frozenset[str]] = frozenset(
+    {
+        ".pyc",
+        ".pyo",
+        ".pyd",
+        ".swp",
+        ".swo",
+        ".bak",
+        "~",
+    }
+)
+"""Common file extensions ignored during interactive autocomplete."""

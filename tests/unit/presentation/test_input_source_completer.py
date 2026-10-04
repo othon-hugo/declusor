@@ -466,3 +466,128 @@ class TestTerminalInputSourceAssetCompletion:
         monkeypatch.setattr(readline, "get_line_buffer", lambda: "execute ")
         assert completer("", 0) == "run_me.sh"
         assert completer("", 1) is None
+
+
+class TestTerminalInputSourceBlocklistFiltering:
+    """Tests verifying default and custom blocklist filtering during tab completion."""
+
+    def test_terminal_input_source_complete_file__skips_blocked_directories_and_files(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """File completion omits standard cache/environment directories and metadata files."""
+
+        (tmp_path / "valid.txt").write_bytes(b"data")
+        (tmp_path / "__pycache__").mkdir()
+        (tmp_path / ".git").mkdir()
+        (tmp_path / ".venv").mkdir()
+        (tmp_path / "venv").mkdir()
+        (tmp_path / ".DS_Store").write_bytes(b"")
+        (tmp_path / "subfolder").mkdir()
+
+        monkeypatch.chdir(tmp_path)
+        source = presentation.TerminalInputSource()
+        completer = _get_configured_completer(source, ["upload"])
+
+        monkeypatch.setattr(readline, "get_line_buffer", lambda: "upload ")
+
+        assert completer("", 0) == "subfolder/"
+        assert completer("", 1) == "valid.txt"
+        assert completer("", 2) is None
+
+    def test_terminal_input_source_complete_file__skips_blocked_extensions(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """File completion omits files with compiled bytecode, swap, or backup extensions."""
+
+        (tmp_path / "script.py").write_bytes(b"print(1)")
+        (tmp_path / "script.pyc").write_bytes(b"")
+        (tmp_path / "script.pyo").write_bytes(b"")
+        (tmp_path / "editor.swp").write_bytes(b"")
+        (tmp_path / "backup.bak").write_bytes(b"")
+        (tmp_path / "readme~").write_bytes(b"")
+
+        monkeypatch.chdir(tmp_path)
+        source = presentation.TerminalInputSource()
+        completer = _get_configured_completer(source, ["upload"])
+
+        monkeypatch.setattr(readline, "get_line_buffer", lambda: "upload ")
+
+        assert completer("", 0) == "script.py"
+        assert completer("", 1) is None
+
+    def test_terminal_input_source_complete_file__when_inside_blocked_directory__returns_empty(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """File completion immediately returns empty when searching within a blocked directory."""
+
+        cache_dir = tmp_path / "__pycache__"
+        cache_dir.mkdir()
+        (cache_dir / "target.pyc").write_bytes(b"")
+
+        monkeypatch.chdir(tmp_path)
+        source = presentation.TerminalInputSource()
+        completer = _get_configured_completer(source, ["upload"])
+
+        monkeypatch.setattr(readline, "get_line_buffer", lambda: "upload __pycache__/")
+        assert completer("__pycache__/", 0) is None
+
+        abs_prefix = str(cache_dir / "tar")
+        monkeypatch.setattr(readline, "get_line_buffer", lambda: f"upload {abs_prefix}")
+        assert completer(abs_prefix, 0) is None
+
+    def test_terminal_input_source_complete_file__setup_completer_keyword_override(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """setup_completer keyword arguments override default blocked names and extensions."""
+
+        (tmp_path / "keep.txt").write_bytes(b"data")
+        (tmp_path / "custom_blocked.txt").write_bytes(b"")
+        (tmp_path / "bytecode.pyc").write_bytes(b"")
+
+        monkeypatch.chdir(tmp_path)
+        source = presentation.TerminalInputSource()
+        completer = readline.get_completer()
+
+        source.setup_completer(
+            ["upload"],
+            blocked_names=["custom_blocked.txt"],
+            blocked_extensions=[],
+        )
+        completer = readline.get_completer()
+        assert completer is not None
+
+        monkeypatch.setattr(readline, "get_line_buffer", lambda: "upload ")
+
+        assert completer("", 0) == "bytecode.pyc"
+        assert completer("", 1) == "keep.txt"
+        assert completer("", 2) is None
+
+    def test_terminal_input_source_complete_asset__skips_blocked_names_and_extensions(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Asset module completion filters out blocked cache directories and bytecode files."""
+
+        assets_dir = tmp_path / "assets"
+        modules_dir = assets_dir / "modules"
+        modules_dir.mkdir(parents=True)
+        (modules_dir / "discovery.py").write_bytes(b"")
+        (modules_dir / "discovery.pyc").write_bytes(b"")
+        (modules_dir / "__pycache__").mkdir()
+
+        source = presentation.TerminalInputSource()
+        completer = _get_configured_completer(source, ["load"], assets_dir=assets_dir)
+
+        monkeypatch.setattr(readline, "get_line_buffer", lambda: "load ")
+
+        assert completer("", 0) == "discovery.py"
+        assert completer("", 1) is None

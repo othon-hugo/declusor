@@ -37,11 +37,16 @@ Scenario: Isolate diagnostic error messages from standard output
 
 ### XCT-04: Command-Aware Readline Input Completion & Asset Scoping
 
-Terminal input autocompletion must scope file searches dynamically based on command semantics and plugin assets: `load` autocompletes from the active plugin's `assets/modules/` directory when available, while `upload` and `execute` default to the host working directory, and explicit host paths (`./...`, `/...`) resolve against the local filesystem. `Application.run` supplies the active plugin assets directory via dynamic signature introspection.
+Terminal input autocompletion must scope file searches dynamically based on command semantics and plugin assets: `load` autocompletes from the active plugin's `assets/modules/` directory when available, while `upload` and `execute` default to the host working directory, and explicit host paths (`./...`, `/...`) resolve against the local filesystem. `Application.run` supplies the active plugin assets directory via dynamic signature introspection. Non-essential artifacts and caches (such as `__pycache__`, `.git`, `.venv`, `.pyc`, and editor swap files) are excluded from candidate completion via configurable blocklists.
 
 ```gherkin
 Scenario: Scope load command autocomplete to plugin payload modules
   Given an active session with a plugin defining an assets/modules repository
   When the operator presses tab after typing "load "
   Then autocomplete candidates are discovered from the plugin's modules directory rather than repository root
+
+Scenario: Exclude noise artifacts and caches from autocomplete candidates
+  Given a target directory containing standard cache and metadata artifacts (such as __pycache__ or .pyc)
+  When the operator triggers filename autocomplete
+  Then candidate results omit blocked paths and extensions matching the active blocklist
 ```

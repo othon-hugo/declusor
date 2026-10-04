@@ -2,19 +2,41 @@ import atexit
 import glob
 import os
 import readline
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Collection, Sequence
 from contextlib import suppress
 from pathlib import Path
 
-from declusor import contract
+from declusor import config, contract
 
 
 class TerminalInputSource(contract.IInputSource):
     """Terminal input source implementation using readline for input, history, and autocomplete."""
 
-    def __init__(self, reader: Callable[[str], str] | None = None) -> None:
+    def __init__(
+        self,
+        reader: Callable[[str], str] | None = None,
+        *,
+        blocked_names: Collection[str] | None = None,
+        blocked_extensions: Collection[str] | None = None,
+    ) -> None:
         self._reader: Callable[[str], str] = reader if reader is not None else input
         self._history_file: Path | None = None
+        self._blocked_names: frozenset[str] = frozenset(blocked_names) if blocked_names is not None else config.DEFAULT_COMPLETION_BLOCKED_NAMES
+        self._blocked_extensions: frozenset[str] = (
+            frozenset(blocked_extensions) if blocked_extensions is not None else config.DEFAULT_COMPLETION_BLOCKED_EXTENSIONS
+        )
+
+    @property
+    def blocked_names(self) -> frozenset[str]:
+        """Names of files and directories excluded from autocompletion."""
+
+        return self._blocked_names
+
+    @property
+    def blocked_extensions(self) -> frozenset[str]:
+        """File extensions excluded from autocompletion."""
+
+        return self._blocked_extensions
 
     def read_command(self, prompt: str = "", /) -> str:
         """Read a stripped command string from standard input.
@@ -46,16 +68,32 @@ class TerminalInputSource(contract.IInputSource):
         command_routes: Sequence[str],
         assets_dir: Path | None = None,
         /,
+        *,
+        blocked_names: Collection[str] | None = None,
+        blocked_extensions: Collection[str] | None = None,
     ) -> None:
         """Set up the readline completer for command line input.
 
         Args:
             command_routes: Sequence of available commands.
             assets_dir: Optional base directory for client plugin assets.
+            blocked_names: Optional override of file and directory names to exclude.
+            blocked_extensions: Optional override of file extensions to exclude.
         """
 
         if not readline:
             return
+
+        active_blocked_names = frozenset(blocked_names) if blocked_names is not None else self._blocked_names
+        active_blocked_extensions = frozenset(blocked_extensions) if blocked_extensions is not None else self._blocked_extensions
+
+        def _is_blocked(filename: str) -> bool:
+            """Check if a candidate file or directory name is in the block list."""
+
+            if filename in active_blocked_names:
+                return True
+
+            return any(filename.endswith(ext) for ext in active_blocked_extensions)
 
         def _search_file(search_term: str, base_dir: Path | None = None) -> list[str]:
             """Search for files and directories matching the search term."""
@@ -68,6 +106,9 @@ class TerminalInputSource(contract.IInputSource):
             searching_dir = os.path.dirname(search_term)
             searching_file = os.path.basename(search_term)
 
+            if any(part in active_blocked_names for part in Path(searching_dir).parts):
+                return []
+
             is_explicit_host_path = search_term.startswith(("./", "../")) or os.path.isabs(search_term)
 
             if is_explicit_host_path or base_dir is None:
@@ -77,7 +118,11 @@ class TerminalInputSource(contract.IInputSource):
 
             try:
                 pattern = glob.escape(searching_file) + "*"
+
                 for filename in glob.glob(pattern, root_dir=target_dir):
+                    if _is_blocked(filename):
+                        continue
+
                     filepath = os.path.join(target_dir, filename)
 
                     match_string = os.path.join(searching_dir, filename)
@@ -90,6 +135,7 @@ class TerminalInputSource(contract.IInputSource):
                 pass
 
             files.sort()
+
             return files
 
         def _complete_line(text: str, state: int) -> str | None:

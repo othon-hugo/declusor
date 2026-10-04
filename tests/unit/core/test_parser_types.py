@@ -203,7 +203,7 @@ class TestDeclusorParserLauncherOutput:
         """LauncherOutput defines expected flags and default."""
 
         assert core.DeclusorParser.LauncherOutput.arg_name == "launcher_output"
-        assert core.DeclusorParser.LauncherOutput.arg_flags == ("--launcher-output",)
+        assert core.DeclusorParser.LauncherOutput.arg_flags == ("-o", "--launcher-output")
         assert core.DeclusorParser.LauncherOutput.arg_default == config.DEFAULT_LAUNCHER_OUTPUT_MODE.value
 
 
@@ -228,7 +228,7 @@ class TestDeclusorParserLauncherWrapper:
         """LauncherWrapper defines expected flags and help attributes."""
 
         assert core.DeclusorParser.LauncherWrapper.arg_name == "launcher_wrapper"
-        assert core.DeclusorParser.LauncherWrapper.arg_flags == ("--launcher-wrapper",)
+        assert core.DeclusorParser.LauncherWrapper.arg_flags == ("-w", "--launcher-wrapper")
 
 
 class TestDeclusorParserTimeout:
@@ -294,7 +294,7 @@ class TestDeclusorParserTransportLayer:
         """TransportLayer defines expected flags, action, and name attributes."""
 
         assert core.DeclusorParser.TransportLayer.arg_name == "transport_layers"
-        assert core.DeclusorParser.TransportLayer.arg_flags == ("--transport-layer",)
+        assert core.DeclusorParser.TransportLayer.arg_flags == ("-l", "--transport-layer")
         assert core.DeclusorParser.TransportLayer.arg_action == "append"
 
 

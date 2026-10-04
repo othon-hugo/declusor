@@ -84,3 +84,43 @@ class TestDefaultModeSettings:
         """Verify DEFAULT_LAUNCHER_OUTPUT_MODE defaults to TERMINAL."""
 
         assert config.DEFAULT_LAUNCHER_OUTPUT_MODE == config.LauncherOutputMode.TERMINAL
+
+
+class TestCompletionSettings:
+    """Tests for interactive autocomplete filter constants."""
+
+    def test_settings__default_completion_blocked_names__contains_expected_cache_and_env_dirs(self) -> None:
+        """Verify DEFAULT_COMPLETION_BLOCKED_NAMES includes common cache, venv, and VCS names."""
+
+        expected = {
+            "__pycache__",
+            ".git",
+            ".pytest_cache",
+            ".mypy_cache",
+            ".ruff_cache",
+            ".venv",
+            "venv",
+            ".env",
+            ".idea",
+            ".vscode",
+            ".tox",
+            ".coverage",
+            ".DS_Store",
+        }
+        assert isinstance(config.DEFAULT_COMPLETION_BLOCKED_NAMES, frozenset)
+        assert expected.issubset(config.DEFAULT_COMPLETION_BLOCKED_NAMES)
+
+    def test_settings__default_completion_blocked_extensions__contains_expected_extensions(self) -> None:
+        """Verify DEFAULT_COMPLETION_BLOCKED_EXTENSIONS includes compiled bytecode and swap extensions."""
+
+        expected = {
+            ".pyc",
+            ".pyo",
+            ".pyd",
+            ".swp",
+            ".swo",
+            ".bak",
+            "~",
+        }
+        assert isinstance(config.DEFAULT_COMPLETION_BLOCKED_EXTENSIONS, frozenset)
+        assert expected.issubset(config.DEFAULT_COMPLETION_BLOCKED_EXTENSIONS)

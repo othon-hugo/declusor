@@ -93,7 +93,7 @@ class DeclusorParser(util.Parser):
 
         arg_name: Final = "launcher_output"
         arg_help: Final = "client launcher delivery output mode: 'terminal', 'silent', or 'file:<path>' (default: 'terminal')"
-        arg_flags: Final = ("--launcher-output",)
+        arg_flags: Final = ("-o", "--launcher-output")
         arg_default: Final = config.DEFAULT_LAUNCHER_OUTPUT_MODE.value
 
         def __new__(cls, value: str) -> "DeclusorParser.LauncherOutput":
@@ -126,7 +126,7 @@ class DeclusorParser(util.Parser):
 
         arg_name: Final = "launcher_wrapper"
         arg_help: Final = "shell invocation wrapper template containing '$DECLUSOR_SCRIPT' (e.g. \"python3 -c '$DECLUSOR_SCRIPT'\")"
-        arg_flags: Final = ("--launcher-wrapper",)
+        arg_flags: Final = ("-w", "--launcher-wrapper")
 
         def __new__(cls, value: str) -> "DeclusorParser.LauncherWrapper":
             if not value:
@@ -158,7 +158,7 @@ class DeclusorParser(util.Parser):
         arg_name: Final = "transport_layers"
         arg_help: Final = "composable transport layer to wrap connection (repeatable, e.g. --transport-layer xor)"
         arg_action: Final = "append"
-        arg_flags: Final = ("--transport-layer",)
+        arg_flags: Final = ("-l", "--transport-layer")
 
         def __new__(cls, value: str) -> "DeclusorParser.TransportLayer":
             """Validate and normalize transport layer identifier."""
@@ -176,7 +176,7 @@ class DeclusorParser(util.Parser):
         PluginDir.arg_name,
         ExecutionMode.arg_name,
         LauncherOutput.arg_name,
-        LauncherWrapper.arg_name,
+        # LauncherWrapper.arg_name,
         Timeout.arg_name,
         TransportLayer.arg_name,
     )
