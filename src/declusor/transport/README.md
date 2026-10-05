@@ -7,11 +7,11 @@ The **transport** package provides concrete implementations of the transport abs
 
 ## Modules
 
-| Module     | Responsibility                                                                         |
-| :--------- | :------------------------------------------------------------------------------------- |
-| `listener` | TCP server listener (`TcpListener`) binding network addresses and accepting transports |
-| `socket`   | Connected TCP socket transport (`SocketTransport`) with fail-fast exception mapping    |
-| `xor`      | Repeating-key stream cipher decorator (`XorTransport`) resilient to TCP fragmentation  |
+| Module             | Responsibility                                                                         |
+| :----------------- | :------------------------------------------------------------------------------------- |
+| `tcp_listener`     | TCP server listener (`TcpListener`) binding network addresses and accepting transports |
+| `socket_transport` | Connected TCP socket transport (`SocketTransport`) with fail-fast exception mapping    |
+| `xor_transport`    | Repeating-key stream cipher decorator (`XorTransport`) resilient to TCP fragmentation  |
 
 ## Design Principles
 

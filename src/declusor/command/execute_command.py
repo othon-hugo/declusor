@@ -53,8 +53,9 @@ class ExecuteCommand(BaseStreamCommand):
             session: The active session providing connection transport.
 
         Raises:
-            ConnectionClosed: If the connection is not in OPEN state.
-            ConnectionWriteError: If the socket write operation fails.
+            config.ConnectionClosed: If the connection is closed.
+            config.ConnectionTimeoutError: If a transport operation times out.
+            config.ConnectionError: If the connection is not ready or a write fails.
         """
 
         session.connection.write(self._payload(session))

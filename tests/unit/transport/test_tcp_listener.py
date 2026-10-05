@@ -1,7 +1,8 @@
 """Unit tests for TcpListener.
 
 Note: TcpListener is the concrete network adapter implementing contract.ITransportListener
-by instantiating socket.socket(AF_INET, SOCK_STREAM). In accordance with tests/README.md Rule 1,
+by instantiating socket.socket(AF_INET, SOCK_STREAM). In accordance with the controlled resource
+boundary in tests/README.md,
 loopback sockets (127.0.0.1 on ephemeral port 0) are used with deterministic fixture teardown
 because TcpListener directly bridges the OS socket kernel API to the Declusor transport layer.
 """
@@ -38,6 +39,20 @@ def client_socket() -> Generator[socket.socket, None, None]:
 
 class TestTcpListenerLifecycle:
     """Tests for TcpListener initialization, binding, and lifecycle management."""
+
+    @pytest.mark.parametrize("port", [-1, 65536])
+    def test_tcp_listener_init__out_of_range_port__raises_value_error(self, port: int) -> None:
+        """Reject invalid port values before opening a socket."""
+
+        with pytest.raises(ValueError, match="Port must be between 0 and 65535"):
+            transport.TcpListener("127.0.0.1", port)
+
+    @pytest.mark.parametrize("backlog", [0, -1])
+    def test_tcp_listener_init__non_positive_backlog__raises_value_error(self, backlog: int) -> None:
+        """Reject invalid connection backlog values before opening a socket."""
+
+        with pytest.raises(ValueError, match="Backlog must be positive"):
+            transport.TcpListener("127.0.0.1", 0, backlog)
 
     def test_tcp_listener_init__ephemeral_port__binds_and_retrieves_assigned_port(self, tcp_listener: transport.TcpListener) -> None:
         """Verify binding with port=0 assigns an active OS ephemeral port."""

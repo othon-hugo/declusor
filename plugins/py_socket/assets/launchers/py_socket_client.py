@@ -22,6 +22,7 @@ CHANNEL_STDERR = int("$DECLUSOR_CH_STDERR")
 CHANNEL_STDIN = int("$DECLUSOR_CH_STDIN")
 CHANNEL_SIGNAL = int("$DECLUSOR_CH_SIGNAL")
 CHANNEL_HEARTBEAT = int("$DECLUSOR_CH_HEARTBEAT")
+MAX_TLV_FRAME_SIZE = int("$DECLUSOR_MAX_TLV_FRAME_SIZE")
 
 _SESSION_SCOPE = {"__name__": "__declusor__"}
 _CODE_TYPE = type((lambda: None).__code__)
@@ -48,6 +49,9 @@ def _read_frame(sock: socket.socket) -> tuple[int, bytes] | None:
         return None
 
     channel, length = struct.unpack(">BI", header)
+    if length > MAX_TLV_FRAME_SIZE:
+        raise ValueError(f"TLV frame payload exceeds maximum size of {MAX_TLV_FRAME_SIZE} bytes.")
+
     data = _read_exact(sock, length)
 
     if data is None:
@@ -57,6 +61,9 @@ def _read_frame(sock: socket.socket) -> tuple[int, bytes] | None:
 
 
 def _send_frame(sock: socket.socket, channel: int, data: bytes) -> None:
+    if len(data) > MAX_TLV_FRAME_SIZE:
+        raise ValueError(f"TLV frame payload exceeds maximum size of {MAX_TLV_FRAME_SIZE} bytes.")
+
     sock.sendall(struct.pack(">BI", channel, len(data)) + data)
 
 

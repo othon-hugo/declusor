@@ -18,7 +18,8 @@ def await_connection(host: str, port: int, timeout: float | None = None) -> Gene
         The connected socket object.
 
     Raises:
-        ConnectionFailure: If a socket error occurs (e.g., invalid address, port out of range, permission denied, timeout).
+        config.ConnectionError: If a recognized socket setup or accept failure occurs.
+        Exception: If an unrecognized error occurs; the original exception is re-raised.
     """
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
@@ -43,7 +44,7 @@ def _handle_socket_exception(e: Exception) -> None:
         e: The exception that was raised.
 
     Raises:
-        ConnectionFailure: With a user-friendly error message if the exception is known.
+        config.ConnectionError: With a user-friendly message if the exception is recognized.
         Exception: Re-raises the original exception if it is not handled.
     """
 

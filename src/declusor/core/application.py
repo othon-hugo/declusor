@@ -99,7 +99,7 @@ class Application:
         """Register a client plugin at runtime.
 
         Args:
-            plugin: Plugin class implementing ``IPlugin``.
+            plugin: Plugin class implementing ``IPluginExtension``.
         """
 
         self._plugin_manager.register(plugin)
@@ -108,10 +108,14 @@ class Application:
         """Run the configured server connection.
 
         Args:
-            config: Validated client plugin configuration.
+            plugin_config: Validated client plugin configuration.
 
         Raises:
-            ConnectionError: If the transport session cannot be established.
+            PluginNotFoundError: If the configured plugin kind is not registered.
+            PluginValidationError: If plugin routes are invalid or protected routes are overridden.
+            DuplicateRouteError: If a composed route already exists in the router.
+            InvalidOperation: If this application was already configured for a different plugin.
+            ConnectionError: If listener, transport, or handshake setup fails.
         """
 
         PluginExtension = self._plugin_manager.get(plugin_config.kind)

@@ -10,8 +10,8 @@ This directory contains the authoritative specification of all domain invariants
 | [**`protocol.md`**](specs/protocol.md)           | Protocol & Contract          | `PRO` | Behavioral contracts and streaming guarantees of `ITransport`, `IView`, `IInputSource`, and transport framing.         |
 | [**`lifecycle.md`**](specs/lifecycle.md)         | State-Machine & Lifecycle    | `STA` | Connection state transitions (`CREATED -> INITIALIZING -> CONNECTED -> CLOSED`), prompt loop signals, and teardown.    |
 | [**`concurrency.md`**](specs/concurrency.md)     | Concurrency Invariants       | `CON` | Thread pool management (`TaskPool`), thread-safe signaling (`TaskEvent`), timeout restoration, and socket concurrency. |
-| [**`security.md`**](specs/security.md)           | Security Invariants          | `SEC` | Path traversal prevention, XOR cipher symmetry, cryptographic nonces, shell escaping, and null-byte defenses.          |
-| [**`conformance.md`**](specs/conformance.md)     | Plugin Conformance           | `PLG` | Architectural requirements verified across all native and third-party plugins by `PluginConformanceTestSuite`.         |
+| [**`security.md`**](specs/security.md)           | Security Invariants          | `SEC` | Path confinement, XOR obfuscation limits, cryptographic nonces, shell escaping, and null-byte defenses.                |
+| [**`conformance.md`**](specs/conformance.md)     | Plugin Conformance           | `PLG` | Plugin metadata, routes, discovery precedence, asset validation, and native client handshake contracts.                |
 | [**`cross-cutting.md`**](specs/cross-cutting.md) | Cross-Cutting Business Rules | `XCT` | CLI composition root wiring, factory signature introspection, deterministic exit codes, and dual-stream isolation.     |
 
 ## Schema & Governance

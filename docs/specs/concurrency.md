@@ -2,15 +2,20 @@
 
 This document specifies the thread safety guarantees, worker pool lifecycles, task synchronization primitives, and state consistency rules enforced in Declusor using Lean BDD.
 
-### CON-01: Worker Pool Guaranteed Termination & No Orphaned Workers
+### CON-01: Cooperative Worker Shutdown and Timeout Reporting
 
-Managed task worker pools must guarantee joining and terminating all spawned background workers upon scope exit, preventing orphaned or dangling background tasks from surviving session closure.
+Managed task pools signal cooperative cancellation on scope exit and join workers up to the configured timeout. Workers that do not stop before the timeout are recorded with `TimeoutError` and surfaced by the pool; Python threads cannot be forcibly terminated by the pool.
 
 ```gherkin
-Scenario: Guarantee background worker shutdown upon pool exit
-  Given a managed worker task pool with active background workers running
+Scenario: Join cooperative workers when the pool exits
+  Given a managed task pool with workers that respond to the shared stop event
   When the pool execution scope exits
-  Then all background workers are joined and terminated before the block completes
+  Then the pool signals cancellation and joins every worker before returning
+
+Scenario: Report a worker that misses its join timeout
+  Given a managed task pool with a worker that does not respond before the join timeout
+  When the pool drains its tasks
+  Then that task records a TimeoutError and the pool surfaces the failure
 ```
 
 ### CON-02: Interactive Shell Cross-Task Coordination

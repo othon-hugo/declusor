@@ -18,8 +18,14 @@ class TcpListener(contract.ITransportListener):
             backlog: Connection backlog queue size.
 
         Raises:
+            ValueError: If port is outside 0-65535 or backlog is not positive.
             ConnectionError: If binding or listening fails.
         """
+
+        if not 0 <= port <= 65535:
+            raise ValueError(f"Port must be between 0 and 65535, got {port}.")
+        if backlog <= 0:
+            raise ValueError(f"Backlog must be positive, got {backlog}.")
 
         self._host = host
         self._closed = False

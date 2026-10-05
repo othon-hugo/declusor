@@ -2,37 +2,43 @@
 
 This document specifies the architectural invariants, conformance standards, and client handshake specifications enforced uniformly across all Declusor plugins using Lean BDD.
 
-### PLG-01: Plugin Metadata Invariant
+### PLG-01: Plugin Identifier Invariant
 
-Every plugin extension must declare non-empty string properties for its human-readable name, unique kind identifier, and metadata documentation to guarantee unambiguous identification and auditability.
+Every plugin extension must declare a non-empty string `name`, which serves as its plugin kind identifier. Registration rejects duplicate names by default; an explicit override may replace an existing plugin during discovery precedence handling. Descriptive metadata such as `description`, `version`, and `author` is optional and may be empty.
 
 ```gherkin
 Scenario: Verify mandatory plugin metadata properties
   Given any registered plugin extension in the system
   When the plugin metadata properties are inspected
-  Then name, kind, and metadata are non-empty strings
+  Then the name is a non-empty string
+  And registering a second plugin with the same name is rejected unless explicit override is enabled
 ```
 
 ### PLG-02: Plugin Argument Parser Configuration Contract
 
-Plugins must provide an argument parser configuration capability that registers plugin-specific command-line options without throwing errors or causing flag collisions.
+Plugins must register plugin-specific options on the shared argument parser and use option strings that do not conflict with common options. The parser raises `argparse.ArgumentError` during configuration if a plugin attempts to reuse an option string.
 
 ```gherkin
 Scenario: Configure central argument parser with plugin options
   Given a central argument parser instance
   When the plugin registers its options onto the parser
-  Then plugin-specific command-line flags are added cleanly without error
+  Then the plugin options are registered before command-line parsing
+
+Scenario: Reject a plugin option that conflicts with a common option
+  Given a plugin that registers an option string already used by the common parser
+  When the plugin configures the parser
+  Then configuration fails with argparse.ArgumentError before arguments are parsed
 ```
 
 ### PLG-03: Plugin Configuration Builder & Validation Barrier
 
-Plugins must build a validated configuration object from parsed command-line parameters, and reject invalid, contradictory, or out-of-bounds options by raising `PluginValidationError`.
+Plugins must validate configuration options before runtime creation and reject invalid, contradictory, or out-of-bounds values with `ParserError`. `PluginValidationError` is reserved for invalid plugin declarations and contract violations.
 
 ```gherkin
 Scenario: Intercept invalid plugin configuration options
   Given an invalid, incomplete, or contradictory set of plugin options
   When the plugin validates the configuration parameters
-  Then validation fails with PluginValidationError before runtime initialization
+  Then validation fails with ParserError before runtime initialization
 ```
 
 ### PLG-04: Plugin Runtime Creation Contract
@@ -48,13 +54,18 @@ Scenario: Create connection instance from plugin runtime
 
 ### PLG-05: Plugin Asset Directory Structure Contract
 
-Plugin asset directories must provide conforming `launchers`, `helpers`, and `modules` resource locations to ensure stagers and modular payloads can be resolved reliably without filesystem errors.
+Plugin filesystem configuration derives `launchers`, `helpers`, and `modules` paths beneath its assets directory. The plugin validates its required launcher before runtime creation; helpers and modules may be absent when that plugin does not require bundled assets from those directories.
 
 ```gherkin
-Scenario: Confirm presence of plugin asset directories
-  Given a conforming plugin asset directory structure
-  When the plugin filesystem paths are inspected
-  Then launchers, helpers, and modules directories exist and are accessible
+Scenario: Resolve plugin asset subdirectories from the configured root
+  Given an existing plugin root or assets directory
+  When the plugin filesystem is constructed
+  Then launchers, helpers, and modules paths are derived beneath the assets directory
+
+Scenario: Reject a missing required launcher
+  Given a plugin configuration whose required launcher file is absent
+  When the plugin validates its configuration
+  Then validation fails with ParserError before runtime creation
 ```
 
 ### PLG-06: POSIX Shell Handshake Helper Delivery Validation
@@ -103,4 +114,20 @@ Scenario: Reject collisions before connecting routes
   Given a plugin route table with whitespace-equivalent duplicate names or a router containing a composed route
   When the application prepares route registration
   Then registration fails before adding any route from the composed table
+```
+
+### PLG-09: Plugin Discovery Precedence
+
+When plugins with the same name are discovered from multiple sources, later tiers override earlier tiers in this order: built-in repository plugins, installed entry points, the user drop-in directory, and explicit CLI search directories. Within explicit search directories, later directories override earlier ones.
+
+```gherkin
+Scenario: User drop-in plugin overrides an installed entry point
+  Given a built-in, entry-point, and user drop-in plugin with the same name
+  When plugin discovery completes
+  Then the user drop-in plugin is registered
+
+Scenario: Later explicit search directory overrides an earlier one
+  Given two explicit search directories containing plugins with the same name
+  When plugin discovery processes the directories in order
+  Then the plugin from the later directory is registered
 ```

@@ -35,15 +35,15 @@ Scenario: Reject asset loading targeting unauthorized absolute paths
   Then execution fails with InvalidOperation
 ```
 
-### SEC-04: Symmetric Stream Cipher Encryption & Continuous Key Offset Synchronization
+### SEC-04: XOR Obfuscation and Continuous Key Offset Synchronization
 
-Symmetric stream cipher transports must encrypt and decrypt data symmetrically such that $D_K(E_K(P)) = P$; streaming reads across arbitrary network chunk boundaries must maintain continuous key stream offset synchronization.
+The XOR transport decorator must reversibly transform data and preserve its key offset across arbitrary stream chunk boundaries. Repeating-key XOR provides obfuscation only; it does not provide authenticated encryption or cryptographic confidentiality.
 
 ```gherkin
-Scenario: Preserve stream cipher key stream alignment across fragmented reads
-  Given an encrypted payload received across two fragmented TCP read chunks
-  When chunks are decrypted sequentially through the stream transport
-  Then the second chunk continues using the running key offset and concatenated output matches original plaintext
+Scenario: Preserve XOR key alignment across fragmented reads
+  Given XOR-transformed payload bytes received across multiple stream chunks
+  When chunks are transformed sequentially through the transport decorator
+  Then the running key offset is preserved and the output matches the original payload
 ```
 
 ### SEC-05: Shell Command Quoting & Injection Neutralization

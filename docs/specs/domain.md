@@ -109,7 +109,7 @@ Execute-command requests must contain a non-empty, non-whitespace command string
 Scenario: Reject empty execute command strings
   Given an execute-command request with an empty or whitespace-only command string
   When the command parameters are validated
-  Then validation fails with CommandValidationError("Command string cannot be empty.")
+  Then validation fails with CommandValidationError("Command line cannot be empty.")
 ```
 
 ### DOM-11: Non-Empty Code String Invariant in Execute Code
@@ -120,7 +120,7 @@ Execute-code requests must contain a non-empty, non-whitespace code string; empt
 Scenario: Reject empty execute code strings
   Given an execute-code request with an empty or whitespace-only code string
   When the command parameters are validated
-  Then validation fails with CommandValidationError("Code string cannot be empty.")
+  Then validation fails with CommandValidationError("Code cannot be empty.")
 ```
 
 ### DOM-12: Script File Existence and Regular File Invariant in Execute File
@@ -153,7 +153,7 @@ Modules loaded via module-loading commands must strictly bear approved executabl
 Scenario: Reject module files with unapproved extensions
   Given a module name bearing an unapproved extension (such as "payload.bin" or "module.so")
   When the module loading command is validated
-  Then validation fails with InvalidOperation("Invalid module file extension: '...'.")
+  Then validation fails with InvalidOperation because the selected plugin does not support that module extension
 ```
 
 ### DOM-15: Active Input Source Invariant in Launch Shell
@@ -200,37 +200,37 @@ Scenario: Reject bootstrap with unregistered plugin kind
   Then execution fails with PluginNotFoundError before any network socket is opened
 ```
 
-### DOM-19: Socket Transport Positive Buffer Size Invariant
+### DOM-19: Positive Socket Read Limit Invariant
 
-Socket byte transports must enforce that their internal read buffer capacity is a strictly positive integer ($> 0$); non-positive buffer sizes raise an invalid argument error to prevent zero-byte read loops.
+Socket byte transports must enforce that each read limit is a strictly positive integer ($> 0$); non-positive limits raise `ValueError` before socket I/O to prevent invalid or zero-byte reads.
 
 ```gherkin
-Scenario: Reject non-positive socket read buffer capacity
-  Given a socket transport configured with a buffer size of 0 or less
-  When the transport is initialized
-  Then initialization fails with an invalid argument error
+Scenario: Reject non-positive socket read limit
+  Given a socket read operation requested with a maximum byte count of 0 or less
+  When the transport read is attempted
+  Then it fails with ValueError before reading from the socket
 ```
 
 ### DOM-20: Stream Cipher Non-Empty Encryption Key Invariant
 
-Symmetric stream encryption transports must enforce that their secret key contains at least one byte; empty keys raise an invalid argument error to prevent division-by-zero errors in key cycling.
+The XOR transport decorator must enforce a non-empty key; an empty key raises `ValueError` before any transport I/O because XOR key cycling requires at least one byte.
 
 ```gherkin
 Scenario: Reject empty stream cipher encryption keys
   Given a stream cipher transport configured with an empty key
   When the transport is initialized
-  Then initialization fails with an invalid argument error
+  Then initialization fails with ValueError
 ```
 
 ### DOM-21: Network Listener Port Range and Positive Backlog Invariant
 
-Network listeners must validate that the bind port is within $[0, 65535]$ and the connection backlog is strictly positive ($> 0$); invalid parameters raise an invalid argument error before operating system bind attempts.
+Network listeners must validate that the bind port is within $[0, 65535]$ and the connection backlog is strictly positive ($> 0$); invalid parameters raise `ValueError` before opening or binding a socket.
 
 ```gherkin
 Scenario: Reject out-of-range listener port or non-positive backlog
   Given a listener configuration with a port outside 0 to 65535, or a backlog of 0 or less
   When the network listener is initialized
-  Then initialization fails with an invalid argument error
+  Then initialization fails with ValueError before a socket is opened
 ```
 
 ### DOM-22: Plugin Module Name Normalization Invariant

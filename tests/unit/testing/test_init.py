@@ -1,3 +1,4 @@
+import declusor
 from declusor import testing
 
 
@@ -38,6 +39,7 @@ class TestTestingExports:
             "create_dummy_plugin_config",
             "create_memory_transport_pair",
             "create_test_session",
+            "doubles",
             "pytest_plugin",
         ]
         assert sorted(testing.__all__) == sorted(expected)
@@ -58,3 +60,60 @@ class TestTestingExports:
         assert testing.MemoryTransportListener is MemoryTransportListener
         assert testing.DummyView is DummyView
         assert testing.create_test_session is create_test_session
+
+
+class TestRootExports:
+    """Verify the canonical package-level namespace."""
+
+    def test_declusor_exports__canonical_symbols__are_accessible(self) -> None:
+        """Every declared root package symbol is exported and accessible."""
+
+        expected = [
+            "app",
+            "command",
+            "config",
+            "contract",
+            "controller",
+            "core",
+            "lang",
+            "main",
+            "presentation",
+            "testing",
+            "transport",
+            "util",
+        ]
+
+        assert sorted(declusor.__all__) == sorted(expected)
+        for symbol in expected:
+            assert hasattr(declusor, symbol), f"declusor is missing export: {symbol}"
+
+
+class TestTestingDoublesExports:
+    """Verify the public test-double namespace."""
+
+    def test_testing_doubles_exports__canonical_symbols__are_accessible(self) -> None:
+        """Every declared doubles symbol is exported and accessible."""
+
+        expected = [
+            "create_memory_transport_pair",
+            "DummyApplication",
+            "DummyCommand",
+            "DummyConfig",
+            "DummyConnection",
+            "DummyInputSource",
+            "DummyOperationRenderer",
+            "DummyPlugin",
+            "DummyPluginFileStore",
+            "DummyPluginRuntime",
+            "DummyRouter",
+            "DummySessionRunner",
+            "DummySocket",
+            "DummyTransport",
+            "DummyView",
+            "MemoryTransport",
+            "MemoryTransportListener",
+        ]
+
+        assert sorted(testing.doubles.__all__) == sorted(expected)
+        for symbol in expected:
+            assert hasattr(testing.doubles, symbol), f"declusor.testing.doubles is missing export: {symbol}"

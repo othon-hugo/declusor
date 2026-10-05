@@ -15,13 +15,13 @@ Scenario: Reject premature stream termination during exact read
 
 ### PRO-02: Non-Negative Read Count Barrier
 
-Exact byte read requests must enforce non-negative byte count requests; negative counts raise an invalid argument error, while zero bytes returns an empty byte sequence immediately without stream I/O.
+Exact byte read requests must enforce non-negative byte counts; negative counts raise `ValueError`, while zero returns an empty byte sequence immediately without stream I/O.
 
 ```gherkin
 Scenario: Enforce non-negative count bounds on exact reads
   Given a request to read a negative byte count (such as -1)
   When an exact byte read operation is attempted
-  Then reading fails with an invalid argument error
+  Then reading fails with ValueError
 ```
 
 ### PRO-03: Transport and Listener Guaranteed Scoped Cleanup
@@ -35,26 +35,26 @@ Scenario: Guarantee resource teardown upon scope exit
   Then the network resource is closed upon scope exit and the original error propagates
 ```
 
-### PRO-04: Unbuffered Direct Binary Output Invariant
+### PRO-04: Direct Binary Output Invariant
 
-Binary output streaming in presentation views must write raw bytes directly to the unbuffered binary standard output stream; bypassing text encoding layers prevents `UnicodeDecodeError` crashes during binary streaming.
+Binary output streaming in presentation views must write raw bytes verbatim to the configured binary output stream and flush it; the payload is never decoded as text.
 
 ```gherkin
 Scenario: Stream raw binary payloads without text decoding
   Given a raw binary byte sequence containing non-UTF-8 characters
   When the payload is output through the presentation view
-  Then bytes are written directly to the binary output buffer without decoding errors
+  Then the exact bytes are written to the configured binary output stream and flushed
 ```
 
-### PRO-05: Input Source Signal Translation Invariant
+### PRO-05: Prompt Loop Input Signal Handling
 
-Terminal input sources must catch terminal control signals (such as EOF and interrupt) and translate them into a clean termination indicator (`None`) to prevent unhandled control flow exceptions.
+Terminal input sources may propagate `EOFError` and `KeyboardInterrupt`; the prompt loop must catch these signals while waiting for a command and terminate cleanly without reporting them as application errors.
 
 ```gherkin
-Scenario: Translate terminal interrupt and EOF signals
-  Given an active terminal input source receiving an EOF signal (Ctrl+D)
-  When a user command line is requested
-  Then the input source returns None cleanly without raising an unhandled exception
+Scenario: Exit the prompt loop on terminal EOF or interrupt
+  Given an active prompt loop whose input source raises EOFError or KeyboardInterrupt
+  When the loop waits for the next command
+  Then the prompt loop exits without dispatching a command or writing an error
 ```
 
 ### PRO-06: Python Agent TLV Framing Protocol Contract
@@ -88,4 +88,20 @@ Scenario: Reject reading without an active command nonce
   Given a newly initialized shell connection that has not performed a write or handshake
   When a stream read operation is initiated
   Then reading fails with ConnectionError("No active command nonce for read operation.")
+```
+
+### PRO-09: Maximum Python TLV Frame Payload
+
+Every Python plugin TLV frame payload must be no larger than 64 MiB. Senders reject oversized payloads with `ValueError` before transmission, and receivers close the connection with `ConnectionClosed` after reading an oversized header but before reading or allocating the payload; this bounds memory use from malformed or oversized frames.
+
+```gherkin
+Scenario: Reject an oversized inbound TLV frame before reading its payload
+  Given a Python agent frame header declaring a payload larger than 64 MiB
+  When the frame header is decoded
+  Then the connection is closed without reading the declared payload
+
+Scenario: Reject an oversized outbound TLV frame before transmission
+  Given a Python plugin payload larger than 64 MiB
+  When the payload is framed for transmission
+  Then the frame is rejected and no bytes are written
 ```

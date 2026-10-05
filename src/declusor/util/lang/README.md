@@ -16,4 +16,4 @@ The **util.lang** package provides language-specific compilation, code pruning, 
 1. **Zero External Dependencies** — strictly utilizes standard library modules (`ast`, `compile`, `marshal`) without heavy third-party minification or data-analysis frameworks.
 2. **Stateless Purity** — all functions are pure, deterministic, or defensive.
 3. **Dual-Mode Optimization** — supports native CPython compiler optimization (`optimize=2`) for homogeneous bytecode execution and AST pruning (`ast.unparse`) for cross-version portable source execution.
-4. **Full Type Safety** — strict typing across all functions and classes.
+4. **Static Type Checking** — functions and classes are checked by the repository's configured Mypy strict profile.

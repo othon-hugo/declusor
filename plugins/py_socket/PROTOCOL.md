@@ -30,10 +30,12 @@ Every frame on the wire consists of a **5-byte fixed header** followed by a vari
 
 ### Header Fields
 
-| Field              |        Type        | Encoding | Description                                              |
-| :----------------- | :----------------: | :------: | :------------------------------------------------------- |
-| **Channel ID**     |  1 byte (`uint8`)  |   `>B`   | Identifies the payload type and handling channel.        |
-| **Payload Length** | 4 bytes (`uint32`) |   `>I`   | Length of the payload in bytes ($0 \le L \le 2^{32}-1$). |
+| Field              |        Type        | Encoding | Description                                                                                      |
+| :----------------- | :----------------: | :------: | :----------------------------------------------------------------------------------------------- |
+| **Channel ID**     |  1 byte (`uint8`)  |   `>B`   | Identifies the payload type and handling channel.                                                |
+| **Payload Length** | 4 bytes (`uint32`) |   `>I`   | Encoded payload length in bytes ($0 \le L \le 2^{32}-1$); accepted frames are limited to 64 MiB. |
+
+Although the header can represent payloads up to $2^{32}-1$ bytes, both implementations enforce `config.MAX_TLV_FRAME_SIZE` (64 MiB). Senders reject larger payloads before writing; receivers reject the declared length immediately after reading the header and close the connection without reading the body.
 
 ### Channel Types
 
@@ -77,11 +79,11 @@ sequenceDiagram
     Client->>Transport: STDOUT Frame [channel=0x01, len=M, payload=Runtime Metadata JSON]
     Transport->>Server: Read metadata frame & evaluate is_bytecode_compatible
     alt Bytecode Compatible (Matching Runtimes)
-        Server->>Transport: STDOUT Frame [channel=0x01, len=N, payload=Marshaled Bytecode Helpers]
+        Server->>Transport: STDIN Frame [channel=0x03, len=N, payload=Marshaled Bytecode Helpers]
         Transport->>Client: Deliver helpers
         Client->>Client: marshal.loads(helpers) & exec in _SESSION_SCOPE
     else Bytecode Incompatible (Cross-Version Fallback)
-        Server->>Transport: STDOUT Frame [channel=0x01, len=N, payload=UTF-8 Source Helpers]
+        Server->>Transport: STDIN Frame [channel=0x03, len=N, payload=UTF-8 Source Helpers]
         Transport->>Client: Deliver helpers
         Client->>Client: compile(helpers, "<helpers>", "exec") & exec in _SESSION_SCOPE
     end
@@ -167,7 +169,7 @@ from declusor import config
 
 # Frame transmission:
 def send_command(transport, command_bytes: bytes) -> None:
-    header = struct.pack(">BI", config.ChannelType.STDOUT, len(command_bytes))
+    header = struct.pack(">BI", config.ChannelType.STDIN, len(command_bytes))
     transport.write(header + command_bytes)
 
 

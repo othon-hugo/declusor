@@ -1,5 +1,6 @@
 """Unit tests for DeclusorParser argument parsing and configuration assembly in declusor.core.parser."""
 
+import argparse
 from collections.abc import Mapping
 from pathlib import Path
 
@@ -325,6 +326,57 @@ class DropinPlugin(contract.IPluginExtension[DropinConfig]):
         )
 
         assert plugin_config.options.get("banner") == "custom_banner_value"
+
+    def test_parse__plugin_argument_conflicts_with_common_option__raises_argument_error(self) -> None:
+        """Reject a plugin option that duplicates a common CLI option during parser configuration."""
+
+        class ConflictingPlugin(contract.IPluginExtension[testing.DummyConfig]):
+            name = "conflicting_option_plugin"
+            description = "Plugin with a conflicting common option"
+            options_type = testing.DummyConfig
+            routes = {}
+
+            @classmethod
+            def configure_parser(cls, parser: contract.IArgumentParser, /) -> None:
+                parser.add_argument("--plugin")
+
+            @classmethod
+            def extract_options(cls, raw: Mapping[str, object], /) -> testing.DummyConfig:
+                return testing.DummyConfig()
+
+            @classmethod
+            def build_config(
+                cls,
+                host: str,
+                port: int,
+                options: testing.DummyConfig,
+                /,
+                filesystem: contract.PluginFilesystem | None = None,
+                mode: config.ExecutionMode = config.DEFAULT_EXECUTION_MODE,
+            ) -> contract.PluginConfig[testing.DummyConfig]:
+                return testing.create_dummy_plugin_config(
+                    kind=cls.name,
+                    host=host,
+                    port=port,
+                    options=options,
+                    filesystem=filesystem,
+                    mode=mode,
+                )
+
+            @classmethod
+            def validate(cls, plugin_config: contract.PluginConfig[testing.DummyConfig], /) -> None:
+                pass
+
+            @classmethod
+            def build_runtime(cls, plugin_config: contract.PluginConfig[testing.DummyConfig], /) -> contract.IPluginRuntime:
+                return testing.DummyPluginRuntime()
+
+        manager = core.PluginManager()
+        manager.register(ConflictingPlugin)
+        parser = core.DeclusorParser(name="test_app")
+
+        with pytest.raises(argparse.ArgumentError, match="conflicting option string: --plugin"):
+            parser.parse(manager, ["127.0.0.1", "9000", "--plugin", ConflictingPlugin.name])
 
     def test_parse__plugin_validation_failure__propagates_plugin_validation_error(self) -> None:
         """When Plugin.validate raises an exception, parser.parse propagates it."""

@@ -33,6 +33,15 @@ class TaskPool:
     """
 
     def __init__(self, stop_event: TaskEvent | None = None, max_size: int = 10, daemon_mode: bool = True):
+        """Initialize a task pool.
+
+        Args:
+            stop_event: Optional shared cooperative stop event. A new event is
+                created when omitted.
+            max_size: Maximum number of tasks that may be registered. Defaults to 10.
+            daemon_mode: Whether worker threads are daemon threads. Defaults to True.
+        """
+
         self._stop_event = stop_event or TaskEvent()
         self._daemon_mode = daemon_mode
         self._max_size = max_size

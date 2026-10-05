@@ -212,6 +212,8 @@ class PySocketConnection(contract.IConnection):
             header = self._transport.read_exact(5)
 
             _, length = struct.unpack(">BI", header)
+            if length > config.MAX_TLV_FRAME_SIZE:
+                raise config.ConnectionError(f"TLV frame payload size {length} exceeds maximum {config.MAX_TLV_FRAME_SIZE}.")
 
             raw_meta = self._transport.read_exact(length) if length > 0 else b"{}"
             metadata = json.loads(raw_meta.decode("utf-8", errors="replace"))
@@ -268,6 +270,8 @@ class PySocketConnection(contract.IConnection):
         """Send a TLV-framed payload on a specific bus to the remote Python agent."""
 
         self.ensure_can_perform_io()
+        if len(data) > config.MAX_TLV_FRAME_SIZE:
+            raise ValueError(f"TLV frame payload exceeds maximum size of {config.MAX_TLV_FRAME_SIZE} bytes.")
 
         frame = struct.pack(">BI", channel, len(data)) + data
 
@@ -290,6 +294,9 @@ class PySocketConnection(contract.IConnection):
                 raise config.ConnectionClosed(f"Connection interrupted during read: {error}") from error
 
             channel, length = struct.unpack(">BI", header)
+            if length > config.MAX_TLV_FRAME_SIZE:
+                self.close()
+                raise config.ConnectionClosed(f"TLV frame payload size {length} exceeds maximum {config.MAX_TLV_FRAME_SIZE}.")
 
             if channel == config.ChannelType.PROCESS_EXIT:
                 if length > 0:

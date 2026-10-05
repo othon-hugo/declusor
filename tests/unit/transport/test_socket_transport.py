@@ -157,6 +157,18 @@ class TestSocketTransportLifecycle:
 class TestSocketTransportRead:
     """Tests for SocketTransport read operations and exception mapping."""
 
+    @pytest.mark.parametrize("max_bytes", [0, -1])
+    def test_socket_transport_read__non_positive_limit__raises_value_error(self, max_bytes: int) -> None:
+        """Reject non-positive read limits before calling the underlying socket."""
+
+        sock = testing.DummySocket()
+        trans = make_transport(sock)
+
+        with pytest.raises(ValueError, match="max_bytes must be positive"):
+            trans.read(max_bytes)
+
+        assert sock.recv_calls == []
+
     def test_socket_transport_read__closed_transport__raises_connection_closed(self) -> None:
         """Verify read on a closed transport raises ConnectionClosed."""
 

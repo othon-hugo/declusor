@@ -1,6 +1,6 @@
 # Test Suite
 
-Declusor maintains an enterprise-grade automated test suite organized by architectural layer and test scope, supported by a first-class, published public testing SDK (`declusor.testing`).
+Declusor maintains an automated test suite organized by architectural layer and test scope, supported by the public testing SDK (`declusor.testing`).
 
 ## Architectural Structure
 
@@ -9,7 +9,7 @@ The test suite is structured into partitioned directories corresponding strictly
 ```text
 tests/
 ├── e2e/                     # End-to-end integration scenarios (REPL loops, stream redirection, CLI workflows)
-└── unit/                    # Isolated component-level unit tests across all 11 architectural layers
+└── unit/                    # Component and adapter-boundary tests across 11 architectural packages
     ├── app/                 # Application bootstrap, CLI wiring, and terminal application factories
     ├── command/             # Encapsulated command operations, streaming loops, and immutable DTOs
     ├── config/              # Centralized domain exceptions, settings, paths, and operational enums
@@ -20,7 +20,7 @@ tests/
     ├── presentation/        # Readline input, formatting views, completers, and prompt loops
     ├── testing/             # Precision tests for the public testing SDK doubles, factories, and fixtures
     ├── transport/           # Physical byte-stream transports, listeners, and composable decorators
-    └── util/                # Stateless primitives, concurrency task pools, security, and storage helpers
+    └── util/                # Stateless primitives, concurrency, security, storage, and lang subpackage
 ```
 
 Native client transport plugins maintain colocated test suites within their autonomous package trees (`plugins/<plugin>/tests/`).
@@ -32,9 +32,22 @@ Native client transport plugins maintain colocated test suites within their auto
 3. **Autonomous Plugin Colocation**: Native plugin tests live directly inside `plugins/<plugin>/tests/`, ensuring that plugins remain autonomous and cleanly extractable into independent repositories.
 4. **Contract Conformance Verification**: Every plugin verifies adherence to framework invariants by subclassing `declusor.testing.PluginConformanceTestSuite`.
 5. **Defensive Testing & Invariant Validation**: Invariant violations (empty commands, path traversal, unsupported opcodes, invalid arguments) must explicitly assert raised domain exceptions (`config.InvalidOperation`, `config.ParserError`, `config.RouterError`, `config.ConnectionError`, `config.CommandValidationError`).
-6. **Strict Static Type Checking**: Test suites are type-checked with `mypy --strict` alongside production code (`mypy src plugins tests`). All test fixtures, test doubles, and helper functions declare complete, non-`Any` type signatures.
-7. **No Cross-Layer Contamination**: Test doubles decouple unit tests from real operating system resources (network sockets, standard I/O, filesystem changes outside `tmp_path`).
+6. **Configured Static Type Checking**: Test suites are checked with the repository's strict mypy profile (`make type-check`). The profile contains explicit `Any`-related exceptions in `pyproject.toml`; public APIs and test helpers should still use precise types.
+7. **Controlled Resource Boundaries**: Most component tests use typed doubles and `tmp_path`. Tests for the TCP listener and socket adapter use loopback or ephemeral sockets only; they must not depend on external hosts and must close resources deterministically.
 8. **Dual-Channel Stream Isolation**: Presentation and CLI composition tests strictly isolate raw binary byte streams (`sys.stdout.buffer`) from formatted text streams (`sys.stdout`), ensuring zero stream leakage across test runners.
+
+## Coverage Ownership
+
+| Behavior under test                                                                      | Owning test level   | Primary location / command                                                         |
+| :--------------------------------------------------------------------------------------- | :------------------ | :--------------------------------------------------------------------------------- |
+| Public package exports and import surfaces                                               | Unit                | `tests/unit/<package>/test_init.py`; `make test-unit`                              |
+| DTO validation, function branches, state transitions, and error translation              | Unit                | `tests/unit/<package>/`; `make test-unit`                                          |
+| Socket adapter behavior at the OS boundary                                               | Unit boundary tests | `tests/unit/transport/`; loopback only, run via `make test-unit`                   |
+| Application startup, REPL routing, real client handshake, command response, and teardown | E2E                 | `tests/e2e/`; `make test-e2e`                                                      |
+| Plugin-specific framing, assets, renderer, and native client behavior                    | Plugin              | `plugins/<plugin>/tests/`; `make test-plugins` or `make test-plugin PLUGIN=<name>` |
+| Shared plugin extension requirements                                                     | Conformance         | Plugin `test_conformance.py` subclasses `PluginConformanceTestSuite`               |
+
+Each test should have one primary behavior and one clear owner. Unit tests cover branches and local contracts; end-to-end tests cover cross-layer workflows without duplicating every unit edge case; plugin suites cover implementation-specific protocol behavior. Prefer the shared conformance suite for common plugin requirements and keep plugin tests for behavior unique to that implementation. Every source package `__all__` has an export check; root `declusor` and `declusor.testing.doubles` checks live in `tests/unit/testing/test_init.py`, and the `util.lang` check is nested under `tests/unit/util/lang/`.
 
 ## Testing SDK Catalog (`declusor.testing`)
 
@@ -61,16 +74,16 @@ The public testing SDK provides pre-registered fixtures and typed doubles:
 To prevent process memory saturation and OOM crashes during test execution, tests are partitioned into isolated sessions executed via `make`:
 
 ```bash
-# Full quality check (formatting, linting, strict typing, and memory-isolated tests)
+# Full quality check (formatting, linting, configured typing, and isolated tests)
 make check
 
 # Run all test suites across memory-isolated processes sequentially
 make test
 
-# Run component unit tests across all 11 core packages
+# Run component and adapter-boundary tests across all 11 core packages
 make test-unit
 
-# Run end-to-end interactive REPL and CLI integration scenarios
+# Run full application, REPL, CLI, and real-client workflows
 make test-e2e
 
 # Run autonomous plugin tests across all colocated plugin packages

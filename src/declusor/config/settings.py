@@ -42,6 +42,9 @@ DEFAULT_LAUNCHER_OUTPUT_MODE: Final[LauncherOutputMode] = LauncherOutputMode.TER
 DEFAULT_XOR_KEY: Final[bytes] = b"declusor"
 """Default obfuscation key for XOR transport layer."""
 
+MAX_TLV_FRAME_SIZE: Final[int] = 64 * 1024 * 1024
+"""Maximum payload size in bytes for a Python plugin TLV frame."""
+
 DEFAULT_COMPLETION_BLOCKED_NAMES: Final[frozenset[str]] = frozenset(
     {
         "__pycache__",

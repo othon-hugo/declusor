@@ -14,7 +14,7 @@ class DummyValidConfig(contract.ParsedArguments, total=False):
 
 
 class DummyValidPlugin(contract.IPluginExtension[DummyValidConfig]):
-    """Compliant test plugin implementing all required IPlugin methods."""
+    """Compliant test plugin implementing all required IPluginExtension methods."""
 
     name = "dummy_valid"
     description = "A valid dummy plugin for unit tests"
@@ -116,7 +116,7 @@ class TestPluginValidation:
 
         manager = core.PluginManager()
 
-        with pytest.raises(config.PluginValidationError, match="must implement 'IPlugin'"):
+        with pytest.raises(config.PluginValidationError, match="must implement 'IPluginExtension'"):
             manager.validate_plugin(NotAPlugin)
 
     def test_validate_plugin__empty_string_name__raises_plugin_validation_error(self) -> None:
@@ -836,6 +836,68 @@ class CustomShellPlugin(contract.IPluginExtension[CustomShellConfig]):
 
         assert manager.get("shell_socket").description == "Entry point shell override"
         assert manager.get_source("shell_socket") == "entry_point:shell_socket_ep"
+
+    def test_discover__user_dropin_overrides_entry_point(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """User drop-in plugins override entry-point plugins with the same identifier."""
+
+        class EntryPointPlugin(DummyValidPlugin):
+            name = "precedence_agent"
+            description = "Entry point implementation"
+
+        entry_point = DummyEntryPoint(name="precedence_agent", plugin_cls=EntryPointPlugin)
+
+        def loader(*, group: str) -> Iterable[DummyEntryPoint]:
+            return [entry_point]
+
+        user_plugins = tmp_path / "user_plugins"
+        plugin_folder = user_plugins / "precedence_agent"
+        plugin_folder.mkdir(parents=True)
+        (plugin_folder / "plugin.py").write_text(
+            """from collections.abc import Mapping
+from declusor import contract, testing
+
+class UserConfig(contract.ParsedArguments, total=False):
+    pass
+
+class UserPlugin(contract.IPluginExtension[UserConfig]):
+    name = "precedence_agent"
+    description = "User drop-in implementation"
+    options_type = UserConfig
+    routes = {}
+
+    @classmethod
+    def configure_parser(cls, parser, /) -> None:
+        pass
+
+    @classmethod
+    def extract_options(cls, raw: Mapping[str, object], /) -> UserConfig:
+        return UserConfig()
+
+    @classmethod
+    def build_config(cls, host, port, options, /, filesystem=None, mode=None):
+        return None
+
+    @classmethod
+    def validate(cls, plugin_config, /) -> None:
+        pass
+
+    @classmethod
+    def build_runtime(cls, plugin_config, /):
+        return testing.DummyPluginRuntime()
+""",
+            encoding="utf-8",
+        )
+        monkeypatch.setattr(config, "USER_PLUGINS_DIR", user_plugins)
+
+        manager = core.PluginManager()
+        manager.discover(enable_entry_points=True, entry_points_loader=loader)
+
+        assert manager.get("precedence_agent").description == "User drop-in implementation"
+        assert manager.get_source("precedence_agent") == "user-dropin:precedence_agent"
 
     def test_discover__custom_search_dirs_overrides_entry_point(self, tmp_path: Path) -> None:
         """Explicit search_dirs take precedence over entry points with identical names."""

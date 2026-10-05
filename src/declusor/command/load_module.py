@@ -55,10 +55,11 @@ class LoadModule(BaseStreamCommand):
             session: Active session providing connection transport and file store.
 
         Raises:
-            CommandError: If the session file store is unavailable.
-            InvalidOperation: If the module is not found, attempts path traversal, or cannot be rendered.
-            ConnectionClosed: If the connection is closed.
-            ConnectionWriteError: If transmitting the module payload fails.
+            config.CommandError: If the session plugin processor is unavailable.
+            config.InvalidOperation: If the module is not found, attempts path traversal, or cannot be rendered.
+            config.ConnectionClosed: If the connection is closed.
+            config.ConnectionTimeoutError: If a transport operation times out.
+            config.ConnectionError: If the connection is not ready or a write fails.
         """
 
         session.connection.write(self._payload(session).encode())

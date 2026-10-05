@@ -13,8 +13,9 @@ if TYPE_CHECKING:
 class SessionContext:
     """Encapsulates the active client session and coordinates command execution.
 
-    Provides access to the transport connection, operator view, input source, and file store,
-    while offering an ``execute(command)`` method to run commands within this session.
+    Provides access to the transport connection, operator view, optional input
+    source, and plugin processor, while offering ``execute(command)`` to run
+    commands within this session.
     """
 
     def __init__(
@@ -29,8 +30,8 @@ class SessionContext:
         Args:
             connection: Active connection to the remote client.
             view: View interface for operator output presentation.
-            input: Optional input source interface for operator command/input reading.
-            files: Client file store for module/library loading.
+            plugin_processor: Plugin processor for resolving client assets and payloads.
+            input_source: Optional input source for operator command and raw input.
         """
 
         self._connection = connection
@@ -80,7 +81,7 @@ class ISessionRunner(ABC):
         """Execute the workflow on *session* using *router*.
 
         Args:
-            session: Active session context holding connection, view, input, and files.
+            session: Active session context holding the connection, view, plugin processor, and optional input source.
             router: Router resolving command routes to controllers.
         """
 

@@ -84,13 +84,13 @@ class PluginManager(PluginRegistry):
         self._sources: dict[str, str] = {}
 
     def validate_plugin(self, candidate: type, /) -> None:
-        """Validate that a candidate class conforms strictly to ``IPlugin``.
+        """Validate that a candidate class conforms strictly to ``IPluginExtension``.
 
         Args:
             candidate: Class to inspect and validate.
 
         Raises:
-            PluginValidationError: If the candidate does not subclass ``IPlugin``,
+            config.PluginValidationError: If the candidate does not subclass ``IPluginExtension``,
                 lacks a valid name, or has unimplemented abstract methods.
         """
 
@@ -98,7 +98,7 @@ class PluginManager(PluginRegistry):
             raise config.PluginValidationError(f"Plugin candidate {candidate!r} must be a class.")
 
         if not issubclass(candidate, contract.IPluginExtension):
-            raise config.PluginValidationError(f"Plugin class {candidate.__name__!r} must implement 'IPlugin'.")
+            raise config.PluginValidationError(f"Plugin class {candidate.__name__!r} must implement 'IPluginExtension'.")
 
         name = getattr(candidate, "name", None)
 
@@ -184,7 +184,7 @@ class PluginManager(PluginRegistry):
         """Scan a directory for plugin packages and load any valid plugins found.
 
         A valid plugin folder contains an ``__init__.py`` or ``plugin.py`` that defines
-        one or more subclasses of ``IPlugin``.
+                one or more subclasses of ``IPluginExtension``.
 
         Args:
             directory: Directory containing plugin subdirectories.

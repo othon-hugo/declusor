@@ -21,7 +21,9 @@ class BaseStreamCommand(contract.ICommand):
             session: Active session context providing connection and view interfaces.
 
         Raises:
-            ConnectionClosed: If the remote peer terminates the connection unexpectedly.
+            config.ConnectionClosed: If the remote peer terminates the connection unexpectedly.
+            config.ConnectionTimeoutError: If a transport operation times out.
+            config.ConnectionError: If another transport or protocol read error occurs.
         """
 
         for data in session.connection.read():
@@ -61,9 +63,10 @@ class BaseFileCommand[T: "ExecuteFileDTO | UploadFileDTO"](BaseStreamCommand):
             session: Active session context providing client profile and connection transport.
 
         Raises:
-            InvalidOperation: If the client profile cannot render the operation command.
-            ConnectionClosed: If the connection is closed.
-            ConnectionWriteError: If the socket write operation fails.
+            config.InvalidOperation: If the client profile cannot render the operation command.
+            config.ConnectionClosed: If the connection is closed.
+            config.ConnectionTimeoutError: If a transport operation times out.
+            config.ConnectionError: If another transport or protocol write error occurs.
         """
 
         session.connection.write(self._payload(session))

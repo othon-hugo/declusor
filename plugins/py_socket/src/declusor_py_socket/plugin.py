@@ -183,6 +183,7 @@ class PySocketProcessor(contract.IPluginProcessor):
             DECLUSOR_CH_STDIN=str(int(config.ChannelType.STDIN)),
             DECLUSOR_CH_SIGNAL=str(int(config.ChannelType.SIGNAL)),
             DECLUSOR_CH_HEARTBEAT=str(int(config.ChannelType.HEARTBEAT)),
+            DECLUSOR_MAX_TLV_FRAME_SIZE=str(config.MAX_TLV_FRAME_SIZE),
         )
 
         sanitized = lang.python.sanitize_source(rendered)

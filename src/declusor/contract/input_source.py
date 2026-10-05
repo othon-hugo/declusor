@@ -13,14 +13,15 @@ class IInputSource(ABC):
     def read_command(self, prompt: str = "", /) -> str:
         """Read a command string from the operator.
 
-        Blocks until input is available. Returns the stripped, non-empty
-        command string. Implementations decide how to handle prompting.
+        Requests a command from the input medium and returns it with leading
+        and trailing whitespace removed. A blank input may therefore produce
+        an empty string. Implementations decide how to handle prompting.
 
         Args:
             prompt: Text prompt displayed to the operator before input.
 
         Returns:
-            The stripped command string entered by the operator.
+            The stripped command string, which may be empty.
         """
 
         raise NotImplementedError

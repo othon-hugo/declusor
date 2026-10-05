@@ -1,9 +1,12 @@
+import struct
+from collections.abc import Callable
 from pathlib import Path
+from typing import cast
 
 import declusor_py_socket as py_socket
 import pytest
 
-from declusor import config, contract
+from declusor import config, contract, testing
 
 
 class TestPySocketProcessor:
@@ -158,7 +161,8 @@ class TestPySocketProcessor:
             "CH_STDERR = int('$DECLUSOR_CH_STDERR')\n"
             "CH_STDIN = int('$DECLUSOR_CH_STDIN')\n"
             "CH_SIGNAL = int('$DECLUSOR_CH_SIGNAL')\n"
-            "CH_HEARTBEAT = int('$DECLUSOR_CH_HEARTBEAT')\n",
+            "CH_HEARTBEAT = int('$DECLUSOR_CH_HEARTBEAT')\n"
+            "MAX_TLV_FRAME_SIZE = int('$DECLUSOR_MAX_TLV_FRAME_SIZE')\n",
             encoding="utf-8",
         )
 
@@ -174,6 +178,39 @@ class TestPySocketProcessor:
         assert f"CH_STDIN = int('{config.ChannelType.STDIN.value}')" in decoded
         assert f"CH_SIGNAL = int('{config.ChannelType.SIGNAL.value}')" in decoded
         assert f"CH_HEARTBEAT = int('{config.ChannelType.HEARTBEAT.value}')" in decoded
+        assert f"MAX_TLV_FRAME_SIZE = int('{config.MAX_TLV_FRAME_SIZE}')" in decoded
+
+    def test_render_launcher__client_rejects_oversized_header_before_reading_body(self) -> None:
+        """Run the generated client's frame reader and verify oversized bodies are never read."""
+
+        plugin = py_socket.PySocketPlugin
+        filesystem = plugin.build_config("127.0.0.1", 9000, plugin.extract_options({})).filesystem
+        processor = py_socket.PySocketProcessor(filesystem)
+        rendered = processor.render_launcher("127.0.0.1", 9000, b"ack")
+        source = bytes.fromhex(rendered.decode("ascii")).decode("utf-8")
+        namespace: dict[str, object] = {"__name__": "test_launcher"}
+        exec(compile(source, "<generated-client>", "exec"), namespace)
+        read_frame = cast(Callable[[testing.DummySocket], tuple[int, bytes] | None], namespace["_read_frame"])
+        incoming = struct.pack(">BI", config.ChannelType.STDIN, config.MAX_TLV_FRAME_SIZE + 1)
+        sock = testing.DummySocket(incoming_bytes=incoming)
+
+        with pytest.raises(ValueError, match="TLV frame payload exceeds maximum size"):
+            read_frame(sock)
+
+        assert len(sock.recv_calls) == 1
+
+    def test_render_launcher__frame_size_guard__is_present_in_generated_client(self) -> None:
+        """Verify the generated agent rejects oversized inbound and outbound TLV frames."""
+
+        plugin = py_socket.PySocketPlugin
+        filesystem = plugin.build_config("127.0.0.1", 9000, plugin.extract_options({})).filesystem
+        processor = py_socket.PySocketProcessor(filesystem)
+        rendered = processor.render_launcher("127.0.0.1", 9000, b"ack")
+        decoded = bytes.fromhex(rendered.decode("ascii")).decode("utf-8")
+
+        assert f"MAX_TLV_FRAME_SIZE = int('{config.MAX_TLV_FRAME_SIZE}')" in decoded
+        assert "if length > MAX_TLV_FRAME_SIZE:" in decoded
+        assert "if len(data) > MAX_TLV_FRAME_SIZE:" in decoded
 
     def test_render_launcher__sanitizes_comments_docstrings_annotations_and_asserts(self, tmp_path: Path) -> None:
         """Verify render_launcher strips comments, docstrings, type annotations, and asserts."""

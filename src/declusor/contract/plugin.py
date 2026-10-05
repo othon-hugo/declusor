@@ -100,6 +100,9 @@ class PluginFilesystem:
 
         Returns:
             Immutable ``PluginFilesystem`` derived from ``root``.
+
+        Raises:
+            config.PluginValidationError: If the root and its ``assets`` directory do not exist.
         """
 
         normalized_root = root.expanduser().resolve()

@@ -8,7 +8,7 @@
 
   <p>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
-    <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.11%2B-blue.svg" alt="Python 3.11+"></a>
+    <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.12%2B-blue.svg" alt="Python 3.12+"></a>
     <a href="https://mypy.readthedocs.io/"><img src="https://img.shields.io/badge/typing-strict-brightgreen.svg" alt="Typing: Strict"></a>
     <a href="https://docs.astral.sh/ruff/"><img src="https://img.shields.io/badge/code%20style-ruff-orange.svg" alt="Code Style: Ruff"></a>
   </p>
@@ -214,14 +214,14 @@ bash -c 'printf "%s" "$1" | while IFS= read -r -n2 byte; do printf "%b" "\\x$byt
 - **Stream Fragmentation Immunity**: Egress and ingress cursors are tracked independently across stream decorators, guaranteeing that arbitrary TCP packet segmentation never desynchronizes obfuscated or encrypted channels.
 - **Three-Tier Dynamic Plugin Discovery**: Discovers transport plugins across repository built-ins, installed distribution packages (PEP 621 entry points), and drop-in operator directories (`--plugin-dir`).
 - **Decoupled Transport Protocols & Agents**: Bundles native Linux `/dev/tcp` (`shell_socket`) and in-memory Python (`py_socket`) clients with zero hardcoded dependencies on the core orchestration engine.
-- **Contract-First Interface Isolation**: Enforces strict domain contracts (`IPlugin`, `IPluginRuntime`, `IConnection`, `ITransport`) with isolated asset overlays for launchers, initialization helpers, and payloads.
+- **Contract-First Interface Isolation**: Enforces strict domain contracts (`IPluginExtension`, `IPluginRuntime`, `IConnection`, `ITransport`) with isolated asset overlays for launchers, initialization helpers, and payloads.
 - **Deterministic Conformance Test Suite**: Equips plugin authors with `PluginConformanceTestSuite` and typed test doubles (`MemoryTransport`, `DummyTransport`) to verify full contract compliance in milliseconds without brittle mocks or network port binding.
 
 ## Getting Started
 
 ### Prerequisites
 
-Declusor requires **Python 3.11+** and runs natively on Linux, macOS, and Windows. Package management requires **pip** or optionally—and recommended—[**uv**](https://github.com/astral-sh/uv) and **GNU Make** for fast and standardized workflows.
+Declusor requires **Python 3.12+** and runs natively on Linux, macOS, and Windows. Package management requires **pip** or optionally—and recommended—[**uv**](https://github.com/astral-sh/uv) and **GNU Make** for fast and standardized workflows.
 
 ### Installation
 
@@ -296,8 +296,8 @@ Declusor adheres to strict **Clean Architecture** and **Dependency Inversion** p
 - **Pluggable & Composable Transports**: The transport layer (`declusor.transport`) isolates physical network mechanics behind `ITransport` and `ITransportListener`, supporting composable decorator pipelines (e.g. XOR obfuscation) without touching session logic.
 - **Fail-Fast Invariants**: Immutable Command DTOs validate parameters at the boundary, preventing invalid operations from propagating into transports.
 - **Deterministic Flow Control**: Controllers return explicit lifecycle signals (`CONTINUE`, `TERMINATE`) rather than relying on control-flow exceptions.
-- **Mock-Free Determinism**: Test suites utilize in-memory duplex transports (`MemoryTransport`, `MemoryTransportListener`), enabling full end-to-end handshake and lifecycle tests without binding real network ports or relying on fragile monkeypatching.
-- **Memory-Isolated Conformance & 100% Strict Typing**: Over 1,360 precision tests running across memory-isolated test sessions (`make test-unit`, `make test-e2e`, `make test-plugins`), organized into 100% class-based test suites under strict Mypy type enforcement.
+- **Deterministic Test Boundaries**: Component tests use in-memory doubles; focused socket-adapter and native-client workflows use loopback connections with deterministic teardown.
+- **Memory-Isolated Verification**: Unit, application E2E, and plugin suites run in isolated processes via `make test-unit`, `make test-e2e`, and `make test-plugins`, under the configured Mypy strict profile.
 
 Read the complete architectural specification in [ARCHITECTURE.md](ARCHITECTURE.md).
 
@@ -308,7 +308,7 @@ Contributions from both humans and autonomous agents are warmly welcomed! Please
 All contributions must pass the verification gate with zero warnings or errors:
 
 ```bash
-make check  # Runs format-check, lint, strict mypy type analysis, and all memory-isolated test suites
+make check  # Runs format-check, lint, configured Mypy strict analysis, and all memory-isolated test suites
 ```
 
 ## License

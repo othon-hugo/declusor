@@ -17,7 +17,7 @@ class ConnectionState(StrEnum):
     """Connection instantiated but protocol handshake not yet initiated."""
 
     INITIALIZING = "INITIALIZING"
-    """Handshake in progress (transmitting helpers and verifying ACK sentinel)."""
+    """Protocol handshake is in progress."""
 
     CONNECTED = "CONNECTED"
     """Handshake completed successfully; channel is ready for command operations."""
@@ -119,7 +119,7 @@ class IConnection(ABC):
     """Manages an active network session with a remote client.
 
     Handles the full lifecycle of a connection: initialization (handshake),
-    framed read/write over the transport layer, and graceful shutdown.
+    protocol-framed read/write over the transport layer, and graceful shutdown.
     Supports the context manager protocol — ``close()`` is called automatically
     on exit.
     """
@@ -128,7 +128,12 @@ class IConnection(ABC):
         self._underlying_connection = connection
 
     def handshake(self) -> None:
-        """Execute protocol handshake to establish an active, authenticated session."""
+        """Execute the plugin-specific handshake to initialize the session.
+
+        Raises:
+            ConnectionError: If the connection state does not permit a handshake.
+            ConnectionHandshakeError: If protocol initialization fails.
+        """
 
         if self._underlying_connection:
             self._underlying_connection.handshake()
@@ -227,29 +232,33 @@ class IConnection(ABC):
 
     @abstractmethod
     def read(self) -> Generator[bytes, None, None]:
-        """Read a framed message from the remote client.
+        """Stream response payload chunks from the remote client.
 
-        Yields chunks of data until the client's ACK sentinel is received.
-        The sentinel itself is excluded from the yielded data.
+        The plugin's protocol determines how responses are framed and when the
+        stream is complete. Protocol control frames are not yielded as payload.
 
         Yields:
-            Successive ``bytes`` chunks of the incoming message payload.
+            Successive byte chunks from the response payload.
 
         Raises:
-            ConnectionFailure: On timeout, connection reset, or other I/O error.
+            ConnectionClosed: If the remote peer closes during the response.
+            ConnectionTimeoutError: If a transport operation times out.
+            ConnectionError: If another transport or protocol I/O error occurs.
         """
 
         raise NotImplementedError
 
     @abstractmethod
     def write(self, content: bytes, /) -> None:
-        """Send data to the remote client, followed by the server ACK sentinel.
+        """Send a payload to the remote client using the plugin's protocol framing.
 
         Args:
             content: The raw bytes payload to transmit.
 
         Raises:
-            ConnectionFailure: On timeout or I/O error during transmission.
+            ConnectionClosed: If the remote peer is closed.
+            ConnectionTimeoutError: If a transport operation times out.
+            ConnectionError: If another transport or protocol I/O error occurs.
         """
 
         raise NotImplementedError

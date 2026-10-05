@@ -89,7 +89,7 @@ main (Composition Root)
 
 ### Prerequisites
 
-- **Python 3.11+**
+- **Python 3.12+**
 - **uv** (recommended high-performance package and project manager)
 - **Make** (GNU Make for standardized execution workflows)
 - **Pytest** (test suite runner and assertion harness)
@@ -142,7 +142,7 @@ from .session import SessionContext
 from declusor import contract
 
 
-class MyPlugin(contract.IPlugin): ...
+class MyPlugin(contract.IPluginExtension[contract.ParsedArguments]): ...
 
 
 # FORBIDDEN: Destructuring separated symbols across external layers
@@ -201,7 +201,7 @@ Every package directory must maintain a `README.md` containing at least:
 ### Strict Static Typing
 
 - All production and test code must carry complete, precise type annotations.
-- `mypy src plugins tests` must pass with zero errors under `--strict`.
+- `make type-check` must pass with zero errors under the configured Mypy strict profile. Explicit `Any`-related exceptions are documented in `pyproject.toml`.
 - Never use untyped `Any` where a generic `TypeVar`, `Protocol`, or explicit union can be defined.
 
 ### Dynamic Signature Introspection
@@ -344,14 +344,14 @@ dependencies = ["declusor>=0.3.1"]
 Before opening a pull request or submitting code, ensure that all quality gates pass using the project `Makefile`:
 
 ```bash
-# Run the complete verification suite (formatting check, linting, strict mypy, and tests)
+# Run the complete verification suite (formatting check, linting, configured Mypy strict profile, and tests)
 make check
 
 # Granular verification targets
 make format-check                       # Verify code formatting with Ruff
 make format                             # Automatically format code and apply safe fixes
 make lint                               # Run Ruff linter checks
-make type-check                         # Run Mypy strict type analysis across host and plugins
+make type-check                         # Run configured Mypy strict type analysis across host, plugins, and tests
 make test                               # Run all unit, integration, and conformance tests
 make compile                            # Verify bytecode compilation across src, tests, and plugins
 
@@ -394,7 +394,7 @@ Commit messages must follow the [Conventional Commits](https://www.conventionalc
 - `feat(plugins): standardize autonomous plugin packages with src-layout and entry points`
 - `refactor(contract): decouple domain interfaces from stateless util primitives`
 - `fix(core): reject unregistered plugin commands during CLI parse phase`
-- `test(py_socket): add conformance suite verification against IPlugin contracts`
+- `test(py_socket): add conformance suite verification against IPluginExtension contracts`
 - `docs(contributing): clarify namespace import invariants and TYPE_CHECKING guardrails`
 
 ### Pull Request Expectations
@@ -423,7 +423,7 @@ Every pull request submitted to Declusor must adhere to the following principles
 
 Before opening or requesting review on a pull request:
 
-- [ ] `make check` executes cleanly (code formatting, Ruff linting, strict Mypy, and 100% test suite pass).
+- [ ] `make check` executes cleanly (code formatting, Ruff linting, configured Mypy strict profile, and all tests pass).
 - [ ] New components strictly conform to their layer's dependency and import invariants.
 - [ ] Any added or modified plugin passes `PluginConformanceTestSuite`.
 - [ ] Commit history is cleanly rebased against `main` and strictly follows Conventional Commits.

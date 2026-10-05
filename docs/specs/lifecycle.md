@@ -69,22 +69,27 @@ Scenario: Guarantee idempotent connection teardown
 
 ### STA-06: Prompt Loop Structured Lifecycle Signals
 
-Interactive controller execution must signal session lifecycle intent via structured signals (`CONTINUE` vs `TERMINATE`) rather than control-flow exceptions; `TERMINATE` cleanly exits the prompt loop with code 0.
+Interactive controllers must signal session lifecycle intent via structured signals (`CONTINUE` vs `TERMINATE`) rather than control-flow exceptions. `TERMINATE` ends the prompt loop normally; the composition root maps normal completion to process exit code 0.
 
 ```gherkin
 Scenario: Process structured controller lifecycle signals
   Given an interactive prompt loop dispatching commands
   When a controller returns a TERMINATE lifecycle signal
-  Then the prompt loop exits immediately with success status
+  Then the prompt loop returns normally without dispatching another command
 ```
 
 ### STA-07: Application Run Guaranteed Resource Teardown
 
-The top-level application runner must guarantee that all acquired network listeners and active client connections are closed upon termination under all conditions (success, error, or user interrupt).
+The application runner must close its listener and active connection when the session runner returns or raises. The prompt loop handles a peer `ConnectionClosed` by reporting it and returning normally; other propagated failures are mapped by the composition root.
 
 ```gherkin
 Scenario: Guarantee complete resource teardown during application termination
-  Given an application session encountering an error or interrupt during execution
-  When the session terminates
-  Then both the active client connection and network listener are closed and the error propagates
+  Given an application session runner that raises while a connection and listener are active
+  When the application exits the managed resource scopes
+  Then both resources are closed and the original exception propagates
+
+Scenario: Close resources after a handled peer disconnect
+  Given an active prompt loop whose command receives ConnectionClosed
+  When the prompt loop reports the disconnection and returns
+  Then the active connection and listener are closed
 ```

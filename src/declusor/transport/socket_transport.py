@@ -57,14 +57,21 @@ class SocketTransport(contract.ITransport):
     def read(self, max_bytes: int = 4096, /) -> bytes:
         """Read up to max_bytes from the socket.
 
+        Args:
+            max_bytes: Maximum number of bytes to read. Must be positive.
+
         Returns:
             The read bytes chunk. Returns empty bytes (b"") on EOF or remote closure.
 
         Raises:
+            ValueError: If ``max_bytes`` is not positive.
             ConnectionTimeoutError: If read times out.
             ConnectionClosed: If called on a closed transport or remote closed reset.
             ConnectionError: On general socket I/O failure.
         """
+
+        if max_bytes <= 0:
+            raise ValueError(f"max_bytes must be positive, got {max_bytes}.")
 
         if self._closed:
             raise config.ConnectionClosed("Cannot read from closed transport.")
