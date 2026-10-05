@@ -2,7 +2,8 @@ from collections.abc import Callable, Sequence
 from typing import Final
 
 from declusor import config, contract
-from declusor.transport.xor_transport import XorTransport
+
+from .xor_transport import XorTransport
 
 TransportLayerFactory = Callable[[contract.ITransport], contract.ITransport]
 """Callable that wraps an ITransport into another ITransport (e.g. ITransportLayer)."""

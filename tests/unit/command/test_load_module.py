@@ -159,7 +159,7 @@ class TestLoadModule:
         dto = LoadModuleDTO(module_name=missing_module)
         command = LoadModule(dto)
 
-        with pytest.raises(config.InvalidOperation, match=f"Module '{missing_module}' could not be found."):
+        with pytest.raises(config.InvalidOperation, match=f"Module {missing_module!r} could not be found."):
             command.send_request(test_session)
 
     def test_load_module_send_request__path_traversal_outside_permitted_directory__raises_invalid_operation(
@@ -177,7 +177,7 @@ class TestLoadModule:
 
         with pytest.raises(
             config.InvalidOperation,
-            match=f"Module path '{traversal_module}' is outside the permitted modules directory.",
+            match=f"Module path {traversal_module!r} is outside the permitted modules directory.",
         ):
             command.send_request(test_session)
 

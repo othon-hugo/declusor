@@ -20,7 +20,6 @@ from .parser import (
 from .plugin import (
     PluginManager,
     PluginRegistry,
-    PluginType,
 )
 from .router import (
     Router,
@@ -33,6 +32,7 @@ from .routes import (
 
 __all__ = [
     "Application",
+    "create_help_route",
     "DeclusorParser",
     "DuplicateRouteError",
     "EXIT_ROUTE",
@@ -44,9 +44,7 @@ __all__ = [
     "PluginManager",
     "PluginNotFoundError",
     "PluginRegistry",
-    "PluginType",
     "PluginValidationError",
     "Router",
     "RouterError",
-    "create_help_route",
 ]

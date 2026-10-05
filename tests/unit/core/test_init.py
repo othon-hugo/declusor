@@ -11,6 +11,7 @@ class TestCoreExports:
 
         expected = [
             "Application",
+            "create_help_route",
             "DeclusorParser",
             "DuplicateRouteError",
             "EXIT_ROUTE",
@@ -22,11 +23,9 @@ class TestCoreExports:
             "PluginManager",
             "PluginNotFoundError",
             "PluginRegistry",
-            "PluginType",
             "PluginValidationError",
             "Router",
             "RouterError",
-            "create_help_route",
         ]
 
         assert core.__all__ == expected

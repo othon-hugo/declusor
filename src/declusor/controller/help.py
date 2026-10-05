@@ -30,7 +30,7 @@ def create_help_controller(router: contract.IRouter) -> contract.Controller:
             target_route = help_command.strip()
 
             if target_route not in router.routes:
-                session.view.write_error(f"Unknown command: '{target_route}'. Type 'help' to list available commands.")
+                session.view.write_error(f"Unknown command: {target_route!r}. Type 'help' to list available commands.")
                 return contract.ControllerResult.for_continuation()
 
             route_help = router.help(target_route)

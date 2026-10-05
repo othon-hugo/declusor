@@ -4,7 +4,6 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from declusor import config, contract, transport
-from declusor.config import InvalidOperation
 
 from .launcher import LauncherRenderer
 from .routes import EXIT_ROUTE, OFFICIAL_ROUTES, create_help_route
@@ -13,6 +12,7 @@ if TYPE_CHECKING:
     from .plugin import PluginManager
 
 TransportListenerFactory = Callable[[str, int], contract.ITransportListener]
+"""Factory for creating a transport listener bound to a host and port."""
 
 
 class Application:
@@ -104,7 +104,7 @@ class Application:
 
         self._plugin_manager.register(plugin)
 
-    def run(self, config: contract.PluginConfig[contract.ParsedArguments], /) -> None:
+    def run(self, plugin_config: contract.PluginConfig[contract.ParsedArguments], /) -> None:
         """Run the configured server connection.
 
         Args:
@@ -114,42 +114,42 @@ class Application:
             ConnectionError: If the transport session cannot be established.
         """
 
-        plugin_class = self._plugin_manager.get(config.kind)
+        PluginExtension = self._plugin_manager.get(plugin_config.kind)
 
         if self._route_plugin_name is None:
-            self._connect_routes(plugin_class.routes)
-            self._route_plugin_name = plugin_class.name
-        elif self._route_plugin_name != plugin_class.name:
-            raise InvalidOperation(
-                f"Application routes are already configured for plugin '{self._route_plugin_name}'. "
-                f"Create a new Application to use '{plugin_class.name}'."
+            self._connect_routes(PluginExtension.routes)
+            self._route_plugin_name = PluginExtension.name
+        elif self._route_plugin_name != PluginExtension.name:
+            raise config.InvalidOperation(
+                f"Application routes are already configured for plugin {self._route_plugin_name!r}."
+                f"Create a new Application to use {PluginExtension.name!r}."
             )
 
-        plugin_runtime = plugin_class.build_runtime(config)
+        plugin_runtime = PluginExtension.build_runtime(plugin_config)
 
         if self._input_source is not None and (setup_completer := getattr(self._input_source, "setup_completer", None)):
             params = inspect.signature(setup_completer).parameters
             positional_params = [p for p in params.values() if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)]
 
             if len(positional_params) >= 2 or "assets_dir" in params:
-                setup_completer(self._router.routes, config.filesystem.assets)
+                setup_completer(self._router.routes, plugin_config.filesystem.assets)
             else:
                 setup_completer(self._router.routes)
 
         delivery = plugin_runtime.launcher
         delivery = dataclasses.replace(
             delivery,
-            output_mode=config.launcher_output_mode,
-            output_path=config.launcher_output_path,
-            wrapper_template=config.launcher_wrapper or delivery.wrapper_template,
+            output_mode=plugin_config.launcher_output_mode,
+            output_path=plugin_config.launcher_output_path,
+            wrapper_template=plugin_config.launcher_wrapper or delivery.wrapper_template,
         )
 
         self._launcher_renderer.render(delivery)
 
-        with self._listener_factory(config.host, config.port) as listener:
+        with self._listener_factory(plugin_config.host, plugin_config.port) as listener:
             incoming_transport = listener.accept()
 
-            pipeline = self._transport_registry.build_pipeline(config.transport_layers)
+            pipeline = self._transport_registry.build_pipeline(plugin_config.transport_layers)
             wrapped_transport = pipeline.wrap(incoming_transport)
 
             with plugin_runtime.create_connection(wrapped_transport) as connection:
@@ -171,7 +171,7 @@ class Application:
 
         for route, registration in plugin_routes.items():
             if route in {"help", "exit"}:
-                raise config.PluginValidationError(f"Plugins cannot override protected route '{route}'.")
+                raise config.PluginValidationError(f"Plugins cannot override protected route {route!r}.")
 
             registrations[route] = registration
 
@@ -184,10 +184,10 @@ class Application:
             normalized_route = route.strip()
 
             if normalized_route in normalized_registrations:
-                raise config.PluginValidationError(f"Duplicate route after normalization: '{normalized_route}'.")
+                raise config.PluginValidationError(f"Duplicate route after normalization: {normalized_route!r}.")
 
             if not isinstance(registration, contract.RouteRegistration):
-                raise config.PluginValidationError(f"Route '{normalized_route}' must be a RouteRegistration.")
+                raise config.PluginValidationError(f"Route {normalized_route!r} must be a RouteRegistration.")
 
             normalized_registrations[normalized_route] = registration
 

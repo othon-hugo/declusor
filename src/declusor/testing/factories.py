@@ -2,11 +2,7 @@ from pathlib import Path
 from typing import overload
 
 from declusor import config, contract
-from declusor.testing.doubles.connection import DummyConnection
-from declusor.testing.doubles.filestore import DummyPluginFileStore
-from declusor.testing.doubles.input_source import DummyInputSource
-from declusor.testing.doubles.plugins import DummyConfig
-from declusor.testing.doubles.view import DummyView
+from declusor.testing import doubles
 
 
 def create_test_session(
@@ -18,20 +14,20 @@ def create_test_session(
     """Create a SessionContext populated with test doubles by default.
 
     Args:
-        connection: Connection double to inject. Defaults to DummyConnection.
-        view: View double to inject. Defaults to DummyView.
-        input_source: Input source double to inject. Defaults to DummyInputSource.
-        files: File store double to inject. Defaults to DummyPluginFileStore.
+        connection: Connection double to inject. Defaults to doubles.DummyConnection.
+        view: View double to inject. Defaults to doubles.DummyView.
+        input_source: Input source double to inject. Defaults to doubles.DummyInputSource.
+        files: File store double to inject. Defaults to doubles.DummyPluginFileStore.
 
     Returns:
         A ready-to-use SessionContext instance.
     """
 
     return contract.SessionContext(
-        connection=connection or DummyConnection(),
-        view=view or DummyView(),
-        input_source=input_source or DummyInputSource(),
-        plugin_processor=files or DummyPluginFileStore(),
+        connection=connection or doubles.DummyConnection(),
+        view=view or doubles.DummyView(),
+        input_source=input_source or doubles.DummyInputSource(),
+        plugin_processor=files or doubles.DummyPluginFileStore(),
     )
 
 
@@ -40,7 +36,7 @@ def create_dummy_plugin_config(
     host: str = "127.0.0.1",
     port: int = 9000,
     filesystem: contract.PluginFilesystem | None = None,
-    options: DummyConfig | None = None,
+    options: doubles.DummyConfig | None = None,
     mode: config.ExecutionMode = config.DEFAULT_EXECUTION_MODE,
     *,
     timeout: float | None = None,
@@ -48,7 +44,7 @@ def create_dummy_plugin_config(
     launcher_output_path: Path | None = None,
     launcher_wrapper: str | None = None,
     transport_layers: tuple[str, ...] = (),
-) -> contract.PluginConfig[DummyConfig]:
+) -> contract.PluginConfig[doubles.DummyConfig]:
     """Create a PluginConfig instance for testing.
 
     Args:
@@ -56,7 +52,7 @@ def create_dummy_plugin_config(
         host: Host address. Defaults to "127.0.0.1".
         port: Port number. Defaults to 9000.
         filesystem: Optional PluginFilesystem instance. Defaults to None.
-        options: Plugin options dictionary. Defaults to empty DummyConfig.
+        options: Plugin options dictionary. Defaults to empty doubles.DummyConfig.
         mode: Application execution mode.
         timeout: Default network socket operation timeout in seconds.
         launcher_output_mode: Delivery mode for the generated client launcher.
@@ -80,8 +76,8 @@ def create_dummy_plugin_config(
         kind=kind,
         host=host,
         port=port,
-        options=options if options is not None else DummyConfig(),
-        options_type=DummyConfig,
+        options=options if options is not None else doubles.DummyConfig(),
+        options_type=doubles.DummyConfig,
         filesystem=filesystem or dummy_fs,
         mode=mode,
         timeout=timeout,
@@ -131,8 +127,8 @@ def create_dummy_controller_request[T: contract.ControllerArguments](
 def create_dummy_options(
     host: str = "127.0.0.1",
     port: int = 9000,
-    client: contract.PluginConfig[DummyConfig] | None = None,
-) -> contract.PluginConfig[DummyConfig]:
+    client: contract.PluginConfig[doubles.DummyConfig] | None = None,
+) -> contract.PluginConfig[doubles.DummyConfig]:
     """Create a fully-formed PluginConfig for testing.
 
     Args:

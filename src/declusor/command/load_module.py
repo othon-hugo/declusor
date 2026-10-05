@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 
 from declusor import config, contract, util
-from declusor.command.base import BaseStreamCommand
+
+from .base import BaseStreamCommand
 
 
 @dataclass(frozen=True)
@@ -69,10 +70,10 @@ class LoadModule(BaseStreamCommand):
         module_path = session.plugin.find_module(self._dto.module_name)
 
         if not module_path:
-            raise config.InvalidOperation(f"Module '{self._dto.module_name}' could not be found.")
+            raise config.InvalidOperation(f"Module {self._dto.module_name!r} could not be found.")
 
         if not util.validate_file_relative(module_path, session.plugin.filesystem.modules):
-            raise config.InvalidOperation(f"Module path '{self._dto.module_name}' is outside the permitted modules directory.")
+            raise config.InvalidOperation(f"Module path {self._dto.module_name!r} is outside the permitted modules directory.")
 
         module_bytes = session.plugin.load_module(module_path)
         module_b64 = util.convert_to_base64(module_bytes)

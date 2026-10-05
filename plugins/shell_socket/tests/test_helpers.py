@@ -10,6 +10,7 @@ def _std_sh_path() -> Path:
 def _run_in_std(command: str) -> subprocess.CompletedProcess[str]:
     std_path = _std_sh_path()
     script = f'. "{std_path}"\n{command}'
+
     return subprocess.run(
         ["bash", "-c", script],
         capture_output=True,

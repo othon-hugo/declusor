@@ -6,8 +6,6 @@ from typing import Any
 
 from declusor import config, contract, util
 
-PluginType = type[contract.IPluginExtension[Any]]
-
 
 class PluginRegistry:
     """Registry of client plugins available to the application.
@@ -19,9 +17,9 @@ class PluginRegistry:
     def __init__(self) -> None:
         """Create an empty client registry."""
 
-        self._plugins: dict[str, PluginType] = {}
+        self._plugins: dict[str, contract.PluginExtensionType] = {}
 
-    def register(self, plugin: PluginType, /) -> None:
+    def register(self, plugin: contract.PluginExtensionType, /) -> None:
         """Register a client plugin.
 
         Args:
@@ -36,7 +34,7 @@ class PluginRegistry:
 
         self._plugins[plugin.name] = plugin
 
-    def get(self, name: str, /) -> PluginType:
+    def get(self, name: str, /) -> contract.PluginExtensionType:
         """Retrieve a registered client plugin.
 
         Args:
@@ -131,19 +129,19 @@ class PluginManager(PluginRegistry):
             normalized_route = route.strip()
 
             if normalized_route in {"help", "exit"}:
-                raise config.PluginValidationError(f"Plugin class {candidate.__name__!r} cannot override protected route '{normalized_route}'.")
+                raise config.PluginValidationError(f"Plugin class {candidate.__name__!r} cannot override protected route {normalized_route!r}.")
 
             if normalized_route in normalized_routes:
-                raise config.PluginValidationError(f"Plugin class {candidate.__name__!r} defines duplicate normalized route '{normalized_route}'.")
+                raise config.PluginValidationError(f"Plugin class {candidate.__name__!r} defines duplicate normalized route {normalized_route!r}.")
 
             if not isinstance(registration, contract.RouteRegistration):
-                raise config.PluginValidationError(f"Plugin class {candidate.__name__!r} route '{normalized_route}' must be a RouteRegistration.")
+                raise config.PluginValidationError(f"Plugin class {candidate.__name__!r} route {normalized_route!r} must be a RouteRegistration.")
 
             normalized_routes.add(normalized_route)
 
     def register(
         self,
-        plugin: PluginType,
+        plugin: contract.PluginExtensionType,
         /,
         *,
         source: str = "manual",
@@ -165,7 +163,7 @@ class PluginManager(PluginRegistry):
 
         if plugin.name in self._plugins and not allow_override:
             existing_source = self._sources.get(plugin.name, "unknown")
-            raise ValueError(f"Client plugin '{plugin.name}' already registered from {existing_source}.")
+            raise ValueError(f"Client plugin {plugin.name!r} already registered from {existing_source}.")
 
         self._plugins[plugin.name] = plugin
         self._sources[plugin.name] = source

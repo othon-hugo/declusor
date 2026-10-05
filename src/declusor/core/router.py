@@ -1,5 +1,4 @@
-from declusor import contract
-from declusor.config import DuplicateRouteError, RouterError
+from declusor import config, contract
 
 
 class Router(contract.IRouter):
@@ -41,7 +40,7 @@ class Router(contract.IRouter):
         route = route.strip()
 
         if route in self._route_table:
-            raise DuplicateRouteError(route, "route already exists.")
+            raise config.DuplicateRouteError(route, "route already exists.")
 
         if not isinstance(registration, contract.RouteRegistration):
             registration = contract.RouteRegistration(registration, contract.RouteHelp())
@@ -63,4 +62,4 @@ class Router(contract.IRouter):
         if registration := self._route_table.get(route.strip()):
             return registration
 
-        raise RouterError(route)
+        raise config.RouterError(route)

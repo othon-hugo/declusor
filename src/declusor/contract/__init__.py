@@ -35,6 +35,7 @@ from .plugin import (
     IPluginRuntime,
     LauncherDelivery,
     PluginConfig,
+    PluginExtensionType,
     PluginFilesystem,
 )
 from .router import (
@@ -86,6 +87,7 @@ __all__ = [
     "LauncherDelivery",
     "ParsedArguments",
     "PluginConfig",
+    "PluginExtensionType",
     "PluginFilesystem",
     "RouteHelp",
     "RouteRegistration",

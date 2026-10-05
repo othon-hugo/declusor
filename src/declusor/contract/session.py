@@ -2,12 +2,12 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from declusor.contract.command import ICommand
-    from declusor.contract.connection import IConnection
-    from declusor.contract.input_source import IInputSource
-    from declusor.contract.plugin import IPluginProcessor
-    from declusor.contract.router import IRouter
-    from declusor.contract.view import IView
+    from .command import ICommand
+    from .connection import IConnection
+    from .input_source import IInputSource
+    from .plugin import IPluginProcessor
+    from .router import IRouter
+    from .view import IView
 
 
 class SessionContext:

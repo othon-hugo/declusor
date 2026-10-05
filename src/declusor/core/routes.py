@@ -58,6 +58,7 @@ EXIT_ROUTE = contract.RouteRegistration(
         "Terminates the interactive session gracefully. This command takes no arguments.",
     ),
 )
+"""Exit route for ending the active session."""
 
 
 def create_help_route(router: contract.IRouter, /) -> contract.RouteRegistration:

@@ -557,7 +557,7 @@ class TestTerminalApplicationLifecycle:
         )
 
         with pytest.raises(TypeError, match="positional-only"):
-            terminal_app.run(config=plugin_config)  # type: ignore[call-arg]
+            terminal_app.run(plugin_config=plugin_config)  # type: ignore[call-arg]
 
     def test_run__with_setup_completer_input_source__populates_completer_routes(self, tmp_path: Path) -> None:
         """TerminalApplication.run invokes setup_completer on input_source when supported."""

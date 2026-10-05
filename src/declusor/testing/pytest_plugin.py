@@ -3,70 +3,55 @@ from collections.abc import Generator
 import pytest
 
 from declusor import contract
-from declusor.testing.doubles import (
-    DummyApplication,
-    DummyConnection,
-    DummyInputSource,
-    DummyOperationRenderer,
-    DummyPlugin,
-    DummyPluginFileStore,
-    DummyPluginRuntime,
-    DummyRouter,
-    DummySessionRunner,
-    DummySocket,
-    DummyTransport,
-    DummyView,
-    MemoryTransport,
-    MemoryTransportListener,
-    create_memory_transport_pair,
-)
-from declusor.testing.factories import (
+from declusor.testing import doubles
+
+from .factories import (
     create_dummy_plugin_config,
     create_test_session,
 )
 
 
 @pytest.fixture
-def dummy_view() -> DummyView:
-    """Provide a fresh in-memory DummyView."""
+def dummy_view() -> doubles.DummyView:
+    """Provide a fresh in-memory doubles.DummyView."""
 
-    return DummyView()
-
-
-@pytest.fixture
-def dummy_input_source() -> DummyInputSource:
-    """Provide a fresh in-memory DummyInputSource."""
-
-    return DummyInputSource()
+    return doubles.DummyView()
 
 
 @pytest.fixture
-def dummy_renderer() -> DummyOperationRenderer:
-    """Provide a fresh DummyOperationRenderer."""
+def dummy_input_source() -> doubles.DummyInputSource:
+    """Provide a fresh in-memory doubles.DummyInputSource."""
 
-    return DummyOperationRenderer()
-
-
-@pytest.fixture
-def dummy_connection(dummy_renderer: DummyOperationRenderer) -> DummyConnection:
-    """Provide a fresh DummyConnection backed by dummy_renderer."""
-
-    return DummyConnection(client=dummy_renderer, initial_state=contract.ConnectionState.CONNECTED)
+    return doubles.DummyInputSource()
 
 
 @pytest.fixture
-def dummy_file_store() -> DummyPluginFileStore:
-    """Provide a fresh DummyPluginFileStore."""
+def dummy_renderer() -> doubles.DummyOperationRenderer:
+    """Provide a fresh doubles.DummyOperationRenderer."""
 
-    return DummyPluginFileStore()
+    return doubles.DummyOperationRenderer()
+
+
+@pytest.fixture
+def dummy_connection(dummy_renderer: doubles.DummyOperationRenderer) -> doubles.DummyConnection:
+    """Provide a fresh doubles.DummyConnection backed by dummy_renderer."""
+
+    return doubles.DummyConnection(client=dummy_renderer, initial_state=contract.ConnectionState.CONNECTED)
+
+
+@pytest.fixture
+def dummy_file_store() -> doubles.DummyPluginFileStore:
+    """Provide a fresh doubles.DummyPluginFileStore."""
+
+    return doubles.DummyPluginFileStore()
 
 
 @pytest.fixture
 def test_session(
-    dummy_connection: DummyConnection,
-    dummy_view: DummyView,
-    dummy_input_source: DummyInputSource,
-    dummy_file_store: DummyPluginFileStore,
+    dummy_connection: doubles.DummyConnection,
+    dummy_view: doubles.DummyView,
+    dummy_input_source: doubles.DummyInputSource,
+    dummy_file_store: doubles.DummyPluginFileStore,
 ) -> contract.SessionContext:
     """Provide a SessionContext wired to isolated test doubles."""
 
@@ -79,33 +64,33 @@ def test_session(
 
 
 @pytest.fixture
-def dummy_runtime(dummy_file_store: DummyPluginFileStore) -> DummyPluginRuntime:
-    """Provide a fresh DummyPluginRuntime."""
+def dummy_runtime(dummy_file_store: doubles.DummyPluginFileStore) -> doubles.DummyPluginRuntime:
+    """Provide a fresh doubles.DummyPluginRuntime."""
 
-    return DummyPluginRuntime(file_store=dummy_file_store)
-
-
-@pytest.fixture
-def dummy_plugin() -> Generator[type[DummyPlugin], None, None]:
-    """Provide a clean DummyPlugin class with isolated static state."""
-
-    DummyPlugin.reset()
-    yield DummyPlugin
-    DummyPlugin.reset()
+    return doubles.DummyPluginRuntime(file_store=dummy_file_store)
 
 
 @pytest.fixture
-def dummy_router() -> DummyRouter:
-    """Provide a fresh DummyRouter."""
+def dummy_plugin() -> Generator[type[doubles.DummyPlugin], None, None]:
+    """Provide a clean doubles.DummyPlugin class with isolated static state."""
 
-    return DummyRouter()
+    doubles.DummyPlugin.reset()
+    yield doubles.DummyPlugin
+    doubles.DummyPlugin.reset()
 
 
 @pytest.fixture
-def dummy_socket() -> DummySocket:
-    """Provide a fresh DummySocket."""
+def dummy_router() -> doubles.DummyRouter:
+    """Provide a fresh doubles.DummyRouter."""
 
-    return DummySocket()
+    return doubles.DummyRouter()
+
+
+@pytest.fixture
+def dummy_socket() -> doubles.DummySocket:
+    """Provide a fresh doubles.DummySocket."""
+
+    return doubles.DummySocket()
 
 
 @pytest.fixture
@@ -116,38 +101,38 @@ def dummy_plugin_config() -> contract.PluginConfig[contract.ParsedArguments]:
 
 
 @pytest.fixture
-def dummy_transport() -> DummyTransport:
-    """Provide a fresh DummyTransport."""
+def dummy_transport() -> doubles.DummyTransport:
+    """Provide a fresh doubles.DummyTransport."""
 
-    return DummyTransport()
+    return doubles.DummyTransport()
 
 
 @pytest.fixture
-def memory_transport_pair() -> tuple[MemoryTransport, MemoryTransport]:
+def memory_transport_pair() -> tuple[doubles.MemoryTransport, doubles.MemoryTransport]:
     """Provide a linked pair of in-memory transports."""
 
-    return create_memory_transport_pair()
+    return doubles.create_memory_transport_pair()
 
 
 @pytest.fixture
-def memory_transport_listener() -> MemoryTransportListener:
-    """Provide a fresh MemoryTransportListener."""
+def memory_transport_listener() -> doubles.MemoryTransportListener:
+    """Provide a fresh doubles.MemoryTransportListener."""
 
-    return MemoryTransportListener()
-
-
-@pytest.fixture
-def dummy_session_runner() -> DummySessionRunner:
-    """Provide a fresh DummySessionRunner."""
-
-    return DummySessionRunner()
+    return doubles.MemoryTransportListener()
 
 
 @pytest.fixture
-def dummy_app() -> DummyApplication:
-    """Provide a fresh DummyApplication with DummyPlugin registered."""
+def dummy_session_runner() -> doubles.DummySessionRunner:
+    """Provide a fresh doubles.DummySessionRunner."""
 
-    declusor_app = DummyApplication()
-    declusor_app.register_plugin(DummyPlugin)
+    return doubles.DummySessionRunner()
+
+
+@pytest.fixture
+def dummy_app() -> doubles.DummyApplication:
+    """Provide a fresh doubles.DummyApplication with doubles.DummyPlugin registered."""
+
+    declusor_app = doubles.DummyApplication()
+    declusor_app.register_plugin(doubles.DummyPlugin)
 
     return declusor_app

@@ -19,10 +19,7 @@ def call_upload(
 
     arguments, _ = req.parse_arguments({"filepath": str, "destination": str | None})
 
-    dto = command.UploadFileDTO(
-        filepath=arguments["filepath"],
-        destination=arguments.get("destination"),
-    )
+    dto = command.UploadFileDTO(filepath=arguments["filepath"], destination=arguments.get("destination"))
     session.execute(command.UploadFile(dto))
 
     return contract.ControllerResult.for_continuation()

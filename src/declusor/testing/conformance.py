@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from declusor import config, contract, util
-from declusor.testing.doubles.transport import DummyTransport
+from declusor.testing import doubles
 
 
 def assert_conforms_to_client_plugin[T: contract.ParsedArguments](
@@ -75,7 +75,7 @@ def assert_conforms_to_client_plugin[T: contract.ParsedArguments](
     assert isinstance(runtime.processor, contract.IPluginProcessor), "runtime.processor must implement IPluginProcessor."
 
     # Invariant 6: Connection instantiation and behavioral lifecycle
-    dummy_transport = DummyTransport()
+    dummy_transport = doubles.DummyTransport()
     connection = runtime.create_connection(dummy_transport)
     assert isinstance(connection, contract.IConnection), f"create_connection must return IConnection, got {type(connection)}."
     initial_state = connection.state

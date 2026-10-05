@@ -658,7 +658,7 @@ class TestApplicationLifecycle:
         )
 
         with pytest.raises(TypeError, match="positional-only"):
-            app.run(config=plugin_config)  # type: ignore[call-arg]
+            app.run(plugin_config=plugin_config)  # type: ignore[call-arg]
 
     def test_application_run__passes_config_host_and_port_to_listener_factory(self, tmp_path: Path) -> None:
         """Application.run invokes listener_factory with host and port from config."""

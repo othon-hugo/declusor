@@ -7,8 +7,7 @@ from typing import TYPE_CHECKING, Any, Final
 from declusor import config, contract, transport, util
 
 if TYPE_CHECKING:
-    from declusor.core.plugin import PluginManager
-    from declusor.transport import TransportLayerRegistry
+    from .plugin import PluginManager
 
 
 class DeclusorParser(util.Parser):
@@ -303,7 +302,7 @@ class DeclusorParser(util.Parser):
         argv: Sequence[str] | None = None,
         /,
         *,
-        transport_registry: "TransportLayerRegistry | None" = None,
+        transport_registry: transport.TransportLayerRegistry | None = None,
     ) -> contract.PluginConfig[contract.ParsedArguments]:
         """Parse arguments and build a validated plugin configuration.
 
@@ -411,7 +410,7 @@ class DeclusorParser(util.Parser):
     def _resolve_transport_layers(
         self,
         args: argparse.Namespace,
-        transport_registry: "TransportLayerRegistry | None",
+        transport_registry: transport.TransportLayerRegistry | None,
         /,
     ) -> tuple[str, ...]:
         """Validate and resolve requested transport layers against the registry."""

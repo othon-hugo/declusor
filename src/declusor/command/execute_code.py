@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 
 from declusor import config, contract
-from declusor.command.base import BaseStreamCommand
+
+from .base import BaseStreamCommand
 
 
 @dataclass(frozen=True)

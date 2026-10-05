@@ -4,7 +4,8 @@ from collections.abc import Callable, Sequence
 from typing import TextIO
 
 from declusor import config, contract, core, transport
-from declusor.main.terminal import run_terminal_app
+
+from .terminal import run_terminal_app
 
 
 def run(
@@ -78,7 +79,7 @@ def run(
                         session_runner=session_runner,
                     )
                 case _:
-                    print(f"Execution mode '{plugin_config.mode.value}' is not supported yet.", file=error_stream)
+                    print(f"Execution mode {plugin_config.mode.value!r} is not supported yet.", file=error_stream)
                     return 1
 
         except config.ParserError as error:

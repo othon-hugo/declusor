@@ -59,7 +59,7 @@ class ExecutionMode(StrEnum):
 
         valid_modes = ", ".join(repr(m.value) for m in cls)
 
-        raise ValueError(f"Invalid execution mode: '{value}'. Choose from: {valid_modes}")
+        raise ValueError(f"Invalid execution mode: {value!r}. Choose from: {valid_modes}")
 
 
 class OperationCode(StrEnum):

@@ -227,7 +227,7 @@ class ShellSocketProcessor(contract.IPluginProcessor):
         path = (self._filesystem.helpers / path).resolve() if not path.is_absolute() else path.resolve()
 
         if not util.validate_file_relative(path, self._filesystem.helpers):
-            raise config.InvalidOperation(f"Helper path '{helper_path}' is outside permitted directory.")
+            raise config.InvalidOperation(f"Helper path {str(helper_path)!r} is outside permitted directory.")
 
         return util.load_file(path)
 
@@ -252,9 +252,9 @@ class ShellSocketProcessor(contract.IPluginProcessor):
         path = (self._filesystem.modules / path).resolve() if not path.is_absolute() else path.resolve()
 
         if not util.validate_file_relative(path, self._filesystem.modules):
-            raise config.InvalidOperation(f"Module path '{module_path}' is outside the permitted modules directory.")
+            raise config.InvalidOperation(f"Module path {str(module_path)!r} is outside the permitted modules directory.")
 
         if not util.validate_file_extension(path, self._module_extensions):
-            raise config.InvalidOperation(f"Module '{path.name}' has an unsupported extension. Allowed: {self._module_extensions}")
+            raise config.InvalidOperation(f"Module {path.name!r} has an unsupported extension. Allowed: {self._module_extensions}")
 
         return util.load_file(path)

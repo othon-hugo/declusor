@@ -168,12 +168,12 @@ class TestPySocketProcessor:
         rendered = processor.render_launcher("127.0.0.1", 9000, b"\x01\x02")
         decoded = bytes.fromhex(rendered.decode("ascii")).decode("utf-8")
 
-        assert f"CH_EXIT = int('{int(config.ChannelType.PROCESS_EXIT)}')" in decoded
-        assert f"CH_STDOUT = int('{int(config.ChannelType.STDOUT)}')" in decoded
-        assert f"CH_STDERR = int('{int(config.ChannelType.STDERR)}')" in decoded
-        assert f"CH_STDIN = int('{int(config.ChannelType.STDIN)}')" in decoded
-        assert f"CH_SIGNAL = int('{int(config.ChannelType.SIGNAL)}')" in decoded
-        assert f"CH_HEARTBEAT = int('{int(config.ChannelType.HEARTBEAT)}')" in decoded
+        assert f"CH_EXIT = int('{config.ChannelType.PROCESS_EXIT.value}')" in decoded
+        assert f"CH_STDOUT = int('{config.ChannelType.STDOUT.value}')" in decoded
+        assert f"CH_STDERR = int('{config.ChannelType.STDERR.value}')" in decoded
+        assert f"CH_STDIN = int('{config.ChannelType.STDIN.value}')" in decoded
+        assert f"CH_SIGNAL = int('{config.ChannelType.SIGNAL.value}')" in decoded
+        assert f"CH_HEARTBEAT = int('{config.ChannelType.HEARTBEAT.value}')" in decoded
 
     def test_render_launcher__sanitizes_comments_docstrings_annotations_and_asserts(self, tmp_path: Path) -> None:
         """Verify render_launcher strips comments, docstrings, type annotations, and asserts."""

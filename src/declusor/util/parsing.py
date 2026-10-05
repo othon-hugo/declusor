@@ -6,7 +6,7 @@ from typing import Any, NoReturn, Union, get_args, get_origin
 
 from declusor import config
 
-union_types = (Union, types.UnionType)
+UNION_TYPES = (Union, types.UnionType)
 
 type SupportedType = type[str] | type[int]
 """Primitive types accepted as command-line arguments."""
@@ -71,7 +71,7 @@ def build_command_parser(definitions: ArgumentDefinitions) -> Parser:
         is_optional: bool = False
         target_type: Any = raw_type
 
-        if origin in union_types:
+        if origin in UNION_TYPES:
             all_args: tuple[Any, ...] = get_args(raw_type)
             non_none_args: list[Any] = [a for a in all_args if a is not type(None)]
 

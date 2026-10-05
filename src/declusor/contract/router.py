@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from declusor.contract.controller import Controller
+    from .controller import Controller
 
 
 @dataclass(frozen=True)

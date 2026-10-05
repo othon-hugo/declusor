@@ -2,15 +2,18 @@ from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from declusor import config, util
-from declusor.contract.router import RouteTable
 
 if TYPE_CHECKING:
-    from declusor.contract.connection import IConnection
-    from declusor.contract.parser import IArgumentParser, ParsedArguments
-    from declusor.contract.transport import ITransport
+    from .connection import IConnection
+    from .parser import IArgumentParser, ParsedArguments
+    from .router import RouteTable
+    from .transport import ITransport
+
+PluginExtensionType = type["IPluginExtension[Any]"]
+"""Concrete plugin extension class type."""
 
 
 @dataclass(frozen=True)
@@ -147,7 +150,7 @@ class IPluginExtension[T: ParsedArguments](ABC):
     options_type: type[T]
     """The concrete TypedDict class for this plugin's parsed options."""
 
-    routes: RouteTable
+    routes: "RouteTable"
     """Routes provided by this plugin, keyed by their command names."""
 
     @classmethod

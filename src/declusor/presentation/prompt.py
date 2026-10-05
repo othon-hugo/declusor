@@ -1,5 +1,6 @@
 from declusor import config, contract
-from declusor.presentation.request import ControllerRequest
+
+from .request import ControllerRequest
 
 
 class PromptLoop(contract.ISessionRunner):

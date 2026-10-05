@@ -2,7 +2,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from declusor import config, util
-from declusor.command.base import BaseFileCommand
+
+from .base import BaseFileCommand
 
 
 @dataclass(frozen=True)

@@ -1,12 +1,9 @@
 from abc import ABC, abstractmethod
 from collections.abc import Generator
 from enum import StrEnum
-from typing import TYPE_CHECKING, Self
+from typing import Self
 
 from declusor import config
-
-if TYPE_CHECKING:
-    from declusor.config import OperationCode
 
 
 class ConnectionState(StrEnum):
@@ -100,7 +97,7 @@ class IOperationRenderer(ABC):
     """
 
     @abstractmethod
-    def render_operation_command(self, opcode: "OperationCode", /, *args: str) -> str | None:
+    def render_operation_command(self, opcode: config.OperationCode, /, *args: str) -> str | None:
         """Build the command string for a given operation code.
 
         Maps an ``OperationCode`` to its client-side function name and appends

@@ -8,7 +8,7 @@ class TestTestingExports:
         """Ensure every symbol declared in __all__ is accessible on the module."""
 
         for symbol in testing.__all__:
-            assert hasattr(testing, symbol), f"Symbol '{symbol}' in __all__ is missing from declusor.testing"
+            assert hasattr(testing, symbol), f"Symbol {symbol!r} in __all__ is missing from declusor.testing"
 
     def test_all_completeness(self) -> None:
         """Verify __all__ is sorted and contains expected public exports."""
