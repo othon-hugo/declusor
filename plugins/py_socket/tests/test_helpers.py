@@ -141,10 +141,10 @@ class TestPySocketStdHelpersExecution:
 class TestPySocketStdHelpersUtilities:
     """Unit tests for presentation and diagnostic utility helpers."""
 
-    def test_print_with_label__prints_header_and_content(self, capsys: pytest.CaptureFixture[str]) -> None:
-        """Verify print_with_label outputs uppercase title with underline and content."""
+    def test_label__prints_header_and_content(self, capsys: pytest.CaptureFixture[str]) -> None:
+        """Verify label outputs uppercase title with underline and content."""
 
-        std_helpers.print_with_label("Status", "All systems operational")
+        std_helpers.label("Status", "All systems operational")
         captured = capsys.readouterr()
         assert "STATUS" in captured.out
         assert "------" in captured.out

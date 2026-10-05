@@ -158,6 +158,10 @@ class ShellSocketConnection(contract.IConnection):
     def timeout(self, value: float | None) -> None:
         self._transport.timeout = value
 
+    @property
+    def delim(self) -> bytes:
+        return f"__DECLUSOR_EOF_{self._current_nonce}__".encode("ascii")
+
     def handshake(self) -> None:
         """Perform the client initialization handshake."""
 
@@ -195,8 +199,6 @@ class ShellSocketConnection(contract.IConnection):
         if not self._current_nonce:
             raise config.ConnectionError("No active command nonce for read operation.")
 
-        delim = f"__DECLUSOR_EOF_{self._current_nonce}__".encode("ascii")
-
         buffer = bytearray()
 
         while True:
@@ -211,7 +213,7 @@ class ShellSocketConnection(contract.IConnection):
             buffer.extend(chunk)
 
             while True:
-                pos = buffer.find(delim)
+                pos = buffer.find(self.delim)
 
                 if pos == -1:
                     break
@@ -219,16 +221,16 @@ class ShellSocketConnection(contract.IConnection):
                 if pos > 0:
                     yield bytes(buffer[:pos])
 
-                buffer = buffer[pos + len(delim) :]
+                buffer = buffer[pos + len(self.delim) :]
 
                 if buffer.startswith(b"\n"):
                     buffer = buffer[1:]
 
                 return
 
-            if len(buffer) > len(delim):
-                yield bytes(buffer[: -len(delim)])
-                buffer = buffer[-len(delim) :]
+            if len(buffer) > len(self.delim):
+                yield bytes(buffer[: -len(self.delim)])
+                buffer = buffer[-len(self.delim) :]
 
     def __enter__(self) -> "ShellSocketConnection":
         return self

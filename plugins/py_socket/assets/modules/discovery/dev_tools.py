@@ -1,9 +1,7 @@
-"""Module: development tool detection for the py_socket client agent.
-
-Loaded on demand via the ``load`` command. Detects interpreters, compilers,
-build tools and version control software available in PATH.
-"""
 import shutil
+
+label: type
+format_table: type
 
 tools = [
     ("Python", "python3"),
@@ -25,12 +23,18 @@ tools = [
     ("socat", "socat"),
 ]
 
-results = []
-for label, binary in tools:
-    path = shutil.which(binary)
-    status = path if path else "not found"
-    results.append([label, binary, status])
+try:
+    results: list[list[str]] = []
 
-headers = ["Tool", "Binary", "Path"]
-table_output = format_table(headers, results)
-print_with_label("Development & Recon Tools", table_output)
+    for name, binary in tools:
+        path = shutil.which(binary)
+        status = path if path else "not found"
+
+        results.append([name, binary, status])
+
+    headers = ["Tool", "Binary", "Path"]
+
+    table_output = format_table(headers, results)
+    label("Development Tools", table_output)
+except Exception as e:
+    label("Development Tools", e)

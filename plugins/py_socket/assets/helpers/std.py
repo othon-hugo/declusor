@@ -105,7 +105,7 @@ def execute_system_command(command: str) -> None:
     proc.wait()
 
 
-def print_with_label(title: str, content: str = "") -> None:
+def label(title: str, content: str = "") -> None:
     heading = title.upper()
     separator = "-" * len(heading)
 

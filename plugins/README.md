@@ -6,12 +6,12 @@ This directory houses the built-in client plugins distributed with Declusor. Bec
 
 Every plugin is an autonomous package that implements the contracts defined in `declusor.contract`:
 
-| Contract             | Responsibility                                                                                    |
-| -------------------- | ------------------------------------------------------------------------------------------------- |
-| `IPluginExtension`   | Registers CLI flags, parses options, validates configuration, and builds the runtime.             |
-| `IPluginRuntime`     | Produces `LauncherDelivery` and instantiates the `IConnection` for an accepted socket.            |
-| `IConnection`        | Manages the framed read/write protocol and lifecycle state (`ConnectionState`).                   |
-| `IPluginProcessor`   | Loads initialization helpers, bootstrap templates, and on-demand discovery modules.               |
+| Contract             | Responsibility                                                                                      |
+| -------------------- | --------------------------------------------------------------------------------------------------- |
+| `IConnection`        | Manages the framed read/write protocol and lifecycle state (`ConnectionState`).                     |
+| `IPluginExtension`   | Registers CLI flags, parses options, validates configuration, and builds the runtime.               |
+| `IPluginRuntime`     | Produces `LauncherDelivery` and instantiates the `IConnection` for an accepted socket.              |
+| `IPluginProcessor`   | Loads initialization helpers, bootstrap templates, and on-demand discovery modules.                 |
 | `IOperationRenderer` | Renders command payloads for operations (`EXEC_COMMAND`, `EXEC_CODE`, `LOAD_MODULE`, `STORE_FILE`). |
 
 ## How Plugins are Discovered
