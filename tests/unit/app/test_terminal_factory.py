@@ -32,9 +32,9 @@ class TestCreateTerminalApplicationDefaults:
 
         declusor_app = app.create_terminal_application()
 
-        expected_routes = {"help", "execute", "load", "shell", "upload", "command", "code", "eval", "exit"}
+        expected_routes = {"help", "execute", "load", "shell", "upload", "command", "eval", "exit"}
         assert expected_routes.issubset(set(declusor_app.router.routes))
-        assert len(declusor_app.router.routes) >= 9
+        assert len(declusor_app.router.routes) >= 8
 
     def test_create_terminal_application__default_args__wires_terminal_view(self) -> None:
         """create_terminal_application wires an interactive TerminalView."""

@@ -19,6 +19,20 @@ def _make_dummy_controller(description: str = "") -> contract.Controller:
     return dummy
 
 
+def _register_help_route(
+    router: testing.DummyRouter,
+    route: str,
+    short: str = "",
+    complement: str = "",
+    controller_description: str = "",
+) -> None:
+    registration = contract.RouteRegistration(
+        _make_dummy_controller(controller_description),
+        contract.RouteHelp(short, complement),
+    )
+    router.connect(route, registration)
+
+
 class TestHelpArguments:
     """Tests verifying HelpArguments TypedDict invariants and contract compliance."""
 
@@ -63,8 +77,8 @@ class TestHelpControllerInvocation:
     ) -> None:
         """call_help without arguments displays all registered routes aligned with usage descriptions."""
 
-        dummy_router.connect("cat", _make_dummy_controller("Display file contents."))
-        dummy_router.connect("download", _make_dummy_controller("Fetch remote asset."))
+        _register_help_route(dummy_router, "cat", "Display file contents.")
+        _register_help_route(dummy_router, "download", "Fetch remote asset.")
 
         help_ctrl = help_module.create_help_controller(dummy_router)
         req = testing.create_dummy_controller_request("", help_module.HelpArguments)
@@ -86,7 +100,7 @@ class TestHelpControllerInvocation:
     ) -> None:
         """call_help lists route names without trailing colon or spaces when usage is absent."""
 
-        dummy_router.connect("ping", _make_dummy_controller(""))
+        _register_help_route(dummy_router, "ping")
 
         help_ctrl = help_module.create_help_controller(dummy_router)
         req = testing.create_dummy_controller_request("", help_module.HelpArguments)
@@ -104,8 +118,8 @@ class TestHelpControllerInvocation:
     ) -> None:
         """call_help handles a mix of documented and undocumented routes accurately."""
 
-        dummy_router.connect("echo", _make_dummy_controller("Print string."))
-        dummy_router.connect("noop", _make_dummy_controller(""))
+        _register_help_route(dummy_router, "echo", "Print string.")
+        _register_help_route(dummy_router, "noop")
 
         help_ctrl = help_module.create_help_controller(dummy_router)
         req = testing.create_dummy_controller_request("", help_module.HelpArguments)
@@ -134,15 +148,21 @@ class TestHelpControllerInvocation:
         assert result.action == contract.ControllerAction.CONTINUE
         assert dummy_view.messages == ["No commands available."]
 
-    def test_call_help__specific_command_with_usage__displays_command_and_usage(
+    def test_call_help__specific_command_with_help__displays_short_and_complement(
         self,
         test_session: contract.SessionContext,
         dummy_view: testing.DummyView,
         dummy_router: testing.DummyRouter,
     ) -> None:
-        """call_help with a specific command displays that command's usage documentation."""
+        """call_help displays explicit short and detailed help without a command prefix."""
 
-        dummy_router.connect("upload", _make_dummy_controller("Upload local file."))
+        _register_help_route(
+            dummy_router,
+            "upload",
+            "Upload a local file.",
+            "Usage: upload <filepath> [destination]. The destination is optional.",
+            "Controller docstrings must not appear in help.",
+        )
 
         help_ctrl = help_module.create_help_controller(dummy_router)
         req = testing.create_dummy_controller_request("upload", help_module.HelpArguments)
@@ -150,7 +170,7 @@ class TestHelpControllerInvocation:
         result = help_ctrl(test_session, req)
 
         assert result.action == contract.ControllerAction.CONTINUE
-        assert dummy_view.messages == ["upload: Upload local file."]
+        assert dummy_view.messages == ["Upload a local file.\n\nUsage: upload <filepath> [destination]. The destination is optional."]
 
     def test_call_help__specific_command_without_usage__displays_command_name_only(
         self,
@@ -160,7 +180,7 @@ class TestHelpControllerInvocation:
     ) -> None:
         """call_help with a specific undocumented command displays only the command name."""
 
-        dummy_router.connect("bare", _make_dummy_controller(""))
+        _register_help_route(dummy_router, "bare")
 
         help_ctrl = help_module.create_help_controller(dummy_router)
         req = testing.create_dummy_controller_request("bare", help_module.HelpArguments)
@@ -196,7 +216,7 @@ class TestHelpControllerInvocation:
     ) -> None:
         """call_help strips leading and trailing whitespace from the command name argument."""
 
-        dummy_router.connect("status", _make_dummy_controller("Report agent status."))
+        _register_help_route(dummy_router, "status", "Report agent status.")
 
         help_ctrl = help_module.create_help_controller(dummy_router)
         req = testing.create_dummy_controller_request("   status   ", help_module.HelpArguments)
@@ -204,7 +224,7 @@ class TestHelpControllerInvocation:
         result = help_ctrl(test_session, req)
 
         assert result.action == contract.ControllerAction.CONTINUE
-        assert dummy_view.messages == ["status: Report agent status."]
+        assert dummy_view.messages == ["Report agent status."]
 
     def test_call_help__dynamically_registered_routes__reflects_latest_router_state(
         self,
@@ -215,7 +235,7 @@ class TestHelpControllerInvocation:
         """call_help dynamically evaluates the router so subsequent route additions are reflected."""
 
         help_ctrl = help_module.create_help_controller(dummy_router)
-        dummy_router.connect("late_route", _make_dummy_controller("Late route usage."))
+        _register_help_route(dummy_router, "late_route", "Late route usage.")
         req = testing.create_dummy_controller_request("", help_module.HelpArguments)
 
         result = help_ctrl(test_session, req)

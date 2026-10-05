@@ -39,6 +39,8 @@ from .plugin import (
 )
 from .router import (
     IRouter,
+    RouteHelp,
+    RouteRegistration,
 )
 from .session import (
     ISessionRunner,
@@ -84,5 +86,7 @@ __all__ = [
     "ParsedArguments",
     "PluginConfig",
     "PluginFilesystem",
+    "RouteHelp",
+    "RouteRegistration",
     "SessionContext",
 ]

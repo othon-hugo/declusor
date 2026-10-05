@@ -5,14 +5,15 @@ from declusor.config import DuplicateRouteError, RouterError
 class Router(contract.IRouter):
     """Default ``IRouter`` implementation backed by an in-memory dictionary.
 
-    Routes are registered via ``connect`` and dispatched via ``locate``.
+    Routes and their help metadata are registered together via ``connect``;
+    ``locate`` returns the controller while ``help`` returns route metadata.
     The route name is stripped of surrounding whitespace before storage.
     Duplicate registration raises ``DuplicateRouteError``; unknown lookup raises
     ``RouterError``.
     """
 
     def __init__(self) -> None:
-        self._route_table: dict[str, contract.Controller] = {}
+        self._route_table: dict[str, contract.RouteRegistration] = {}
 
     @property
     def routes(self) -> tuple[str, ...]:
@@ -20,20 +21,18 @@ class Router(contract.IRouter):
 
         return tuple(self._route_table.keys())
 
-    def help(self, route: str, /) -> str:
-        """Return the one-line description of the controller for *route*.
+    def help(self, route: str, /) -> contract.RouteHelp:
+        """Return the route-specific help metadata."""
 
-        Collapses the controller's ``__doc__`` into a single space-separated
-        string. Returns an empty string if no docstring is present.
-        """
+        return self._locate_registration(route).help
 
-        controller_doc = self.locate(route).__doc__
-        usage = " ".join(line.strip() for line in controller_doc.splitlines() if line.strip()) if controller_doc else ""
-
-        return usage
-
-    def connect(self, route: str, controller: contract.Controller, /) -> None:
-        """Register *controller* under *route*.
+    def connect(
+        self,
+        route: str,
+        registration: contract.RouteRegistration | contract.Controller,
+        /,
+    ) -> None:
+        """Register *registration* under *route*.
 
         Raises:
             DuplicateRouteError: If *route* is already registered.
@@ -44,7 +43,10 @@ class Router(contract.IRouter):
         if route in self._route_table:
             raise DuplicateRouteError(route, "route already exists.")
 
-        self._route_table[route] = controller
+        if not isinstance(registration, contract.RouteRegistration):
+            registration = contract.RouteRegistration(registration, contract.RouteHelp())
+
+        self._route_table[route] = registration
 
     def locate(self, route: str, /) -> contract.Controller:
         """Return the controller bound to *route*.
@@ -53,7 +55,12 @@ class Router(contract.IRouter):
             RouterError: If *route* is not registered.
         """
 
-        if controller := self._route_table.get(route.strip()):
-            return controller
+        return self._locate_registration(route).controller
+
+    def _locate_registration(self, route: str, /) -> contract.RouteRegistration:
+        """Return the registration bound to *route*."""
+
+        if registration := self._route_table.get(route.strip()):
+            return registration
 
         raise RouterError(route)

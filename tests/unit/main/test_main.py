@@ -1,4 +1,4 @@
-"""Unit tests for main composition root and CLI entry point in declusor.main.main."""
+"""Unit tests for the run composition root and CLI entry point in declusor.main.main."""
 
 import io
 import sys
@@ -9,8 +9,8 @@ import pytest
 from declusor import config, core, main, testing, transport
 
 
-class TestMainDispatch:
-    """Tests verifying CLI argument handling and dispatching in main()."""
+class TestRunDispatch:
+    """Tests verifying CLI argument handling and dispatching in run()."""
 
     def test_main__with_explicit_argv__parses_and_executes_application(
         self,
@@ -91,8 +91,8 @@ class TestMainDispatch:
             main.run(["127.0.0.1", "9000"], dummy_app)  # type: ignore[misc]
 
 
-class TestMainPluginManagerResolution:
-    """Tests verifying plugin manager resolution and fallback behavior in main()."""
+class TestRunPluginManagerResolution:
+    """Tests verifying plugin manager resolution and fallback behavior in run()."""
 
     def test_main__with_injected_application__uses_application_plugin_manager(
         self,
@@ -208,8 +208,8 @@ class TestMainApplicationFactory:
         assert dummy_app.run_calls[0].transport_layers == ("app_layer",)
 
 
-class TestMainExecutionModes:
-    """Tests verifying execution mode dispatching and unsupported mode rejection in main()."""
+class TestRunExecutionModes:
+    """Tests verifying execution mode dispatching and unsupported mode rejection in run()."""
 
     def test_main__when_mode_is_cli__runs_terminal_app_and_returns_zero(
         self,
@@ -270,8 +270,8 @@ class TestMainExecutionModes:
         assert "Execution mode 'mcp' is not supported yet." in custom_err.getvalue()
 
 
-class TestMainExceptionHandling:
-    """Tests verifying domain exception and interrupt exit code mappings in main()."""
+class TestRunExceptionHandling:
+    """Tests verifying domain exception and interrupt exit code mappings in run()."""
 
     def test_main__when_parser_error_invalid_option__prints_parser_error_and_returns_two(
         self,
@@ -428,8 +428,8 @@ class TestMainExceptionHandling:
         assert exit_code == 42
 
 
-class TestMainAgentOrchestration:
-    """Tests verifying programmatic agent orchestration and in-memory execution via main()."""
+class TestRunAgentOrchestration:
+    """Tests verifying programmatic agent orchestration and in-memory execution via run()."""
 
     def test_main__full_headless_orchestration_with_doubles__executes_cleanly_and_returns_zero(
         self,

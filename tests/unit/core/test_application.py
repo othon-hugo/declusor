@@ -24,8 +24,8 @@ class CompleterInputSource(testing.DummyInputSource):
 class TestApplicationInitialization:
     """Tests verifying Application dependency injection and route initialization."""
 
-    def test_application__init__registers_all_nine_core_routes(self) -> None:
-        """Application registers all core command routes upon initialization."""
+    def test_application__init__registers_all_core_routes(self) -> None:
+        """Application registers all canonical core command routes upon initialization."""
 
         router = core.Router()
         view = testing.DummyView()
@@ -41,9 +41,9 @@ class TestApplicationInitialization:
             input_source=input_source,
         )
 
-        expected_routes = {"help", "execute", "load", "shell", "upload", "command", "code", "eval", "exit"}
+        expected_routes = {"help", "execute", "load", "shell", "upload", "command", "eval", "exit"}
         assert expected_routes.issubset(set(app._router.routes))
-        assert len(app._router.routes) >= 9
+        assert len(app._router.routes) >= 8
 
     def test_application__init__binds_controllers_to_expected_routes(self) -> None:
         """Application registers canonical controller functions for all standard routes."""
@@ -62,13 +62,32 @@ class TestApplicationInitialization:
 
         assert app._router.locate("load") is controller.call_load
         assert app._router.locate("command") is controller.call_command
-        assert app._router.locate("code") is controller.call_eval
         assert app._router.locate("eval") is controller.call_eval
         assert app._router.locate("shell") is controller.call_shell
         assert app._router.locate("upload") is controller.call_upload
         assert app._router.locate("execute") is controller.call_execute
         assert app._router.locate("exit") is controller.call_exit
         assert callable(app._router.locate("help"))
+
+    def test_application__init__registers_explicit_route_help(self) -> None:
+        """Application registers short and detailed help separately from controller docstrings."""
+
+        router = core.Router()
+        view = testing.DummyView()
+        manager = core.PluginManager()
+        runner = testing.DummySessionRunner()
+
+        core.Application(
+            router,
+            view,
+            plugin_manager=manager,
+            session_runner=runner,
+        )
+
+        assert router.help("load") == contract.RouteHelp(
+            "Load a module on the remote client.",
+            "Usage: load <module>. Loads a module from the configured client module repository.",
+        )
 
     def test_application__init_positional_only__rejects_keyword_arguments(self) -> None:
         """Application.__init__ enforces positional-only router and view parameters."""

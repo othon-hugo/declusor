@@ -133,11 +133,78 @@ class Application:
 
         call_help = controller.create_help_controller(self._router)
 
-        self._router.connect("help", call_help)
-        self._router.connect("load", controller.call_load)
-        self._router.connect("command", controller.call_command)
-        self._router.connect("eval", controller.call_eval)
-        self._router.connect("shell", controller.call_shell)
-        self._router.connect("upload", controller.call_upload)
-        self._router.connect("execute", controller.call_execute)
-        self._router.connect("exit", controller.call_exit)
+        self._router.connect(
+            "help",
+            contract.RouteRegistration(
+                call_help,
+                contract.RouteHelp(
+                    "Show available commands or detailed help for one command.",
+                    "Usage: help [command]. Without an argument, lists commands and their short descriptions.",
+                ),
+            ),
+        )
+        self._router.connect(
+            "load",
+            contract.RouteRegistration(
+                controller.call_load,
+                contract.RouteHelp(
+                    "Load a module on the remote client.", "Usage: load <module>. Loads a module from the configured client module repository."
+                ),
+            ),
+        )
+        self._router.connect(
+            "command",
+            contract.RouteRegistration(
+                controller.call_command,
+                contract.RouteHelp(
+                    "Run a command on the remote client.",
+                    "Usage: command <command line>. Executes the command and streams its output to this session.",
+                ),
+            ),
+        )
+        self._router.connect(
+            "eval",
+            contract.RouteRegistration(
+                controller.call_eval,
+                contract.RouteHelp(
+                    "Evaluate code in the client runtime.",
+                    "Usage: eval <code>. Executes a code snippet directly in the remote agent's native runtime.",
+                ),
+            ),
+        )
+        self._router.connect(
+            "shell",
+            contract.RouteRegistration(
+                controller.call_shell,
+                contract.RouteHelp(
+                    "Start an interactive remote shell.",
+                    "Opens an interactive shell over the active client connection. This command takes no arguments.",
+                ),
+            ),
+        )
+        self._router.connect(
+            "upload",
+            contract.RouteRegistration(
+                controller.call_upload,
+                contract.RouteHelp(
+                    "Upload a local file to the remote client.", "Usage: upload <filepath> [destination]. The destination path is optional."
+                ),
+            ),
+        )
+        self._router.connect(
+            "execute",
+            contract.RouteRegistration(
+                controller.call_execute,
+                contract.RouteHelp(
+                    "Execute a local script on the remote client.",
+                    "Usage: execute <filepath>. The script is sent from the local system and executed remotely.",
+                ),
+            ),
+        )
+        self._router.connect(
+            "exit",
+            contract.RouteRegistration(
+                controller.call_exit,
+                contract.RouteHelp("End the active session.", "Terminates the interactive session gracefully. This command takes no arguments."),
+            ),
+        )

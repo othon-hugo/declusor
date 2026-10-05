@@ -13,7 +13,7 @@ The **core** package provides infrastructure services implementing domain contra
 | `launcher`    | Client launcher delivery rendering, shell wrapping, and output dispatching        |
 | `parser`      | CLI argument parsing, client registry binding, and PluginConfig resolution        |
 | `plugin`      | Dynamic plugin discovery across tiers, contract validation, and client registries |
-| `router`      | Command routing, controller dispatching, and route usage mapping                  |
+| `router`      | Command routing, controller dispatching, and route-owned short and detailed help  |
 
 ## Design Principles
 

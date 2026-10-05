@@ -1,8 +1,8 @@
 from declusor import command, contract
 
 
-class CodeArguments(contract.ControllerArguments):
-    """Arguments for native client runtime code execution."""
+class EvalArguments(contract.ControllerArguments):
+    """Arguments for evaluating native client runtime code."""
 
     code: str
     """Client runtime code snippet to evaluate remotely."""
@@ -10,7 +10,7 @@ class CodeArguments(contract.ControllerArguments):
 
 def call_eval(
     session: contract.SessionContext,
-    req: contract.IControllerRequest[CodeArguments],
+    req: contract.IControllerRequest[EvalArguments],
 ) -> contract.ControllerResult:
     """Execute native client runtime code directly on the remote agent."""
 

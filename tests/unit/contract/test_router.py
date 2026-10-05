@@ -45,33 +45,32 @@ class TestIRouter:
             """Minimal concrete implementation of IRouter."""
 
             def __init__(self) -> None:
-                self._routes: dict[str, contract.Controller] = {}
+                self._routes: dict[str, contract.RouteRegistration] = {}
 
             @property
             def routes(self) -> Sequence[str]:
                 return tuple(self._routes.keys())
 
-            def help(self, route: str, /) -> str:
-                target = self._routes.get(route)
-                if target is not None and target.__doc__:
-                    return target.__doc__.strip().splitlines()[0]
-                return ""
+            def help(self, route: str, /) -> contract.RouteHelp:
+                registration = self._routes.get(route)
+                return registration.help if registration is not None else contract.RouteHelp()
 
-            def connect(self, route: str, controller: contract.Controller, /) -> None:
-                self._routes[route] = controller
+            def connect(self, route: str, registration: contract.RouteRegistration, /) -> None:
+                self._routes[route] = registration
 
             def locate(self, route: str, /) -> contract.Controller:
-                return self._routes[route]
+                return self._routes[route].controller
 
         router = _ConcreteRouter()
 
         assert isinstance(router, contract.IRouter)
         assert len(router.routes) == 0
 
-        router.connect("sample", _sample_controller)
+        registration = contract.RouteRegistration(_sample_controller, contract.RouteHelp("Sample.", "More details."))
+        router.connect("sample", registration)
         assert tuple(router.routes) == ("sample",)
         assert router.locate("sample") is _sample_controller
-        assert router.help("sample") == "Execute sample operation."
+        assert router.help("sample") == contract.RouteHelp("Sample.", "More details.")
 
 
 class TestDummyRouterContract:
@@ -101,20 +100,21 @@ class TestDummyRouterContract:
         assert "sample" in router.routes
         assert router.locate("sample") is _sample_controller
 
-    def test_dummy_router__help__extracts_first_line_of_controller_docstring(self) -> None:
-        """Verify DummyRouter extracts the first docstring line as usage help."""
+    def test_dummy_router__help__returns_explicit_registration_metadata(self) -> None:
+        """Verify DummyRouter returns help metadata stored in a route registration."""
 
         router = DummyRouter()
-        router.connect("sample", _sample_controller)
+        registration = contract.RouteRegistration(_sample_controller, contract.RouteHelp("Short.", "Long."))
+        router.connect("sample", registration)
 
-        assert router.help("sample") == "Execute sample operation."
+        assert router.help("sample") == contract.RouteHelp("Short.", "Long.")
 
-    def test_dummy_router__help_unregistered_route__returns_empty_string(self) -> None:
-        """Verify DummyRouter returns an empty string when route is not registered."""
+    def test_dummy_router__help_unregistered_route__returns_empty_help(self) -> None:
+        """Verify DummyRouter returns empty metadata when route is not registered."""
 
         router = DummyRouter()
 
-        assert router.help("nonexistent") == ""
+        assert router.help("nonexistent") == contract.RouteHelp()
 
     def test_dummy_router__positional_only_arguments__reject_keyword_passing(self) -> None:
         """Verify connect, locate, and help enforce positional-only contracts."""
@@ -122,7 +122,7 @@ class TestDummyRouterContract:
         router = DummyRouter()
 
         with pytest.raises(TypeError, match="positional-only"):
-            router.connect(route="sample", controller=_sample_controller)  # type: ignore[call-arg]
+            router.connect(route="sample", registration=contract.RouteRegistration(_sample_controller, contract.RouteHelp()))  # type: ignore[call-arg]
 
         with pytest.raises(TypeError, match="positional-only"):
             router.locate(route="sample")  # type: ignore[call-arg]

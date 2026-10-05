@@ -9,10 +9,10 @@ class HelpArguments(contract.ControllerArguments, total=False):
 
 
 def create_help_controller(router: contract.IRouter) -> contract.Controller:
-    """Create a help controller that queries *router* for routes and usage descriptions.
+    """Create a help controller that queries *router* for routes and help metadata.
 
     Args:
-        router: The application router providing registered routes and route usage.
+        router: The application router providing registered routes and help metadata.
 
     Returns:
         Help controller function.
@@ -33,8 +33,9 @@ def create_help_controller(router: contract.IRouter) -> contract.Controller:
                 session.view.write_error(f"Unknown command: '{target_route}'. Type 'help' to list available commands.")
                 return contract.ControllerResult.for_continuation()
 
-            usage = router.help(target_route)
-            session.view.write_message(f"{target_route}: {usage}" if usage else target_route)
+            route_help = router.help(target_route)
+            details = "\n\n".join(part for part in (route_help.short, route_help.complement) if part)
+            session.view.write_message(details or target_route)
         else:
             routes = router.routes
 
@@ -45,8 +46,8 @@ def create_help_controller(router: contract.IRouter) -> contract.Controller:
             key_length = max(map(len, routes)) + 1
 
             for route in routes:
-                usage = router.help(route)
-                session.view.write_message(f"{route:<{key_length}}: {usage}" if usage else route)
+                short = router.help(route).short
+                session.view.write_message(f"{route:<{key_length}}: {short}" if short else route)
 
         return contract.ControllerResult.for_continuation()
 

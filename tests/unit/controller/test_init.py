@@ -2,8 +2,8 @@
 
 from declusor import config, controller
 from declusor.controller import (
-    code,
     command,
+    eval,
     execute,
     load,
     shell,
@@ -24,17 +24,17 @@ class TestControllerExports:
         """The controller package exports exactly the seventeen canonical public symbols."""
 
         expected = [
-            "CodeArguments",
             "CommandArguments",
             "ControllerError",
+            "EvalArguments",
             "ExecuteArguments",
             "ExitArguments",
             "HelpArguments",
             "LoadArguments",
             "ShellArguments",
             "UploadArguments",
-            "call_code",
             "call_command",
+            "call_eval",
             "call_execute",
             "call_exit",
             "call_load",
@@ -60,7 +60,7 @@ class TestControllerExports:
     def test_controller_exports__submodule_functions__match_underlying_callables(self) -> None:
         """Controller functions match their respective submodule definitions."""
 
-        assert controller.call_eval is code.call_eval
+        assert controller.call_eval is eval.call_eval
         assert controller.call_command is command.call_command
         assert controller.call_execute is execute.call_execute
         assert controller.call_exit is exit_module.call_exit
@@ -72,7 +72,7 @@ class TestControllerExports:
     def test_controller_exports__argument_types__match_underlying_types(self) -> None:
         """Controller argument TypedDicts match their respective submodule definitions."""
 
-        assert controller.CodeArguments is code.CodeArguments
+        assert controller.EvalArguments is eval.EvalArguments
         assert controller.CommandArguments is command.CommandArguments
         assert controller.ExecuteArguments is execute.ExecuteArguments
         assert controller.ExitArguments is exit_module.ExitArguments

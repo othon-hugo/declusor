@@ -1,16 +1,33 @@
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from declusor.contract.controller import Controller
 
 
+@dataclass(frozen=True)
+class RouteHelp:
+    """Short and detailed help text associated with a route."""
+
+    short: str = ""
+    complement: str = ""
+
+
+@dataclass(frozen=True)
+class RouteRegistration:
+    """Controller and route-owned help metadata registered together."""
+
+    controller: "Controller"
+    help: RouteHelp
+
+
 class IRouter(ABC):
     """Maps command names to their controller functions.
 
-    Manages route registration (``connect``) and dispatch (``locate``),
-    and provides route usage descriptions for all registered routes.
+    Manages route registration (``connect``), dispatch (``locate``), and
+    route-specific help metadata.
     """
 
     @property
@@ -25,27 +42,27 @@ class IRouter(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def help(self, route: str, /) -> str:
-        """Return the one-line usage description for a registered route.
+    def help(self, route: str, /) -> RouteHelp:
+        """Return the help metadata registered for a route.
 
         Args:
             route: The route name to look up.
 
         Returns:
-            The first line of the controller's docstring, or an empty string
-            if no documentation is available.
+            The route's short and detailed help text.
         """
 
         raise NotImplementedError
 
     @abstractmethod
-    def connect(self, route: str, controller: "Controller", /) -> None:
-        """Register a controller under a route name.
+    def connect(self, route: str, registration: RouteRegistration, /) -> None:
+        """Register a controller and its help metadata under a route name.
 
         Args:
             route: The command name to register (leading/trailing whitespace
                 is stripped automatically).
-            controller: The ``Controller`` callable to associate with *route*.
+            registration: The controller and route-specific help to associate
+                with *route*.
 
         Raises:
             ValueError: If *route* is already registered.

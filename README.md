@@ -121,13 +121,14 @@ Once your target connects back, Declusor drops you into an interactive session:
 
 ```text
 [declusor] help
-help    : Display detailed information about available commands or a specific command.
-load    : Load a payload module from your local system and execute it on the remote system.
-command : Execute a single command on the remote system.
-shell   : Initiate an interactive shell session on the remote system.
-upload  : Upload a file from the local system to the remote system (optional destination).
-execute : Execute a program or script from the local system on the remote system.
-exit    : Terminate the session and exit the program.
+help    : Show available commands or detailed help for one command.
+load    : Load a module on the remote client.
+command : Run a command on the remote client.
+eval    : Evaluate code in the client runtime.
+shell   : Start an interactive remote shell.
+upload  : Upload a local file to the remote client.
+execute : Execute a local script on the remote client.
+exit    : End the active session.
 ```
 
 #### Example: Running Commands

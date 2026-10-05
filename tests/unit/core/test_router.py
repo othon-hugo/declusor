@@ -15,28 +15,6 @@ def _sample_controller(
     return contract.ControllerResult.for_continuation()
 
 
-def _multiline_doc_controller(
-    session: contract.SessionContext,
-    request: contract.IControllerRequest[contract.ControllerArguments],
-    /,
-) -> contract.ControllerResult:
-    """Execute multiline operation.
-
-    Detailed explanation of operation behavior.
-    Additional line with notes.
-    """
-
-    return contract.ControllerResult.for_continuation()
-
-
-def _undocumented_controller(
-    session: contract.SessionContext,
-    request: contract.IControllerRequest[contract.ControllerArguments],
-    /,
-) -> contract.ControllerResult:
-    return contract.ControllerResult.for_continuation()
-
-
 class TestRouterRegistration:
     """Tests verifying route registration invariants on Router."""
 
@@ -179,40 +157,42 @@ class TestRouterResolution:
 
 
 class TestRouterHelp:
-    """Tests verifying help and usage docstring extraction on Router."""
+    """Tests verifying explicit route help metadata on Router."""
 
-    def test_router__help_single_line_docstring__returns_usage_description(self) -> None:
-        """Help extracts and returns a single-line controller docstring."""
-
-        router = core.Router()
-        router.connect("sample", _sample_controller)
-
-        assert router.help("sample") == "Execute sample operation for testing."
-
-    def test_router__help_multiline_docstring__collapses_and_strips_to_single_space_separated_line(self) -> None:
-        """Help collapses multiple lines of a docstring into a single whitespace-normalized string."""
+    def test_router__help_explicit_metadata__returns_short_and_complement(self) -> None:
+        """Help returns metadata from the route registration, not the controller docstring."""
 
         router = core.Router()
-        router.connect("multi", _multiline_doc_controller)
+        registration = contract.RouteRegistration(_sample_controller, contract.RouteHelp("Short help.", "Detailed help."))
+        router.connect("sample", registration)
 
-        expected = "Execute multiline operation. Detailed explanation of operation behavior. Additional line with notes."
-        assert router.help("multi") == expected
+        assert router.help("sample") == contract.RouteHelp("Short help.", "Detailed help.")
 
-    def test_router__help_controller_without_docstring__returns_empty_string(self) -> None:
-        """Help returns an empty string when the controller lacks a docstring."""
+    def test_router__help_same_controller_on_distinct_routes__keeps_route_help_independent(self) -> None:
+        """A shared controller may have different help metadata per route."""
 
         router = core.Router()
-        router.connect("undoc", _undocumented_controller)
+        router.connect("first", contract.RouteRegistration(_sample_controller, contract.RouteHelp("First.")))
+        router.connect("second", contract.RouteRegistration(_sample_controller, contract.RouteHelp("Second.")))
 
-        assert router.help("undoc") == ""
+        assert router.help("first") == contract.RouteHelp("First.")
+        assert router.help("second") == contract.RouteHelp("Second.")
+
+    def test_router__help_without_metadata__ignores_controller_docstring(self) -> None:
+        """Direct controller registration produces empty help despite a controller docstring."""
+
+        router = core.Router()
+        router.connect("undoc", _sample_controller)
+
+        assert router.help("undoc") == contract.RouteHelp()
 
     def test_router__help_whitespace_padded_route__resolves_and_returns_help(self) -> None:
         """Help strips surrounding whitespace when looking up routes."""
 
         router = core.Router()
-        router.connect("sample", _sample_controller)
+        router.connect("sample", contract.RouteRegistration(_sample_controller, contract.RouteHelp("Sample.")))
 
-        assert router.help("   sample   ") == "Execute sample operation for testing."
+        assert router.help("   sample   ") == contract.RouteHelp("Sample.")
 
     def test_router__help_unregistered_route__raises_router_error(self) -> None:
         """Help raises RouterError when querying an unregistered route."""

@@ -170,10 +170,10 @@ class TestDummyRouter:
         assert "sample" in router.routes
         assert router.locate("sample") is sample_handler
         assert router.locate_calls == ["sample"]
-        assert router.help("sample") == "Sample documentation."
+        assert router.help("sample") == contract.RouteHelp()
 
-    def test_set_route_usage_override(self) -> None:
-        """Ensure set_route_usage customizes the returned help text."""
+    def test_set_route_help_override(self) -> None:
+        """Ensure set_route_help customizes the route help metadata."""
 
         router = testing.DummyRouter()
 
@@ -184,9 +184,9 @@ class TestDummyRouter:
             return contract.ControllerResult()
 
         router.connect("cmd", dummy_handler)
-        router.set_route_usage("cmd", "Custom command description.")
+        router.set_route_help("cmd", contract.RouteHelp("Short description.", "Additional details."))
 
-        assert router.help("cmd") == "Custom command description."
+        assert router.help("cmd") == contract.RouteHelp("Short description.", "Additional details.")
 
     def test_duplicate_route_error(self) -> None:
         """Ensure connecting an existing route raises DuplicateRouteError."""

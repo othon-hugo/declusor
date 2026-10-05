@@ -12,7 +12,7 @@ class TestMainExports:
         """The main package exports exactly the expected public symbols in __all__."""
 
         expected = [
-            "main",
+            "run",
             "run_terminal_app",
         ]
 
@@ -31,7 +31,7 @@ class TestMainExports:
         import importlib
 
         main_mod = importlib.import_module("declusor.main.main")
-        assert main.run is main_mod.main
+        assert main.run is main_mod.run
         assert main.run_terminal_app is terminal_module.run_terminal_app
 
     def test_main_exports__contains_no_private_symbols(self) -> None:

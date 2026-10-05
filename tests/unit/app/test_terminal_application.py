@@ -282,8 +282,8 @@ class TestTerminalApplicationInitialization:
 
         assert exc_info.value.route == "help"
 
-    def test_terminal_application__init_routes__registers_all_nine_standard_routes(self) -> None:
-        """TerminalApplication registers all nine canonical command routes upon initialization."""
+    def test_terminal_application__init_routes__registers_all_standard_routes(self) -> None:
+        """TerminalApplication registers all canonical command routes upon initialization."""
 
         router = core.Router()
         view = testing.DummyView()
@@ -297,9 +297,9 @@ class TestTerminalApplicationInitialization:
             session_runner=runner,
         )
 
-        expected_routes = {"help", "execute", "load", "shell", "upload", "command", "code", "eval", "exit"}
+        expected_routes = {"help", "execute", "load", "shell", "upload", "command", "eval", "exit"}
         assert expected_routes.issubset(set(terminal_app.router.routes))
-        assert len(terminal_app.router.routes) >= 9
+        assert len(terminal_app.router.routes) >= 8
 
     def test_terminal_application__init_routes__binds_expected_controllers(self) -> None:
         """TerminalApplication maps canonical routes to the expected controller functions."""
@@ -318,7 +318,6 @@ class TestTerminalApplicationInitialization:
 
         assert terminal_app.router.locate("load") is controller.call_load
         assert terminal_app.router.locate("command") is controller.call_command
-        assert terminal_app.router.locate("code") is controller.call_eval
         assert terminal_app.router.locate("eval") is controller.call_eval
         assert terminal_app.router.locate("shell") is controller.call_shell
         assert terminal_app.router.locate("upload") is controller.call_upload

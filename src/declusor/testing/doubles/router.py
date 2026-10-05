@@ -5,40 +5,37 @@ class DummyRouter(contract.IRouter):
     """Fully-typed router supporting deterministic route registration and dispatch."""
 
     def __init__(self) -> None:
-        self._routes: dict[str, contract.Controller] = {}
-        self._usage: dict[str, str] = {}
+        self._routes: dict[str, contract.RouteRegistration] = {}
         self.locate_calls: list[str] = []
 
     @property
     def routes(self) -> tuple[str, ...]:
         return tuple(self._routes.keys())
 
-    def help(self, route: str, /) -> str:
+    def help(self, route: str, /) -> contract.RouteHelp:
         r = route.strip()
+        registration = self._routes.get(r)
 
-        if r in self._usage:
-            return self._usage[r]
+        return registration.help if registration is not None else contract.RouteHelp()
 
+    def set_route_help(self, route: str, route_help: contract.RouteHelp) -> None:
+        """Override the help metadata for a specific route."""
+
+        r = route.strip()
         if r in self._routes:
-            doc = getattr(self._routes[r], "__doc__", None)
+            registration = self._routes[r]
+            self._routes[r] = contract.RouteRegistration(registration.controller, route_help)
 
-            if isinstance(doc, str) and doc.strip():
-                return str(doc.strip().splitlines()[0])
-
-        return ""
-
-    def set_route_usage(self, route: str, usage: str) -> None:
-        """Override the usage string for a specific route."""
-
-        self._usage[route.strip()] = usage
-
-    def connect(self, route: str, controller: contract.Controller, /) -> None:
+    def connect(self, route: str, registration: contract.RouteRegistration | contract.Controller, /) -> None:
         r = route.strip()
 
         if r in self._routes:
             raise config.DuplicateRouteError(r, f"route already exists: {r}")
 
-        self._routes[r] = controller
+        if not isinstance(registration, contract.RouteRegistration):
+            registration = contract.RouteRegistration(registration, contract.RouteHelp())
+
+        self._routes[r] = registration
 
     def locate(self, route: str, /) -> contract.Controller:
         r = route.strip()
@@ -47,4 +44,4 @@ class DummyRouter(contract.IRouter):
         if r not in self._routes:
             raise config.RouterError(r, "unknown route")
 
-        return self._routes[r]
+        return self._routes[r].controller
