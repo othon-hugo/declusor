@@ -44,8 +44,8 @@ class TestApplicationInitialization:
 
         assert app.router.routes == ()
 
-    def test_application_connect_routes__supports_subset_and_keeps_universal_routes(self) -> None:
-        """Route setup registers only selected controllers plus help and exit."""
+    def test_application_connect_routes__plugin_map__extends_and_overrides_official_routes(self) -> None:
+        """Plugin registrations add custom routes and override official registrations, except protected routes."""
 
         router = core.Router()
         view = testing.DummyView()
@@ -59,14 +59,19 @@ class TestApplicationInitialization:
             session_runner=runner,
         )
 
-        app._connect_routes(frozenset({config.ControllerType.EVAL}))
+        custom_controller = controller.call_exit
+        plugin_routes = {
+            "eval": contract.RouteRegistration(custom_controller, contract.RouteHelp("Custom eval.")),
+            "custom": contract.RouteRegistration(custom_controller, contract.RouteHelp("Custom route.")),
+        }
+        app._connect_routes(plugin_routes)
 
-        assert router.routes == ("help", "eval", "exit")
-        assert router.locate("eval") is controller.call_eval
+        assert set(router.routes) == {"help", "load", "command", "eval", "shell", "upload", "execute", "custom", "exit"}
+        assert router.locate("eval") is custom_controller
+        assert router.help("eval") == contract.RouteHelp("Custom eval.")
+        assert router.locate("custom") is custom_controller
         assert router.locate("exit") is controller.call_exit
         assert callable(router.locate("help"))
-        with pytest.raises(config.RouterError):
-            router.locate("load")
 
     def test_application__init__registers_explicit_route_help(self) -> None:
         """Application registers short and detailed help separately from controller docstrings."""
@@ -82,7 +87,7 @@ class TestApplicationInitialization:
             plugin_manager=manager,
             session_runner=runner,
         )
-        app._connect_routes(testing.DummyPlugin.supported_controllers)
+        app._connect_routes(testing.DummyPlugin.routes)
 
         assert router.help("load") == contract.RouteHelp(
             "Load a module on the remote client.",
@@ -117,7 +122,7 @@ class TestApplicationInitialization:
         app = core.Application(router, view, plugin_manager=manager, session_runner=runner)
 
         with pytest.raises(config.DuplicateRouteError) as exc_info:
-            app._connect_routes(testing.DummyPlugin.supported_controllers)
+            app._connect_routes(testing.DummyPlugin.routes)
 
         assert exc_info.value.route == "help"
         assert router.routes == ("help",)
@@ -204,16 +209,16 @@ class TestApplicationInitialization:
 class TestApplicationLifecycle:
     """Tests verifying Application.run lifecycle coordination."""
 
-    def test_application_run__plugin_subset__registers_only_supported_and_universal_routes(self, tmp_path: Path) -> None:
-        """Application routes and autocomplete are filtered by the selected plugin capabilities."""
+    def test_application_run__plugin_route_map__adds_custom_route_to_official_routes(self, tmp_path: Path) -> None:
+        """Application routes and autocomplete include official and plugin-defined registrations."""
 
         class EvalOnlyPlugin(testing.DummyPlugin):
             name = "eval_only"
-            supported_controllers = frozenset({config.ControllerType.EVAL})
+            routes = {"extra": core.OFFICIAL_ROUTES["eval"]}
 
         class CommandOnlyPlugin(testing.DummyPlugin):
             name = "command_only"
-            supported_controllers = frozenset({config.ControllerType.COMMAND})
+            routes = {"other": core.OFFICIAL_ROUTES["command"]}
 
         dummy_conn = testing.DummyConnection()
         runtime = testing.DummyPluginRuntime(connection_to_return=dummy_conn)
@@ -246,13 +251,12 @@ class TestApplicationLifecycle:
 
         app.run(plugin_config)
 
-        assert router.routes == ("help", "eval", "exit")
+        assert "extra" in router.routes
         assert input_source.completer_routes == router.routes
-        with pytest.raises(config.RouterError):
-            router.locate("command")
+        assert router.locate("eval") is controller.call_eval
         with pytest.raises(config.InvalidOperation, match="already configured"):
             app.run(dataclasses.replace(plugin_config, kind=CommandOnlyPlugin.name))
-        assert router.routes == ("help", "eval", "exit")
+        assert "extra" in router.routes
 
     def test_application_run__standard_lifecycle__renders_launcher_completes_handshake_and_runs_session(self, tmp_path: Path) -> None:
         """Application.run orchestrates launcher delivery, listener accept, handshake, and runner."""

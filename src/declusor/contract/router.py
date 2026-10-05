@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -21,6 +21,10 @@ class RouteRegistration:
 
     controller: "Controller"
     help: RouteHelp
+
+
+RouteTable = Mapping[str, RouteRegistration]
+"""Mapping of open-ended route names to their registrations."""
 
 
 class IRouter(ABC):

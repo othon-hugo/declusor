@@ -1,7 +1,7 @@
 from collections.abc import Mapping
 from pathlib import Path
 
-from declusor import config, contract
+from declusor import config, contract, core
 from declusor.testing.doubles.connection import DummyConnection
 from declusor.testing.doubles.filestore import DummyPluginFileStore
 
@@ -53,16 +53,7 @@ class DummyPlugin(contract.IPluginExtension[DummyConfig]):
     version: str = "1.0.0"
     author: str = "Test Suite"
     options_type = DummyConfig
-    supported_controllers = frozenset(
-        {
-            config.ControllerType.LOAD,
-            config.ControllerType.COMMAND,
-            config.ControllerType.EVAL,
-            config.ControllerType.SHELL,
-            config.ControllerType.UPLOAD,
-            config.ControllerType.EXECUTE,
-        }
-    )
+    routes = core.OFFICIAL_ROUTES
 
     configured_parsers: list[contract.IArgumentParser] = []
     runtime_instance: contract.IPluginRuntime | None = None

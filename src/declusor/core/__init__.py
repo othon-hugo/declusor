@@ -25,13 +25,20 @@ from .plugin import (
 from .router import (
     Router,
 )
+from .routes import (
+    EXIT_ROUTE,
+    OFFICIAL_ROUTES,
+    create_help_route,
+)
 
 __all__ = [
     "Application",
     "DeclusorParser",
     "DuplicateRouteError",
+    "EXIT_ROUTE",
     "LauncherDeliveryError",
     "LauncherRenderer",
+    "OFFICIAL_ROUTES",
     "ParserError",
     "PluginError",
     "PluginManager",
@@ -41,4 +48,5 @@ __all__ = [
     "PluginValidationError",
     "Router",
     "RouterError",
+    "create_help_route",
 ]

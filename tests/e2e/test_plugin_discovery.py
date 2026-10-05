@@ -32,7 +32,7 @@ class ExtraClientPlugin(contract.IPluginExtension[ExtraClientConfig]):
     name = "extra_client"
     description = "Extra client loaded via custom search path"
     options_type = ExtraClientConfig
-    supported_controllers = frozenset()
+    routes = {}
 
     @classmethod
     def configure_parser(cls, parser, /) -> None:

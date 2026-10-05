@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from declusor import config, util
+from declusor.contract.router import RouteTable
 
 if TYPE_CHECKING:
     from declusor.contract.connection import IConnection
@@ -146,8 +147,8 @@ class IPluginExtension[T: ParsedArguments](ABC):
     options_type: type[T]
     """The concrete TypedDict class for this plugin's parsed options."""
 
-    supported_controllers: frozenset[config.ControllerType]
-    """Application controllers available for this plugin's runtime."""
+    routes: RouteTable
+    """Routes provided by this plugin, keyed by their command names."""
 
     @classmethod
     @abstractmethod

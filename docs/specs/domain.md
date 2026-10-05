@@ -59,13 +59,13 @@ Scenario: Reject unrecognized plugin names
 
 ### DOM-06: Route Registration Collision Rejection in Router
 
-Command names can only be registered once; attempting to register a duplicate controller under an existing command name raises `RouterError` to prevent silent command hijacking.
+The router rejects duplicate names passed directly to `connect` with `DuplicateRouteError`. During application composition, a plugin registration may replace an official registration before connecting; collisions with names already present in the injected router are still rejected.
 
 ```gherkin
-Scenario: Reject duplicate command route registration
+Scenario: Reject duplicate direct router registration
   Given a router that already has a controller registered for command "exec"
   When another controller attempts to register under command "exec"
-  Then registration fails with RouterError("Route 'exec' already registered.")
+  Then registration fails with DuplicateRouteError
 ```
 
 ### DOM-07: Empty Command Dispatch Rejection in Router

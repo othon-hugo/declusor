@@ -30,10 +30,15 @@ def assert_conforms_to_client_plugin[T: contract.ParsedArguments](
     assert isinstance(plugin_cls.description, str), "plugin.description must be a string."
     assert isinstance(plugin_cls.version, str), "plugin.version must be a string."
     assert plugin_cls.options_type is not None, "plugin.options_type must be defined."
-    assert isinstance(plugin_cls.supported_controllers, frozenset), "plugin.supported_controllers must be a frozenset."
-    assert all(isinstance(item, config.ControllerType) for item in plugin_cls.supported_controllers), (
-        "plugin.supported_controllers must contain only ControllerType values."
-    )
+    assert isinstance(plugin_cls.routes, Mapping), "plugin.routes must be a mapping."
+    normalized_routes: set[str] = set()
+    for route, registration in plugin_cls.routes.items():
+        assert isinstance(route, str) and route.strip(), "plugin.routes must use non-empty string names."
+        normalized_route = route.strip()
+        assert normalized_route not in {"help", "exit"}, f"plugin.routes cannot override protected route {normalized_route!r}."
+        assert normalized_route not in normalized_routes, f"plugin.routes contains duplicate normalized route {normalized_route!r}."
+        assert isinstance(registration, contract.RouteRegistration), f"plugin.routes[{normalized_route!r}] must be RouteRegistration."
+        normalized_routes.add(normalized_route)
 
     # Invariant 2: Parser configuration
     parser = util.Parser(prog="test")
@@ -135,8 +140,7 @@ class PluginConformanceTestSuite[T: contract.ParsedArguments]:
         assert isinstance(plugin_class.description, str)
         assert isinstance(plugin_class.version, str)
         assert plugin_class.options_type is not None
-        assert isinstance(plugin_class.supported_controllers, frozenset)
-        assert all(isinstance(item, config.ControllerType) for item in plugin_class.supported_controllers)
+        assert isinstance(plugin_class.routes, Mapping)
 
     def test_configure_parser_callable(self, plugin_class: type[contract.IPluginExtension[T]]) -> None:
         """Verify configure_parser accepts a Parser without error."""

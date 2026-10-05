@@ -275,7 +275,7 @@ class TestTerminalApplicationInitialization:
         terminal_app = app.TerminalApplication(router, view, plugin_manager=manager, session_runner=runner)
 
         with pytest.raises(config.DuplicateRouteError) as exc_info:
-            terminal_app._connect_routes(testing.DummyPlugin.supported_controllers)
+            terminal_app._connect_routes(testing.DummyPlugin.routes)
 
         assert exc_info.value.route == "help"
 
@@ -296,8 +296,8 @@ class TestTerminalApplicationInitialization:
 
         assert terminal_app.router.routes == ()
 
-    def test_terminal_application_connect_routes__binds_supported_controllers(self) -> None:
-        """TerminalApplication uses the shared route setup for plugin capabilities."""
+    def test_terminal_application_connect_routes__binds_plugin_routes(self) -> None:
+        """TerminalApplication uses the shared route setup for plugin route mappings."""
 
         router = core.Router()
         view = testing.DummyView()
@@ -311,7 +311,7 @@ class TestTerminalApplicationInitialization:
             session_runner=runner,
         )
 
-        terminal_app._connect_routes(testing.DummyPlugin.supported_controllers)
+        terminal_app._connect_routes(testing.DummyPlugin.routes)
 
         assert terminal_app.router.locate("load") is controller.call_load
         assert terminal_app.router.locate("command") is controller.call_command

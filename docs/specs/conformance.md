@@ -79,13 +79,28 @@ Scenario: Reject mismatched client acknowledgement token
   Then initialization fails with ConnectionHandshakeError("Invalid client ACK during session initialization.")
 ```
 
-### PLG-08: Plugin Controller Capability Declaration
+### PLG-08: Extensible Plugin Route Table Contract
 
-Every plugin must declare `supported_controllers` as a `frozenset` of `ControllerType` values. When a plugin is selected, the application registers only those plugin-specific routes, while `help` and `exit` remain available for every plugin.
+Every plugin must declare `routes` as a mapping from non-empty, open-ended string names to `RouteRegistration` values. The application composes plugin registrations over the official core route table before connecting routes. Plugins may override official registrations, but `help` and `exit` are protected; duplicate normalized plugin names and collisions with routes already present in the injected router are rejected before any route is connected.
 
 ```gherkin
-Scenario: Register only controllers supported by the selected plugin
-  Given a plugin declaring a subset of ControllerType values
-  When the application starts with that plugin configuration
-  Then only the declared routes and the universal help and exit routes are registered
+Scenario: Add a plugin-specific route
+  Given a plugin route table containing a custom string name and RouteRegistration
+  When the application composes the selected plugin's routes
+  Then the custom route is available with the plugin's controller and help text
+
+Scenario: Override an official route registration
+  Given a plugin route table defining the name of an official route
+  When the application composes the selected plugin's routes
+  Then the plugin's RouteRegistration replaces the official registration for that name
+
+Scenario: Protect application-owned routes
+  Given a plugin route table containing "help" or "exit"
+  When PluginManager validates the plugin
+  Then validation fails with PluginValidationError
+
+Scenario: Reject collisions before connecting routes
+  Given a plugin route table with whitespace-equivalent duplicate names or a router containing a composed route
+  When the application prepares route registration
+  Then registration fails before adding any route from the composed table
 ```

@@ -6,13 +6,13 @@ This directory houses the built-in client plugins distributed with Declusor. Bec
 
 Every plugin is an autonomous package that implements the contracts defined in `declusor.contract`:
 
-| Contract             | Responsibility                                                                                        |
-| -------------------- | ----------------------------------------------------------------------------------------------------- |
-| `IConnection`        | Manages the framed read/write protocol and lifecycle state (`ConnectionState`).                       |
-| `IPluginExtension`   | Declares supported controllers, registers CLI flags, validates configuration, and builds the runtime. |
-| `IPluginRuntime`     | Produces `LauncherDelivery` and instantiates the `IConnection` for an accepted socket.                |
-| `IPluginProcessor`   | Loads initialization helpers, bootstrap templates, and on-demand discovery modules.                   |
-| `IOperationRenderer` | Renders command payloads for operations (`EXEC_COMMAND`, `EXEC_CODE`, `LOAD_MODULE`, `STORE_FILE`).   |
+| Contract             | Responsibility                                                                                      |
+| -------------------- | --------------------------------------------------------------------------------------------------- |
+| `IConnection`        | Manages the framed read/write protocol and lifecycle state (`ConnectionState`).                     |
+| `IPluginExtension`   | Declares route registrations, registers CLI flags, validates configuration, and builds the runtime. |
+| `IPluginRuntime`     | Produces `LauncherDelivery` and instantiates the `IConnection` for an accepted socket.              |
+| `IPluginProcessor`   | Loads initialization helpers, bootstrap templates, and on-demand discovery modules.                 |
+| `IOperationRenderer` | Renders command payloads for operations (`EXEC_COMMAND`, `EXEC_CODE`, `LOAD_MODULE`, `STORE_FILE`). |
 
 ## How Plugins are Discovered
 
@@ -76,7 +76,7 @@ In `my_plugin/src/declusor_my_plugin/plugin.py`:
 from collections.abc import Mapping
 from pathlib import Path
 
-from declusor import config, contract
+from declusor import config, contract, controller, core
 
 
 class MyOptions(contract.ParsedArguments, total=False):
@@ -88,16 +88,17 @@ class MyPlugin(contract.IPluginExtension[MyOptions]):
     description = "Description of my custom client"
     version = "1.0.0"
     options_type = MyOptions
-    supported_controllers = frozenset(
-        {
-            config.ControllerType.LOAD,
-            config.ControllerType.COMMAND,
-            config.ControllerType.EVAL,
-            config.ControllerType.SHELL,
-            config.ControllerType.UPLOAD,
-            config.ControllerType.EXECUTE,
-        }
-    )
+    routes: contract.RouteTable = {
+        **core.OFFICIAL_ROUTES,
+        "inspect": contract.RouteRegistration(
+            controller.call_eval,
+            contract.RouteHelp("Inspect the client runtime.", "Usage: inspect <code>."),
+        ),
+        "eval": contract.RouteRegistration(
+            controller.call_eval,
+            contract.RouteHelp("Evaluate code with this plugin's custom help."),
+        ),
+    }
 
     @classmethod
     def configure_parser(cls, parser: contract.IArgumentParser, /) -> None:
@@ -139,7 +140,7 @@ class MyPlugin(contract.IPluginExtension[MyOptions]):
         return MyRuntime(plugin_config)
 ```
 
-    `supported_controllers` must be a `frozenset` of `config.ControllerType` members. The application registers only those plugin-specific routes after `run(config)` selects the plugin. `help` and `exit` are always registered by the application and should not be included in the plugin declaration. An application instance is bound to the first plugin used; create a new application to switch plugins.
+`routes` is a `contract.RouteTable`, a mapping from open-ended string names to `RouteRegistration` values. Start with `core.OFFICIAL_ROUTES` to reuse the built-in registrations, then add routes or replace registrations such as `eval`. The application always supplies protected `help` and `exit` routes; plugins must not declare those names. It composes routes before connecting them, while collisions with routes already present in an injected router remain errors. An application instance is bound to the first plugin used; create a new application to switch plugins.
 
 ### 3. Verify Contract Conformance with `declusor.testing`
 

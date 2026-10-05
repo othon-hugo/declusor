@@ -20,7 +20,7 @@ class DummyValidPlugin(contract.IPluginExtension[DummyValidConfig]):
     description = "A valid dummy plugin for unit tests"
     version = "1.0.0"
     options_type = DummyValidConfig
-    supported_controllers = frozenset({config.ControllerType.EVAL})
+    routes = {"eval": core.OFFICIAL_ROUTES["eval"]}
 
     @classmethod
     def configure_parser(cls, parser: contract.IArgumentParser, /) -> None:
@@ -152,27 +152,49 @@ class TestPluginValidation:
         with pytest.raises(config.PluginValidationError, match="must define a non-empty string 'name'"):
             manager.validate_plugin(NonStringNamePlugin)
 
-    def test_validate_plugin__invalid_supported_controllers__raises_plugin_validation_error(self) -> None:
-        """A plugin with controller names outside the enum is rejected."""
+    def test_validate_plugin__route_with_invalid_registration__raises_plugin_validation_error(self) -> None:
+        """A plugin with a non-RouteRegistration route value is rejected."""
 
-        class InvalidControllersPlugin(DummyValidPlugin):
-            supported_controllers = frozenset({"eval"})  # type: ignore[arg-type]
-
-        manager = core.PluginManager()
-
-        with pytest.raises(config.PluginValidationError, match="supported_controllers"):
-            manager.validate_plugin(InvalidControllersPlugin)
-
-    def test_validate_plugin__mutable_supported_controllers__raises_plugin_validation_error(self) -> None:
-        """A plugin must declare capabilities as an immutable frozenset."""
-
-        class MutableControllersPlugin(DummyValidPlugin):
-            supported_controllers = {config.ControllerType.EVAL}  # type: ignore[assignment]
+        class InvalidRoutesPlugin(DummyValidPlugin):
+            routes = {"custom": "not a registration"}  # type: ignore[dict-item]
 
         manager = core.PluginManager()
 
-        with pytest.raises(config.PluginValidationError, match="supported_controllers"):
-            manager.validate_plugin(MutableControllersPlugin)
+        with pytest.raises(config.PluginValidationError, match="RouteRegistration"):
+            manager.validate_plugin(InvalidRoutesPlugin)
+
+    def test_validate_plugin__empty_route_name__raises_plugin_validation_error(self) -> None:
+        """A plugin route name must be non-empty after trimming."""
+
+        class EmptyRouteNamePlugin(DummyValidPlugin):
+            routes = {"  ": core.OFFICIAL_ROUTES["eval"]}
+
+        manager = core.PluginManager()
+
+        with pytest.raises(config.PluginValidationError, match="non-empty string route names"):
+            manager.validate_plugin(EmptyRouteNamePlugin)
+
+    def test_validate_plugin__whitespace_equivalent_route_names__raises_plugin_validation_error(self) -> None:
+        """Routes that normalize to the same name are rejected before application setup."""
+
+        class DuplicateNormalizedRoutesPlugin(DummyValidPlugin):
+            routes = {"custom": core.OFFICIAL_ROUTES["eval"], " custom ": core.OFFICIAL_ROUTES["eval"]}
+
+        manager = core.PluginManager()
+
+        with pytest.raises(config.PluginValidationError, match="duplicate normalized route 'custom'"):
+            manager.validate_plugin(DuplicateNormalizedRoutesPlugin)
+
+    def test_validate_plugin__reserved_route_name__raises_plugin_validation_error(self) -> None:
+        """Plugins cannot replace the application-owned help and exit routes."""
+
+        class ReservedRoutePlugin(DummyValidPlugin):
+            routes = {"help": core.OFFICIAL_ROUTES["eval"]}
+
+        manager = core.PluginManager()
+
+        with pytest.raises(config.PluginValidationError, match="cannot override protected route 'help'"):
+            manager.validate_plugin(ReservedRoutePlugin)
 
     def test_validate_plugin__unimplemented_abstract_methods__raises_plugin_validation_error_with_sorted_methods(
         self,
@@ -371,7 +393,7 @@ class CustomPlugin(contract.IPluginExtension[CustomConfig]):
     name = "custom_agent"
     description = "Flat layout test plugin"
     options_type = CustomConfig
-    supported_controllers = frozenset()
+    routes = {}
 
     @classmethod
     def configure_parser(cls, parser, /) -> None:
@@ -418,7 +440,7 @@ class InitPlugin(contract.IPluginExtension[InitConfig]):
     name = "init_agent"
     description = "Init layout test plugin"
     options_type = InitConfig
-    supported_controllers = frozenset()
+    routes = {}
 
     @classmethod
     def configure_parser(cls, parser, /) -> None:
@@ -465,7 +487,7 @@ class SrcPlugin(contract.IPluginExtension[SrcConfig]):
     name = "src_layout_agent"
     description = "Canonical src layout test plugin"
     options_type = SrcConfig
-    supported_controllers = frozenset()
+    routes = {}
 
     @classmethod
     def configure_parser(cls, parser, /) -> None:
@@ -546,7 +568,7 @@ class DupPlugin(contract.IPluginExtension[DupConfig]):
     name = "dummy_valid"
     description = "Duplicate plugin attempting to override"
     options_type = DupConfig
-    supported_controllers = frozenset()
+    routes = {}
 
     @classmethod
     def configure_parser(cls, parser, /) -> None:
@@ -704,7 +726,7 @@ class DirPlugin(contract.IPluginExtension[DirConfig]):
     name = "cli_discovered_agent"
     description = "CLI discovered test plugin"
     options_type = DirConfig
-    supported_controllers = frozenset()
+    routes = {}
 
     @classmethod
     def configure_parser(cls, parser, /) -> None:
@@ -767,7 +789,7 @@ class CustomShellPlugin(contract.IPluginExtension[CustomShellConfig]):
     name = "shell_socket"
     description = "Custom CLI shell override"
     options_type = CustomShellConfig
-    supported_controllers = frozenset()
+    routes = {}
 
     @classmethod
     def configure_parser(cls, parser, /) -> None:
@@ -840,7 +862,7 @@ class ContestedPlugin(contract.IPluginExtension[ContestedConfig]):
     name = "contested_plugin"
     description = "CLI custom dir version"
     options_type = ContestedConfig
-    supported_controllers = frozenset()
+    routes = {}
 
     @classmethod
     def configure_parser(cls, parser, /) -> None:
@@ -891,7 +913,7 @@ class UserPlugin(contract.IPluginExtension[UserConfig]):
     name = "user_agent"
     description = "User drop-in agent"
     options_type = UserConfig
-    supported_controllers = frozenset()
+    routes = {}
 
     @classmethod
     def configure_parser(cls, parser, /) -> None:

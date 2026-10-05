@@ -9,9 +9,9 @@ The `py_socket` plugin provides a cross-platform reverse-shell client capable of
 | `connection` | Python socket connection transport (`PySocketConnection`) and operation renderer (`PySocketRenderer`)                 |
 | `plugin`     | Entry-point plugin (`PySocketPlugin`), runtime adapter (`PySocketRuntime`), and asset processor (`PySocketProcessor`) |
 
-## Controller Capabilities
+## Routes
 
-`PySocketPlugin` declares support for `load`, `command`, `eval`, `shell`, `upload`, and `execute` through `supported_controllers`. The application adds universal `help` and `exit` routes separately.
+`PySocketPlugin.routes` reuses `core.OFFICIAL_ROUTES`, the built-in registrations for `load`, `command`, `eval`, `shell`, `upload`, and `execute`. Plugins may extend or replace these registrations; the application keeps `help` and `exit` protected.
 
 ## Architecture & Execution Flow
 

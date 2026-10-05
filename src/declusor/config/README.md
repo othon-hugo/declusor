@@ -7,11 +7,11 @@ The **config** package sits at the base of the dependency hierarchy. It provides
 
 ## Modules
 
-| Module       | Responsibility                                                                                                  |
-| ------------ | --------------------------------------------------------------------------------------------------------------- |
-| `enums`      | Enumerations for execution modes, connection states, operation codes, controller routes, and controller actions |
-| `exceptions` | Canonical domain exception hierarchy and custom warnings                                                        |
-| `settings`   | Configuration paths, runtime directories, and client configuration options                                      |
+| Module       | Responsibility                                                                               |
+| ------------ | -------------------------------------------------------------------------------------------- |
+| `enums`      | Enumerations for execution modes, connection states, operation codes, and transport channels |
+| `exceptions` | Canonical domain exception hierarchy and custom warnings                                     |
+| `settings`   | Configuration paths, runtime directories, and client configuration options                   |
 
 ## Exception Hierarchy
 
@@ -46,4 +46,4 @@ DeclusorWarning (Warning)
 3. **Type Safety** — `StrEnum` members and typed exceptions prevent invalid states.
 4. **Semantic Exceptions** — each exception type conveys specific error context.
 
-`ControllerType` provides the canonical built-in route identifiers. Plugins use its members in `supported_controllers` to declare which plugin-specific commands their runtime supports; `help` and `exit` remain application-wide routes.
+Route names are open-ended strings defined by route registrations, not a closed configuration enum. The plugin contract and `core.OFFICIAL_ROUTES` provide the types and reusable defaults for route declarations.

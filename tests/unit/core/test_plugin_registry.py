@@ -16,7 +16,7 @@ class _FirstSamplePlugin(contract.IPluginExtension[_FirstSampleConfig]):
     name = "alpha_plugin"
     description = "Alpha plugin for unit tests"
     options_type = _FirstSampleConfig
-    supported_controllers = frozenset()
+    routes = {}
 
     @classmethod
     def configure_parser(cls, parser: contract.IArgumentParser, /) -> None:
@@ -70,7 +70,7 @@ class _SecondSamplePlugin(contract.IPluginExtension[_SecondSampleConfig]):
     name = "beta_plugin"
     description = "Beta plugin for unit tests"
     options_type = _SecondSampleConfig
-    supported_controllers = frozenset()
+    routes = {}
 
     @classmethod
     def configure_parser(cls, parser: contract.IArgumentParser, /) -> None:

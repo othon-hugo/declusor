@@ -1,19 +1,6 @@
 from enum import IntEnum, StrEnum
 
 
-class ControllerType(StrEnum):
-    """Canonical command routes available to client plugins."""
-
-    HELP = "help"
-    EXIT = "exit"
-    LOAD = "load"
-    COMMAND = "command"
-    EVAL = "eval"
-    SHELL = "shell"
-    UPLOAD = "upload"
-    EXECUTE = "execute"
-
-
 class DeclusorPlugins(StrEnum):
     SHELL_SOCKET = "shell_socket"
     """POSIX shell socket client transport plugin."""

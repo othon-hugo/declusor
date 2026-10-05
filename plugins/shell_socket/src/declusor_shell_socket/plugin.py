@@ -3,7 +3,7 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Final
 
-from declusor import config, contract, util
+from declusor import config, contract, core, util
 
 from .connection import ShellSocketConnection, ShellSocketRenderer
 
@@ -26,16 +26,7 @@ class ShellSocketPlugin(contract.IPluginExtension[ShellSocketConfig]):
     version = "1.0.0"
     author = "github.com/othonhugo"
     options_type = ShellSocketConfig
-    supported_controllers = frozenset(
-        {
-            config.ControllerType.LOAD,
-            config.ControllerType.COMMAND,
-            config.ControllerType.EVAL,
-            config.ControllerType.SHELL,
-            config.ControllerType.UPLOAD,
-            config.ControllerType.EXECUTE,
-        }
-    )
+    routes = core.OFFICIAL_ROUTES
 
     @classmethod
     def configure_parser(cls, parser: contract.IArgumentParser, /) -> None:

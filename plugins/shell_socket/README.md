@@ -11,9 +11,9 @@ For detailed specification of wire framing, nonces, and session transitions, see
 | `connection` | Reverse-shell connection transport (`ShellSocketConnection`) and operation renderer (`ShellSocketRenderer`)                    |
 | `plugin`     | Entry-point plugin (`ShellSocketPlugin`), runtime adapter (`ShellSocketRuntime`), and asset processor (`ShellSocketProcessor`) |
 
-## Controller Capabilities
+## Routes
 
-`ShellSocketPlugin` declares support for `load`, `command`, `eval`, `shell`, `upload`, and `execute` through `supported_controllers`. The application adds universal `help` and `exit` routes separately.
+`ShellSocketPlugin.routes` reuses `core.OFFICIAL_ROUTES`, the built-in registrations for `load`, `command`, `eval`, `shell`, `upload`, and `execute`. Plugins may extend or replace these registrations; the application keeps `help` and `exit` protected.
 
 ## Architecture & Protocol Flow
 

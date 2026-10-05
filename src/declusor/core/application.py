@@ -3,10 +3,11 @@ import inspect
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
-from declusor import config, contract, controller, transport
+from declusor import config, contract, transport
 from declusor.config import InvalidOperation
 
 from .launcher import LauncherRenderer
+from .routes import EXIT_ROUTE, OFFICIAL_ROUTES, create_help_route
 
 if TYPE_CHECKING:
     from .plugin import PluginManager
@@ -116,7 +117,7 @@ class Application:
         plugin_class = self._plugin_manager.get(config.kind)
 
         if self._route_plugin_name is None:
-            self._connect_routes(plugin_class.supported_controllers)
+            self._connect_routes(plugin_class.routes)
             self._route_plugin_name = plugin_class.name
         elif self._route_plugin_name != plugin_class.name:
             raise InvalidOperation(
@@ -163,69 +164,38 @@ class Application:
 
                 self._session_runner.run(session, self._router)
 
-    def _connect_routes(self, supported_controllers: frozenset[config.ControllerType], /) -> None:
-        """Register universal and plugin-supported routes on the application router."""
+    def _connect_routes(self, plugin_routes: contract.RouteTable, /) -> None:
+        """Compose official routes with plugin routes and register the result."""
 
-        registrations = {
-            config.ControllerType.HELP: contract.RouteRegistration(
-                controller.create_help_controller(self._router),
-                contract.RouteHelp(
-                    "Show available commands or detailed help for one command.",
-                    "Usage: help [command]. Without an argument, lists commands and their short descriptions.",
-                ),
-            ),
-            config.ControllerType.LOAD: contract.RouteRegistration(
-                controller.call_load,
-                contract.RouteHelp(
-                    "Load a module on the remote client.", "Usage: load <module>. Loads a module from the configured client module repository."
-                ),
-            ),
-            config.ControllerType.COMMAND: contract.RouteRegistration(
-                controller.call_command,
-                contract.RouteHelp(
-                    "Run a command on the remote client.",
-                    "Usage: command <command line>. Executes the command and streams its output to this session.",
-                ),
-            ),
-            config.ControllerType.EVAL: contract.RouteRegistration(
-                controller.call_eval,
-                contract.RouteHelp(
-                    "Evaluate code in the client runtime.",
-                    "Usage: eval <code>. Executes a code snippet directly in the remote agent's native runtime.",
-                ),
-            ),
-            config.ControllerType.SHELL: contract.RouteRegistration(
-                controller.call_shell,
-                contract.RouteHelp(
-                    "Start an interactive remote shell.",
-                    "Opens an interactive shell over the active client connection. This command takes no arguments.",
-                ),
-            ),
-            config.ControllerType.UPLOAD: contract.RouteRegistration(
-                controller.call_upload,
-                contract.RouteHelp(
-                    "Upload a local file to the remote client.", "Usage: upload <filepath> [destination]. The destination path is optional."
-                ),
-            ),
-            config.ControllerType.EXECUTE: contract.RouteRegistration(
-                controller.call_execute,
-                contract.RouteHelp(
-                    "Execute a local script on the remote client.",
-                    "Usage: execute <filepath>. The script is sent from the local system and executed remotely.",
-                ),
-            ),
-            config.ControllerType.EXIT: contract.RouteRegistration(
-                controller.call_exit,
-                contract.RouteHelp("End the active session.", "Terminates the interactive session gracefully. This command takes no arguments."),
-            ),
-        }
-        enabled_controllers = supported_controllers | {config.ControllerType.HELP, config.ControllerType.EXIT}
-        selected_registrations = {kind: registration for kind, registration in registrations.items() if kind in enabled_controllers}
-        existing_routes = set(self._router.routes)
+        registrations = {"help": create_help_route(self._router), **OFFICIAL_ROUTES, "exit": EXIT_ROUTE}
 
-        for kind in selected_registrations:
-            if kind.value in existing_routes:
-                raise config.DuplicateRouteError(kind.value, "route already exists.")
+        for route, registration in plugin_routes.items():
+            if route in {"help", "exit"}:
+                raise config.PluginValidationError(f"Plugins cannot override protected route '{route}'.")
 
-        for kind, registration in selected_registrations.items():
-            self._router.connect(kind.value, registration)
+            registrations[route] = registration
+
+        normalized_registrations: dict[str, contract.RouteRegistration] = {}
+
+        for route, registration in registrations.items():
+            if not isinstance(route, str) or not route.strip():
+                raise config.PluginValidationError("Route names must be non-empty strings.")
+
+            normalized_route = route.strip()
+
+            if normalized_route in normalized_registrations:
+                raise config.PluginValidationError(f"Duplicate route after normalization: '{normalized_route}'.")
+
+            if not isinstance(registration, contract.RouteRegistration):
+                raise config.PluginValidationError(f"Route '{normalized_route}' must be a RouteRegistration.")
+
+            normalized_registrations[normalized_route] = registration
+
+        existing_routes = {route.strip() for route in self._router.routes}
+
+        for route in normalized_registrations:
+            if route in existing_routes:
+                raise config.DuplicateRouteError(route, "route already exists.")
+
+        for route, registration in normalized_registrations.items():
+            self._router.connect(route, registration)

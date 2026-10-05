@@ -132,7 +132,7 @@ main (Composition Root)
 
 ### Infrastructure & Transport (`core`, `transport`)
 
-- **Infrastructure Services (`core`)**: Manages route registration, command usage documentation, command-line argument mapping, and the multi-tier dynamic plugin discovery engine.
+- **Infrastructure Services (`core`)**: Publishes reusable official route registrations, composes them with plugin route maps, manages command usage documentation, and provides command-line argument mapping and multi-tier plugin discovery.
 - **Physical & Decorator Transports (`transport`)**: Encapsulates raw socket I/O (`SocketTransport`), server listening (`TcpListener`), and composable stream ciphers (`XorTransport`). Implements clean exception translation and protects against stream segmentation desynchronization.
 
 ### Presentation (`presentation`)
@@ -141,7 +141,7 @@ main (Composition Root)
 
 ### Composition Root (`main`, `app`)
 
-- **Application Bootstrap (`main`, `app`)**: Initializes the client registry, discovers plugins across all configured tiers, wires application routes, and executes the active session via specialized application targets (`terminal`).
+- **Application Bootstrap (`main`, `app`)**: Initializes the client registry, discovers plugins across all configured tiers, selects a plugin whose route map is composed by `core.Application`, and executes the active session via specialized application targets (`terminal`).
 - **Top-Level Error Barrier**: Handles process arguments, captures domain exceptions, prints user-friendly diagnostic messages, and translates results into deterministic operating system exit codes.
 
 ### Ecosystem & Verification (`plugins`, `testing`)

@@ -14,6 +14,7 @@ The **core** package provides infrastructure services implementing domain contra
 | `parser`      | CLI argument parsing, client registry binding, and PluginConfig resolution        |
 | `plugin`      | Dynamic plugin discovery across tiers, contract validation, and client registries |
 | `router`      | Command routing, controller dispatching, and route-owned short and detailed help  |
+| `routes`      | Reusable official route registrations exported for plugin composition             |
 
 ## Design Principles
 
@@ -23,4 +24,4 @@ The **core** package provides infrastructure services implementing domain contra
 4. **Validation Barrier** — `PluginManager` validates plugin classes prior to registration, preventing faulty third-party code from compromising runtime stability.
 5. **Dynamic Collaborator Introspection** — `Application.run` uses dynamic signature introspection (`inspect.signature`) to bind input source hooks (such as `setup_completer`), forwarding route mappings and the active plugin's `assets_dir` with fail-safe backward compatibility for simpler input sources.
 
-`Application` defers built-in route registration until `run(config)` identifies the selected plugin. It registers only the plugin's `supported_controllers`, plus universal `help` and `exit`; autocomplete and help listing therefore expose the same filtered route set. An application instance may be reused for the same plugin, but changing plugins requires a new instance because routers do not remove routes.
+`core.OFFICIAL_ROUTES` is an immutable mapping of the reusable built-in plugin routes. `Application` composes it with the selected plugin's `routes` mapping, where plugin values override official registrations with the same name. It then adds protected `help` and `exit` registrations and validates the complete route set before connecting it. Route names remain open-ended strings; collisions with routes already present in the injected router are rejected. An application instance may be reused for the same plugin, but changing plugins requires a new instance because routers do not remove routes.

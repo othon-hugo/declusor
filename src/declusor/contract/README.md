@@ -7,18 +7,18 @@ The **contract** package defines the abstract contracts that establish the bound
 
 ## Modules
 
-| Module         | Responsibility                                                                                      |
-| -------------- | --------------------------------------------------------------------------------------------------- |
-| `command`      | Execution lifecycle contract for encapsulated command operations                                    |
-| `connection`   | State machine contract and protocol profile interfaces for network transports                       |
-| `controller`   | Controller signatures, request/result types, and `SessionContext` coordinator                       |
-| `input_source` | Operator input reading contract (command and raw lines)                                             |
-| `parser`       | Interface for CLI argument parsing and options mapping                                              |
-| `plugin`       | Abstractions for client plugins, declared controller capabilities, runtimes, and client file stores |
-| `router`       | Route registration, lookup, and usage contract                                                      |
-| `runner`       | Session workflow and interaction loop contract (`ISessionRunner`)                                   |
-| `transport`    | Bidirectional byte-stream transport channel and transport listener contracts                        |
-| `view`         | Output presentation contract for messages, errors, warnings, info, and binary                       |
+| Module         | Responsibility                                                                  |
+| -------------- | ------------------------------------------------------------------------------- |
+| `command`      | Execution lifecycle contract for encapsulated command operations                |
+| `connection`   | State machine contract and protocol profile interfaces for network transports   |
+| `controller`   | Controller signatures, request/result types, and `SessionContext` coordinator   |
+| `input_source` | Operator input reading contract (command and raw lines)                         |
+| `parser`       | Interface for CLI argument parsing and options mapping                          |
+| `plugin`       | Abstractions for client plugins, route tables, runtimes, and client file stores |
+| `router`       | Route registration, lookup, and usage contract                                  |
+| `runner`       | Session workflow and interaction loop contract (`ISessionRunner`)               |
+| `transport`    | Bidirectional byte-stream transport channel and transport listener contracts    |
+| `view`         | Output presentation contract for messages, errors, warnings, info, and binary   |
 
 ## Design Principles
 
@@ -27,4 +27,4 @@ The **contract** package defines the abstract contracts that establish the bound
 3. **Rigid Interface / Extensible Implementation** — client plugins implemented in the external `plugins/` hierarchy or third-party packages strictly adhere to `IPlugin` and `IConnection`.
 4. **Liskov Substitution** — any plugin conforming to `IPlugin` is drop-in replaceable and discoverable at runtime.
 
-`IPluginExtension.supported_controllers` is a required immutable set of `config.ControllerType` values. It advertises the plugin-specific routes available to its runtime; universal `help` and `exit` routes are supplied by the application.
+`IPluginExtension.routes` is a mapping from arbitrary route-name strings to `RouteRegistration` values. It allows plugins to add routes and replace official registrations during application composition. The application owns protected `help` and `exit` routes.

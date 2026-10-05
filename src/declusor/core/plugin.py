@@ -1,6 +1,6 @@
 import importlib.metadata
 import inspect
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -115,12 +115,31 @@ class PluginManager(PluginRegistry):
                 f"Plugin class {candidate.__name__!r} has unimplemented abstract methods: {', '.join(sorted(abstract_methods))}"
             )
 
-        supported_controllers = getattr(candidate, "supported_controllers", None)
+        routes = getattr(candidate, "routes", None)
 
-        if not isinstance(supported_controllers, frozenset) or any(not isinstance(item, config.ControllerType) for item in supported_controllers):
+        if not isinstance(routes, Mapping):
             raise config.PluginValidationError(
-                f"Plugin class {candidate.__name__!r} must define 'supported_controllers' as a frozenset of ControllerType values."
+                f"Plugin class {candidate.__name__!r} must define 'routes' as a mapping of names to RouteRegistration values."
             )
+
+        normalized_routes: set[str] = set()
+
+        for route, registration in routes.items():
+            if not isinstance(route, str) or not route.strip():
+                raise config.PluginValidationError(f"Plugin class {candidate.__name__!r} must define non-empty string route names.")
+
+            normalized_route = route.strip()
+
+            if normalized_route in {"help", "exit"}:
+                raise config.PluginValidationError(f"Plugin class {candidate.__name__!r} cannot override protected route '{normalized_route}'.")
+
+            if normalized_route in normalized_routes:
+                raise config.PluginValidationError(f"Plugin class {candidate.__name__!r} defines duplicate normalized route '{normalized_route}'.")
+
+            if not isinstance(registration, contract.RouteRegistration):
+                raise config.PluginValidationError(f"Plugin class {candidate.__name__!r} route '{normalized_route}' must be a RouteRegistration.")
+
+            normalized_routes.add(normalized_route)
 
     def register(
         self,

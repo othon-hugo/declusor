@@ -217,7 +217,7 @@ class TestIPluginExtension:
 
         instance = testing.DummyPlugin()
         assert isinstance(instance, contract.IPluginExtension)
-        assert instance.supported_controllers == testing.DummyPlugin.supported_controllers
+        assert instance.routes == testing.DummyPlugin.routes
 
 
 class TestIPluginRuntime:
