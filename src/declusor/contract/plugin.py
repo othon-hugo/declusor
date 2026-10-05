@@ -146,6 +146,9 @@ class IPluginExtension[T: ParsedArguments](ABC):
     options_type: type[T]
     """The concrete TypedDict class for this plugin's parsed options."""
 
+    supported_controllers: frozenset[config.ControllerType]
+    """Application controllers available for this plugin's runtime."""
+
     @classmethod
     @abstractmethod
     def configure_parser(cls, parser: "IArgumentParser", /) -> None:

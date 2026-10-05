@@ -272,18 +272,15 @@ class TestTerminalApplicationInitialization:
         manager = core.PluginManager()
         runner = testing.DummySessionRunner()
 
+        terminal_app = app.TerminalApplication(router, view, plugin_manager=manager, session_runner=runner)
+
         with pytest.raises(config.DuplicateRouteError) as exc_info:
-            app.TerminalApplication(
-                router,
-                view,
-                plugin_manager=manager,
-                session_runner=runner,
-            )
+            terminal_app._connect_routes(testing.DummyPlugin.supported_controllers)
 
         assert exc_info.value.route == "help"
 
-    def test_terminal_application__init_routes__registers_all_standard_routes(self) -> None:
-        """TerminalApplication registers all canonical command routes upon initialization."""
+    def test_terminal_application__init_routes__defers_registration_until_plugin_selection(self) -> None:
+        """TerminalApplication leaves built-in routes unregistered before plugin selection."""
 
         router = core.Router()
         view = testing.DummyView()
@@ -297,12 +294,10 @@ class TestTerminalApplicationInitialization:
             session_runner=runner,
         )
 
-        expected_routes = {"help", "execute", "load", "shell", "upload", "command", "eval", "exit"}
-        assert expected_routes.issubset(set(terminal_app.router.routes))
-        assert len(terminal_app.router.routes) >= 8
+        assert terminal_app.router.routes == ()
 
-    def test_terminal_application__init_routes__binds_expected_controllers(self) -> None:
-        """TerminalApplication maps canonical routes to the expected controller functions."""
+    def test_terminal_application_connect_routes__binds_supported_controllers(self) -> None:
+        """TerminalApplication uses the shared route setup for plugin capabilities."""
 
         router = core.Router()
         view = testing.DummyView()
@@ -315,6 +310,8 @@ class TestTerminalApplicationInitialization:
             plugin_manager=manager,
             session_runner=runner,
         )
+
+        terminal_app._connect_routes(testing.DummyPlugin.supported_controllers)
 
         assert terminal_app.router.locate("load") is controller.call_load
         assert terminal_app.router.locate("command") is controller.call_command

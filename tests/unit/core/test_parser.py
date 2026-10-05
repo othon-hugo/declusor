@@ -21,6 +21,7 @@ class DummyPathClientPlugin(contract.IPluginExtension[DummyPathConfig]):
     description = "Dummy path client"
     version = "1.0.0"
     options_type = DummyPathConfig
+    supported_controllers = frozenset()
 
     @classmethod
     def configure_parser(cls, parser: contract.IArgumentParser, /) -> None:
@@ -191,6 +192,7 @@ class DropinPlugin(contract.IPluginExtension[DropinConfig]):
     name = "dropin_agent"
     description = "Dropin agent"
     options_type = DropinConfig
+    supported_controllers = frozenset()
 
     @classmethod
     def configure_parser(cls, parser: contract.IArgumentParser, /) -> None:
@@ -268,6 +270,7 @@ class DropinPlugin(contract.IPluginExtension[DropinConfig]):
             name = "custom_arg_plugin"
             description = "Plugin registering custom CLI arguments"
             options_type = CustomPluginConfig
+            supported_controllers = frozenset()
 
             @classmethod
             def configure_parser(cls, parser: contract.IArgumentParser, /) -> None:

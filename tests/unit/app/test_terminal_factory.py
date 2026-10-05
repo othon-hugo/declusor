@@ -27,14 +27,12 @@ class TestCreateTerminalApplicationDefaults:
         assert "shell_socket" in plugin_names
         assert "py_socket" in plugin_names
 
-    def test_create_terminal_application__default_args__wires_router_with_canonical_routes(self) -> None:
-        """create_terminal_application wires router with all standard command routes."""
+    def test_create_terminal_application__default_args__defers_routes_until_plugin_selection(self) -> None:
+        """create_terminal_application leaves routes unregistered until run selects a plugin."""
 
         declusor_app = app.create_terminal_application()
 
-        expected_routes = {"help", "execute", "load", "shell", "upload", "command", "eval", "exit"}
-        assert expected_routes.issubset(set(declusor_app.router.routes))
-        assert len(declusor_app.router.routes) >= 8
+        assert declusor_app.router.routes == ()
 
     def test_create_terminal_application__default_args__wires_terminal_view(self) -> None:
         """create_terminal_application wires an interactive TerminalView."""
@@ -161,14 +159,14 @@ class TestCreateTerminalApplicationInjectedDependencies:
         assert declusor_app._launcher_renderer is custom_renderer
 
     def test_create_terminal_application__with_custom_router__attaches_injected_router(self) -> None:
-        """create_terminal_application forwards custom router and registers standard routes."""
+        """create_terminal_application forwards the custom router without premature route registration."""
 
         custom_router = core.Router()
 
         declusor_app = app.create_terminal_application(router=custom_router)
 
         assert declusor_app.router is custom_router
-        assert "help" in custom_router.routes
+        assert custom_router.routes == ()
 
     def test_create_terminal_application__with_custom_view__attaches_injected_view(self) -> None:
         """create_terminal_application forwards custom view to application."""

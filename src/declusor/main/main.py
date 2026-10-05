@@ -58,15 +58,9 @@ def run(
         try:
             active_transport_registry = transport_registry or (application.transport_registry if application is not None else None)
             manager = plugin_manager or (application.plugin_manager if application is not None else core.PluginManager().discover())
-            parser = core.DeclusorParser(
-                config.PROJECT_NAME,
-                config.PROJECT_DESCRIPTION,
-            )
-            plugin_config = parser.parse(
-                manager,
-                args,
-                transport_registry=active_transport_registry,
-            )
+            parser = core.DeclusorParser(config.PROJECT_NAME, config.PROJECT_DESCRIPTION)
+
+            plugin_config = parser.parse(manager, args, transport_registry=active_transport_registry)
 
             match plugin_config.mode:
                 case config.ExecutionMode.CLI:
@@ -84,23 +78,17 @@ def run(
                         session_runner=session_runner,
                     )
                 case _:
-                    print(
-                        f"Execution mode '{plugin_config.mode.value}' is not supported yet.",
-                        file=error_stream,
-                    )
+                    print(f"Execution mode '{plugin_config.mode.value}' is not supported yet.", file=error_stream)
                     return 1
 
         except config.ParserError as error:
             print(f"parser error: {error}", file=error_stream)
             return 2
-
         except config.DeclusorException as error:
             print(f"declusor error: {error}", file=error_stream)
             return 1
-
         except KeyboardInterrupt:
             return 0
-
         except SystemExit as error:
             if error.code is None:
                 return 0
@@ -109,4 +97,5 @@ def run(
                 return error.code
 
             print(error.code, file=error_stream)
+
             return 1

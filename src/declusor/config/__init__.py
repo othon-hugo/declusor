@@ -1,5 +1,6 @@
 from .enums import (
     ChannelType,
+    ControllerType,
     DeclusorPlugins,
     ExecutionMode,
     FramingMode,
@@ -55,6 +56,7 @@ __all__ = [
     "ConnectionHandshakeError",
     "ConnectionTimeoutError",
     "ControllerError",
+    "ControllerType",
     "DeclusorException",
     "DeclusorPlugins",
     "DeclusorWarning",

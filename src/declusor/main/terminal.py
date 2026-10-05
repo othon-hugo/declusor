@@ -47,16 +47,22 @@ def run_terminal_app(
 
         if transport_registry is not None:
             factory_kwargs["transport_registry"] = transport_registry
+
         if listener_factory is not None:
             factory_kwargs["listener_factory"] = listener_factory
+
         if launcher_renderer is not None:
             factory_kwargs["launcher_renderer"] = launcher_renderer
+
         if router is not None:
             factory_kwargs["router"] = router
+
         if view is not None:
             factory_kwargs["view"] = view
+
         if input_source is not None:
             factory_kwargs["input_source"] = input_source
+
         if session_runner is not None:
             factory_kwargs["session_runner"] = session_runner
 

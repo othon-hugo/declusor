@@ -1,5 +1,6 @@
 """Unit tests for Application orchestration and connection lifecycle in declusor.core.application."""
 
+import dataclasses
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -24,8 +25,8 @@ class CompleterInputSource(testing.DummyInputSource):
 class TestApplicationInitialization:
     """Tests verifying Application dependency injection and route initialization."""
 
-    def test_application__init__registers_all_core_routes(self) -> None:
-        """Application registers all canonical core command routes upon initialization."""
+    def test_application__init__defers_route_registration_until_plugin_selection(self) -> None:
+        """Application leaves plugin-specific routes unregistered until run selects a plugin."""
 
         router = core.Router()
         view = testing.DummyView()
@@ -41,12 +42,10 @@ class TestApplicationInitialization:
             input_source=input_source,
         )
 
-        expected_routes = {"help", "execute", "load", "shell", "upload", "command", "eval", "exit"}
-        assert expected_routes.issubset(set(app._router.routes))
-        assert len(app._router.routes) >= 8
+        assert app.router.routes == ()
 
-    def test_application__init__binds_controllers_to_expected_routes(self) -> None:
-        """Application registers canonical controller functions for all standard routes."""
+    def test_application_connect_routes__supports_subset_and_keeps_universal_routes(self) -> None:
+        """Route setup registers only selected controllers plus help and exit."""
 
         router = core.Router()
         view = testing.DummyView()
@@ -60,14 +59,14 @@ class TestApplicationInitialization:
             session_runner=runner,
         )
 
-        assert app._router.locate("load") is controller.call_load
-        assert app._router.locate("command") is controller.call_command
-        assert app._router.locate("eval") is controller.call_eval
-        assert app._router.locate("shell") is controller.call_shell
-        assert app._router.locate("upload") is controller.call_upload
-        assert app._router.locate("execute") is controller.call_execute
-        assert app._router.locate("exit") is controller.call_exit
-        assert callable(app._router.locate("help"))
+        app._connect_routes(frozenset({config.ControllerType.EVAL}))
+
+        assert router.routes == ("help", "eval", "exit")
+        assert router.locate("eval") is controller.call_eval
+        assert router.locate("exit") is controller.call_exit
+        assert callable(router.locate("help"))
+        with pytest.raises(config.RouterError):
+            router.locate("load")
 
     def test_application__init__registers_explicit_route_help(self) -> None:
         """Application registers short and detailed help separately from controller docstrings."""
@@ -77,12 +76,13 @@ class TestApplicationInitialization:
         manager = core.PluginManager()
         runner = testing.DummySessionRunner()
 
-        core.Application(
+        app = core.Application(
             router,
             view,
             plugin_manager=manager,
             session_runner=runner,
         )
+        app._connect_routes(testing.DummyPlugin.supported_controllers)
 
         assert router.help("load") == contract.RouteHelp(
             "Load a module on the remote client.",
@@ -105,8 +105,8 @@ class TestApplicationInitialization:
                 session_runner=runner,
             )
 
-    def test_application__init_existing_route_collision__raises_duplicate_route_error(self) -> None:
-        """When the router already has a core route registered, initialization raises DuplicateRouteError."""
+    def test_application_connect_routes__existing_route_collision__does_not_partially_register(self) -> None:
+        """A route collision is detected before any additional route is registered."""
 
         router = core.Router()
         router.connect("help", controller.call_exit)
@@ -114,15 +114,13 @@ class TestApplicationInitialization:
         manager = core.PluginManager()
         runner = testing.DummySessionRunner()
 
+        app = core.Application(router, view, plugin_manager=manager, session_runner=runner)
+
         with pytest.raises(config.DuplicateRouteError) as exc_info:
-            core.Application(
-                router,
-                view,
-                plugin_manager=manager,
-                session_runner=runner,
-            )
+            app._connect_routes(testing.DummyPlugin.supported_controllers)
 
         assert exc_info.value.route == "help"
+        assert router.routes == ("help",)
 
     def test_application__properties__exposes_injected_registry_and_plugin_manager(self) -> None:
         """Application exposes transport_registry and plugin_manager via properties."""
@@ -205,6 +203,56 @@ class TestApplicationInitialization:
 
 class TestApplicationLifecycle:
     """Tests verifying Application.run lifecycle coordination."""
+
+    def test_application_run__plugin_subset__registers_only_supported_and_universal_routes(self, tmp_path: Path) -> None:
+        """Application routes and autocomplete are filtered by the selected plugin capabilities."""
+
+        class EvalOnlyPlugin(testing.DummyPlugin):
+            name = "eval_only"
+            supported_controllers = frozenset({config.ControllerType.EVAL})
+
+        class CommandOnlyPlugin(testing.DummyPlugin):
+            name = "command_only"
+            supported_controllers = frozenset({config.ControllerType.COMMAND})
+
+        dummy_conn = testing.DummyConnection()
+        runtime = testing.DummyPluginRuntime(connection_to_return=dummy_conn)
+        EvalOnlyPlugin.reset()
+        EvalOnlyPlugin.runtime_instance = runtime
+
+        manager = core.PluginManager()
+        manager.register(EvalOnlyPlugin)
+        manager.register(CommandOnlyPlugin)
+        router = core.Router()
+        input_source = CompleterInputSource()
+        listener = testing.MemoryTransportListener()
+        _ = listener.create_client()
+        app = core.Application(
+            router,
+            testing.DummyView(),
+            plugin_manager=manager,
+            session_runner=testing.DummySessionRunner(),
+            input_source=input_source,
+            listener_factory=lambda host, port: listener,
+        )
+        plugin_config = contract.PluginConfig(
+            kind=EvalOnlyPlugin.name,
+            host="127.0.0.1",
+            port=9000,
+            options=contract.ParsedArguments(),
+            options_type=contract.ParsedArguments,
+            filesystem=contract.PluginFilesystem.from_root(tmp_path),
+        )
+
+        app.run(plugin_config)
+
+        assert router.routes == ("help", "eval", "exit")
+        assert input_source.completer_routes == router.routes
+        with pytest.raises(config.RouterError):
+            router.locate("command")
+        with pytest.raises(config.InvalidOperation, match="already configured"):
+            app.run(dataclasses.replace(plugin_config, kind=CommandOnlyPlugin.name))
+        assert router.routes == ("help", "eval", "exit")
 
     def test_application_run__standard_lifecycle__renders_launcher_completes_handshake_and_runs_session(self, tmp_path: Path) -> None:
         """Application.run orchestrates launcher delivery, listener accept, handshake, and runner."""

@@ -44,30 +44,6 @@ class TerminalApplication(core.Application):
             transport_registry=transport_registry,
         )
 
-    @property
-    def router(self) -> contract.IRouter:
-        """Active command router resolving interactive commands to controller actions."""
-
-        return self._router
-
-    @property
-    def view(self) -> contract.IView:
-        """Operator presentation view interface."""
-
-        return self._view
-
-    @property
-    def session_runner(self) -> contract.ISessionRunner:
-        """Active session runner executing prompt workflows."""
-
-        return self._session_runner
-
-    @property
-    def input_source(self) -> contract.IInputSource | None:
-        """Operator input source interface reading commands, or None if omitted."""
-
-        return self._input_source
-
 
 def create_terminal_application(
     search_dirs: Sequence[Path] | None = None,

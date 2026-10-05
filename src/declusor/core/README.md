@@ -22,3 +22,5 @@ The **core** package provides infrastructure services implementing domain contra
 3. **Multi-Tier Discovery & Precedence** — `PluginManager` discovers plugins dynamically at runtime across built-ins, PEP 621 entry points, and drop-in folders.
 4. **Validation Barrier** — `PluginManager` validates plugin classes prior to registration, preventing faulty third-party code from compromising runtime stability.
 5. **Dynamic Collaborator Introspection** — `Application.run` uses dynamic signature introspection (`inspect.signature`) to bind input source hooks (such as `setup_completer`), forwarding route mappings and the active plugin's `assets_dir` with fail-safe backward compatibility for simpler input sources.
+
+`Application` defers built-in route registration until `run(config)` identifies the selected plugin. It registers only the plugin's `supported_controllers`, plus universal `help` and `exit`; autocomplete and help listing therefore expose the same filtered route set. An application instance may be reused for the same plugin, but changing plugins requires a new instance because routers do not remove routes.

@@ -115,6 +115,13 @@ class PluginManager(PluginRegistry):
                 f"Plugin class {candidate.__name__!r} has unimplemented abstract methods: {', '.join(sorted(abstract_methods))}"
             )
 
+        supported_controllers = getattr(candidate, "supported_controllers", None)
+
+        if not isinstance(supported_controllers, frozenset) or any(not isinstance(item, config.ControllerType) for item in supported_controllers):
+            raise config.PluginValidationError(
+                f"Plugin class {candidate.__name__!r} must define 'supported_controllers' as a frozenset of ControllerType values."
+            )
+
     def register(
         self,
         plugin: PluginType,

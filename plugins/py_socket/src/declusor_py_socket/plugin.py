@@ -29,6 +29,16 @@ class PySocketPlugin(contract.IPluginExtension[PySocketConfig]):
     version = "1.0.0"
     author = "Declusor Team"
     options_type = PySocketConfig
+    supported_controllers = frozenset(
+        {
+            config.ControllerType.LOAD,
+            config.ControllerType.COMMAND,
+            config.ControllerType.EVAL,
+            config.ControllerType.SHELL,
+            config.ControllerType.UPLOAD,
+            config.ControllerType.EXECUTE,
+        }
+    )
 
     @classmethod
     def configure_parser(cls, parser: contract.IArgumentParser, /) -> None:

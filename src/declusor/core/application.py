@@ -3,7 +3,8 @@ import inspect
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
-from declusor import contract, controller, transport
+from declusor import config, contract, controller, transport
+from declusor.config import InvalidOperation
 
 from .launcher import LauncherRenderer
 
@@ -30,9 +31,9 @@ class Application:
         plugin_manager: "PluginManager",
         session_runner: contract.ISessionRunner,
         input_source: contract.IInputSource | None = None,
-        listener_factory: TransportListenerFactory | None = None,
         launcher_renderer: LauncherRenderer | None = None,
         transport_registry: transport.TransportLayerRegistry | None = None,
+        listener_factory: TransportListenerFactory | None = None,
     ) -> None:
         """Create an application with configured dependencies and session runner.
 
@@ -42,9 +43,9 @@ class Application:
             plugin_manager: Plugin manager containing the available client plugins.
             session_runner: Session runner executing interaction workflows over active sessions.
             input_source: Optional operator input source interface.
-            listener_factory: Optional factory producing an ITransportListener for network connections.
             launcher_renderer: Optional renderer responsible for delivering client launcher.
             transport_registry: Optional registry managing composable transport layers.
+            listener_factory: Optional factory producing an ITransportListener for network connections.
         """
 
         self._router = router
@@ -52,23 +53,46 @@ class Application:
         self._session_runner = session_runner
         self._plugin_manager = plugin_manager
         self._input_source = input_source
-        self._listener_factory = listener_factory or transport.TcpListener
         self._launcher_renderer = launcher_renderer or LauncherRenderer(self._view)
         self._transport_registry = transport_registry or transport.default_transport_registry()
-
-        self._connect_routes()
+        self._listener_factory = listener_factory or transport.TcpListener
+        self._route_plugin_name: str | None = None
 
     @property
-    def transport_registry(self) -> transport.TransportLayerRegistry:
-        """Registry managing available composable transport layers."""
+    def router(self) -> contract.IRouter:
+        """Active command router resolving interactive commands to controller actions."""
 
-        return self._transport_registry
+        return self._router
+
+    @property
+    def view(self) -> contract.IView:
+        """Operator presentation view interface."""
+
+        return self._view
 
     @property
     def plugin_manager(self) -> "PluginManager":
         """Active plugin manager managing discovered and registered client plugins."""
 
         return self._plugin_manager
+
+    @property
+    def session_runner(self) -> contract.ISessionRunner:
+        """Active session runner executing prompt workflows."""
+
+        return self._session_runner
+
+    @property
+    def input_source(self) -> contract.IInputSource | None:
+        """Operator input source interface reading commands, or None if omitted."""
+
+        return self._input_source
+
+    @property
+    def transport_registry(self) -> transport.TransportLayerRegistry:
+        """Registry managing available composable transport layers."""
+
+        return self._transport_registry
 
     def register_plugin(self, plugin: type[contract.IPluginExtension[contract.ParsedArguments]], /) -> None:
         """Register a client plugin at runtime.
@@ -89,7 +113,18 @@ class Application:
             ConnectionError: If the transport session cannot be established.
         """
 
-        plugin_runtime = self._plugin_manager.get(config.kind).build_runtime(config)
+        plugin_class = self._plugin_manager.get(config.kind)
+
+        if self._route_plugin_name is None:
+            self._connect_routes(plugin_class.supported_controllers)
+            self._route_plugin_name = plugin_class.name
+        elif self._route_plugin_name != plugin_class.name:
+            raise InvalidOperation(
+                f"Application routes are already configured for plugin '{self._route_plugin_name}'. "
+                f"Create a new Application to use '{plugin_class.name}'."
+            )
+
+        plugin_runtime = plugin_class.build_runtime(config)
 
         if self._input_source is not None and (setup_completer := getattr(self._input_source, "setup_completer", None)):
             params = inspect.signature(setup_completer).parameters
@@ -128,83 +163,69 @@ class Application:
 
                 self._session_runner.run(session, self._router)
 
-    def _connect_routes(self) -> None:
-        """Register built-in command routes on the application router."""
+    def _connect_routes(self, supported_controllers: frozenset[config.ControllerType], /) -> None:
+        """Register universal and plugin-supported routes on the application router."""
 
-        call_help = controller.create_help_controller(self._router)
-
-        self._router.connect(
-            "help",
-            contract.RouteRegistration(
-                call_help,
+        registrations = {
+            config.ControllerType.HELP: contract.RouteRegistration(
+                controller.create_help_controller(self._router),
                 contract.RouteHelp(
                     "Show available commands or detailed help for one command.",
                     "Usage: help [command]. Without an argument, lists commands and their short descriptions.",
                 ),
             ),
-        )
-        self._router.connect(
-            "load",
-            contract.RouteRegistration(
+            config.ControllerType.LOAD: contract.RouteRegistration(
                 controller.call_load,
                 contract.RouteHelp(
                     "Load a module on the remote client.", "Usage: load <module>. Loads a module from the configured client module repository."
                 ),
             ),
-        )
-        self._router.connect(
-            "command",
-            contract.RouteRegistration(
+            config.ControllerType.COMMAND: contract.RouteRegistration(
                 controller.call_command,
                 contract.RouteHelp(
                     "Run a command on the remote client.",
                     "Usage: command <command line>. Executes the command and streams its output to this session.",
                 ),
             ),
-        )
-        self._router.connect(
-            "eval",
-            contract.RouteRegistration(
+            config.ControllerType.EVAL: contract.RouteRegistration(
                 controller.call_eval,
                 contract.RouteHelp(
                     "Evaluate code in the client runtime.",
                     "Usage: eval <code>. Executes a code snippet directly in the remote agent's native runtime.",
                 ),
             ),
-        )
-        self._router.connect(
-            "shell",
-            contract.RouteRegistration(
+            config.ControllerType.SHELL: contract.RouteRegistration(
                 controller.call_shell,
                 contract.RouteHelp(
                     "Start an interactive remote shell.",
                     "Opens an interactive shell over the active client connection. This command takes no arguments.",
                 ),
             ),
-        )
-        self._router.connect(
-            "upload",
-            contract.RouteRegistration(
+            config.ControllerType.UPLOAD: contract.RouteRegistration(
                 controller.call_upload,
                 contract.RouteHelp(
                     "Upload a local file to the remote client.", "Usage: upload <filepath> [destination]. The destination path is optional."
                 ),
             ),
-        )
-        self._router.connect(
-            "execute",
-            contract.RouteRegistration(
+            config.ControllerType.EXECUTE: contract.RouteRegistration(
                 controller.call_execute,
                 contract.RouteHelp(
                     "Execute a local script on the remote client.",
                     "Usage: execute <filepath>. The script is sent from the local system and executed remotely.",
                 ),
             ),
-        )
-        self._router.connect(
-            "exit",
-            contract.RouteRegistration(
+            config.ControllerType.EXIT: contract.RouteRegistration(
                 controller.call_exit,
                 contract.RouteHelp("End the active session.", "Terminates the interactive session gracefully. This command takes no arguments."),
             ),
-        )
+        }
+        enabled_controllers = supported_controllers | {config.ControllerType.HELP, config.ControllerType.EXIT}
+        selected_registrations = {kind: registration for kind, registration in registrations.items() if kind in enabled_controllers}
+        existing_routes = set(self._router.routes)
+
+        for kind in selected_registrations:
+            if kind.value in existing_routes:
+                raise config.DuplicateRouteError(kind.value, "route already exists.")
+
+        for kind, registration in selected_registrations.items():
+            self._router.connect(kind.value, registration)

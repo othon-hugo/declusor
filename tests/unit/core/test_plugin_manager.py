@@ -20,6 +20,7 @@ class DummyValidPlugin(contract.IPluginExtension[DummyValidConfig]):
     description = "A valid dummy plugin for unit tests"
     version = "1.0.0"
     options_type = DummyValidConfig
+    supported_controllers = frozenset({config.ControllerType.EVAL})
 
     @classmethod
     def configure_parser(cls, parser: contract.IArgumentParser, /) -> None:
@@ -150,6 +151,28 @@ class TestPluginValidation:
 
         with pytest.raises(config.PluginValidationError, match="must define a non-empty string 'name'"):
             manager.validate_plugin(NonStringNamePlugin)
+
+    def test_validate_plugin__invalid_supported_controllers__raises_plugin_validation_error(self) -> None:
+        """A plugin with controller names outside the enum is rejected."""
+
+        class InvalidControllersPlugin(DummyValidPlugin):
+            supported_controllers = frozenset({"eval"})  # type: ignore[arg-type]
+
+        manager = core.PluginManager()
+
+        with pytest.raises(config.PluginValidationError, match="supported_controllers"):
+            manager.validate_plugin(InvalidControllersPlugin)
+
+    def test_validate_plugin__mutable_supported_controllers__raises_plugin_validation_error(self) -> None:
+        """A plugin must declare capabilities as an immutable frozenset."""
+
+        class MutableControllersPlugin(DummyValidPlugin):
+            supported_controllers = {config.ControllerType.EVAL}  # type: ignore[assignment]
+
+        manager = core.PluginManager()
+
+        with pytest.raises(config.PluginValidationError, match="supported_controllers"):
+            manager.validate_plugin(MutableControllersPlugin)
 
     def test_validate_plugin__unimplemented_abstract_methods__raises_plugin_validation_error_with_sorted_methods(
         self,
@@ -348,6 +371,7 @@ class CustomPlugin(contract.IPluginExtension[CustomConfig]):
     name = "custom_agent"
     description = "Flat layout test plugin"
     options_type = CustomConfig
+    supported_controllers = frozenset()
 
     @classmethod
     def configure_parser(cls, parser, /) -> None:
@@ -394,6 +418,7 @@ class InitPlugin(contract.IPluginExtension[InitConfig]):
     name = "init_agent"
     description = "Init layout test plugin"
     options_type = InitConfig
+    supported_controllers = frozenset()
 
     @classmethod
     def configure_parser(cls, parser, /) -> None:
@@ -440,6 +465,7 @@ class SrcPlugin(contract.IPluginExtension[SrcConfig]):
     name = "src_layout_agent"
     description = "Canonical src layout test plugin"
     options_type = SrcConfig
+    supported_controllers = frozenset()
 
     @classmethod
     def configure_parser(cls, parser, /) -> None:
@@ -520,6 +546,7 @@ class DupPlugin(contract.IPluginExtension[DupConfig]):
     name = "dummy_valid"
     description = "Duplicate plugin attempting to override"
     options_type = DupConfig
+    supported_controllers = frozenset()
 
     @classmethod
     def configure_parser(cls, parser, /) -> None:
@@ -677,6 +704,7 @@ class DirPlugin(contract.IPluginExtension[DirConfig]):
     name = "cli_discovered_agent"
     description = "CLI discovered test plugin"
     options_type = DirConfig
+    supported_controllers = frozenset()
 
     @classmethod
     def configure_parser(cls, parser, /) -> None:
@@ -739,6 +767,7 @@ class CustomShellPlugin(contract.IPluginExtension[CustomShellConfig]):
     name = "shell_socket"
     description = "Custom CLI shell override"
     options_type = CustomShellConfig
+    supported_controllers = frozenset()
 
     @classmethod
     def configure_parser(cls, parser, /) -> None:
@@ -811,6 +840,7 @@ class ContestedPlugin(contract.IPluginExtension[ContestedConfig]):
     name = "contested_plugin"
     description = "CLI custom dir version"
     options_type = ContestedConfig
+    supported_controllers = frozenset()
 
     @classmethod
     def configure_parser(cls, parser, /) -> None:
@@ -861,6 +891,7 @@ class UserPlugin(contract.IPluginExtension[UserConfig]):
     name = "user_agent"
     description = "User drop-in agent"
     options_type = UserConfig
+    supported_controllers = frozenset()
 
     @classmethod
     def configure_parser(cls, parser, /) -> None:

@@ -6,13 +6,13 @@ This directory houses the built-in client plugins distributed with Declusor. Bec
 
 Every plugin is an autonomous package that implements the contracts defined in `declusor.contract`:
 
-| Contract             | Responsibility                                                                                      |
-| -------------------- | --------------------------------------------------------------------------------------------------- |
-| `IConnection`        | Manages the framed read/write protocol and lifecycle state (`ConnectionState`).                     |
-| `IPluginExtension`   | Registers CLI flags, parses options, validates configuration, and builds the runtime.               |
-| `IPluginRuntime`     | Produces `LauncherDelivery` and instantiates the `IConnection` for an accepted socket.              |
-| `IPluginProcessor`   | Loads initialization helpers, bootstrap templates, and on-demand discovery modules.                 |
-| `IOperationRenderer` | Renders command payloads for operations (`EXEC_COMMAND`, `EXEC_CODE`, `LOAD_MODULE`, `STORE_FILE`). |
+| Contract             | Responsibility                                                                                        |
+| -------------------- | ----------------------------------------------------------------------------------------------------- |
+| `IConnection`        | Manages the framed read/write protocol and lifecycle state (`ConnectionState`).                       |
+| `IPluginExtension`   | Declares supported controllers, registers CLI flags, validates configuration, and builds the runtime. |
+| `IPluginRuntime`     | Produces `LauncherDelivery` and instantiates the `IConnection` for an accepted socket.                |
+| `IPluginProcessor`   | Loads initialization helpers, bootstrap templates, and on-demand discovery modules.                   |
+| `IOperationRenderer` | Renders command payloads for operations (`EXEC_COMMAND`, `EXEC_CODE`, `LOAD_MODULE`, `STORE_FILE`).   |
 
 ## How Plugins are Discovered
 
@@ -88,6 +88,16 @@ class MyPlugin(contract.IPluginExtension[MyOptions]):
     description = "Description of my custom client"
     version = "1.0.0"
     options_type = MyOptions
+    supported_controllers = frozenset(
+        {
+            config.ControllerType.LOAD,
+            config.ControllerType.COMMAND,
+            config.ControllerType.EVAL,
+            config.ControllerType.SHELL,
+            config.ControllerType.UPLOAD,
+            config.ControllerType.EXECUTE,
+        }
+    )
 
     @classmethod
     def configure_parser(cls, parser: contract.IArgumentParser, /) -> None:
@@ -128,6 +138,8 @@ class MyPlugin(contract.IPluginExtension[MyOptions]):
     def build_runtime(cls, plugin_config: contract.PluginConfig[MyOptions], /) -> contract.IPluginRuntime:
         return MyRuntime(plugin_config)
 ```
+
+    `supported_controllers` must be a `frozenset` of `config.ControllerType` members. The application registers only those plugin-specific routes after `run(config)` selects the plugin. `help` and `exit` are always registered by the application and should not be included in the plugin declaration. An application instance is bound to the first plugin used; create a new application to switch plugins.
 
 ### 3. Verify Contract Conformance with `declusor.testing`
 

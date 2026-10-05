@@ -78,3 +78,14 @@ Scenario: Reject mismatched client acknowledgement token
   When the connection handshake is executed
   Then initialization fails with ConnectionHandshakeError("Invalid client ACK during session initialization.")
 ```
+
+### PLG-08: Plugin Controller Capability Declaration
+
+Every plugin must declare `supported_controllers` as a `frozenset` of `ControllerType` values. When a plugin is selected, the application registers only those plugin-specific routes, while `help` and `exit` remain available for every plugin.
+
+```gherkin
+Scenario: Register only controllers supported by the selected plugin
+  Given a plugin declaring a subset of ControllerType values
+  When the application starts with that plugin configuration
+  Then only the declared routes and the universal help and exit routes are registered
+```

@@ -61,6 +61,7 @@ class TerminalInputSource(contract.IInputSource):
         """
 
         raw_line = self._reader(prompt)
+
         return raw_line if raw_line.endswith("\n") else f"{raw_line}\n"
 
     def setup_completer(

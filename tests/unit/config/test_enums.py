@@ -25,6 +25,31 @@ class TestDeclusorPluginsEnum:
         assert config.DeclusorPlugins.SHELL_SOCKET.value == "shell_socket"
 
 
+class TestControllerTypeEnum:
+    """Tests for canonical controller route names."""
+
+    def test_controller_type__members__match_builtin_route_names(self) -> None:
+        """ControllerType values match the built-in route identifiers."""
+
+        assert {member.value for member in config.ControllerType} == {
+            "help",
+            "exit",
+            "load",
+            "command",
+            "eval",
+            "shell",
+            "upload",
+            "execute",
+        }
+        assert len(config.ControllerType) == 8
+
+    def test_controller_type__subclass__is_str_enum(self) -> None:
+        """ControllerType members behave as route-name strings."""
+
+        assert issubclass(config.ControllerType, StrEnum)
+        assert config.ControllerType.EVAL.value == "eval"
+
+
 class TestLauncherOutputModeEnum:
     """Tests for LauncherOutputMode enumeration."""
 

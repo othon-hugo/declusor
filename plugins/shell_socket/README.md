@@ -11,6 +11,10 @@ For detailed specification of wire framing, nonces, and session transitions, see
 | `connection` | Reverse-shell connection transport (`ShellSocketConnection`) and operation renderer (`ShellSocketRenderer`)                    |
 | `plugin`     | Entry-point plugin (`ShellSocketPlugin`), runtime adapter (`ShellSocketRuntime`), and asset processor (`ShellSocketProcessor`) |
 
+## Controller Capabilities
+
+`ShellSocketPlugin` declares support for `load`, `command`, `eval`, `shell`, `upload`, and `execute` through `supported_controllers`. The application adds universal `help` and `exit` routes separately.
+
 ## Architecture & Protocol Flow
 
 The client agent operates as a self-contained Bash loop utilizing file descriptor 3 mapped to `/dev/tcp`. Handshake negotiation and command execution follow an ephemeral envelope protocol where each transaction carries a dynamic 128-bit cryptographic nonce.

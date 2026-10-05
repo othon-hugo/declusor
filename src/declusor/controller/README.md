@@ -7,7 +7,7 @@ input, delegate to command objects, and present output.
 
 | Module    | Responsibility                                                |
 | --------- | ------------------------------------------------------------- |
-| `code`    | Execute native client runtime code remotely                   |
+| `eval`    | Evaluate native code in the remote client runtime             |
 | `command` | Execute a shell command remotely                              |
 | `execute` | Execute a local script remotely                               |
 | `exit`    | Request session termination                                   |

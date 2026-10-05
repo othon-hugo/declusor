@@ -53,6 +53,16 @@ class DummyPlugin(contract.IPluginExtension[DummyConfig]):
     version: str = "1.0.0"
     author: str = "Test Suite"
     options_type = DummyConfig
+    supported_controllers = frozenset(
+        {
+            config.ControllerType.LOAD,
+            config.ControllerType.COMMAND,
+            config.ControllerType.EVAL,
+            config.ControllerType.SHELL,
+            config.ControllerType.UPLOAD,
+            config.ControllerType.EXECUTE,
+        }
+    )
 
     configured_parsers: list[contract.IArgumentParser] = []
     runtime_instance: contract.IPluginRuntime | None = None

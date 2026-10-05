@@ -30,6 +30,10 @@ def assert_conforms_to_client_plugin[T: contract.ParsedArguments](
     assert isinstance(plugin_cls.description, str), "plugin.description must be a string."
     assert isinstance(plugin_cls.version, str), "plugin.version must be a string."
     assert plugin_cls.options_type is not None, "plugin.options_type must be defined."
+    assert isinstance(plugin_cls.supported_controllers, frozenset), "plugin.supported_controllers must be a frozenset."
+    assert all(isinstance(item, config.ControllerType) for item in plugin_cls.supported_controllers), (
+        "plugin.supported_controllers must contain only ControllerType values."
+    )
 
     # Invariant 2: Parser configuration
     parser = util.Parser(prog="test")
@@ -131,6 +135,8 @@ class PluginConformanceTestSuite[T: contract.ParsedArguments]:
         assert isinstance(plugin_class.description, str)
         assert isinstance(plugin_class.version, str)
         assert plugin_class.options_type is not None
+        assert isinstance(plugin_class.supported_controllers, frozenset)
+        assert all(isinstance(item, config.ControllerType) for item in plugin_class.supported_controllers)
 
     def test_configure_parser_callable(self, plugin_class: type[contract.IPluginExtension[T]]) -> None:
         """Verify configure_parser accepts a Parser without error."""
