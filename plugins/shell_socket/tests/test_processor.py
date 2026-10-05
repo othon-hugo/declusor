@@ -42,12 +42,12 @@ class TestShellSocketProcessor:
 
         helpers = tmp_path / "helpers"
         helpers.mkdir(parents=True)
-        (helpers / "util.sh").write_bytes(b"echo util")
+        (helpers / "std.sh").write_bytes(b"echo std")
 
         fs = contract.PluginFilesystem.from_root(tmp_path)
         processor = shell_socket.ShellSocketProcessor(fs)
 
-        assert processor.load_helper("util.sh") == b"echo util"
+        assert processor.load_helper("std.sh") == b"echo std"
 
     def test_load_helper__relative_path_traversal__raises_invalid_operation(self, tmp_path: Path) -> None:
         """Verify load_helper rejects relative dot-dot path traversal attempts."""
@@ -137,7 +137,7 @@ class TestShellSocketProcessor:
         launchers = tmp_path / "launchers"
         launchers.mkdir(parents=True)
         launcher = launchers / "shell_socket_client.sh"
-        launcher.write_text("connect $DECLUSOR_HOST $DECLUSOR_PORT $DECLUSOR_ACKNOWLEDGE", encoding="utf-8")
+        launcher.write_text("connect $DECLUSOR_HOST $DECLUSOR_PORT $DECLUSOR_ACK", encoding="utf-8")
 
         fs = contract.PluginFilesystem.from_root(tmp_path)
         processor = shell_socket.ShellSocketProcessor(fs)

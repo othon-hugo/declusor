@@ -122,11 +122,10 @@ class TestShellSocketConnectionLifecycle:
         self,
         make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
     ) -> None:
-        """Verify renderer, profile, and timeout property accessors."""
+        """Verify renderer and timeout property accessors."""
 
         conn, trans = make_shell_connection(timeout=2.5)
         assert conn.renderer is not None
-        assert conn.profile is conn.renderer
         assert conn.timeout == 2.5
         assert trans.timeout == 2.5
 

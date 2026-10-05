@@ -3,7 +3,7 @@ import subprocess
 
 import declusor_shell_socket as shell_socket
 
-from declusor import contract, transport
+from declusor import config, contract, transport
 
 
 class TestShellSocketIntegration:
@@ -46,7 +46,9 @@ class TestShellSocketIntegration:
             assert b"shell_still_alive" in response
 
             b64_script = base64.b64encode(b"echo in_memory_script_works").decode()
-            connection.write(f"execute_base64_encoded_value {b64_script}\n".encode())
+            rendered = connection.renderer.render_operation_command(config.OperationCode.EXEC_FILE, b64_script)
+            assert rendered is not None
+            connection.write(f"{rendered}\n".encode())
             response = b"".join(connection.read())
             assert b"in_memory_script_works" in response
 
@@ -93,7 +95,9 @@ class TestShellSocketIntegration:
 
             # In-memory execution without touching disk
             b64_script = base64.b64encode(b"VAR='resilient_shell'; echo $VAR").decode()
-            connection.write(f"execute_base64_encoded_value {b64_script}\n".encode())
+            rendered = connection.renderer.render_operation_command(config.OperationCode.EXEC_FILE, b64_script)
+            assert rendered is not None
+            connection.write(f"{rendered}\n".encode())
             response = b"".join(connection.read())
             assert b"resilient_shell" in response
 

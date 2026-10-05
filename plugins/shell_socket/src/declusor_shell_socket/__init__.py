@@ -1,7 +1,6 @@
 from .connection import (
     DEFAULT_SHELL_SOCKET,
     ShellSocketConnection,
-    ShellSocketProfile,
     ShellSocketRenderer,
 )
 from .plugin import (
@@ -15,7 +14,6 @@ __all__ = [
     "ShellSocketConnection",
     "ShellSocketProcessor",
     "ShellSocketPlugin",
-    "ShellSocketProfile",
     "ShellSocketRenderer",
     "ShellSocketRuntime",
 ]

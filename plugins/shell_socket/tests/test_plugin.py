@@ -68,7 +68,7 @@ class TestShellSocketPluginRuntime:
         assert "/dev/tcp/192.168.1.50/5555" in decoded
         assert "$DECLUSOR_HOST" not in decoded
         assert "$DECLUSOR_PORT" not in decoded
-        assert "$DECLUSOR_ACKNOWLEDGE" not in decoded
+        assert "$DECLUSOR_ACK" not in decoded
         assert "$data" in decoded  # Runtime bash variable is preserved
 
     def test_build_runtime__creates_connection__returns_shell_socket_connection_instance(self) -> None:

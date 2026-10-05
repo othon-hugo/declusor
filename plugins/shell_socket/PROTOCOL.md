@@ -82,7 +82,7 @@ sequenceDiagram
     Server->>Server: Generate Handshake Nonce H0
     Server->>Transport: H0 + \x00 + helpers + \x00
     Transport->>Client: Deliver helpers payload
-    Client->>Client: eval helpers in-memory (util.sh, file.sh)
+    Client->>Client: eval helpers in-memory (std.sh)
     Client->>Transport: printf '__DECLUSOR_EOF_%s__\n' "$nonce"
     Transport->>Server: Read until __DECLUSOR_EOF_H0__
     Server->>Server: Transition to CONNECTED state

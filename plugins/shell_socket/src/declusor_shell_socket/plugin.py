@@ -178,7 +178,7 @@ class ShellSocketProcessor(contract.IPluginProcessor):
             client_script_template,
             DECLUSOR_HOST=host,
             DECLUSOR_PORT=str(port),
-            DECLUSOR_ACKNOWLEDGE=hex_ack,
+            DECLUSOR_ACK=hex_ack,
         )
 
         encoded = util.convert_to_base64(rendered.strip().encode("utf-8"))
@@ -195,6 +195,7 @@ class ShellSocketProcessor(contract.IPluginProcessor):
 
         for ext in self._library_extensions:
             candidate = (self._filesystem.helpers / f"{helper_name}{ext}").resolve()
+
             if candidate.is_file():
                 return candidate
 

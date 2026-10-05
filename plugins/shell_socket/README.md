@@ -8,7 +8,7 @@ For detailed specification of wire framing, nonces, and session transitions, see
 
 | Module       | Responsibility                                                                                                                 |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| `connection` | Reverse-shell connection transport (`ShellSocketConnection`) and protocol profile (`ShellSocketProfile`)                       |
+| `connection` | Reverse-shell connection transport (`ShellSocketConnection`) and operation renderer (`ShellSocketRenderer`)                    |
 | `plugin`     | Entry-point plugin (`ShellSocketPlugin`), runtime adapter (`ShellSocketRuntime`), and asset processor (`ShellSocketProcessor`) |
 
 ## Architecture & Protocol Flow
@@ -24,7 +24,7 @@ sequenceDiagram
 
     Note over Server,Bash: Handshake & Helper Injection
     Server->>FD3: Connect TCP Socket (exec 3<>/dev/tcp/... || exit 1)
-    Server->>FD3: Nonce H0 + \x00 + Helper Bundle (util.sh, file.sh) + \x00
+    Server->>FD3: Nonce H0 + \x00 + Helper Bundle (std.sh) + \x00
     Bash->>Bash: eval helpers in-memory (stdin isolated via </dev/null)
     Bash->>FD3: printf '__DECLUSOR_EOF_%s__\n' "$nonce"
     Server-->>Server: Verify __DECLUSOR_EOF_H0__, Handshake Complete (State: CONNECTED)

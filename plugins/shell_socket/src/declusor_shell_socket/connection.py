@@ -1,6 +1,5 @@
-from collections.abc import Callable, Generator, Mapping
+from collections.abc import Callable, Generator
 from dataclasses import dataclass, field
-from types import MappingProxyType
 from typing import Final
 
 from declusor import config, contract, util
@@ -10,54 +9,92 @@ from declusor import config, contract, util
 class ShellSocketRenderer(contract.IOperationRenderer):
     """Translates OperationCode values to Bash shell command strings.
 
-    Maps abstract operation codes to concrete Bash helper function invocations
-    executed by the client process. This renderer is pure data — it never
-    performs I/O.
+    Composes primitive helper calls (storage, execution, encoding) into
+    executable Bash shell statements evaluated by the client launcher. This
+    renderer is pure data — it never performs I/O.
     """
 
-    _supported_functions: Final[Mapping[config.OperationCode, str]] = field(
-        default_factory=lambda: MappingProxyType(
+    _supported_operations: Final[frozenset[config.OperationCode]] = field(
+        default_factory=lambda: frozenset(
             {
-                config.OperationCode.STORE_FILE: "store_base64_encoded_value",
-                config.OperationCode.EXEC_FILE: "execute_base64_encoded_value",
-                config.OperationCode.LOAD_MODULE: "execute_base64_encoded_value",
+                config.OperationCode.EXEC_COMMAND,
+                config.OperationCode.EXEC_CODE,
+                config.OperationCode.EXEC_FILE,
+                config.OperationCode.STORE_FILE,
+                config.OperationCode.LOAD_MODULE,
             }
         )
     )
-    """Mapping of supported operation codes to their corresponding function names."""
+    """Set of operation codes supported by this renderer."""
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "_supported_functions", MappingProxyType(dict(self._supported_functions)))
+        object.__setattr__(self, "_supported_operations", frozenset(self._supported_operations))
 
     @property
-    def supported_functions(self) -> Mapping[config.OperationCode, str]:
-        """Mapping of supported operation codes to their corresponding function names."""
+    def supported_operations(self) -> frozenset[config.OperationCode]:
+        """Set of supported operation codes."""
 
-        return self._supported_functions
+        return self._supported_operations
 
     def render_operation_command(self, opcode: "config.OperationCode", /, *args: str) -> str | None:
-        """Build the shell command string for a given operation code.
+        """Build the shell execution statement for a given operation code."""
 
-        Args:
-            opcode: The operation to invoke on the client.
-            *args: Positional arguments appended to the function call.
-
-        Returns:
-            A ready-to-send shell command string, or ``None`` if unsupported.
-        """
-
-        if opcode in (config.OperationCode.EXEC_COMMAND, config.OperationCode.EXEC_CODE):
-            return args[0] if args else ""
-
-        function_name = self._supported_functions.get(opcode)
-
-        if not function_name:
+        if opcode not in self._supported_operations:
             return None
 
-        return function_name + (" " + " ".join(util.quote(a) for a in args) if args else "")
+        match opcode:
+            case config.OperationCode.EXEC_COMMAND:
+                return self._render_exec_command(*args)
+            case config.OperationCode.EXEC_CODE:
+                return self._render_exec_code(*args)
+            case config.OperationCode.STORE_FILE:
+                return self._render_store_file(*args)
+            case config.OperationCode.EXEC_FILE | config.OperationCode.LOAD_MODULE:
+                return self._render_payload_execution(*args)
+            case _:
+                return None
 
+    def _render_exec_command(self, *args: str) -> str:
+        """Render shell command execution statement."""
 
-ShellSocketProfile = ShellSocketRenderer
+        return args[0].rstrip("\r\n") if args else ""
+
+    def _render_exec_code(self, *args: str) -> str:
+        """Render shell code execution statement."""
+
+        return args[0].rstrip("\r\n") if args else ""
+
+    def _render_store_file(self, *args: str) -> str | None:
+        """Render file storage statement decoding base64 payload."""
+
+        if not args:
+            return None
+
+        data_b64 = args[0]
+
+        if len(args) > 1 and args[1]:
+            return f"decode_b64 {util.quote(data_b64)} | store_file {util.quote(args[1])}"
+
+        return f"decode_b64 {util.quote(data_b64)} | store_file"
+
+    def _render_payload_execution(self, *args: str) -> str | None:
+        """Render executable payload statement detecting script vs binary."""
+
+        if not args:
+            return None
+
+        data_b64 = args[0]
+        extra_args = (" " + " ".join(util.quote(a) for a in args[1:])) if len(args) > 1 else ""
+
+        try:
+            raw_bytes = util.convert_base64_to_bytes(data_b64)
+            raw_bytes.decode("utf-8")
+
+            return f'execute_source "$(decode_b64 {util.quote(data_b64)})"{extra_args}'
+        except UnicodeDecodeError:
+            return f'execute_binary --cleanup "$(decode_b64 {util.quote(data_b64)} | store_file)"{extra_args}'
+        except Exception:
+            return f'execute_source "$(decode_b64 {util.quote(data_b64)})"{extra_args}'
 
 
 class ShellSocketConnection(contract.IConnection):
@@ -102,12 +139,6 @@ class ShellSocketConnection(contract.IConnection):
     @property
     def renderer(self) -> contract.IOperationRenderer:
         """The connection operation renderer."""
-
-        return self._renderer
-
-    @property
-    def profile(self) -> contract.IOperationRenderer:
-        """Deprecated backward-compatible alias for :attr:`renderer`."""
 
         return self._renderer
 
@@ -181,6 +212,7 @@ class ShellSocketConnection(contract.IConnection):
 
             while True:
                 pos = buffer.find(delim)
+
                 if pos == -1:
                     break
 
@@ -188,8 +220,10 @@ class ShellSocketConnection(contract.IConnection):
                     yield bytes(buffer[:pos])
 
                 buffer = buffer[pos + len(delim) :]
+
                 if buffer.startswith(b"\n"):
                     buffer = buffer[1:]
+
                 return
 
             if len(buffer) > len(delim):
