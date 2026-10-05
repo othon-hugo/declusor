@@ -1,4 +1,3 @@
-import base64
 from pathlib import Path
 
 import declusor_py_socket as py_socket
@@ -143,7 +142,7 @@ class TestPySocketProcessor:
         processor = py_socket.PySocketProcessor(fs)
 
         rendered = processor.render_launcher("127.0.0.1", 9000, b"\x01\x02")
-        decoded = base64.b64decode(rendered).decode("utf-8")
+        decoded = bytes.fromhex(rendered.decode("ascii")).decode("utf-8")
 
         assert decoded == "HOST = '127.0.0.1'\nPORT = int('9000')\nACK = bytes.fromhex('0102')"
 
@@ -167,7 +166,7 @@ class TestPySocketProcessor:
         processor = py_socket.PySocketProcessor(fs)
 
         rendered = processor.render_launcher("127.0.0.1", 9000, b"\x01\x02")
-        decoded = base64.b64decode(rendered).decode("utf-8")
+        decoded = bytes.fromhex(rendered.decode("ascii")).decode("utf-8")
 
         assert f"CH_EXIT = int('{int(config.ChannelType.PROCESS_EXIT)}')" in decoded
         assert f"CH_STDOUT = int('{int(config.ChannelType.STDOUT)}')" in decoded
@@ -193,7 +192,7 @@ class TestPySocketProcessor:
         processor = py_socket.PySocketProcessor(fs)
 
         rendered = processor.render_launcher("127.0.0.1", 9000, b"\x01\x02")
-        decoded = base64.b64decode(rendered).decode("utf-8")
+        decoded = bytes.fromhex(rendered.decode("ascii")).decode("utf-8")
 
         assert "Development comment" not in decoded
         assert "Module docstring" not in decoded

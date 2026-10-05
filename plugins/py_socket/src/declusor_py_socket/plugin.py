@@ -85,7 +85,7 @@ class PySocketPlugin(contract.IPluginExtension[PySocketConfig]):
 class PySocketRuntime(contract.IPluginRuntime):
     """Runtime adapter between Python client configuration and its transport."""
 
-    DEFAULT_WRAPPER_TEMPLATE: Final[str] = "python3 -c 'import base64;exec(base64.b64decode(\"$DECLUSOR_SCRIPT\"))'"
+    DEFAULT_WRAPPER_TEMPLATE: Final[str] = "python3 -c 'exec(bytes.fromhex(\"$DECLUSOR_SCRIPT\"))'"
 
     def __init__(self, plugin_config: contract.PluginConfig[PySocketConfig], /) -> None:
         self._plugin_config = plugin_config
@@ -158,7 +158,7 @@ class PySocketProcessor(contract.IPluginProcessor):
         return b"\n\n".join(all_helpers.values())
 
     def render_launcher(self, host: str, port: int, acknowledge: bytes, /) -> bytes:
-        """Read, interpolate, sanitize, and Base64-encode the client launcher script."""
+        """Read, interpolate, sanitize, and hex-encode the client launcher script."""
 
         launcher_path = self._filesystem.launchers / "py_socket_client.py"
 
@@ -185,7 +185,7 @@ class PySocketProcessor(contract.IPluginProcessor):
         )
 
         sanitized = lang.python.sanitize_source(rendered)
-        encoded = util.convert_to_base64(sanitized.encode("utf-8"))
+        encoded = sanitized.encode("utf-8").hex()
 
         return encoded.encode("ascii")
 

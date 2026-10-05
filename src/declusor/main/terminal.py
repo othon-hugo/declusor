@@ -39,10 +39,12 @@ def run_terminal_app(
     """
 
     factory = application_factory or app.create_terminal_application
+
     if application is not None:
         active_app = application
     else:
         factory_kwargs: dict[str, Any] = {"plugin_manager": plugin_manager}
+
         if transport_registry is not None:
             factory_kwargs["transport_registry"] = transport_registry
         if listener_factory is not None:
@@ -82,14 +84,17 @@ def _create_application(
         return factory(**kwargs)
 
     has_var_keyword = any(param.kind == inspect.Parameter.VAR_KEYWORD for param in sig.parameters.values())
+
     if has_var_keyword:
         return factory(**kwargs)
 
     accepted_params = sig.parameters
+
     if not accepted_params:
         return factory()
 
     param_list = list(accepted_params.values())
+
     if len(param_list) == 1 and (
         param_list[0].kind == inspect.Parameter.POSITIONAL_ONLY
         or (param_list[0].kind == inspect.Parameter.POSITIONAL_OR_KEYWORD and param_list[0].name not in kwargs)
@@ -106,4 +111,5 @@ def _create_application(
             inspect.Parameter.KEYWORD_ONLY,
         )
     }
+
     return factory(**filtered_kwargs)

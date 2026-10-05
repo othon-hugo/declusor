@@ -60,7 +60,7 @@ class TestControllerExports:
     def test_controller_exports__submodule_functions__match_underlying_callables(self) -> None:
         """Controller functions match their respective submodule definitions."""
 
-        assert controller.call_code is code.call_code
+        assert controller.call_eval is code.call_eval
         assert controller.call_command is command.call_command
         assert controller.call_execute is execute.call_execute
         assert controller.call_exit is exit_module.call_exit

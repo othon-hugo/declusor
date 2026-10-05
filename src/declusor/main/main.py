@@ -7,7 +7,7 @@ from declusor import config, contract, core, transport
 from declusor.main.terminal import run_terminal_app
 
 
-def main(
+def run(
     argv: Sequence[str] | None = None,
     *,
     application: core.Application | None = None,
@@ -104,7 +104,9 @@ def main(
         except SystemExit as error:
             if error.code is None:
                 return 0
+
             if isinstance(error.code, int):
                 return error.code
+
             print(error.code, file=error_stream)
             return 1

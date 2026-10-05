@@ -18,7 +18,7 @@ class TestMainDispatch:
     ) -> None:
         """main parses explicit argv sequence and executes injected application returning 0."""
 
-        exit_code = main.main(["127.0.0.1", "9000"], application=dummy_app)
+        exit_code = main.run(["127.0.0.1", "9000"], application=dummy_app)
 
         assert exit_code == 0
         assert len(dummy_app.run_calls) == 1
@@ -34,7 +34,7 @@ class TestMainDispatch:
         """main falls back to sys.argv[1:] when argv is omitted or None."""
 
         monkeypatch.setattr(sys, "argv", ["declusor", "10.0.0.1", "8888"])
-        exit_code = main.main(None, application=dummy_app)
+        exit_code = main.run(None, application=dummy_app)
 
         assert exit_code == 0
         assert len(dummy_app.run_calls) == 1
@@ -47,7 +47,7 @@ class TestMainDispatch:
     ) -> None:
         """main accepts non-list sequence for argv and executes application successfully."""
 
-        exit_code = main.main(("127.0.0.1", "9000"), application=dummy_app)
+        exit_code = main.run(("127.0.0.1", "9000"), application=dummy_app)
 
         assert exit_code == 0
         assert len(dummy_app.run_calls) == 1
@@ -58,7 +58,7 @@ class TestMainDispatch:
     ) -> None:
         """main parses timeout, launcher output, and wrapper flags into resulting plugin config."""
 
-        exit_code = main.main(
+        exit_code = main.run(
             [
                 "127.0.0.1",
                 "9000",
@@ -88,7 +88,7 @@ class TestMainDispatch:
         """main rejects application instance passed as positional argument."""
 
         with pytest.raises(TypeError):
-            main.main(["127.0.0.1", "9000"], dummy_app)  # type: ignore[misc]
+            main.run(["127.0.0.1", "9000"], dummy_app)  # type: ignore[misc]
 
 
 class TestMainPluginManagerResolution:
@@ -100,7 +100,7 @@ class TestMainPluginManagerResolution:
     ) -> None:
         """main derives plugin manager from injected application when plugin_manager is omitted."""
 
-        exit_code = main.main(["127.0.0.1", "9000"], application=dummy_app)
+        exit_code = main.run(["127.0.0.1", "9000"], application=dummy_app)
 
         assert exit_code == 0
         assert len(dummy_app.run_calls) == 1
@@ -114,7 +114,7 @@ class TestMainPluginManagerResolution:
         custom_manager = core.PluginManager()
         custom_manager.register(testing.DummyPlugin)
 
-        exit_code = main.main(
+        exit_code = main.run(
             ["127.0.0.1", "9000"],
             application=dummy_app,
             plugin_manager=custom_manager,
@@ -137,7 +137,7 @@ class TestMainPluginManagerResolution:
             assert plugin_manager is not None
             return dummy_app
 
-        exit_code = main.main(
+        exit_code = main.run(
             ["127.0.0.1", "9000", "-p", "shell_socket"],
             application_factory=tracking_factory,
         )
@@ -163,7 +163,7 @@ class TestMainApplicationFactory:
             factory_called = True
             return dummy_app
 
-        exit_code = main.main(
+        exit_code = main.run(
             ["127.0.0.1", "9000"],
             plugin_manager=dummy_app.plugin_manager,
             application_factory=custom_factory,
@@ -182,7 +182,7 @@ class TestMainApplicationFactory:
         registry = transport.TransportLayerRegistry()
         registry.register("dummy_layer", lambda t: t)
 
-        exit_code = main.main(
+        exit_code = main.run(
             ["127.0.0.1", "9000", "--transport-layer", "dummy_layer"],
             application=dummy_app,
             transport_registry=registry,
@@ -199,7 +199,7 @@ class TestMainApplicationFactory:
 
         dummy_app.transport_registry.register("app_layer", lambda t: t)
 
-        exit_code = main.main(
+        exit_code = main.run(
             ["127.0.0.1", "9000", "--transport-layer", "app_layer"],
             application=dummy_app,
         )
@@ -217,7 +217,7 @@ class TestMainExecutionModes:
     ) -> None:
         """main executes run_terminal_app when mode is CLI and returns 0."""
 
-        exit_code = main.main(["127.0.0.1", "9000", "--mode", "cli"], application=dummy_app)
+        exit_code = main.run(["127.0.0.1", "9000", "--mode", "cli"], application=dummy_app)
 
         assert exit_code == 0
         assert len(dummy_app.run_calls) == 1
@@ -228,7 +228,7 @@ class TestMainExecutionModes:
     ) -> None:
         """main returns 1 and outputs error message when unsupported mcp mode is requested."""
 
-        exit_code = main.main(["127.0.0.1", "9000", "--mode", "mcp"])
+        exit_code = main.run(["127.0.0.1", "9000", "--mode", "mcp"])
 
         assert exit_code == 1
         captured = capsys.readouterr()
@@ -240,7 +240,7 @@ class TestMainExecutionModes:
     ) -> None:
         """main returns 1 and outputs error message when unsupported api mode is requested."""
 
-        exit_code = main.main(["127.0.0.1", "9000", "--mode", "api"])
+        exit_code = main.run(["127.0.0.1", "9000", "--mode", "api"])
 
         assert exit_code == 1
         captured = capsys.readouterr()
@@ -252,7 +252,7 @@ class TestMainExecutionModes:
     ) -> None:
         """main returns 1 and outputs error message when unsupported http mode is requested."""
 
-        exit_code = main.main(["127.0.0.1", "9000", "--mode", "http"])
+        exit_code = main.run(["127.0.0.1", "9000", "--mode", "http"])
 
         assert exit_code == 1
         captured = capsys.readouterr()
@@ -264,7 +264,7 @@ class TestMainExecutionModes:
         """main directs unsupported mode diagnostic output to injected stderr stream."""
 
         custom_err = io.StringIO()
-        exit_code = main.main(["127.0.0.1", "9000", "--mode", "mcp"], stderr=custom_err)
+        exit_code = main.run(["127.0.0.1", "9000", "--mode", "mcp"], stderr=custom_err)
 
         assert exit_code == 1
         assert "Execution mode 'mcp' is not supported yet." in custom_err.getvalue()
@@ -280,7 +280,7 @@ class TestMainExceptionHandling:
     ) -> None:
         """main catches ParserError from unrecognized flags, prints diagnostic, and returns 2."""
 
-        exit_code = main.main(["--bad-option"], application=dummy_app)
+        exit_code = main.run(["--bad-option"], application=dummy_app)
 
         assert exit_code == 2
         captured = capsys.readouterr()
@@ -292,7 +292,7 @@ class TestMainExceptionHandling:
     ) -> None:
         """main catches ParserError from missing required arguments and returns 2."""
 
-        exit_code = main.main([])
+        exit_code = main.run([])
 
         assert exit_code == 2
         captured = capsys.readouterr()
@@ -304,7 +304,7 @@ class TestMainExceptionHandling:
     ) -> None:
         """main catches ParserError from out-of-range port numbers and returns 2."""
 
-        exit_code = main.main(["127.0.0.1", "70000"])
+        exit_code = main.run(["127.0.0.1", "70000"])
 
         assert exit_code == 2
         captured = capsys.readouterr()
@@ -316,7 +316,7 @@ class TestMainExceptionHandling:
         """main writes parser errors to custom stderr stream when provided."""
 
         custom_err = io.StringIO()
-        exit_code = main.main(["--invalid-argument"], stderr=custom_err)
+        exit_code = main.run(["--invalid-argument"], stderr=custom_err)
 
         assert exit_code == 2
         assert "parser error:" in custom_err.getvalue()
@@ -329,7 +329,7 @@ class TestMainExceptionHandling:
         """main catches ConnectionError, prints declusor error to stderr, and returns 1."""
 
         dummy_app.run_error = config.ConnectionError("connection failed")
-        exit_code = main.main(["127.0.0.1", "9000"], application=dummy_app)
+        exit_code = main.run(["127.0.0.1", "9000"], application=dummy_app)
 
         assert exit_code == 1
         captured = capsys.readouterr()
@@ -343,7 +343,7 @@ class TestMainExceptionHandling:
         """main catches InvalidOperation, prints declusor error, and returns 1."""
 
         dummy_app.run_error = config.InvalidOperation("operation rejected")
-        exit_code = main.main(["127.0.0.1", "9000"], application=dummy_app)
+        exit_code = main.run(["127.0.0.1", "9000"], application=dummy_app)
 
         assert exit_code == 1
         captured = capsys.readouterr()
@@ -357,7 +357,7 @@ class TestMainExceptionHandling:
         """main catches RouterError, prints declusor error, and returns 1."""
 
         dummy_app.run_error = config.RouterError("unknown command")
-        exit_code = main.main(["127.0.0.1", "9000"], application=dummy_app)
+        exit_code = main.run(["127.0.0.1", "9000"], application=dummy_app)
 
         assert exit_code == 1
         captured = capsys.readouterr()
@@ -371,7 +371,7 @@ class TestMainExceptionHandling:
         """main catches StorageError, prints declusor error, and returns 1."""
 
         dummy_app.run_error = config.StorageError("disk read failure")
-        exit_code = main.main(["127.0.0.1", "9000"], application=dummy_app)
+        exit_code = main.run(["127.0.0.1", "9000"], application=dummy_app)
 
         assert exit_code == 1
         captured = capsys.readouterr()
@@ -385,7 +385,7 @@ class TestMainExceptionHandling:
 
         custom_err = io.StringIO()
         dummy_app.run_error = config.ConnectionError("custom error message")
-        exit_code = main.main(["127.0.0.1", "9000"], application=dummy_app, stderr=custom_err)
+        exit_code = main.run(["127.0.0.1", "9000"], application=dummy_app, stderr=custom_err)
 
         assert exit_code == 1
         assert "declusor error: custom error message" in custom_err.getvalue()
@@ -398,7 +398,7 @@ class TestMainExceptionHandling:
         """main catches KeyboardInterrupt and returns 0 without writing errors."""
 
         dummy_app.run_error = KeyboardInterrupt()
-        exit_code = main.main(["127.0.0.1", "9000"], application=dummy_app)
+        exit_code = main.run(["127.0.0.1", "9000"], application=dummy_app)
 
         assert exit_code == 0
         captured = capsys.readouterr()
@@ -412,7 +412,7 @@ class TestMainExceptionHandling:
         """main catches SystemExit(0) and returns 0 exit code."""
 
         dummy_app.run_error = SystemExit(0)
-        exit_code = main.main(["127.0.0.1", "9000"], application=dummy_app)
+        exit_code = main.run(["127.0.0.1", "9000"], application=dummy_app)
 
         assert exit_code == 0
 
@@ -423,7 +423,7 @@ class TestMainExceptionHandling:
         """main catches SystemExit(code) and returns the specified integer exit code."""
 
         dummy_app.run_error = SystemExit(42)
-        exit_code = main.main(["127.0.0.1", "9000"], application=dummy_app)
+        exit_code = main.run(["127.0.0.1", "9000"], application=dummy_app)
 
         assert exit_code == 42
 
@@ -451,7 +451,7 @@ class TestMainAgentOrchestration:
         _ = listener.create_client()
         err_stream = io.StringIO()
 
-        exit_code = main.main(
+        exit_code = main.run(
             ["127.0.0.1", "9000", "-p", testing.DummyPlugin.name],
             plugin_manager=custom_manager,
             view=view,
@@ -479,7 +479,7 @@ class TestMainAgentOrchestration:
         custom_err = io.StringIO()
         dummy_app.run_error = config.ConnectionError("isolated socket failure")
 
-        exit_code = main.main(
+        exit_code = main.run(
             ["127.0.0.1", "9000"],
             application=dummy_app,
             stderr=custom_err,

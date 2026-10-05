@@ -37,14 +37,14 @@ Every frame on the wire consists of a **5-byte fixed header** followed by a vari
 
 ### Channel Types
 
-| Channel Code | Identifier      |          Direction          | Payload Description                                               |
-| :----------: | :-------------- | :-------------------------: | :---------------------------------------------------------------- |
-|    `0x00`    | `PROCESS_EXIT`  | Client $\rightarrow$ Server | Terminal EOF frame signaling the completion of command execution. |
-|    `0x01`    | `STDOUT`        | Client $\rightarrow$ Server | Standard output stream chunk.                                     |
-|    `0x02`    | `STDERR`        | Client $\rightarrow$ Server | Standard error stream chunk.                                      |
-|    `0x03`    | `STDIN`         | Server $\rightarrow$ Client | Standard input and execution payload bus.                         |
-|    `0x04`    | `SIGNAL`        |       Bi-directional        | Out-of-band process signal (e.g. `SIGINT`, `SIGTERM`).            |
-|    `0x05`    | `HEARTBEAT`     |       Bi-directional        | Keep-alive probe frame (payload length may be 0).                 |
+| Channel Code | Identifier     |          Direction          | Payload Description                                               |
+| :----------: | :------------- | :-------------------------: | :---------------------------------------------------------------- |
+|    `0x00`    | `PROCESS_EXIT` | Client $\rightarrow$ Server | Terminal EOF frame signaling the completion of command execution. |
+|    `0x01`    | `STDOUT`       | Client $\rightarrow$ Server | Standard output stream chunk.                                     |
+|    `0x02`    | `STDERR`       | Client $\rightarrow$ Server | Standard error stream chunk.                                      |
+|    `0x03`    | `STDIN`        | Server $\rightarrow$ Client | Standard input and execution payload bus.                         |
+|    `0x04`    | `SIGNAL`       |       Bi-directional        | Out-of-band process signal (e.g. `SIGINT`, `SIGTERM`).            |
+|    `0x05`    | `HEARTBEAT`    |       Bi-directional        | Keep-alive probe frame (payload length may be 0).                 |
 
 ## Client Bootstrap & Launcher Delivery
 
@@ -52,10 +52,10 @@ To establish a zero-disk client session, `py_socket` prepares the client bootstr
 
 1. **Template Interpolation**: Injects server host, port, and acknowledgment token into `py_socket_client.py`.
 2. **Native AST Sanitization**: Strips comments, docstrings, type annotations, and development assertions using `declusor.lang.python.sanitize_source()` without external dependencies.
-3. **Base64 Payload Encoding**: Encodes the sanitized source into a compact Base64 ASCII payload, eliminating quote escapes, multi-line formatting issues, and shell syntax clashes.
+3. **Hex Payload Encoding**: Encodes the sanitized source into a hexadecimal ASCII payload, eliminating quote escapes, multi-line formatting issues, and shell syntax clashes.
 4. **Self-Contained Wrapper Template**: Delivers the launcher in a `LauncherDelivery` envelope configured with `PySocketRuntime.DEFAULT_WRAPPER_TEMPLATE`:
    ```bash
-   python3 -c "import base64;exec(base64.b64decode('$DECLUSOR_SCRIPT'))"
+    python3 -c "exec(bytes.fromhex('$DECLUSOR_SCRIPT'))"
    ```
    Executing this one-liner on the target decodes and starts the client agent entirely in memory.
 

@@ -4,7 +4,7 @@ from declusor.config import (
 
 from .code import (
     CodeArguments,
-    call_code,
+    call_eval,
 )
 from .command import (
     CommandArguments,
@@ -36,8 +36,8 @@ from .upload import (
 )
 
 __all__ = [
-    "call_code",
     "call_command",
+    "call_eval",
     "call_execute",
     "call_exit",
     "call_load",

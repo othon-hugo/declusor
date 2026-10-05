@@ -31,7 +31,7 @@ class TestMainExports:
         import importlib
 
         main_mod = importlib.import_module("declusor.main.main")
-        assert main.main is main_mod.main
+        assert main.run is main_mod.main
         assert main.run_terminal_app is terminal_module.run_terminal_app
 
     def test_main_exports__contains_no_private_symbols(self) -> None:

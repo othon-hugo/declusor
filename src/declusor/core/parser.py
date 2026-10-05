@@ -53,20 +53,6 @@ class DeclusorParser(util.Parser):
 
             return super().__new__(cls, value)
 
-    class AssetsDir(Path):
-        """Root directory containing application assets."""
-
-        arg_name: Final = "assets_dir"
-        arg_help: Final = "root directory containing client launchers, helpers, and modules"
-        arg_flags: Final = ("--assets-dir",)
-
-    class PluginDir(Path):
-        """Additional directory from which plugins are discovered."""
-
-        arg_name: Final = "plugin_dir"
-        arg_help: Final = "additional directory to discover custom drop-in plugins"
-        arg_flags: Final = ("--plugin-dir",)
-
     class ExecutionMode(str):
         """Execution mode argument definition."""
 
@@ -88,12 +74,44 @@ class DeclusorParser(util.Parser):
 
             return super().__new__(cls, mode.value)
 
+    class Timeout(float):
+        """Network socket operation timeout argument definition."""
+
+        arg_name: Final = "timeout"
+        arg_help: Final = "network socket timeout in seconds (e.g. 1.0, 5.0)"
+        arg_flags: Final = ("-t", "--timeout")
+
+        def __new__(cls, value: float | str) -> "DeclusorParser.Timeout":
+            try:
+                timeout = float(value)
+            except (TypeError, ValueError) as error:
+                raise ValueError(f"invalid timeout value: {value!r}") from error
+
+            if timeout <= 0:
+                raise ValueError("timeout must be greater than 0")
+
+            return super().__new__(cls, timeout)
+
+    class AssetsDir(Path):
+        """Root directory containing application assets."""
+
+        arg_name: Final = "assets_dir"
+        arg_help: Final = "root directory containing client launchers, helpers, and modules"
+        arg_flags: Final = ("--assets-dir",)
+
+    class PluginDir(Path):
+        """Additional directory from which plugins are discovered."""
+
+        arg_name: Final = "plugin_dir"
+        arg_help: Final = "additional directory to discover custom drop-in plugins"
+        arg_flags: Final = ("--plugin-dir",)
+
     class LauncherOutput(str):
         """Launcher output mode argument definition."""
 
         arg_name: Final = "launcher_output"
         arg_help: Final = "client launcher delivery output mode: 'terminal', 'silent', or 'file:<path>' (default: 'terminal')"
-        arg_flags: Final = ("-o", "--launcher-output")
+        arg_flags: Final = ("-O", "--launcher-output")
         arg_default: Final = config.DEFAULT_LAUNCHER_OUTPUT_MODE.value
 
         def __new__(cls, value: str) -> "DeclusorParser.LauncherOutput":
@@ -126,7 +144,7 @@ class DeclusorParser(util.Parser):
 
         arg_name: Final = "launcher_wrapper"
         arg_help: Final = "shell invocation wrapper template containing '$DECLUSOR_SCRIPT' (e.g. \"python3 -c '$DECLUSOR_SCRIPT'\")"
-        arg_flags: Final = ("-w", "--launcher-wrapper")
+        arg_flags: Final = ("-W", "--launcher-wrapper")
 
         def __new__(cls, value: str) -> "DeclusorParser.LauncherWrapper":
             if not value:
@@ -134,31 +152,13 @@ class DeclusorParser(util.Parser):
 
             return super().__new__(cls, value)
 
-    class Timeout(float):
-        """Network socket operation timeout argument definition."""
-
-        arg_name: Final = "timeout"
-        arg_help: Final = "network socket timeout in seconds (e.g. 1.0, 5.0)"
-        arg_flags: Final = ("-t", "--timeout")
-
-        def __new__(cls, value: float | str) -> "DeclusorParser.Timeout":
-            try:
-                timeout = float(value)
-            except (TypeError, ValueError) as error:
-                raise ValueError(f"invalid timeout value: {value!r}") from error
-
-            if timeout <= 0:
-                raise ValueError("timeout must be greater than 0")
-
-            return super().__new__(cls, timeout)
-
     class TransportLayer(str):
         """Transport layer argument definition."""
 
         arg_name: Final = "transport_layers"
         arg_help: Final = "composable transport layer to wrap connection (repeatable, e.g. --transport-layer xor)"
         arg_action: Final = "append"
-        arg_flags: Final = ("-l", "--transport-layer")
+        arg_flags: Final = ("-L", "--transport-layer")
 
         def __new__(cls, value: str) -> "DeclusorParser.TransportLayer":
             """Validate and normalize transport layer identifier."""
@@ -172,12 +172,12 @@ class DeclusorParser(util.Parser):
         Host.arg_name,
         Port.arg_name,
         Plugin.arg_name,
-        AssetsDir.arg_name,
-        PluginDir.arg_name,
         ExecutionMode.arg_name,
         LauncherOutput.arg_name,
         # LauncherWrapper.arg_name,
         Timeout.arg_name,
+        AssetsDir.arg_name,
+        PluginDir.arg_name,
         TransportLayer.arg_name,
     )
 
@@ -236,20 +236,6 @@ class DeclusorParser(util.Parser):
         )
 
         self.add_argument(
-            *self.AssetsDir.arg_flags,
-            help=self.AssetsDir.arg_help,
-            type=self.AssetsDir,
-            default=None,
-        )
-
-        self.add_argument(
-            *self.PluginDir.arg_flags,
-            help=self.PluginDir.arg_help,
-            type=self.PluginDir,
-            default=None,
-        )
-
-        self.add_argument(
             *self.Plugin.arg_flags,
             help=self.Plugin.arg_help,
             type=self.Plugin,
@@ -262,13 +248,6 @@ class DeclusorParser(util.Parser):
             choices=self.ExecutionMode.arg_choices,
             default=self.ExecutionMode.arg_default,
             type=self.ExecutionMode,
-        )
-
-        self.add_argument(
-            *self.LauncherOutput.arg_flags,
-            help=self.LauncherOutput.arg_help,
-            default=self.LauncherOutput.arg_default,
-            type=self.LauncherOutput,
         )
 
         # Future feature: launcher wrapper CLI override is disabled for now.
@@ -287,11 +266,32 @@ class DeclusorParser(util.Parser):
         )
 
         self.add_argument(
+            *self.LauncherOutput.arg_flags,
+            help=self.LauncherOutput.arg_help,
+            default=self.LauncherOutput.arg_default,
+            type=self.LauncherOutput,
+        )
+
+        self.add_argument(
             *self.TransportLayer.arg_flags,
             dest=self.TransportLayer.arg_name,
             action=self.TransportLayer.arg_action,
             help=self.TransportLayer.arg_help,
             type=self.TransportLayer,
+            default=None,
+        )
+
+        self.add_argument(
+            *self.AssetsDir.arg_flags,
+            help=self.AssetsDir.arg_help,
+            type=self.AssetsDir,
+            default=None,
+        )
+
+        self.add_argument(
+            *self.PluginDir.arg_flags,
+            help=self.PluginDir.arg_help,
+            type=self.PluginDir,
             default=None,
         )
 

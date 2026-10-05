@@ -8,7 +8,7 @@ class CodeArguments(contract.ControllerArguments):
     """Client runtime code snippet to evaluate remotely."""
 
 
-def call_code(
+def call_eval(
     session: contract.SessionContext,
     req: contract.IControllerRequest[CodeArguments],
 ) -> contract.ControllerResult:

@@ -51,5 +51,5 @@ sequenceDiagram
 3. **Contract Conformance** — Strictly implements `IPluginExtension`, `IPluginRuntime`, and `IConnection` contracts.
 4. **Deterministic Ephemeral Framing** — Demarcates commands with dynamic per-transaction 128-bit cryptographic nonces (`__DECLUSOR_EOF_<nonce>__`), eliminating sentinel collision risks ($P(\text{collision}) \le 2^{-128}$) without requiring pre-shared static tokens.
 5. **Idempotent Lifecycle** — Guarantees safe multiple `close()` calls and deterministic lifecycle state transitions (`CREATED` -> `INITIALIZING` -> `CONNECTED` -> `CLOSED`).
-6. **Zero-Disk Subshell Launcher Delivery** — Encodes the bootstrap script in Base64 and packages it inside an isolated subshell wrapper (`ShellSocketRuntime.DEFAULT_WRAPPER_TEMPLATE`), providing a self-contained one-liner that avoids shell quoting and newline collisions.
+6. **Zero-Disk Subshell Launcher Delivery** — Encodes the bootstrap script in hexadecimal and packages it inside an isolated subshell wrapper (`ShellSocketRuntime.DEFAULT_WRAPPER_TEMPLATE`), providing a self-contained one-liner that avoids shell quoting and newline collisions.
 7. **Resilient Asset & Module Loading** — Resolves on-demand modules with or without extensions, normalizing leading `modules/` namespace prefixes to support both direct and autocompleted REPL invocation.

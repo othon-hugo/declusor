@@ -75,6 +75,5 @@ sequenceDiagram
 3. **Real-Time Subprocess Streaming** — Streams subprocess command output in 4KB chunks immediately without blocking execution or buffering complete outputs in memory.
 4. **Agent Resilience & SystemExit Protection** — Wraps in-memory execution in traps catching both `Exception` and `SystemExit`, preventing client termination when scripts call `sys.exit()`.
 5. **Contract Conformance** — Strictly adheres to `IPluginExtension`, `IPluginRuntime`, and `IConnection` interfaces.
-6. **Zero-Disk Launcher Delivery** — Sanitizes the bootstrap client script using native AST pruning to eliminate comments, docstrings, annotations, and asserts, Base64-encodes the payload, and packages it into an immediate, copy-pasteable execution wrapper (`PySocketRuntime.DEFAULT_WRAPPER_TEMPLATE`).
+6. **Zero-Disk Launcher Delivery** — Sanitizes the bootstrap client script using native AST pruning to eliminate comments, docstrings, annotations, and asserts, hex-encodes the payload, and packages it into an immediate, copy-pasteable execution wrapper (`PySocketRuntime.DEFAULT_WRAPPER_TEMPLATE`).
 7. **Resilient Asset & Module Loading** — Resolves on-demand modules with or without extensions, normalizing leading `modules/` namespace prefixes to support both direct and autocompleted REPL invocation.
-

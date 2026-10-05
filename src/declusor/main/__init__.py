@@ -1,11 +1,11 @@
 from .main import (
-    main,
+    run,
 )
 from .terminal import (
     run_terminal_app,
 )
 
 __all__ = [
-    "main",
     "run_terminal_app",
+    "run",
 ]

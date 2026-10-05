@@ -318,8 +318,8 @@ class TestTerminalApplicationInitialization:
 
         assert terminal_app.router.locate("load") is controller.call_load
         assert terminal_app.router.locate("command") is controller.call_command
-        assert terminal_app.router.locate("code") is controller.call_code
-        assert terminal_app.router.locate("eval") is controller.call_code
+        assert terminal_app.router.locate("code") is controller.call_eval
+        assert terminal_app.router.locate("eval") is controller.call_eval
         assert terminal_app.router.locate("shell") is controller.call_shell
         assert terminal_app.router.locate("upload") is controller.call_upload
         assert terminal_app.router.locate("execute") is controller.call_execute
