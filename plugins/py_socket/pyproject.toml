@@ -22,3 +22,13 @@ build-backend = "uv_build"
 
 [tool.uv]
 link-mode = "copy"
+
+[tool.mypy]
+python_version = "3.7"
+strict = true
+show_error_codes = true
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = "assets.modules.*"
+disable_error_code = ["name-defined"]

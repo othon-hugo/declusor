@@ -9,7 +9,13 @@ _have() {
 }
 
 encode_b64() {
-    { [ $# -gt 0 ] && printf '%s' "$1" || cat; } | {
+    {
+        if [ $# -gt 0 ]; then
+            printf '%s' "$1"
+        else
+            cat
+        fi
+    } | {
         if command -v base64 >/dev/null 2>&1; then
             base64 | tr -d '\r\n'
         elif command -v openssl >/dev/null 2>&1; then
@@ -25,7 +31,13 @@ encode_b64() {
 }
 
 decode_b64() {
-    { [ $# -gt 0 ] && printf '%s' "$1" || cat; } | {
+    {
+        if [ $# -gt 0 ]; then
+            printf '%s' "$1"
+        else
+            cat
+        fi
+    } | {
         if command -v base64 >/dev/null 2>&1; then
             base64 -d 2>/dev/null || base64 -D 2>/dev/null
         elif command -v openssl >/dev/null 2>&1; then
@@ -48,7 +60,13 @@ hash_value() {
         esac
     done
 
-    { [ $# -gt 0 ] && printf '%s' "$1" || cat; } | {
+    {
+        if [ $# -gt 0 ]; then
+            printf '%s' "$1"
+        else
+            cat
+        fi
+    } | {
         if command -v "${algo}sum" >/dev/null 2>&1; then
             "${algo}sum" | awk '{print $1}'
         elif command -v shasum >/dev/null 2>&1; then
@@ -129,7 +147,7 @@ list_perms() {
     elif command -v stat >/dev/null 2>&1; then
         stat -c '%A %U:%G %n' "$target"/* 2>/dev/null || stat -f '%Sp %Su:%Sg %N' "$target"/* 2>/dev/null
     else
-        ls -ld "$target"/* 2>/dev/null | awk '{print $1, $3":"$4, $9}'
+        find "$target" -maxdepth 1 -mindepth 1 -exec ls -ld {} + 2>/dev/null | awk '{print $1, $3":"$4, $9}'
     fi
 }
 

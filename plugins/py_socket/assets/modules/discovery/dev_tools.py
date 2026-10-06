@@ -1,8 +1,5 @@
 import shutil
 
-label: type
-format_table: type
-
 tools = [
     ("Python", "python3"),
     ("Python (legacy)", "python"),

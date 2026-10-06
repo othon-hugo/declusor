@@ -1,0 +1,8 @@
+# Local ShellCheck policy for the shell_socket plugin.
+# Treat these scripts as Bash and resolve sourced files from the plugin tree.
+shell=bash
+external-sources=true
+source-path=SCRIPTDIR
+
+# Keep the project-specific exceptions explicit and narrow.
+disable=SC2012,SC2015,SC2086

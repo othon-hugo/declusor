@@ -2,8 +2,6 @@ import os
 import platform
 import sys
 
-label: type
-
 try:
     import subprocess
 
