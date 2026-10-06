@@ -3,10 +3,10 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import cast
 
-import declusor_py_socket as py_socket
 import pytest
-
 from declusor import config, contract, testing
+
+import declusor_py_socket as py_socket
 
 
 class TestPySocketProcessor:

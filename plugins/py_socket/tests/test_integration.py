@@ -3,9 +3,9 @@ import shlex
 import subprocess
 import sys
 
-import declusor_py_socket as py_socket
-
 from declusor import config, contract, lang, transport, util
+
+import declusor_py_socket as py_socket
 
 
 class TestPySocketIntegration:

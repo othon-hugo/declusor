@@ -19,6 +19,10 @@
 .PHONY: format-plugin
 .PHONY: format-check-plugin
 .PHONY: check-plugin
+.PHONY: check-shell-assets
+.PHONY: check-py-assets
+.PHONY: build-plugins
+.PHONY: build-all
 .PHONY: ci
 .PHONY: build
 .PHONY: clean
@@ -140,6 +144,14 @@ format-check-plugin:
 
 check-plugin: format-check-plugin lint-plugin type-check-plugin test-plugin
 
+check-shell-assets:
+	@command -v shellcheck >/dev/null 2>&1 || { echo "shellcheck is required" >&2; exit 1; }
+	@cd plugins/shell_socket && find assets -type f -name '*.sh' -print0 | xargs -0 shellcheck -s bash -S info
+
+check-py-assets:
+	$(EXEC)ruff check --config plugins/py_socket/assets/ruff.toml plugins/py_socket/assets
+	$(EXEC)python -m compileall -q plugins/py_socket/assets
+
 ci: check build
 
 build:
@@ -148,6 +160,23 @@ ifneq ($(strip $(UV)),)
 else
 	python3 -m build
 endif
+
+build-plugins:
+ifneq ($(strip $(UV)),)
+	@for p in plugins/*; do \
+		if [ -f "$$p/pyproject.toml" ]; then \
+			$(UV) build "$$p" --out-dir "$$p/dist"; \
+		fi; \
+	done
+else
+	@for p in plugins/*; do \
+		if [ -f "$$p/pyproject.toml" ]; then \
+			python3 -m build --outdir "$$p/dist" "$$p"; \
+		fi; \
+	done
+endif
+
+build-all: build build-plugins
 
 clean:
 	rm -rf build/

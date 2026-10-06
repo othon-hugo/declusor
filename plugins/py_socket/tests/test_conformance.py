@@ -1,9 +1,9 @@
 from pathlib import Path
 
-import declusor_py_socket as py_socket
 import pytest
-
 from declusor import testing
+
+import declusor_py_socket as py_socket
 
 
 class TestPySocketConformance(testing.PluginConformanceTestSuite[py_socket.plugin.PySocketConfig]):

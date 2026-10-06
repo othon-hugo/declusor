@@ -1,6 +1,6 @@
-import declusor_py_socket as py_socket
-
 from declusor import config, util
+
+import declusor_py_socket as py_socket
 
 
 class TestPySocketRenderer:

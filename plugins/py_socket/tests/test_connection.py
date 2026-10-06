@@ -3,10 +3,10 @@ import json
 import struct
 import sys
 
-import declusor_py_socket as py_socket
 import pytest
-
 from declusor import config, contract, lang, testing
+
+import declusor_py_socket as py_socket
 
 
 def _make_metadata_frame(magic: bytes | None = None, version: list[int] | None = None) -> bytes:

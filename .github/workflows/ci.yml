@@ -7,18 +7,51 @@ on:
   pull_request:
 
 jobs:
-  quality-assurance:
-    name: Code Quality & Tests
+  changes:
+    name: Detect changed areas
+    runs-on: ubuntu-latest
+    outputs:
+      shared: ${{ steps.filter.outputs.shared }}
+      shell_socket: ${{ steps.filter.outputs.shell_socket }}
+      py_socket: ${{ steps.filter.outputs.py_socket }}
+      relevant: ${{ steps.filter.outputs.shared == 'true' || steps.filter.outputs.shell_socket == 'true' || steps.filter.outputs.py_socket == 'true' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            shared:
+              - 'src/**'
+              - 'tests/**'
+              - 'conftest.py'
+              - 'pyproject.toml'
+              - 'uv.lock'
+              - 'Makefile'
+              - '.github/**'
+            shell_socket:
+              - 'plugins/shell_socket/**'
+            py_socket:
+              - 'plugins/py_socket/**'
+
+  kernel-quality:
+    name: Kernel quality
+    needs: changes
+    if: needs.changes.outputs.shared == 'true'
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Set up Python 3.11
+      - name: Set up Python 3.12
         uses: actions/setup-python@v6
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
@@ -29,8 +62,131 @@ jobs:
       - name: Install dependencies
         run: make install
 
-      - name: Run checks
-        run: make check
+      - name: Check formatting
+        run: make format-check
 
-      - name: Build package
-        run: make build
+      - name: Lint
+        run: make lint
+
+      - name: Type check
+        run: make type-check
+
+      - name: Compile
+        run: make compile
+
+  kernel-unit-tests:
+    name: Kernel unit tests
+    needs: changes
+    if: needs.changes.outputs.shared == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+      - run: make install
+      - run: make test-unit
+
+  kernel-e2e-tests:
+    name: Kernel end-to-end tests
+    needs: changes
+    if: needs.changes.outputs.shared == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+      - run: make install
+      - run: make test-e2e
+
+  shell-socket:
+    name: shell_socket checks
+    needs: changes
+    if: needs.changes.outputs.shared == 'true' || needs.changes.outputs.shell_socket == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install --yes shellcheck
+      - run: make install
+      - run: make check-plugin PLUGIN=shell_socket
+      - run: make check-shell-assets
+
+  py-socket:
+    name: py_socket checks
+    needs: changes
+    if: needs.changes.outputs.shared == 'true' || needs.changes.outputs.py_socket == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+      - run: make install
+      - run: make check-plugin PLUGIN=py_socket
+      - run: make check-py-assets
+
+  distributions:
+    name: Build and discover distributions
+    needs: changes
+    if: needs.changes.outputs.relevant == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+      - run: make build-all
+      - name: Install built distributions in a clean environment
+        run: |
+          uv venv .ci-venv
+          uv pip install --python .ci-venv/bin/python 'pytest>=8.3.4,<9' dist/*.whl plugins/*/dist/*.whl
+      - name: Verify installed plugin discovery
+        run: |
+          .ci-venv/bin/python -c '
+          from declusor import app
+          names = app.create_terminal_application().plugin_manager.names()
+          assert {"shell_socket", "py_socket"}.issubset(names), names
+          print(names)
+          '
+
+  ci-status:
+    name: CI status
+    if: always()
+    needs:
+      - changes
+      - kernel-quality
+      - kernel-unit-tests
+      - kernel-e2e-tests
+      - shell-socket
+      - py-socket
+      - distributions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail when a required job failed or was cancelled
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1

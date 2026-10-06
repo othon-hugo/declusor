@@ -26,6 +26,9 @@
 
 </div>
 
+> [!WARNING]
+> **Legal Disclaimer**: Declusor is intended solely for educational purposes and authorized security research. The authors assume no liability for misuse. Executing this software against systems without explicit, prior written authorization is strictly prohibited.
+
 ## Why Declusor?
 
 Catching a reverse shell during a penetration test, CTF, or security assessment shouldn't feel like walking a tightrope:
@@ -108,12 +111,6 @@ declusor 0.0.0.0 4444 -p shell_socket --launcher-output silent
 # Write launcher directly to a file
 declusor 0.0.0.0 4444 -p py_socket --launcher-output file:/tmp/stager.py
 ```
-
-> [!TIP]
-> Launchers are automatically hex-encoded and packaged into native execution wrappers by default:
->
-> - **`shell_socket`**: `bash -c 'printf "%s" "$1" | while IFS= read -r -n2 byte; do printf "%b" "\\x$byte"; done | bash' _ '$DECLUSOR_SCRIPT'`
-> - **`py_socket`**: `python3 -c 'exec(bytes.fromhex("$DECLUSOR_SCRIPT"))'`
 
 ### 4. Interact with the Session
 
@@ -314,6 +311,3 @@ make check  # Runs format-check, lint, configured Mypy strict analysis, and all 
 ## License
 
 This project is open-source software licensed under the [MIT License](LICENSE).
-
-> [!WARNING]
-> **Legal Disclaimer**: Declusor is intended solely for educational purposes and authorized security research. The authors assume no liability for misuse. Executing this software against systems without explicit, prior written authorization is strictly prohibited.

