@@ -62,7 +62,8 @@ class TestPySocketConnectionLifecycle:
         assert conn.is_bytecode_compatible is True
         assert conn.client_runtime is not None
 
-        expected_helpers = lang.python.compile_and_serialize(dummy_file_store.helpers.decode(), "<helpers>")
+        raw_helpers = b"\n\n".join(dummy_file_store.load_all_helpers().values())
+        expected_helpers = lang.python.compile_and_serialize(raw_helpers.decode("utf-8"), "<helpers>")
         expected_helpers_frame = struct.pack(">BI", config.ChannelType.STDIN, len(expected_helpers)) + expected_helpers
         assert dummy_trans.write_history == [expected_helpers_frame]
 
@@ -85,7 +86,8 @@ class TestPySocketConnectionLifecycle:
         assert conn.state == contract.ConnectionState.CONNECTED
         assert conn.is_bytecode_compatible is False
 
-        expected_helpers_frame = struct.pack(">BI", config.ChannelType.STDIN, len(dummy_file_store.helpers)) + dummy_file_store.helpers
+        raw_helpers = b"\n\n".join(dummy_file_store.load_all_helpers().values())
+        expected_helpers_frame = struct.pack(">BI", config.ChannelType.STDIN, len(raw_helpers)) + raw_helpers
         assert dummy_trans.write_history == [expected_helpers_frame]
 
     def test_handshake__when_already_connected__raises_connection_error(

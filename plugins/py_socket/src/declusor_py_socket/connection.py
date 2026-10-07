@@ -168,7 +168,8 @@ class PySocketConnection(contract.IConnection):
         helpers as UTF-8 source code for target-side in-memory compilation.
         """
 
-        helpers_source = self._files.helpers.decode(errors="replace")
+        raw_helpers = b"\n\n".join(self._files.load_all_helpers().values())
+        helpers_source = raw_helpers.decode("utf-8", errors="replace")
 
         if self._is_bytecode_compatible:
             try:

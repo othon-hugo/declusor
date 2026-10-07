@@ -33,7 +33,7 @@ class TestEvalController:
         dummy_renderer: testing.DummyOperationRenderer,
         dummy_view: testing.DummyView,
     ) -> None:
-        """call_eval executes ExecuteCode via session, transmits payload, and returns CONTINUE."""
+        """call_eval executes EvaluateCode via session, transmits payload, and returns CONTINUE."""
 
         snippet = "import sys; print(sys.version)"
         dummy_renderer.set_rendered_command(config.OperationCode.EXEC_CODE, "rendered_sys_version")
@@ -100,7 +100,7 @@ class TestEvalController:
 
         assert exc_info.value.field == "code"
         assert exc_info.value.value == ""
-        assert isinstance(exc_info.value, config.InvalidOperation)
+        assert isinstance(exc_info.value, config.CommandError)
 
     def test_call_eval__connection_write_failure__propagates_exception(
         self,

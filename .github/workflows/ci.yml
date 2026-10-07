@@ -126,7 +126,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install --yes shellcheck
       - run: make install
       - run: make check-plugin PLUGIN=shell_socket
-      - run: make check-shell-assets
+      - run: make check-shellsocket-assets
 
   py-socket:
     name: py_socket checks
@@ -144,7 +144,7 @@ jobs:
           cache-dependency-glob: "uv.lock"
       - run: make install
       - run: make check-plugin PLUGIN=py_socket
-      - run: make check-py-assets
+      - run: make check-pysocket-assets
 
   distributions:
     name: Build and discover distributions

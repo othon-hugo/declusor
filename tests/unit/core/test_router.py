@@ -48,8 +48,8 @@ class TestRouterRegistration:
             router.connect("sample", _sample_controller)
 
         assert exc_info.value.route == "sample"
-        assert isinstance(exc_info.value, ValueError)
         assert isinstance(exc_info.value, config.RouterError)
+        assert isinstance(exc_info.value, config.DeclusorException)
 
     def test_router__connect_duplicate_route_with_differing_whitespace__raises_duplicate_route_error(self) -> None:
         """Duplicate detection operates on stripped route strings."""

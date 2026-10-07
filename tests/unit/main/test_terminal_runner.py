@@ -17,7 +17,7 @@ class TestRunTerminalApp:
     ) -> None:
         """run_terminal_app dispatches execution directly to injected Application and returns 0."""
 
-        cfg = testing.create_dummy_options()
+        cfg = testing.create_dummy_plugin_config()
         exit_code = run_terminal_app(cfg, application=dummy_app)
 
         assert exit_code == 0
@@ -30,7 +30,7 @@ class TestRunTerminalApp:
         """run_terminal_app forwards injected plugin_manager to application factory."""
 
         manager = core.PluginManager()
-        cfg = testing.create_dummy_options()
+        cfg = testing.create_dummy_plugin_config()
         factory_kwargs: dict[str, Any] = {}
 
         def tracking_factory(*, plugin_manager: core.PluginManager | None = None) -> core.Application:
@@ -53,7 +53,7 @@ class TestRunTerminalApp:
     ) -> None:
         """run_terminal_app invokes custom application factory when application is omitted."""
 
-        cfg = testing.create_dummy_options()
+        cfg = testing.create_dummy_plugin_config()
         factory_invoked = False
 
         def custom_factory(*, plugin_manager: core.PluginManager | None = None) -> core.Application:
@@ -87,7 +87,7 @@ class TestRunTerminalApp:
         _ = listener.create_client()
         registry = transport.TransportLayerRegistry()
 
-        cfg = testing.create_dummy_options()
+        cfg = testing.create_dummy_plugin_config()
 
         exit_code = run_terminal_app(
             cfg,
@@ -114,7 +114,7 @@ class TestRunTerminalApp:
             captured_kwargs.update(kwargs)
             return dummy_app
 
-        cfg = testing.create_dummy_options()
+        cfg = testing.create_dummy_plugin_config()
         view = testing.DummyView()
         runner = testing.DummySessionRunner()
         registry = transport.TransportLayerRegistry()
@@ -133,21 +133,21 @@ class TestRunTerminalApp:
         assert captured_kwargs.get("transport_registry") is registry
         assert dummy_app.run_calls == [cfg]
 
-    def test_run_terminal_app__with_legacy_factory_rejecting_kwargs__gracefully_falls_back(
+    def test_run_terminal_app__with_single_keyword_factory__passes_only_declared_parameter(
         self,
         dummy_app: testing.DummyApplication,
     ) -> None:
-        """run_terminal_app falls back to plugin_manager only when custom factory rejects extra kwargs."""
+        """run_terminal_app passes only plugin_manager when custom factory accepts only plugin_manager."""
 
-        def legacy_factory(*, plugin_manager: core.PluginManager | None = None) -> core.Application:
+        def single_param_factory(*, plugin_manager: core.PluginManager | None = None) -> core.Application:
             return dummy_app
 
-        cfg = testing.create_dummy_options()
+        cfg = testing.create_dummy_plugin_config()
         view = testing.DummyView()
 
         exit_code = run_terminal_app(
             cfg,
-            application_factory=legacy_factory,
+            application_factory=single_param_factory,
             view=view,
         )
 
@@ -160,62 +160,10 @@ class TestRunTerminalApp:
     ) -> None:
         """run_terminal_app successfully executes a zero-argument application factory."""
 
-        cfg = testing.create_dummy_options()
+        cfg = testing.create_dummy_plugin_config()
         exit_code = run_terminal_app(cfg, application_factory=lambda: dummy_app)
 
         assert exit_code == 0
-        assert dummy_app.run_calls == [cfg]
-
-    def test_run_terminal_app__with_single_positional_factory__calls_factory_with_manager(
-        self,
-        dummy_app: testing.DummyApplication,
-    ) -> None:
-        """run_terminal_app calls a factory taking an arbitrary single positional argument with manager."""
-
-        received_manager: core.PluginManager | None = None
-
-        def pos_factory(mgr: core.PluginManager | None) -> core.Application:
-            nonlocal received_manager
-            received_manager = mgr
-            return dummy_app
-
-        custom_manager = core.PluginManager()
-        cfg = testing.create_dummy_options()
-
-        exit_code = run_terminal_app(
-            cfg,
-            plugin_manager=custom_manager,
-            application_factory=pos_factory,
-        )
-
-        assert exit_code == 0
-        assert received_manager is custom_manager
-        assert dummy_app.run_calls == [cfg]
-
-    def test_run_terminal_app__with_positional_only_factory__calls_factory_with_manager(
-        self,
-        dummy_app: testing.DummyApplication,
-    ) -> None:
-        """run_terminal_app calls a factory taking a positional-only argument with manager."""
-
-        received_manager: core.PluginManager | None = None
-
-        def pos_only_factory(mgr: core.PluginManager | None, /) -> core.Application:
-            nonlocal received_manager
-            received_manager = mgr
-            return dummy_app
-
-        custom_manager = core.PluginManager()
-        cfg = testing.create_dummy_options()
-
-        exit_code = run_terminal_app(
-            cfg,
-            plugin_manager=custom_manager,
-            application_factory=pos_only_factory,
-        )
-
-        assert exit_code == 0
-        assert received_manager is custom_manager
         assert dummy_app.run_calls == [cfg]
 
     def test_run_terminal_app__with_partial_kwargs_factory__passes_only_declared_parameters(
@@ -238,7 +186,7 @@ class TestRunTerminalApp:
         manager = core.PluginManager()
         view = testing.DummyView()
         runner = testing.DummySessionRunner()
-        cfg = testing.create_dummy_options()
+        cfg = testing.create_dummy_plugin_config()
 
         exit_code = run_terminal_app(
             cfg,
@@ -265,7 +213,7 @@ class TestRunTerminalApp:
             call_count += 1
             raise TypeError("internal logic error")
 
-        cfg = testing.create_dummy_options()
+        cfg = testing.create_dummy_plugin_config()
 
         with pytest.raises(TypeError, match="internal logic error"):
             run_terminal_app(cfg, application_factory=buggy_factory)
@@ -279,7 +227,7 @@ class TestRunTerminalApp:
         """run_terminal_app propagates ConnectionError raised during application execution."""
 
         dummy_app.run_error = config.ConnectionError("Connection timed out.")
-        cfg = testing.create_dummy_options()
+        cfg = testing.create_dummy_plugin_config()
 
         with pytest.raises(config.ConnectionError, match="Connection timed out."):
             run_terminal_app(cfg, application=dummy_app)
@@ -291,7 +239,7 @@ class TestRunTerminalApp:
         """run_terminal_app propagates InvalidOperation raised during application execution."""
 
         dummy_app.run_error = config.InvalidOperation("Invalid operation requested.")
-        cfg = testing.create_dummy_options()
+        cfg = testing.create_dummy_plugin_config()
 
         with pytest.raises(config.InvalidOperation, match="Invalid operation requested."):
             run_terminal_app(cfg, application=dummy_app)
@@ -303,7 +251,7 @@ class TestRunTerminalApp:
         """run_terminal_app rejects plugin_manager passed as positional argument."""
 
         manager = core.PluginManager()
-        cfg = testing.create_dummy_options()
+        cfg = testing.create_dummy_plugin_config()
 
         with pytest.raises(TypeError):
             run_terminal_app(cfg, manager)  # type: ignore[misc]
@@ -314,7 +262,7 @@ class TestRunTerminalApp:
     ) -> None:
         """run_terminal_app rejects application passed as positional argument."""
 
-        cfg = testing.create_dummy_options()
+        cfg = testing.create_dummy_plugin_config()
 
         with pytest.raises(TypeError):
             run_terminal_app(cfg, None, dummy_app)  # type: ignore[misc]
@@ -325,7 +273,7 @@ class TestRunTerminalApp:
     ) -> None:
         """run_terminal_app rejects application_factory passed as positional argument."""
 
-        cfg = testing.create_dummy_options()
+        cfg = testing.create_dummy_plugin_config()
 
         with pytest.raises(TypeError):
             run_terminal_app(cfg, None, None, lambda **_: dummy_app)  # type: ignore[misc]
@@ -335,7 +283,7 @@ class TestRunTerminalApp:
     ) -> None:
         """run_terminal_app rejects transport_registry passed as positional argument."""
 
-        cfg = testing.create_dummy_options()
+        cfg = testing.create_dummy_plugin_config()
         registry = transport.TransportLayerRegistry()
 
         with pytest.raises(TypeError):

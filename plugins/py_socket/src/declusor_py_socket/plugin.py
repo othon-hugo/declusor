@@ -29,7 +29,14 @@ class PySocketPlugin(contract.IPluginExtension[PySocketConfig]):
     version = "1.0.0"
     author = "Declusor Team"
     options_type = PySocketConfig
-    routes = core.OFFICIAL_ROUTES
+    routes = {
+        "load": core.OFFICIAL_ROUTES["load"],
+        "command": core.OFFICIAL_ROUTES["command"],
+        "eval": core.OFFICIAL_ROUTES["eval"],
+        "shell": core.OFFICIAL_ROUTES["shell"],
+        "upload": core.OFFICIAL_ROUTES["upload"],
+        "execute": core.OFFICIAL_ROUTES["execute"],
+    }
 
     @classmethod
     def configure_parser(cls, parser: contract.IArgumentParser, /) -> None:
@@ -152,7 +159,7 @@ class PySocketProcessor(contract.IPluginProcessor):
 
     @property
     def helpers(self) -> bytes:
-        """Load and concatenate valid Python helper libraries for backward compatibility."""
+        """Concatenated bootstrap helper libraries sent to the client during handshake."""
 
         all_helpers = self.load_all_helpers()
 

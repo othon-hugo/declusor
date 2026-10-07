@@ -75,7 +75,7 @@ class TestLoadModuleDTO:
 
         assert exc_info.value.field == "module_name"
         assert exc_info.value.value == invalid_name
-        assert isinstance(exc_info.value, config.InvalidOperation)
+        assert isinstance(exc_info.value, config.DeclusorException)
         assert isinstance(exc_info.value, config.CommandError)
         assert "Module name cannot be empty." in str(exc_info.value)
 

@@ -38,7 +38,7 @@ class BaseFileCommand[T: "ExecuteFileDTO | UploadFileDTO"](BaseStreamCommand):
     transmits it, and streams the output to the console.
     """
 
-    _SupportedOperationCodes = Literal[
+    type _SupportedOperationCodes = Literal[
         config.OperationCode.EXEC_FILE,
         config.OperationCode.STORE_FILE,
     ]

@@ -16,7 +16,7 @@ def call_eval(
 
     arguments, _ = req.parse_arguments({"code": str})
 
-    dto = command.ExecuteCodeDTO(code=arguments["code"])
-    session.execute(command.ExecuteCode(dto))
+    dto = command.EvaluateCodeDTO(code=arguments["code"])
+    session.execute(command.EvaluateCode(dto))
 
     return contract.ControllerResult.for_continuation()

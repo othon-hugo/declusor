@@ -23,19 +23,17 @@ class TestExceptionHierarchy:
         assert issubclass(config.ConnectionTimeoutError, config.ConnectionError)
         assert issubclass(config.ConnectionHandshakeError, config.ConnectionError)
 
-    def test_storage_exceptions__hierarchy__inherit_from_storage_error_and_invalid_operation(self) -> None:
-        """Verify storage errors inherit from StorageError, InvalidOperation, and DeclusorException."""
+    def test_storage_exceptions__hierarchy__inherit_from_storage_error_and_declusor_exception(self) -> None:
+        """Verify storage errors inherit from StorageError and DeclusorException."""
 
         assert issubclass(config.StorageError, config.DeclusorException)
         assert issubclass(config.StorageValidationError, config.StorageError)
-        assert issubclass(config.StorageValidationError, config.InvalidOperation)
 
-    def test_command_exceptions__hierarchy__inherit_from_command_error_and_invalid_operation(self) -> None:
-        """Verify command errors inherit from CommandError, InvalidOperation, and DeclusorException."""
+    def test_command_exceptions__hierarchy__inherit_from_command_error_and_declusor_exception(self) -> None:
+        """Verify command errors inherit from CommandError and DeclusorException."""
 
         assert issubclass(config.CommandError, config.DeclusorException)
         assert issubclass(config.CommandValidationError, config.CommandError)
-        assert issubclass(config.CommandValidationError, config.InvalidOperation)
 
     def test_plugin_exceptions__hierarchy__inherit_from_plugin_error_and_declusor_exception(self) -> None:
         """Verify plugin errors inherit from PluginError and DeclusorException."""
@@ -45,12 +43,11 @@ class TestExceptionHierarchy:
         assert issubclass(config.PluginValidationError, config.PluginError)
         assert issubclass(config.LauncherDeliveryError, config.PluginError)
 
-    def test_router_exceptions__hierarchy__inherit_from_router_error_and_value_error(self) -> None:
-        """Verify router errors inherit from RouterError and ValueError."""
+    def test_router_exceptions__hierarchy__inherit_from_router_error_and_declusor_exception(self) -> None:
+        """Verify router errors inherit from RouterError and DeclusorException."""
 
         assert issubclass(config.RouterError, config.DeclusorException)
         assert issubclass(config.DuplicateRouteError, config.RouterError)
-        assert issubclass(config.DuplicateRouteError, ValueError)
 
     def test_leaf_exceptions__hierarchy__inherit_from_declusor_exception(self) -> None:
         """Verify remaining domain exceptions inherit directly from DeclusorException."""
@@ -178,7 +175,7 @@ class TestStorageExceptions:
 
         err = config.StorageValidationError("relative path not allowed", path="../malicious.bin")
 
-        assert str(err) == "invalid operation: relative path not allowed"
+        assert str(err) == "relative path not allowed"
         assert err.description == "relative path not allowed"
         assert err.path == Path("../malicious.bin")
 
@@ -187,17 +184,17 @@ class TestStorageExceptions:
 
         err = config.StorageValidationError("invalid filename")
 
-        assert str(err) == "invalid operation: invalid filename"
+        assert str(err) == "invalid filename"
         assert err.description == "invalid filename"
         assert err.path is None
 
-    def test_storage_validation_error__multiple_inheritance__caught_by_both_types(self) -> None:
-        """Verify StorageValidationError is an instance of both StorageError and InvalidOperation."""
+    def test_storage_validation_error__hierarchy__instance_of_storage_error_and_declusor_exception(self) -> None:
+        """Verify StorageValidationError is an instance of StorageError and DeclusorException."""
 
         err = config.StorageValidationError("corrupt asset header", path="/data/asset.dat")
 
         assert isinstance(err, config.StorageError)
-        assert isinstance(err, config.InvalidOperation)
+        assert isinstance(err, config.DeclusorException)
 
 
 class TestInvalidOperationException:
@@ -250,11 +247,11 @@ class TestCommandExceptions:
 
         err = config.CommandValidationError("validation failed")
 
-        assert err.description == "command error: validation failed"
+        assert err.description == "validation failed"
         assert err.field is None
         assert err.value is None
         assert err.command_name is None
-        assert str(err) == "invalid operation: command error: validation failed"
+        assert str(err) == "command error: validation failed"
 
     def test_command_validation_error__with_all_arguments__stores_attributes_and_satisfies_types(self) -> None:
         """Verify CommandValidationError preserves field, value, and command_name."""
@@ -266,13 +263,13 @@ class TestCommandExceptions:
             command_name="listen",
         )
 
-        assert err.description == "command error: port out of range"
+        assert err.description == "port out of range"
         assert err.field == "port"
         assert err.value == 70000
         assert err.command_name == "listen"
         assert isinstance(err, config.CommandError)
-        assert isinstance(err, config.InvalidOperation)
-        assert str(err) == "invalid operation: command error: port out of range"
+        assert isinstance(err, config.DeclusorException)
+        assert str(err) == "command error: port out of range"
 
     def test_command_validation_error__keyword_argument_for_description__raises_type_error(self) -> None:
         """Verify passing description as a keyword argument raises TypeError."""
@@ -360,13 +357,13 @@ class TestRouterExceptions:
         assert err.description == "route already bound to py_socket"
         assert str(err) == "invalid route: 'exec' (route already bound to py_socket)"
 
-    def test_duplicate_route_error__multiple_inheritance__caught_by_both_router_and_value_error(self) -> None:
-        """Verify DuplicateRouteError is caught by both RouterError and ValueError handlers."""
+    def test_duplicate_route_error__hierarchy__instance_of_router_error_and_declusor_exception(self) -> None:
+        """Verify DuplicateRouteError is an instance of RouterError and DeclusorException."""
 
         err = config.DuplicateRouteError("download")
 
         assert isinstance(err, config.RouterError)
-        assert isinstance(err, ValueError)
+        assert isinstance(err, config.DeclusorException)
 
 
 class TestPluginExceptions:

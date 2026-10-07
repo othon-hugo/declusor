@@ -122,22 +122,3 @@ def create_dummy_controller_request[T: contract.ControllerArguments](
         return ControllerRequest[T](text)
 
     return ControllerRequest[contract.ControllerArguments](text)
-
-
-def create_dummy_options(
-    host: str = "127.0.0.1",
-    port: int = 9000,
-    client: contract.PluginConfig[doubles.DummyConfig] | None = None,
-) -> contract.PluginConfig[doubles.DummyConfig]:
-    """Create a fully-formed PluginConfig for testing.
-
-    Args:
-        host: Target host. Defaults to '127.0.0.1'.
-        port: Target port. Defaults to 9000.
-        client: PluginConfig instance. Defaults to dummy config.
-
-    Returns:
-        A valid PluginConfig instance.
-    """
-
-    return client or create_dummy_plugin_config(host=host, port=port)

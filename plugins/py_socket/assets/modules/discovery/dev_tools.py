@@ -1,8 +1,8 @@
 import shutil
 
 tools = [
-    ("Python", "python3"),
-    ("Python (legacy)", "python"),
+    ("Python 3", "python3"),
+    ("Python 2", "python"),
     ("Ruby", "ruby"),
     ("Node.js", "node"),
     ("PHP", "php"),

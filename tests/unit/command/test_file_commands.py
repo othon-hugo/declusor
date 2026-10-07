@@ -62,27 +62,27 @@ class TestExecuteFileDTO:
         assert dto.filepath == script_file.resolve()
         assert dto.filepath.is_absolute()
 
-    def test_execute_file_dto_init__missing_file__raises_invalid_operation(self, tmp_path: Path) -> None:
-        """ExecuteFileDTO rejects a non-existent file path with InvalidOperation."""
+    def test_execute_file_dto_init__missing_file__raises_storage_validation_error(self, tmp_path: Path) -> None:
+        """ExecuteFileDTO rejects a non-existent file path with StorageValidationError."""
 
         missing_file = tmp_path / "nonexistent.sh"
 
-        with pytest.raises(config.InvalidOperation) as exc_info:
+        with pytest.raises(config.StorageValidationError) as exc_info:
             ExecuteFileDTO(filepath=missing_file)
 
-        assert isinstance(exc_info.value, config.StorageValidationError)
+        assert isinstance(exc_info.value, config.StorageError)
         assert "does not exist" in str(exc_info.value)
 
-    def test_execute_file_dto_init__directory_path__raises_invalid_operation(self, tmp_path: Path) -> None:
-        """ExecuteFileDTO rejects a directory path with InvalidOperation."""
+    def test_execute_file_dto_init__directory_path__raises_storage_validation_error(self, tmp_path: Path) -> None:
+        """ExecuteFileDTO rejects a directory path with StorageValidationError."""
 
         directory_path = tmp_path / "scripts_dir"
         directory_path.mkdir()
 
-        with pytest.raises(config.InvalidOperation) as exc_info:
+        with pytest.raises(config.StorageValidationError) as exc_info:
             ExecuteFileDTO(filepath=directory_path)
 
-        assert isinstance(exc_info.value, config.StorageValidationError)
+        assert isinstance(exc_info.value, config.StorageError)
         assert "is not a file" in str(exc_info.value)
 
     @pytest.mark.parametrize(
@@ -108,7 +108,7 @@ class TestExecuteFileDTO:
 
         assert exc_info.value.field == "filepath"
         assert exc_info.value.value == invalid_path
-        assert isinstance(exc_info.value, config.InvalidOperation)
+        assert isinstance(exc_info.value, config.DeclusorException)
         assert isinstance(exc_info.value, config.CommandError)
         assert "File path cannot be empty." in str(exc_info.value)
 
@@ -130,7 +130,7 @@ class TestExecuteFileDTO:
 
         assert exc_info.value.field == "filepath"
         assert exc_info.value.value == invalid_path
-        assert isinstance(exc_info.value, config.InvalidOperation)
+        assert isinstance(exc_info.value, config.DeclusorException)
         assert isinstance(exc_info.value, config.CommandError)
         assert "File path cannot contain null bytes." in str(exc_info.value)
 
@@ -371,27 +371,27 @@ class TestUploadFileDTO:
         assert dto.filepath == payload_file.resolve()
         assert dto.filepath.is_absolute()
 
-    def test_upload_file_dto_init__missing_file__raises_invalid_operation(self, tmp_path: Path) -> None:
-        """UploadFileDTO rejects a non-existent file path with InvalidOperation."""
+    def test_upload_file_dto_init__missing_file__raises_storage_validation_error(self, tmp_path: Path) -> None:
+        """UploadFileDTO rejects a non-existent file path with StorageValidationError."""
 
         missing_file = tmp_path / "missing_payload.bin"
 
-        with pytest.raises(config.InvalidOperation) as exc_info:
+        with pytest.raises(config.StorageValidationError) as exc_info:
             UploadFileDTO(filepath=missing_file)
 
-        assert isinstance(exc_info.value, config.StorageValidationError)
+        assert isinstance(exc_info.value, config.StorageError)
         assert "does not exist" in str(exc_info.value)
 
-    def test_upload_file_dto_init__directory_path__raises_invalid_operation(self, tmp_path: Path) -> None:
-        """UploadFileDTO rejects a directory path with InvalidOperation."""
+    def test_upload_file_dto_init__directory_path__raises_storage_validation_error(self, tmp_path: Path) -> None:
+        """UploadFileDTO rejects a directory path with StorageValidationError."""
 
         directory_path = tmp_path / "payloads_dir"
         directory_path.mkdir()
 
-        with pytest.raises(config.InvalidOperation) as exc_info:
+        with pytest.raises(config.StorageValidationError) as exc_info:
             UploadFileDTO(filepath=directory_path)
 
-        assert isinstance(exc_info.value, config.StorageValidationError)
+        assert isinstance(exc_info.value, config.StorageError)
         assert "is not a file" in str(exc_info.value)
 
     @pytest.mark.parametrize(
@@ -417,7 +417,7 @@ class TestUploadFileDTO:
 
         assert exc_info.value.field == "filepath"
         assert exc_info.value.value == invalid_path
-        assert isinstance(exc_info.value, config.InvalidOperation)
+        assert isinstance(exc_info.value, config.DeclusorException)
         assert isinstance(exc_info.value, config.CommandError)
         assert "File path cannot be empty." in str(exc_info.value)
 
@@ -439,7 +439,7 @@ class TestUploadFileDTO:
 
         assert exc_info.value.field == "filepath"
         assert exc_info.value.value == invalid_path
-        assert isinstance(exc_info.value, config.InvalidOperation)
+        assert isinstance(exc_info.value, config.DeclusorException)
         assert isinstance(exc_info.value, config.CommandError)
         assert "File path cannot contain null bytes." in str(exc_info.value)
 
@@ -469,7 +469,7 @@ class TestUploadFileDTO:
 
         assert exc_info.value.field == "destination"
         assert exc_info.value.value == invalid_dest
-        assert isinstance(exc_info.value, config.InvalidOperation)
+        assert isinstance(exc_info.value, config.DeclusorException)
         assert isinstance(exc_info.value, config.CommandError)
         assert "Destination path cannot be empty." in str(exc_info.value)
 
@@ -496,7 +496,7 @@ class TestUploadFileDTO:
 
         assert exc_info.value.field == "destination"
         assert exc_info.value.value == invalid_dest
-        assert isinstance(exc_info.value, config.InvalidOperation)
+        assert isinstance(exc_info.value, config.DeclusorException)
         assert isinstance(exc_info.value, config.CommandError)
         assert "Destination path cannot contain null bytes." in str(exc_info.value)
 
@@ -525,7 +525,7 @@ class TestUploadFileDTO:
 
         assert exc_info.value.field == "destination"
         assert exc_info.value.value == invalid_dest
-        assert isinstance(exc_info.value, config.InvalidOperation)
+        assert isinstance(exc_info.value, config.DeclusorException)
         assert isinstance(exc_info.value, config.CommandError)
         assert "Destination path cannot contain control characters or newlines." in str(exc_info.value)
 

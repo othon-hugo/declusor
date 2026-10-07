@@ -273,7 +273,7 @@ class TestIPluginProcessor:
 
         expected_abstract_methods = {
             "filesystem",
-            "helpers",
+            "load_all_helpers",
             "find_module",
             "find_helper",
             "load_module",

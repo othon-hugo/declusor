@@ -42,11 +42,6 @@ class DummySocket:
 
         self._incoming.extend(data)
 
-    def feed_bytes(self, data: bytes) -> None:
-        """Enqueue simulated incoming data to be read via recv (alias for feed)."""
-
-        self.feed(data)
-
     def feed_recv_chunks(self, *chunks: bytes) -> None:
         """Enqueue individual chunk frames to be returned by successive recv() calls."""
 

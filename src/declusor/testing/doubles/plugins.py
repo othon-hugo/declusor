@@ -2,8 +2,9 @@ from collections.abc import Mapping
 from pathlib import Path
 
 from declusor import config, contract, core
-from declusor.testing.doubles.connection import DummyConnection
-from declusor.testing.doubles.filestore import DummyPluginFileStore
+
+from .connection import DummyConnection
+from .filestore import DummyPluginFileStore
 
 
 class DummyConfig(contract.ParsedArguments, total=False):

@@ -5,7 +5,7 @@ from declusor import config, contract
 
 from .xor_transport import XorTransport
 
-TransportLayerFactory = Callable[[contract.ITransport], contract.ITransport]
+type TransportLayerFactory = Callable[[contract.ITransport], contract.ITransport]
 """Callable that wraps an ITransport into another ITransport (e.g. ITransportLayer)."""
 
 

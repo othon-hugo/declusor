@@ -127,31 +127,31 @@ class TestUploadController:
         with pytest.raises(config.ParserError):
             upload_module.call_upload(test_session, req)
 
-    def test_call_upload__nonexistent_file__raises_invalid_operation(
+    def test_call_upload__nonexistent_file__raises_storage_validation_error(
         self,
         tmp_path: Path,
         test_session: contract.SessionContext,
     ) -> None:
-        """call_upload raises InvalidOperation when local source file does not exist."""
+        """call_upload raises StorageValidationError when local source file does not exist."""
 
         missing_file = tmp_path / "missing_file_87654.bin"
         req = testing.create_dummy_controller_request(str(missing_file), upload_module.UploadArguments)
 
-        with pytest.raises(config.InvalidOperation):
+        with pytest.raises(config.StorageValidationError):
             upload_module.call_upload(test_session, req)
 
-    def test_call_upload__directory_source_path__raises_invalid_operation(
+    def test_call_upload__directory_source_path__raises_storage_validation_error(
         self,
         tmp_path: Path,
         test_session: contract.SessionContext,
     ) -> None:
-        """call_upload raises InvalidOperation when local source path targets a directory."""
+        """call_upload raises StorageValidationError when local source path targets a directory."""
 
         target_dir = tmp_path / "upload_dir"
         target_dir.mkdir()
         req = testing.create_dummy_controller_request(str(target_dir), upload_module.UploadArguments)
 
-        with pytest.raises(config.InvalidOperation):
+        with pytest.raises(config.StorageValidationError):
             upload_module.call_upload(test_session, req)
 
     def test_call_upload__destination_with_control_characters__raises_command_validation_error(

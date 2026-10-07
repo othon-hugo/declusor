@@ -12,8 +12,8 @@ class TestCommandExports:
         expected = [
             "CommandError",
             "CommandValidationError",
-            "ExecuteCode",
-            "ExecuteCodeDTO",
+            "EvaluateCode",
+            "EvaluateCodeDTO",
             "ExecuteCommand",
             "ExecuteCommandDTO",
             "ExecuteFile",

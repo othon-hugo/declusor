@@ -1,5 +1,4 @@
 import dataclasses
-import inspect
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
@@ -11,7 +10,7 @@ from .routes import EXIT_ROUTE, OFFICIAL_ROUTES, create_help_route
 if TYPE_CHECKING:
     from .plugin import PluginManager
 
-TransportListenerFactory = Callable[[str, int], contract.ITransportListener]
+type TransportListenerFactory = Callable[[str, int], contract.ITransportListener]
 """Factory for creating a transport listener bound to a host and port."""
 
 
@@ -132,13 +131,7 @@ class Application:
         plugin_runtime = PluginExtension.build_runtime(plugin_config)
 
         if self._input_source is not None and (setup_completer := getattr(self._input_source, "setup_completer", None)):
-            params = inspect.signature(setup_completer).parameters
-            positional_params = [p for p in params.values() if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)]
-
-            if len(positional_params) >= 2 or "assets_dir" in params:
-                setup_completer(self._router.routes, plugin_config.filesystem.assets)
-            else:
-                setup_completer(self._router.routes)
+            setup_completer(self._router.routes, plugin_config.filesystem.assets)
 
         delivery = plugin_runtime.launcher
         delivery = dataclasses.replace(

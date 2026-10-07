@@ -14,8 +14,8 @@ class UploadFileDTO:
     on the remote client without execution, along with an optional remote destination path.
 
     Raises:
-        InvalidOperation: If the local file does not exist, is not a regular file,
-            or if paths are empty, contain null bytes, or contain control characters.
+        CommandValidationError: If paths are empty, contain null bytes, or contain control characters.
+        StorageValidationError: If the local file does not exist or is not a regular file.
     """
 
     filepath: Path | str

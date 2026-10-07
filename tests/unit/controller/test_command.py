@@ -99,7 +99,7 @@ class TestCommandController:
 
         assert exc_info.value.field == "command_line"
         assert exc_info.value.value == ""
-        assert isinstance(exc_info.value, config.InvalidOperation)
+        assert isinstance(exc_info.value, config.CommandError)
 
     def test_call_command__connection_write_failure__propagates_exception(
         self,

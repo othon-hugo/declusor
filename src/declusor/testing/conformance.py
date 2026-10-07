@@ -73,6 +73,8 @@ def assert_conforms_to_client_plugin[T: contract.ParsedArguments](
     assert isinstance(runtime, contract.IPluginRuntime), f"build_runtime must return IPluginRuntime, got {type(runtime)}."
     assert isinstance(runtime.launcher, contract.LauncherDelivery), "runtime.launcher must return a LauncherDelivery instance."
     assert isinstance(runtime.processor, contract.IPluginProcessor), "runtime.processor must implement IPluginProcessor."
+    all_helpers = runtime.processor.load_all_helpers()
+    assert isinstance(all_helpers, Mapping), "runtime.processor.load_all_helpers() must return a Mapping."
 
     # Invariant 6: Connection instantiation and behavioral lifecycle
     dummy_transport = doubles.DummyTransport()
@@ -178,6 +180,3 @@ class PluginConformanceTestSuite[T: contract.ParsedArguments]:
             sample_options=sample_options,
             tmp_path=tmp_path,
         )
-
-
-assert_conforms_to_plugin = assert_conforms_to_client_plugin

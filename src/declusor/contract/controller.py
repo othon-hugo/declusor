@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, TypedDict
 if TYPE_CHECKING:
     from .session import SessionContext
 
-ArgumentDefinitions = Mapping[str, type | object]
+type ArgumentDefinitions = Mapping[str, type | object]
 """Mapping of argument names to expected argument types."""
 
 
@@ -52,7 +52,7 @@ class IControllerRequest[T: ControllerArguments](ABC):
         raise NotImplementedError
 
 
-Controller = Callable[["SessionContext", IControllerRequest[Any]], "ControllerResult"]
+type Controller = Callable[["SessionContext", IControllerRequest[Any]], "ControllerResult"]
 """Type alias for a controller function.
 
 A controller receives an active session context and the command request from the

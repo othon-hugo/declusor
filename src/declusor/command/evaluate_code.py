@@ -6,14 +6,14 @@ from .base import BaseStreamCommand
 
 
 @dataclass(frozen=True)
-class ExecuteCodeDTO:
+class EvaluateCodeDTO:
     """Data transfer object containing parameters for native client code execution.
 
     Encapsulates and validates the raw code string to be evaluated directly by
     the remote client agent's runtime.
 
     Raises:
-        InvalidOperation: If ``code`` is empty or consists solely of whitespace.
+        CommandValidationError: If ``code`` is empty or consists solely of whitespace.
     """
 
     code: str
@@ -24,16 +24,16 @@ class ExecuteCodeDTO:
             raise config.CommandValidationError("Code cannot be empty.", field="code", value=self.code)
 
 
-class ExecuteCode(BaseStreamCommand):
-    """Execute raw native client runtime code on the remote client.
+class EvaluateCode(BaseStreamCommand):
+    """Evaluate raw native client runtime code on the remote client.
 
-    Transmits the encoded code string encapsulated in an ``ExecuteCodeDTO``
+    Transmits the encoded code string encapsulated in an ``EvaluateCodeDTO``
     through the active session connection and streams all response chunks directly
     to the operator's console.
     """
 
-    def __init__(self, dto: ExecuteCodeDTO, /) -> None:
-        """Initialize ExecuteCode with validated parameters.
+    def __init__(self, dto: EvaluateCodeDTO, /) -> None:
+        """Initialize EvaluateCode with validated parameters.
 
         Args:
             dto: Validated data transfer object containing the code string.

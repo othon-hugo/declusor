@@ -13,11 +13,6 @@ class TestPluginConformanceHarness:
 
         testing.assert_conforms_to_client_plugin(testing.DummyPlugin)
 
-    def test_assert_conforms_to_plugin_alias(self) -> None:
-        """Ensure assert_conforms_to_plugin alias executes the same verification."""
-
-        testing.assert_conforms_to_plugin(testing.DummyPlugin)
-
     def test_assert_conforms_to_client_plugin_with_tmp_path(self, tmp_path: Path) -> None:
         """Ensure conformance validation creates stagers and validates filesystem structure."""
 

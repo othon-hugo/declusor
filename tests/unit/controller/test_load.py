@@ -102,7 +102,7 @@ class TestLoadController:
 
         assert exc_info.value.field == "module_name"
         assert exc_info.value.value == ""
-        assert isinstance(exc_info.value, config.InvalidOperation)
+        assert isinstance(exc_info.value, config.CommandError)
 
     def test_call_load__missing_module_in_store__raises_invalid_operation(
         self,

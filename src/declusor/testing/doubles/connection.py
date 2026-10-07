@@ -2,7 +2,8 @@ from collections.abc import Generator, Sequence
 from typing import Self
 
 from declusor import contract
-from declusor.testing.doubles.profile import DummyOperationRenderer
+
+from .profile import DummyOperationRenderer
 
 
 class DummyConnection(contract.IConnection):

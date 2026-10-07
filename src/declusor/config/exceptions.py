@@ -94,11 +94,11 @@ class InvalidOperation(DeclusorException):
         super().__init__(f"invalid operation: {self.description}")
 
 
-class StorageValidationError(StorageError, InvalidOperation):
+class StorageValidationError(StorageError):
     """Raised when a storage path or file invariant is violated."""
 
     def __init__(self, message: str, *, path: str | Path | None = None) -> None:
-        """Initialize storage validation error preserving InvalidOperation compatibility."""
+        """Initialize storage validation error with failure message and optional path context."""
 
         self.path = Path(path) if path is not None else None
         self.description = message
@@ -118,7 +118,7 @@ class CommandError(DeclusorException):
         super().__init__(f"command error: {self.description}")
 
 
-class CommandValidationError(CommandError, InvalidOperation):
+class CommandValidationError(CommandError):
     """Raised when command input parameters or DTO invariants are violated."""
 
     def __init__(
@@ -168,11 +168,11 @@ class RouterError(DeclusorException):
         super().__init__(msg)
 
 
-class DuplicateRouteError(RouterError, ValueError):
+class DuplicateRouteError(RouterError):
     """Raised when attempting to register a route that already exists in the route table."""
 
     def __init__(self, route: str, description: str = "route already exists.") -> None:
-        """Initialize duplicate route error maintaining ValueError backward-compatibility."""
+        """Initialize duplicate route error with route identifier and description."""
 
         super().__init__(route, description)
 

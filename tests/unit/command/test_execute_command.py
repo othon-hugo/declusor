@@ -54,7 +54,7 @@ class TestExecuteCommandDTO:
 
         assert exc_info.value.field == "command_line"
         assert exc_info.value.value == invalid_command
-        assert isinstance(exc_info.value, config.InvalidOperation)
+        assert isinstance(exc_info.value, config.DeclusorException)
         assert isinstance(exc_info.value, config.CommandError)
         assert "Command line cannot be empty." in str(exc_info.value)
 

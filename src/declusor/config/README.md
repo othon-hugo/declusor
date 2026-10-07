@@ -22,16 +22,16 @@ DeclusorException (Exception)
 │   ├── ConnectionTimeoutError
 │   └── ConnectionHandshakeError
 ├── StorageError
-│   └── StorageValidationError (StorageError, InvalidOperation)
+│   └── StorageValidationError
 ├── PluginError
 │   ├── PluginNotFoundError
 │   ├── PluginValidationError
 │   └── LauncherDeliveryError
 ├── CommandError
-│   └── CommandValidationError (CommandError, InvalidOperation)
+│   └── CommandValidationError
 ├── ControllerError
 ├── RouterError
-│   └── DuplicateRouteError (RouterError, ValueError)
+│   └── DuplicateRouteError
 ├── PromptError
 ├── ParserError
 └── InvalidOperation

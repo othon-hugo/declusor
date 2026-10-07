@@ -26,7 +26,13 @@ class ShellSocketPlugin(contract.IPluginExtension[ShellSocketConfig]):
     version = "1.0.0"
     author = "github.com/othonhugo"
     options_type = ShellSocketConfig
-    routes = core.OFFICIAL_ROUTES
+    routes = {
+        "load": core.OFFICIAL_ROUTES["load"],
+        "command": core.OFFICIAL_ROUTES["command"],
+        "shell": core.OFFICIAL_ROUTES["shell"],
+        "upload": core.OFFICIAL_ROUTES["upload"],
+        "execute": core.OFFICIAL_ROUTES["execute"],
+    }
 
     @classmethod
     def configure_parser(cls, parser: contract.IArgumentParser, /) -> None:
@@ -150,7 +156,7 @@ class ShellSocketProcessor(contract.IPluginProcessor):
 
     @property
     def helpers(self) -> bytes:
-        """Load and concatenate valid helper libraries for backward compatibility."""
+        """Concatenated bootstrap helper libraries sent to the client during handshake."""
 
         all_helpers = self.load_all_helpers()
 

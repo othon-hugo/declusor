@@ -14,8 +14,8 @@ class ExecuteFileDTO:
     uploaded, and executed on the remote client.
 
     Raises:
-        InvalidOperation: If the file path is empty, contains null bytes, does not exist,
-            or is not a regular file.
+        CommandValidationError: If the file path is empty or contains null bytes.
+        StorageValidationError: If the file does not exist or is not a regular file.
     """
 
     filepath: Path | str
@@ -23,6 +23,7 @@ class ExecuteFileDTO:
 
     def __post_init__(self) -> None:
         raw_path = str(self.filepath).strip()
+
         if not raw_path:
             raise config.CommandValidationError("File path cannot be empty.", field="filepath", value=self.filepath)
 

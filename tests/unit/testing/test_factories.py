@@ -38,7 +38,7 @@ class TestSessionContextFactory:
 
 
 class TestPluginConfigFactory:
-    """Verify behavior of create_dummy_plugin_config and create_dummy_options."""
+    """Verify behavior of create_dummy_plugin_config."""
 
     def test_create_dummy_plugin_config_defaults(self) -> None:
         """Ensure create_dummy_plugin_config uses standard defaults."""
@@ -89,13 +89,6 @@ class TestPluginConfigFactory:
         assert cfg.launcher_output_path == Path("/tmp/out.sh")
         assert cfg.launcher_wrapper == "bash -c '{}'"
         assert cfg.transport_layers == ("xor",)
-
-    def test_create_dummy_options_alias(self) -> None:
-        """Ensure create_dummy_options returns PluginConfig matching create_dummy_plugin_config."""
-
-        cfg = testing.create_dummy_options()
-        assert isinstance(cfg, contract.PluginConfig)
-        assert cfg.kind == "dummy"
 
 
 class TestControllerRequestFactory:

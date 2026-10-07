@@ -358,57 +358,6 @@ class TestApplicationLifecycle:
         assert set(input_source.completer_routes) == set(router.routes)
         assert input_source.assets_dir == fs.assets
 
-    def test_application_run__with_legacy_single_arg_setup_completer__passes_routes_gracefully(self, tmp_path: Path) -> None:
-        """When input_source defines a single-arg setup_completer, application passes router routes gracefully."""
-
-        class LegacyCompleterInputSource(testing.DummyInputSource):
-            def __init__(self) -> None:
-                super().__init__()
-                self.completer_routes: tuple[str, ...] | None = None
-
-            def setup_completer(self, routes: tuple[str, ...], /) -> None:
-                self.completer_routes = routes
-
-        dummy_conn = testing.DummyConnection()
-        dummy_runtime = testing.DummyPluginRuntime(connection_to_return=dummy_conn)
-        testing.DummyPlugin.reset()
-        testing.DummyPlugin.runtime_instance = dummy_runtime
-
-        manager = core.PluginManager()
-        manager.register(testing.DummyPlugin)
-
-        router = core.Router()
-        view = testing.DummyView()
-        input_source = LegacyCompleterInputSource()
-        runner = testing.DummySessionRunner()
-
-        listener = testing.MemoryTransportListener()
-        _ = listener.create_client()
-
-        app = core.Application(
-            router,
-            view,
-            plugin_manager=manager,
-            session_runner=runner,
-            input_source=input_source,
-            listener_factory=lambda host, port: listener,
-        )
-
-        fs = contract.PluginFilesystem.from_root(tmp_path)
-        plugin_config = contract.PluginConfig(
-            kind=testing.DummyPlugin.name,
-            host="127.0.0.1",
-            port=9000,
-            options=contract.ParsedArguments(),
-            options_type=contract.ParsedArguments,
-            filesystem=fs,
-        )
-
-        app.run(plugin_config)
-
-        assert input_source.completer_routes is not None
-        assert set(input_source.completer_routes) == set(router.routes)
-
     def test_application_run__input_source_none__runs_cleanly_with_none_input_source_in_session(self, tmp_path: Path) -> None:
         """When input_source is None, session is initialized with input_source=None."""
 

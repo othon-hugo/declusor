@@ -4,9 +4,9 @@ from declusor.config import (
     InvalidOperation,
 )
 
-from .execute_code import (
-    ExecuteCode,
-    ExecuteCodeDTO,
+from .evaluate_code import (
+    EvaluateCode,
+    EvaluateCodeDTO,
 )
 from .execute_command import (
     ExecuteCommand,
@@ -32,8 +32,8 @@ from .upload_file import (
 __all__ = [
     "CommandError",
     "CommandValidationError",
-    "ExecuteCode",
-    "ExecuteCodeDTO",
+    "EvaluateCode",
+    "EvaluateCodeDTO",
     "ExecuteCommand",
     "ExecuteCommandDTO",
     "ExecuteFile",

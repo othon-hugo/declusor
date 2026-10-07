@@ -5,7 +5,6 @@ from . import (
 from .conformance import (
     PluginConformanceTestSuite,
     assert_conforms_to_client_plugin,
-    assert_conforms_to_plugin,
 )
 from .doubles import (
     DummyApplication,
@@ -28,7 +27,6 @@ from .doubles import (
 )
 from .factories import (
     create_dummy_controller_request,
-    create_dummy_options,
     create_dummy_plugin_config,
     create_test_session,
 )
@@ -52,9 +50,7 @@ __all__ = [
     "MemoryTransportListener",
     "PluginConformanceTestSuite",
     "assert_conforms_to_client_plugin",
-    "assert_conforms_to_plugin",
     "create_dummy_controller_request",
-    "create_dummy_options",
     "create_dummy_plugin_config",
     "create_memory_transport_pair",
     "create_test_session",

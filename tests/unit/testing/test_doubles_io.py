@@ -157,12 +157,12 @@ class TestDummySocket:
         assert chunk3 == b""
         assert sock.recv_calls == [4, 10, 10]
 
-    def test_feed_bytes_appends_to_incoming_stream(self) -> None:
-        """Ensure feed_bytes adds new data to unread incoming stream."""
+    def test_feed_appends_to_incoming_stream(self) -> None:
+        """Ensure feed adds new data to unread incoming stream."""
 
         sock = testing.DummySocket()
-        sock.feed_bytes(b"stream1")
-        sock.feed_bytes(b"stream2")
+        sock.feed(b"stream1")
+        sock.feed(b"stream2")
 
         assert sock.recv(20) == b"stream1stream2"
 

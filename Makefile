@@ -19,8 +19,8 @@
 .PHONY: format-plugin
 .PHONY: format-check-plugin
 .PHONY: check-plugin
-.PHONY: check-shell-assets
-.PHONY: check-py-assets
+.PHONY: check-shellsocket-assets
+.PHONY: check-pysocket-assets
 .PHONY: build-plugins
 .PHONY: build-all
 .PHONY: ci
@@ -144,11 +144,11 @@ format-check-plugin:
 
 check-plugin: format-check-plugin lint-plugin type-check-plugin test-plugin
 
-check-shell-assets:
+check-shellsocket-assets:
 	@command -v shellcheck >/dev/null 2>&1 || { echo "shellcheck is required" >&2; exit 1; }
 	@cd plugins/shell_socket && find assets -type f -name '*.sh' -print0 | xargs -0 shellcheck -s bash -S info
 
-check-py-assets:
+check-pysocket-assets:
 	$(EXEC)ruff check --config plugins/py_socket/assets/ruff.toml plugins/py_socket/assets
 	$(EXEC)python -m compileall -q plugins/py_socket/assets
 

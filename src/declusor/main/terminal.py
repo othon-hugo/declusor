@@ -77,45 +77,23 @@ def _create_application(
     factory: Callable[..., core.Application],
     kwargs: Mapping[str, Any],
 ) -> core.Application:
-    """Invoke application factory matching its accepted parameters.
+    """Invoke application factory passing only keyword arguments matching its signature."""
 
-    Supports kwargs-accepting factories, zero-argument factories, single-argument
-    positional factories, and partially-parameterized keyword factories without
-    swallowing internal TypeErrors.
-    """
+    parameters = inspect.signature(factory).parameters
 
-    try:
-        sig = inspect.signature(factory)
-    except (ValueError, TypeError):
+    if any(param.kind == inspect.Parameter.VAR_KEYWORD for param in parameters.values()):
         return factory(**kwargs)
 
-    has_var_keyword = any(param.kind == inspect.Parameter.VAR_KEYWORD for param in sig.parameters.values())
-
-    if has_var_keyword:
-        return factory(**kwargs)
-
-    accepted_params = sig.parameters
-
-    if not accepted_params:
-        return factory()
-
-    param_list = list(accepted_params.values())
-
-    if len(param_list) == 1 and (
-        param_list[0].kind == inspect.Parameter.POSITIONAL_ONLY
-        or (param_list[0].kind == inspect.Parameter.POSITIONAL_OR_KEYWORD and param_list[0].name not in kwargs)
-    ):
-        return factory(kwargs.get("plugin_manager"))
-
-    filtered_kwargs = {
-        name: val
-        for name, val in kwargs.items()
-        if name in accepted_params
-        and accepted_params[name].kind
+    accepted_keywords = {
+        name
+        for name, param in parameters.items()
+        if param.kind
         in (
             inspect.Parameter.POSITIONAL_OR_KEYWORD,
             inspect.Parameter.KEYWORD_ONLY,
         )
     }
+
+    filtered_kwargs = {name: val for name, val in kwargs.items() if name in accepted_keywords}
 
     return factory(**filtered_kwargs)

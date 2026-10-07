@@ -94,31 +94,31 @@ class TestExecuteController:
         with pytest.raises(config.ParserError):
             execute_module.call_execute(test_session, req)
 
-    def test_call_execute__nonexistent_file__raises_invalid_operation(
+    def test_call_execute__nonexistent_file__raises_storage_validation_error(
         self,
         tmp_path: Path,
         test_session: contract.SessionContext,
     ) -> None:
-        """call_execute raises InvalidOperation when local script file does not exist."""
+        """call_execute raises StorageValidationError when local script file does not exist."""
 
         missing_file = tmp_path / "nonexistent_script_12345.sh"
         req = testing.create_dummy_controller_request(str(missing_file), execute_module.ExecuteArguments)
 
-        with pytest.raises(config.InvalidOperation):
+        with pytest.raises(config.StorageValidationError):
             execute_module.call_execute(test_session, req)
 
-    def test_call_execute__directory_path__raises_invalid_operation(
+    def test_call_execute__directory_path__raises_storage_validation_error(
         self,
         tmp_path: Path,
         test_session: contract.SessionContext,
     ) -> None:
-        """call_execute raises InvalidOperation when path targets a directory instead of a regular file."""
+        """call_execute raises StorageValidationError when path targets a directory instead of a regular file."""
 
         target_dir = tmp_path / "script_dir"
         target_dir.mkdir()
         req = testing.create_dummy_controller_request(str(target_dir), execute_module.ExecuteArguments)
 
-        with pytest.raises(config.InvalidOperation):
+        with pytest.raises(config.StorageValidationError):
             execute_module.call_execute(test_session, req)
 
     def test_call_execute__connection_write_failure__propagates_exception(

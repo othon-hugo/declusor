@@ -121,12 +121,6 @@ class DummyPluginFileStore(contract.IPluginProcessor):
 
         return dict(self.helpers_map)
 
-    @property
-    def helpers(self) -> bytes:
-        """Compatibility helper returning concatenated helper libraries."""
-
-        return b"\n".join(self.load_all_helpers().values())
-
     def load_module(self, module_path: Path | str, /) -> bytes:
         """Return configured or synthesised module payload."""
 
@@ -148,8 +142,3 @@ class DummyPluginFileStore(contract.IPluginProcessor):
             return self.modules[str(module_path)]
 
         return f"module_bytes:{rel_name}".encode()
-
-    def get_module(self, module_name: str, /) -> bytes:
-        """Compatibility alias for load_module."""
-
-        return self.load_module(module_name)

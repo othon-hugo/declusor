@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from .router import RouteTable
     from .transport import ITransport
 
-PluginExtensionType = type["IPluginExtension[Any]"]
+type PluginExtensionType = type["IPluginExtension[Any]"]
 """Concrete plugin extension class type."""
 
 
@@ -355,10 +355,13 @@ class IPluginProcessor(ABC):
 
         raise NotImplementedError
 
-    @property
     @abstractmethod
-    def helpers(self) -> bytes:
-        """Concatenated bootstrap helper libraries sent to the client during handshake."""
+    def load_all_helpers(self) -> Mapping[str, bytes]:
+        """Load all helper libraries as a mapping from helper filename to raw content.
+
+        Returns:
+            Mapping associating helper filenames with their byte contents.
+        """
 
         raise NotImplementedError
 

@@ -271,7 +271,7 @@ class TestDummyApplication:
     def test_run_calls_recording(self) -> None:
         """Ensure run records PluginConfig calls."""
 
-        cfg = testing.create_dummy_options()
+        cfg = testing.create_dummy_plugin_config()
         app = testing.DummyApplication()
 
         app.run(cfg)
@@ -289,7 +289,7 @@ class TestDummyApplication:
     def test_simulated_run_error(self) -> None:
         """Ensure run_error raises when run is invoked."""
 
-        cfg = testing.create_dummy_options()
+        cfg = testing.create_dummy_plugin_config()
         app = testing.DummyApplication()
         app.run_error = config.ConnectionError("run failed")
 

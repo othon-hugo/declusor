@@ -168,7 +168,8 @@ class ShellSocketConnection(contract.IConnection):
         self.ensure_can_handshake()
 
         self._state = contract.ConnectionState.INITIALIZING
-        self.write(self._files.helpers)
+        helpers_payload = b"\n".join(self._files.load_all_helpers().values())
+        self.write(helpers_payload)
 
         try:
             for _ in self.read():
