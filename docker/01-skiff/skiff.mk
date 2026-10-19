@@ -2,7 +2,8 @@ NAME_01       := declusor-01-skiff
 HOST_01       := skiff
 DIR_01        := docker/01-skiff
 DOCKERFILE_01 := $(DIR_01)/skiff.dockerfile
-PORT_01       := 2201
+PORT_SSH_01   := 2201
+PORT_WEB_01   := 8081
 
 .PHONY: build-01 run-01 stop-01 clean-01 ssh-01
 
@@ -11,11 +12,12 @@ build-01:
 	docker build -f $(DOCKERFILE_01) -t $(NAME_01) $(DIR_01)
 
 run-01:
-	@echo "[*] Starting container $(NAME_01) on port $(PORT_01)..."
+	@echo "[*] Starting $(NAME_01) (SSH: $(PORT_SSH_01), Web: $(PORT_WEB_01))..."
 	docker run -d --rm \
 		--name $(NAME_01) \
 		--hostname $(HOST_01) \
-		-p $(PORT_01):22 \
+		-p $(PORT_SSH_01):22 \
+		-p $(PORT_WEB_01):8081 \
 		$(NAME_01)
 
 stop-01:
@@ -28,4 +30,4 @@ clean-01: stop-01
 	@docker rmi -f $(NAME_01) 2>/dev/null || true
 
 ssh-01:
-	ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null player@127.0.0.1 -p $(PORT_01)
+	ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null player@127.0.0.1 -p $(PORT_SSH_01)

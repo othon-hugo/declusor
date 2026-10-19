@@ -1,80 +1,47 @@
-# Declusor CTF — Challenge Labs
+# Declusor Labs — Enterprise Security & Breakout Labs
 
-A progressive 4-tier Linux post-exploitation and container breakout environment built on Alpine Linux.
+Welcome to **Declusor Labs**, a semi-realistic, multi-tiered security training platform designed for **Red Teamers, Blue Teamers, Software Developers, DevOps Engineers, SREs, and CTF players**.
 
-> [!WARNING]
-> **Security Notice** Labs `03-dockside` and `04-leviathan` are explicitly designed to escape into the host environment. Run these challenges only inside an isolated disposable virtual machine (VM) or dedicated sandbox host. Never expose ports `2203` or `2204` to untrusted public networks.
+Instead of abstract puzzles, these four progressive Alpine-based labs simulate a fictional shipping logistics organization. Each environment combines misconfigured services, exposed developer artifacts, vulnerable code patterns, and infrastructure integration flaws.
 
 ## Challenge Matrix
 
-| Directory       | Container Name          | Level      | Port   | Primary Attack Vector                                 | Target Flag                    |
-| --------------- | ----------------------- | ---------- | ------ | ----------------------------------------------------- | ------------------------------ |
-| `01-skiff/`     | `declusor-01-skiff`     | **Easy**   | `2201` | Multi-path Local PrivEsc (Sudo, SUID, Cron, Passwd)   | `/root/flag.txt` _(Container)_ |
-| `02-draftsman/` | `declusor-02-draftsman` | **Medium** | `2202` | Custom SUID binary PATH hijacking (`healthcheck`)     | `/root/flag.txt` _(Container)_ |
-| `03-dockside/`  | `declusor-03-dockside`  | **Hard**   | `2203` | Exposed Docker daemon socket (`/var/run/docker.sock`) | Host `/root/flag.txt` _(Host)_ |
-| `04-leviathan/` | `declusor-04-leviathan` | **Expert** | `2204` | Full container breakout via `--privileged` mode       | Host `/root/flag.txt` _(Host)_ |
+| Directory       | Lab Name      | Difficulty | SSH Port | Web/API Port | Primary Focus & Attack Vector                                             | Target Flag & Scope            |
+| :-------------- | :------------ | :--------: | :------: | :----------: | :------------------------------------------------------------------------ | :----------------------------- |
+| `01-skiff/`     | **Skiff**     |  **Easy**  |  `2201`  |    `8081`    | Web hygiene, exposed `.env`/`.git`, SUID, Sudo, Writable Cron             | `/root/flag.txt` _(Container)_ |
+| `02-draftsman/` | **Draftsman** | **Medium** |  `2202`  |    `8082`    | Runtime `/proc` leaks, Redis/SQLite dumps, SUID PATH hijacking            | `/root/flag.txt` _(Container)_ |
+| `03-dockside/`  | **Dockside**  |  **Hard**  |  `2203`  |    _N/A_     | IaC state leakage (`terraform.tfstate`), CI/CD secrets, `docker.sock`     | Host `/root/flag.txt` _(Host)_ |
+| `04-leviathan/` | **Leviathan** | **Expert** |  `2204`  |    _N/A_     | Linux capabilities (`cap_dac_read_search`), core dumps, Privileged Escape | Host `/root/flag.txt` _(Host)_ |
 
 ## Global Credentials
 
 | Parameter         | Value       |
-| ----------------- | ----------- |
+| :---------------- | :---------- |
 | **Username**      | `player`    |
 | **Password**      | `declusor`  |
 | **Default Shell** | `/bin/bash` |
 | **Target Host**   | `127.0.0.1` |
 
-> Direct SSH root login is disabled on all instances (`PermitRootLogin no`). Competitors must authenticate as `player` and escalate privileges.
+> [!WARNING]
+> **Security Note:** Direct SSH root login is strictly disabled (`PermitRootLogin no`). Competitors must authenticate as the low-privileged `player` account and leverage local enumeration to escalate.
 
-## Quick Start
+## Quick Start & Management
 
-All operations can be driven from the repository root via the master `Makefile`:
-
-````bash
-# Build all challenge images
-make build-all
-
-# Start all containers in the background
-make run-all
-
-# Inspect container status and mapped ports
-make status
-
-# Connect to a target container (e.g., Lab 01)
-make ssh-01
-
-# Stop and wipe everything
-make clean
-
-### Direct SSH Connections
+The repository is fully managed via a modular `Makefile` at the root:
 
 ```bash
-ssh player@127.0.0.1 -p 2201   # 01-skiff
-ssh player@127.0.0.1 -p 2202   # 02-draftsman
-ssh player@127.0.0.1 -p 2203   # 03-dockside
-ssh player@127.0.0.1 -p 2204   # 04-leviathan
+# Build all 4 challenge Docker images
+make build-labs
 
-````
+# Start all containers in the background
+make run-labs
 
-## Lab Descriptions
+# Check container status and mapped ports
+make status-labs
 
-### `01-skiff` (Easy)
+# Connect directly to a specific lab (e.g., Skiff)
+make ssh-01
 
-Designed for beginners to practice standard Linux local enumeration. Contains 5 intentional flaws:
-
-- Overly permissive `sudoers` rules (`find`, `less`, `awk`, `tar`).
-- SUID bit on `/bin/cat`.
-- World-writable periodic maintenance script (`/opt/backup.sh`).
-- Leaked administrator credentials in `/var/backups/.maintenance.txt`.
-- Write permissions on `/etc/passwd`.
-
-### `02-draftsman` (Medium)
-
-Focuses on binary inspection and environment variable abuse. Features a compiled C utility (`/usr/local/bin/healthcheck`) with the SUID bit set that invokes an unqualified system command (`system("uptime")`).
-
-### `03-dockside` (Hard)
-
-Simulates a classic container orchestration misconfiguration. The container has `/var/run/docker.sock` mounted from the host, and the `player` user belongs to the Docker socket group, enabling host filesystem takeover via sibling containers.
-
-### `04-leviathan` (Expert)
-
-Runs with `--privileged` enabled and unconfined capabilities (`CAP_SYS_ADMIN`). Competitors must achieve a direct breakout into the host operating system through device node access or cgroup notification vectors.
+# Stop and clean up all resources
+make clean-labs
+```

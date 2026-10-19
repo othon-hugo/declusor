@@ -1,11 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
-# Ensure SSH host keys are generated
 ssh-keygen -A >/dev/null 2>&1
 
-# Start BusyBox cron daemon in background for Vector 3
+# Start Cron daemon and Nginx web server
 crond -b -l 8
+nginx
 
-# Start OpenSSH daemon in foreground
 exec /usr/sbin/sshd -D -e

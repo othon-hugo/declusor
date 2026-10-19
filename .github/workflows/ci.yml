@@ -160,7 +160,7 @@ jobs:
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
-      - run: make build-all
+      - run: make build-labs
       - name: Install built distributions in a clean environment
         run: |
           uv venv .ci-venv
