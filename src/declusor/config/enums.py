@@ -28,14 +28,14 @@ class ExecutionMode(StrEnum):
     CLI = "cli"
     """Interactive terminal REPL and prompt loop execution mode."""
 
-    API = "api"
-    """Programmatic API daemon mode for external service integration."""
+    # API = "api"
+    # """Programmatic API daemon mode for external service integration."""
 
-    MCP = "mcp"
-    """Model Context Protocol server mode for agentic tool calling."""
+    # MCP = "mcp"
+    # """Model Context Protocol server mode for agentic tool calling."""
 
-    HTTP = "http"
-    """HTTP RESTful server mode for web-based remote interactions."""
+    # HTTP = "http"
+    # """HTTP RESTful server mode for web-based remote interactions."""
 
     @classmethod
     def from_string(cls, value: str, /) -> "ExecutionMode":
@@ -60,6 +60,20 @@ class ExecutionMode(StrEnum):
         valid_modes = ", ".join(repr(m.value) for m in cls)
 
         raise ValueError(f"Invalid execution mode: {value!r}. Choose from: {valid_modes}")
+
+
+class LauncherOutput(StrEnum):
+    """TODO"""
+
+    TERMINAL = "terminal"
+    SILENT = "silent"
+    FILE = "file"
+
+
+class TransportLayer(StrEnum):
+    """TODO"""
+
+    XOR = "xor"
 
 
 class OperationCode(StrEnum):

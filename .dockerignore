@@ -1,0 +1,23 @@
+# Version control
+
+.git
+.gitignore
+
+# Documentation and metadata
+
+README.md
+\*.md
+LICENSE
+
+# Build and orchestration files
+
+Makefile
+_.mk
+docker-compose_.yml
+
+# Environment variables and temporary files
+
+.env\*
+_.swp
+_.tmp
+\*~

@@ -2,7 +2,7 @@ import shlex
 import types
 from argparse import ArgumentParser, HelpFormatter
 from collections.abc import Callable, Mapping
-from typing import Any, NoReturn, Union, get_args, get_origin
+from typing import Any, Final, NoReturn, Union, get_args, get_origin
 
 from declusor import config
 
@@ -23,6 +23,8 @@ type ParsedArguments = dict[str, Any]
 
 class Parser(ArgumentParser):
     """Custom argument parser that extends argparse.ArgumentParser."""
+
+    _max_help_position: Final[int] = 44
 
     def __init__(self, /, prog: str | None = None, usage: str | None = None, description: str | None = None, add_help: bool = True) -> None:
         formatter_class = self.get_formatter_class()
@@ -45,9 +47,9 @@ class Parser(ArgumentParser):
 
         return self._default_formatter_factory
 
-    @staticmethod
-    def _default_formatter_factory(*, prog: str) -> HelpFormatter:
-        return HelpFormatter(prog, max_help_position=30)
+    @classmethod
+    def _default_formatter_factory(cls, *, prog: str) -> HelpFormatter:
+        return HelpFormatter(prog, max_help_position=cls._max_help_position)
 
 
 def build_command_parser(definitions: ArgumentDefinitions) -> Parser:
