@@ -18,36 +18,38 @@ class UploadFileDTO:
         StorageValidationError: If the local file does not exist or is not a regular file.
     """
 
-    filepath: Path | str
+    source_path: str
     """Validated, absolute or relative ``Path`` to an existing local file."""
 
-    destination: str | None = None
+    destination_path: str | None = None
     """Optional remote destination file path."""
 
     def __post_init__(self) -> None:
-        raw_path = str(self.filepath).strip()
+        raw_path = self.source_path.strip()
+
         if not raw_path:
-            raise config.CommandValidationError("File path cannot be empty.", field="filepath", value=self.filepath)
+            raise config.CommandValidationError("File path cannot be empty.", field="filepath", value=self.source_path)
 
         if "\0" in raw_path:
-            raise config.CommandValidationError("File path cannot contain null bytes.", field="filepath", value=self.filepath)
+            raise config.CommandValidationError("File path cannot contain null bytes.", field="filepath", value=self.source_path)
 
-        validated_path = util.ensure_file_exists(Path(self.filepath))
+        validated_path = util.ensure_file_exists(Path(self.source_path))
         object.__setattr__(self, "filepath", validated_path)
 
-        if self.destination is not None:
-            clean_dest = self.destination.strip()
+        if self.destination_path is not None:
+            clean_dest = self.destination_path.strip()
+
             if not clean_dest:
-                raise config.CommandValidationError("Destination path cannot be empty.", field="destination", value=self.destination)
+                raise config.CommandValidationError("Destination path cannot be empty.", field="destination", value=self.destination_path)
 
             if "\0" in clean_dest:
-                raise config.CommandValidationError("Destination path cannot contain null bytes.", field="destination", value=self.destination)
+                raise config.CommandValidationError("Destination path cannot contain null bytes.", field="destination", value=self.destination_path)
 
             if any(ord(c) < 32 for c in clean_dest):
                 raise config.CommandValidationError(
                     "Destination path cannot contain control characters or newlines.",
                     field="destination",
-                    value=self.destination,
+                    value=self.destination_path,
                 )
 
             object.__setattr__(self, "destination", clean_dest)
@@ -73,7 +75,7 @@ class UploadFile(BaseFileCommand[UploadFileDTO]):
     def _operation_arguments(self) -> tuple[str, ...]:
         """Return destination path if configured for file upload."""
 
-        if self._dto.destination:
-            return (self._dto.destination,)
+        if self._dto.destination_path:
+            return (self._dto.destination_path,)
 
         return ()

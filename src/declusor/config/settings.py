@@ -27,7 +27,7 @@ DEFAULT_SERVER_ACK: Final[bytes] = b"\x00"
 DEFAULT_CLIENT_ACK_SEED: Final[bytes] = b"declusor"
 """Default client acknowledgment seed used for SHA-256 calculation."""
 
-DEFAULT_CONNECTION_TIMEOUT: Final[float | None] = 1.0
+DEFAULT_CONNECTION_TIMEOUT: Final[float | None] = None
 """Default connection timeout in seconds for network operations; None disables it."""
 
 DEFAULT_DECLUSOR_PLUGIN = DeclusorPlugins.SHELL_SOCKET

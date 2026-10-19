@@ -5,7 +5,8 @@ from typing import Final
 
 from declusor import config, contract, core, util
 
-from .connection import ShellSocketConnection, ShellSocketRenderer
+from .connection import ShellSocketConnection
+from .renderer import ShellSocketRenderer
 
 _DEFAULT_ROOT = Path(__file__).resolve().parents[2]
 

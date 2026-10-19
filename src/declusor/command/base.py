@@ -92,13 +92,12 @@ class BaseFileCommand[T: "ExecuteFileDTO | UploadFileDTO"](BaseStreamCommand):
             InvalidOperation: If the client runtime fails to produce a valid command.
         """
 
-        file_bytes = util.load_file(self._dto.filepath)
-        file_b64 = util.convert_to_base64(file_bytes)
+        src_file_bytes = util.load_file(self._dto.source_path)
 
         extra_args = self._operation_arguments()
         script_data = session.connection.renderer.render_operation_command(
             self._opcode,
-            file_b64,
+            src_file_bytes,
             *extra_args,
         )
 

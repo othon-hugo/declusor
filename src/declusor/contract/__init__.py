@@ -12,7 +12,6 @@ from .command import (
 from .connection import (
     ConnectionState,
     IConnection,
-    IOperationRenderer,
 )
 from .controller import (
     ArgumentDefinitions,
@@ -37,6 +36,9 @@ from .plugin import (
     PluginConfig,
     PluginExtensionType,
     PluginFilesystem,
+)
+from .renderer import (
+    IOperationRenderer,
 )
 from .router import (
     IRouter,

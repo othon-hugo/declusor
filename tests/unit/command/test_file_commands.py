@@ -30,10 +30,10 @@ class TestExecuteFileDTO:
         script_file = tmp_path / "script.sh"
         script_file.write_bytes(TEST_SCRIPT_CONTENT)
 
-        dto = ExecuteFileDTO(filepath=script_file)
+        dto = ExecuteFileDTO(source_path=script_file)
 
-        assert isinstance(dto.filepath, Path)
-        assert dto.filepath == script_file.resolve()
+        assert isinstance(dto.source_path, Path)
+        assert dto.source_path == script_file.resolve()
 
     def test_execute_file_dto_init__valid_str_path__normalizes_to_resolved_path(self, tmp_path: Path) -> None:
         """ExecuteFileDTO accepts a valid existing string file path and normalizes to a resolved Path."""
@@ -41,10 +41,10 @@ class TestExecuteFileDTO:
         script_file = tmp_path / "script.sh"
         script_file.write_bytes(TEST_SCRIPT_CONTENT)
 
-        dto = ExecuteFileDTO(filepath=str(script_file))
+        dto = ExecuteFileDTO(source_path=str(script_file))
 
-        assert isinstance(dto.filepath, Path)
-        assert dto.filepath == script_file.resolve()
+        assert isinstance(dto.source_path, Path)
+        assert dto.source_path == script_file.resolve()
 
     def test_execute_file_dto_init__relative_path__normalizes_to_resolved_path(
         self,
@@ -57,10 +57,10 @@ class TestExecuteFileDTO:
         script_file.write_bytes(TEST_SCRIPT_CONTENT)
         monkeypatch.chdir(tmp_path)
 
-        dto = ExecuteFileDTO(filepath=Path("local_script.sh"))
+        dto = ExecuteFileDTO(source_path=Path("local_script.sh"))
 
-        assert dto.filepath == script_file.resolve()
-        assert dto.filepath.is_absolute()
+        assert dto.source_path == script_file.resolve()
+        assert dto.source_path.is_absolute()
 
     def test_execute_file_dto_init__missing_file__raises_storage_validation_error(self, tmp_path: Path) -> None:
         """ExecuteFileDTO rejects a non-existent file path with StorageValidationError."""
@@ -68,7 +68,7 @@ class TestExecuteFileDTO:
         missing_file = tmp_path / "nonexistent.sh"
 
         with pytest.raises(config.StorageValidationError) as exc_info:
-            ExecuteFileDTO(filepath=missing_file)
+            ExecuteFileDTO(source_path=missing_file)
 
         assert isinstance(exc_info.value, config.StorageError)
         assert "does not exist" in str(exc_info.value)
@@ -80,7 +80,7 @@ class TestExecuteFileDTO:
         directory_path.mkdir()
 
         with pytest.raises(config.StorageValidationError) as exc_info:
-            ExecuteFileDTO(filepath=directory_path)
+            ExecuteFileDTO(source_path=directory_path)
 
         assert isinstance(exc_info.value, config.StorageError)
         assert "is not a file" in str(exc_info.value)
@@ -104,7 +104,7 @@ class TestExecuteFileDTO:
         """ExecuteFileDTO rejects empty or whitespace-only paths with CommandValidationError."""
 
         with pytest.raises(config.CommandValidationError) as exc_info:
-            ExecuteFileDTO(filepath=invalid_path)
+            ExecuteFileDTO(source_path=invalid_path)
 
         assert exc_info.value.field == "filepath"
         assert exc_info.value.value == invalid_path
@@ -126,7 +126,7 @@ class TestExecuteFileDTO:
         """ExecuteFileDTO rejects file paths containing null bytes with CommandValidationError."""
 
         with pytest.raises(config.CommandValidationError) as exc_info:
-            ExecuteFileDTO(filepath=invalid_path)
+            ExecuteFileDTO(source_path=invalid_path)
 
         assert exc_info.value.field == "filepath"
         assert exc_info.value.value == invalid_path
@@ -143,10 +143,10 @@ class TestExecuteFileDTO:
         script_file = tmp_path / "script.sh"
         script_file.write_bytes(TEST_SCRIPT_CONTENT)
 
-        dto = ExecuteFileDTO(filepath=script_file)
+        dto = ExecuteFileDTO(source_path=script_file)
 
         with pytest.raises(FrozenInstanceError):
-            dto.filepath = tmp_path / "other.sh"  # type: ignore[misc]
+            dto.source_path = tmp_path / "other.sh"  # type: ignore[misc]
 
     def test_execute_file_dto_equality__identical_paths__evaluates_equal(self, tmp_path: Path) -> None:
         """ExecuteFileDTO instances with identical resolved paths compare equal."""
@@ -154,8 +154,8 @@ class TestExecuteFileDTO:
         script_file = tmp_path / "script.sh"
         script_file.write_bytes(TEST_SCRIPT_CONTENT)
 
-        dto_first = ExecuteFileDTO(filepath=script_file)
-        dto_second = ExecuteFileDTO(filepath=str(script_file))
+        dto_first = ExecuteFileDTO(source_path=script_file)
+        dto_second = ExecuteFileDTO(source_path=str(script_file))
 
         assert dto_first == dto_second
         assert hash(dto_first) == hash(dto_second)
@@ -168,8 +168,8 @@ class TestExecuteFileDTO:
         file_second = tmp_path / "script_2.sh"
         file_second.write_bytes(TEST_SCRIPT_CONTENT)
 
-        dto_first = ExecuteFileDTO(filepath=file_first)
-        dto_second = ExecuteFileDTO(filepath=file_second)
+        dto_first = ExecuteFileDTO(source_path=file_first)
+        dto_second = ExecuteFileDTO(source_path=file_second)
 
         assert dto_first != dto_second
 
@@ -188,7 +188,7 @@ class TestExecuteFile:
         script_file = tmp_path / "script.sh"
         script_file.write_bytes(TEST_SCRIPT_CONTENT)
 
-        dto = ExecuteFileDTO(filepath=script_file)
+        dto = ExecuteFileDTO(source_path=script_file)
         command = ExecuteFile(dto)
 
         assert command._opcode == config.OperationCode.EXEC_FILE
@@ -206,7 +206,7 @@ class TestExecuteFile:
         script_file.write_bytes(TEST_SCRIPT_CONTENT)
         dummy_renderer.set_rendered_command(config.OperationCode.EXEC_FILE, RENDERED_EXEC_PAYLOAD)
 
-        dto = ExecuteFileDTO(filepath=script_file)
+        dto = ExecuteFileDTO(source_path=script_file)
         command = ExecuteFile(dto)
 
         command.send_request(test_session)
@@ -227,7 +227,7 @@ class TestExecuteFile:
         script_file.write_bytes(TEST_SCRIPT_CONTENT)
         dummy_renderer.set_rendered_command(config.OperationCode.EXEC_FILE, None)
 
-        dto = ExecuteFileDTO(filepath=script_file)
+        dto = ExecuteFileDTO(source_path=script_file)
         command = ExecuteFile(dto)
 
         with pytest.raises(config.InvalidOperation, match="Failed to generate script data for the file operation."):
@@ -245,7 +245,7 @@ class TestExecuteFile:
         script_file.write_bytes(TEST_SCRIPT_CONTENT)
         dummy_renderer.set_rendered_command(config.OperationCode.EXEC_FILE, "")
 
-        dto = ExecuteFileDTO(filepath=script_file)
+        dto = ExecuteFileDTO(source_path=script_file)
         command = ExecuteFile(dto)
 
         with pytest.raises(config.InvalidOperation, match="Failed to generate script data for the file operation."):
@@ -265,7 +265,7 @@ class TestExecuteFile:
         stream_chunks = [b"script output line 1\n", b"script output line 2\n"]
         dummy_connection.incoming_chunks = stream_chunks
 
-        dto = ExecuteFileDTO(filepath=script_file)
+        dto = ExecuteFileDTO(source_path=script_file)
         command = ExecuteFile(dto)
 
         command.read_response(test_session)
@@ -288,7 +288,7 @@ class TestExecuteFile:
         stream_chunks = [b"execution chunk 1\n", b"execution chunk 2\n"]
         dummy_connection.incoming_chunks = stream_chunks
 
-        dto = ExecuteFileDTO(filepath=script_file)
+        dto = ExecuteFileDTO(source_path=script_file)
         command = ExecuteFile(dto)
 
         test_session.execute(command)
@@ -311,11 +311,11 @@ class TestUploadFileDTO:
         payload_file = tmp_path / "payload.bin"
         payload_file.write_bytes(TEST_BINARY_CONTENT)
 
-        dto = UploadFileDTO(filepath=payload_file)
+        dto = UploadFileDTO(source_path=payload_file)
 
-        assert isinstance(dto.filepath, Path)
-        assert dto.filepath == payload_file.resolve()
-        assert dto.destination is None
+        assert isinstance(dto.source_path, Path)
+        assert dto.source_path == payload_file.resolve()
+        assert dto.destination_path is None
 
     def test_upload_file_dto_init__valid_filepath_with_clean_destination__preserves_destination(
         self,
@@ -326,10 +326,10 @@ class TestUploadFileDTO:
         payload_file = tmp_path / "payload.bin"
         payload_file.write_bytes(TEST_BINARY_CONTENT)
 
-        dto = UploadFileDTO(filepath=payload_file, destination=VALID_DESTINATION_PATH)
+        dto = UploadFileDTO(source_path=payload_file, destination_path=VALID_DESTINATION_PATH)
 
-        assert dto.filepath == payload_file.resolve()
-        assert dto.destination == VALID_DESTINATION_PATH
+        assert dto.source_path == payload_file.resolve()
+        assert dto.destination_path == VALID_DESTINATION_PATH
 
     def test_upload_file_dto_init__valid_filepath_with_padded_destination__normalizes_stripped_destination(
         self,
@@ -340,9 +340,9 @@ class TestUploadFileDTO:
         payload_file = tmp_path / "payload.bin"
         payload_file.write_bytes(TEST_BINARY_CONTENT)
 
-        dto = UploadFileDTO(filepath=payload_file, destination=PADDED_DESTINATION_PATH)
+        dto = UploadFileDTO(source_path=payload_file, destination_path=PADDED_DESTINATION_PATH)
 
-        assert dto.destination == VALID_DESTINATION_PATH
+        assert dto.destination_path == VALID_DESTINATION_PATH
 
     def test_upload_file_dto_init__str_filepath__normalizes_to_resolved_path(self, tmp_path: Path) -> None:
         """UploadFileDTO accepts string file path and normalizes to a resolved Path."""
@@ -350,10 +350,10 @@ class TestUploadFileDTO:
         payload_file = tmp_path / "payload.bin"
         payload_file.write_bytes(TEST_BINARY_CONTENT)
 
-        dto = UploadFileDTO(filepath=str(payload_file))
+        dto = UploadFileDTO(source_path=str(payload_file))
 
-        assert isinstance(dto.filepath, Path)
-        assert dto.filepath == payload_file.resolve()
+        assert isinstance(dto.source_path, Path)
+        assert dto.source_path == payload_file.resolve()
 
     def test_upload_file_dto_init__relative_filepath__normalizes_to_resolved_path(
         self,
@@ -366,10 +366,10 @@ class TestUploadFileDTO:
         payload_file.write_bytes(TEST_BINARY_CONTENT)
         monkeypatch.chdir(tmp_path)
 
-        dto = UploadFileDTO(filepath=Path("local_payload.bin"))
+        dto = UploadFileDTO(source_path=Path("local_payload.bin"))
 
-        assert dto.filepath == payload_file.resolve()
-        assert dto.filepath.is_absolute()
+        assert dto.source_path == payload_file.resolve()
+        assert dto.source_path.is_absolute()
 
     def test_upload_file_dto_init__missing_file__raises_storage_validation_error(self, tmp_path: Path) -> None:
         """UploadFileDTO rejects a non-existent file path with StorageValidationError."""
@@ -377,7 +377,7 @@ class TestUploadFileDTO:
         missing_file = tmp_path / "missing_payload.bin"
 
         with pytest.raises(config.StorageValidationError) as exc_info:
-            UploadFileDTO(filepath=missing_file)
+            UploadFileDTO(source_path=missing_file)
 
         assert isinstance(exc_info.value, config.StorageError)
         assert "does not exist" in str(exc_info.value)
@@ -389,7 +389,7 @@ class TestUploadFileDTO:
         directory_path.mkdir()
 
         with pytest.raises(config.StorageValidationError) as exc_info:
-            UploadFileDTO(filepath=directory_path)
+            UploadFileDTO(source_path=directory_path)
 
         assert isinstance(exc_info.value, config.StorageError)
         assert "is not a file" in str(exc_info.value)
@@ -413,7 +413,7 @@ class TestUploadFileDTO:
         """UploadFileDTO rejects empty or whitespace-only file paths with CommandValidationError."""
 
         with pytest.raises(config.CommandValidationError) as exc_info:
-            UploadFileDTO(filepath=invalid_path)
+            UploadFileDTO(source_path=invalid_path)
 
         assert exc_info.value.field == "filepath"
         assert exc_info.value.value == invalid_path
@@ -435,7 +435,7 @@ class TestUploadFileDTO:
         """UploadFileDTO rejects file paths containing null bytes with CommandValidationError."""
 
         with pytest.raises(config.CommandValidationError) as exc_info:
-            UploadFileDTO(filepath=invalid_path)
+            UploadFileDTO(source_path=invalid_path)
 
         assert exc_info.value.field == "filepath"
         assert exc_info.value.value == invalid_path
@@ -465,7 +465,7 @@ class TestUploadFileDTO:
         payload_file.write_bytes(TEST_BINARY_CONTENT)
 
         with pytest.raises(config.CommandValidationError) as exc_info:
-            UploadFileDTO(filepath=payload_file, destination=invalid_dest)
+            UploadFileDTO(source_path=payload_file, destination_path=invalid_dest)
 
         assert exc_info.value.field == "destination"
         assert exc_info.value.value == invalid_dest
@@ -492,7 +492,7 @@ class TestUploadFileDTO:
         payload_file.write_bytes(TEST_BINARY_CONTENT)
 
         with pytest.raises(config.CommandValidationError) as exc_info:
-            UploadFileDTO(filepath=payload_file, destination=invalid_dest)
+            UploadFileDTO(source_path=payload_file, destination_path=invalid_dest)
 
         assert exc_info.value.field == "destination"
         assert exc_info.value.value == invalid_dest
@@ -521,7 +521,7 @@ class TestUploadFileDTO:
         payload_file.write_bytes(TEST_BINARY_CONTENT)
 
         with pytest.raises(config.CommandValidationError) as exc_info:
-            UploadFileDTO(filepath=payload_file, destination=invalid_dest)
+            UploadFileDTO(source_path=payload_file, destination_path=invalid_dest)
 
         assert exc_info.value.field == "destination"
         assert exc_info.value.value == invalid_dest
@@ -538,13 +538,13 @@ class TestUploadFileDTO:
         payload_file = tmp_path / "payload.bin"
         payload_file.write_bytes(TEST_BINARY_CONTENT)
 
-        dto = UploadFileDTO(filepath=payload_file, destination=VALID_DESTINATION_PATH)
+        dto = UploadFileDTO(source_path=payload_file, destination_path=VALID_DESTINATION_PATH)
 
         with pytest.raises(FrozenInstanceError):
-            dto.filepath = tmp_path / "other.bin"  # type: ignore[misc]
+            dto.source_path = tmp_path / "other.bin"  # type: ignore[misc]
 
         with pytest.raises(FrozenInstanceError):
-            dto.destination = "/other/path.bin"  # type: ignore[misc]
+            dto.destination_path = "/other/path.bin"  # type: ignore[misc]
 
     def test_upload_file_dto_equality__identical_fields__evaluates_equal(self, tmp_path: Path) -> None:
         """UploadFileDTO instances with identical fields evaluate equal."""
@@ -552,8 +552,8 @@ class TestUploadFileDTO:
         payload_file = tmp_path / "payload.bin"
         payload_file.write_bytes(TEST_BINARY_CONTENT)
 
-        dto_first = UploadFileDTO(filepath=payload_file, destination=VALID_DESTINATION_PATH)
-        dto_second = UploadFileDTO(filepath=str(payload_file), destination=PADDED_DESTINATION_PATH)
+        dto_first = UploadFileDTO(source_path=payload_file, destination_path=VALID_DESTINATION_PATH)
+        dto_second = UploadFileDTO(source_path=str(payload_file), destination_path=PADDED_DESTINATION_PATH)
 
         assert dto_first == dto_second
         assert hash(dto_first) == hash(dto_second)
@@ -564,8 +564,8 @@ class TestUploadFileDTO:
         payload_file = tmp_path / "payload.bin"
         payload_file.write_bytes(TEST_BINARY_CONTENT)
 
-        dto_first = UploadFileDTO(filepath=payload_file, destination=None)
-        dto_second = UploadFileDTO(filepath=payload_file, destination=VALID_DESTINATION_PATH)
+        dto_first = UploadFileDTO(source_path=payload_file, destination_path=None)
+        dto_second = UploadFileDTO(source_path=payload_file, destination_path=VALID_DESTINATION_PATH)
 
         assert dto_first != dto_second
 
@@ -584,7 +584,7 @@ class TestUploadFile:
         payload_file = tmp_path / "payload.bin"
         payload_file.write_bytes(TEST_BINARY_CONTENT)
 
-        dto = UploadFileDTO(filepath=payload_file)
+        dto = UploadFileDTO(source_path=payload_file)
         command = UploadFile(dto)
 
         assert command._opcode == config.OperationCode.STORE_FILE
@@ -598,7 +598,7 @@ class TestUploadFile:
         payload_file = tmp_path / "payload.bin"
         payload_file.write_bytes(TEST_BINARY_CONTENT)
 
-        dto = UploadFileDTO(filepath=payload_file, destination=None)
+        dto = UploadFileDTO(source_path=payload_file, destination_path=None)
         command = UploadFile(dto)
 
         assert command._operation_arguments() == ()
@@ -612,7 +612,7 @@ class TestUploadFile:
         payload_file = tmp_path / "payload.bin"
         payload_file.write_bytes(TEST_BINARY_CONTENT)
 
-        dto = UploadFileDTO(filepath=payload_file, destination=VALID_DESTINATION_PATH)
+        dto = UploadFileDTO(source_path=payload_file, destination_path=VALID_DESTINATION_PATH)
         command = UploadFile(dto)
 
         assert command._operation_arguments() == (VALID_DESTINATION_PATH,)
@@ -630,7 +630,7 @@ class TestUploadFile:
         payload_file.write_bytes(TEST_BINARY_CONTENT)
         dummy_renderer.set_rendered_command(config.OperationCode.STORE_FILE, RENDERED_UPLOAD_PAYLOAD)
 
-        dto = UploadFileDTO(filepath=payload_file, destination=None)
+        dto = UploadFileDTO(source_path=payload_file, destination_path=None)
         command = UploadFile(dto)
 
         command.send_request(test_session)
@@ -652,7 +652,7 @@ class TestUploadFile:
         payload_file.write_bytes(TEST_BINARY_CONTENT)
         dummy_renderer.set_rendered_command(config.OperationCode.STORE_FILE, RENDERED_UPLOAD_PAYLOAD)
 
-        dto = UploadFileDTO(filepath=payload_file, destination=VALID_DESTINATION_PATH)
+        dto = UploadFileDTO(source_path=payload_file, destination_path=VALID_DESTINATION_PATH)
         command = UploadFile(dto)
 
         command.send_request(test_session)
@@ -675,7 +675,7 @@ class TestUploadFile:
         payload_file.write_bytes(TEST_BINARY_CONTENT)
         dummy_renderer.set_rendered_command(config.OperationCode.STORE_FILE, None)
 
-        dto = UploadFileDTO(filepath=payload_file)
+        dto = UploadFileDTO(source_path=payload_file)
         command = UploadFile(dto)
 
         with pytest.raises(config.InvalidOperation, match="Failed to generate script data for the file operation."):
@@ -693,7 +693,7 @@ class TestUploadFile:
         payload_file.write_bytes(TEST_BINARY_CONTENT)
         dummy_renderer.set_rendered_command(config.OperationCode.STORE_FILE, "")
 
-        dto = UploadFileDTO(filepath=payload_file)
+        dto = UploadFileDTO(source_path=payload_file)
         command = UploadFile(dto)
 
         with pytest.raises(config.InvalidOperation, match="Failed to generate script data for the file operation."):
@@ -713,7 +713,7 @@ class TestUploadFile:
         stream_chunks = [b"upload complete\n", b"bytes written: 7\n"]
         dummy_connection.incoming_chunks = stream_chunks
 
-        dto = UploadFileDTO(filepath=payload_file)
+        dto = UploadFileDTO(source_path=payload_file)
         command = UploadFile(dto)
 
         command.read_response(test_session)
@@ -736,7 +736,7 @@ class TestUploadFile:
         stream_chunks = [b"upload ack chunk 1\n", b"upload ack chunk 2\n"]
         dummy_connection.incoming_chunks = stream_chunks
 
-        dto = UploadFileDTO(filepath=payload_file, destination=None)
+        dto = UploadFileDTO(source_path=payload_file, destination_path=None)
         command = UploadFile(dto)
 
         test_session.execute(command)
@@ -762,7 +762,7 @@ class TestUploadFile:
         stream_chunks = [b"upload dest ack 1\n", b"upload dest ack 2\n"]
         dummy_connection.incoming_chunks = stream_chunks
 
-        dto = UploadFileDTO(filepath=payload_file, destination=VALID_DESTINATION_PATH)
+        dto = UploadFileDTO(source_path=payload_file, destination_path=VALID_DESTINATION_PATH)
         command = UploadFile(dto)
 
         test_session.execute(command)

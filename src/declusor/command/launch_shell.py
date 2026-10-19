@@ -31,8 +31,8 @@ class LaunchShell(contract.ICommand):
         """
 
         super().__init__()
-        self._dto = dto
 
+        self._dto = dto
         self._stop_event = util.TaskEvent()
         self._task_pool = util.TaskPool(self._stop_event)
 

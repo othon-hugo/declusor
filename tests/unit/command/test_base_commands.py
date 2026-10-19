@@ -120,7 +120,7 @@ class TestBaseFileCommand:
 
         script_file = tmp_path / "script.sh"
         script_file.write_text("echo 'testing'")
-        dto = ExecuteFileDTO(filepath=script_file)
+        dto = ExecuteFileDTO(source_path=script_file)
         command = ConcreteFileCommand(dto)
 
         arguments = command._operation_arguments()
@@ -144,7 +144,7 @@ class TestBaseFileCommand:
         rendered_command = "rendered_exec_file_payload"
         dummy_renderer.set_rendered_command(config.OperationCode.EXEC_FILE, rendered_command)
 
-        dto = ExecuteFileDTO(filepath=script_file)
+        dto = ExecuteFileDTO(source_path=script_file)
         command = ConcreteFileCommand(dto, opcode=config.OperationCode.EXEC_FILE)
 
         command.send_request(test_session)
@@ -171,7 +171,7 @@ class TestBaseFileCommand:
         rendered_command = "rendered_store_file_payload"
         dummy_renderer.set_rendered_command(config.OperationCode.STORE_FILE, rendered_command)
 
-        dto = ExecuteFileDTO(filepath=payload_file)
+        dto = ExecuteFileDTO(source_path=payload_file)
         command = CustomArgsFileCommand(
             dto,
             (destination_path, permission_flag),
@@ -196,7 +196,7 @@ class TestBaseFileCommand:
 
         dummy_renderer.set_rendered_command(config.OperationCode.EXEC_FILE, None)
 
-        dto = ExecuteFileDTO(filepath=script_file)
+        dto = ExecuteFileDTO(source_path=script_file)
         command = ConcreteFileCommand(dto, opcode=config.OperationCode.EXEC_FILE)
 
         with pytest.raises(config.InvalidOperation, match="Failed to generate script data for the file operation") as exc_info:
@@ -217,7 +217,7 @@ class TestBaseFileCommand:
 
         dummy_renderer.set_rendered_command(config.OperationCode.EXEC_FILE, "")
 
-        dto = ExecuteFileDTO(filepath=script_file)
+        dto = ExecuteFileDTO(source_path=script_file)
         command = ConcreteFileCommand(dto, opcode=config.OperationCode.EXEC_FILE)
 
         with pytest.raises(config.InvalidOperation, match="Failed to generate script data for the file operation") as exc_info:
@@ -244,7 +244,7 @@ class TestBaseFileCommand:
         dummy_renderer.set_rendered_command(config.OperationCode.EXEC_FILE, rendered_command)
         dummy_connection.incoming_chunks = incoming_chunks
 
-        dto = ExecuteFileDTO(filepath=script_file)
+        dto = ExecuteFileDTO(source_path=script_file)
         command = ConcreteFileCommand(dto, opcode=config.OperationCode.EXEC_FILE)
 
         test_session.execute(command)

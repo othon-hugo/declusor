@@ -4,7 +4,7 @@ from threading import Event, Thread
 from types import TracebackType
 from typing import Any, Literal, Self
 
-type TaskHandler = Callable[["TaskEvent"], Any]
+type TaskHandler = Callable[["TaskEvent"], None]
 """Callable invoked by each worker thread with the shared stop-event."""
 
 

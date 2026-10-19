@@ -5,7 +5,8 @@ from typing import Final
 
 from declusor import config, contract, core, lang, util
 
-from .connection import PySocketConnection, PySocketRenderer
+from .connection import PySocketConnection
+from .renderer import PySocketRenderer
 
 _DEFAULT_ROOT = Path(__file__).resolve().parents[2]
 

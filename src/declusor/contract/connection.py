@@ -1,9 +1,12 @@
 from abc import ABC, abstractmethod
 from collections.abc import Generator
 from enum import StrEnum
-from typing import Self
+from typing import TYPE_CHECKING, Self
 
 from declusor import config
+
+if TYPE_CHECKING:
+    from .renderer import IOperationRenderer
 
 
 class ConnectionState(StrEnum):
@@ -87,32 +90,6 @@ class ConnectionState(StrEnum):
 
         if not self.can_perform_io:
             raise config.ConnectionError("Cannot perform I/O on connection that is not connected.")
-
-
-class IOperationRenderer(ABC):
-    """Command syntax renderer for remote clients.
-
-    Translates abstract OperationCode tokens into agent-specific command
-    strings without performing network I/O.
-    """
-
-    @abstractmethod
-    def render_operation_command(self, opcode: config.OperationCode, /, *args: str) -> str | None:
-        """Build the command string for a given operation code.
-
-        Maps an ``OperationCode`` to its client-side function name and appends
-        each argument as a shell-quoted token. Returns ``None`` if the opcode
-        is not supported by this renderer.
-
-        Args:
-            opcode: The operation to invoke on the client.
-            *args: Positional string arguments forwarded to the client function.
-
-        Returns:
-            A ready-to-send command string, or ``None`` if the opcode is unsupported.
-        """
-
-        raise NotImplementedError
 
 
 class IConnection(ABC):
@@ -202,7 +179,7 @@ class IConnection(ABC):
 
     @property
     @abstractmethod
-    def renderer(self) -> IOperationRenderer:
+    def renderer(self) -> "IOperationRenderer":
         """The command syntax renderer for this connection."""
 
         raise NotImplementedError

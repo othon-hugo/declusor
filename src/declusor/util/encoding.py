@@ -37,6 +37,14 @@ def format_template(template_str: str, /, **kwargs: str | int) -> str:
     return Template(template_str).safe_substitute(**kwargs)
 
 
+def convert_to_arg(data: bytes | str, /) -> str:
+    raise NotImplementedError
+
+
+def revert_from_arg(arg: str, /) -> bytes | str:
+    raise NotImplementedError
+
+
 def convert_to_bytes(data: bytes | str, /) -> bytes:
     """Converts a string to bytes using UTF-8 encoding, or returns the input if it's already bytes.
 
@@ -162,10 +170,13 @@ def xor_bytes(data: bytes, key: bytes, offset: int = 0) -> bytes:
 
     if not key:
         raise ValueError("XOR key cannot be empty.")
+
     if offset < 0:
         raise ValueError("Offset cannot be negative.")
+
     if not data:
         return b""
 
     key_len = len(key)
+
     return bytes(b ^ key[(offset + i) % key_len] for i, b in enumerate(data))

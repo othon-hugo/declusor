@@ -66,7 +66,7 @@ class TestApplicationInitialization:
         }
         app._connect_routes(plugin_routes)
 
-        assert set(router.routes) == {"help", "load", "command", "eval", "shell", "upload", "execute", "custom", "exit"}
+        assert set(router.routes) == {"help", "exit", "eval", "custom"}
         assert router.locate("eval") is custom_controller
         assert router.help("eval") == contract.RouteHelp("Custom eval.")
         assert router.locate("custom") is custom_controller

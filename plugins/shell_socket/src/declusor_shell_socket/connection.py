@@ -1,100 +1,7 @@
 from collections.abc import Callable, Generator
-from dataclasses import dataclass, field
 from typing import Final
 
 from declusor import config, contract, util
-
-
-@dataclass(frozen=True)
-class ShellSocketRenderer(contract.IOperationRenderer):
-    """Translates OperationCode values to Bash shell command strings.
-
-    Composes primitive helper calls (storage, execution, encoding) into
-    executable Bash shell statements evaluated by the client launcher. This
-    renderer is pure data — it never performs I/O.
-    """
-
-    _supported_operations: Final[frozenset[config.OperationCode]] = field(
-        default_factory=lambda: frozenset(
-            {
-                config.OperationCode.EXEC_COMMAND,
-                config.OperationCode.EXEC_CODE,
-                config.OperationCode.EXEC_FILE,
-                config.OperationCode.STORE_FILE,
-                config.OperationCode.LOAD_MODULE,
-            }
-        )
-    )
-    """Set of operation codes supported by this renderer."""
-
-    def __post_init__(self) -> None:
-        object.__setattr__(self, "_supported_operations", frozenset(self._supported_operations))
-
-    @property
-    def supported_operations(self) -> frozenset[config.OperationCode]:
-        """Set of supported operation codes."""
-
-        return self._supported_operations
-
-    def render_operation_command(self, opcode: "config.OperationCode", /, *args: str) -> str | None:
-        """Build the shell execution statement for a given operation code."""
-
-        if opcode not in self._supported_operations:
-            return None
-
-        match opcode:
-            case config.OperationCode.EXEC_COMMAND:
-                return self._render_exec_command(*args)
-            case config.OperationCode.EXEC_CODE:
-                return self._render_exec_code(*args)
-            case config.OperationCode.STORE_FILE:
-                return self._render_store_file(*args)
-            case config.OperationCode.EXEC_FILE | config.OperationCode.LOAD_MODULE:
-                return self._render_payload_execution(*args)
-            case _:
-                return None
-
-    def _render_exec_command(self, *args: str) -> str:
-        """Render shell command execution statement."""
-
-        return args[0].rstrip("\r\n") if args else ""
-
-    def _render_exec_code(self, *args: str) -> str:
-        """Render shell code execution statement."""
-
-        return args[0].rstrip("\r\n") if args else ""
-
-    def _render_store_file(self, *args: str) -> str | None:
-        """Render file storage statement decoding base64 payload."""
-
-        if not args:
-            return None
-
-        data_b64 = args[0]
-
-        if len(args) > 1 and args[1]:
-            return f"decode_b64 {util.quote(data_b64)} | store_file {util.quote(args[1])}"
-
-        return f"decode_b64 {util.quote(data_b64)} | store_file"
-
-    def _render_payload_execution(self, *args: str) -> str | None:
-        """Render executable payload statement detecting script vs binary."""
-
-        if not args:
-            return None
-
-        data_b64 = args[0]
-        extra_args = (" " + " ".join(util.quote(a) for a in args[1:])) if len(args) > 1 else ""
-
-        try:
-            raw_bytes = util.convert_base64_to_bytes(data_b64)
-            raw_bytes.decode("utf-8")
-
-            return f'execute_source "$(decode_b64 {util.quote(data_b64)})"{extra_args}'
-        except UnicodeDecodeError:
-            return f'execute_binary --cleanup "$(decode_b64 {util.quote(data_b64)} | store_file)"{extra_args}'
-        except Exception:
-            return f'execute_source "$(decode_b64 {util.quote(data_b64)})"{extra_args}'
 
 
 class ShellSocketConnection(contract.IConnection):
@@ -110,25 +17,26 @@ class ShellSocketConnection(contract.IConnection):
         files: contract.IPluginProcessor,
         /,
         *,
+        timeout: float | None = config.DEFAULT_CONNECTION_TIMEOUT,
         buffer_size: int = DEFAULT_BUFFER_SIZE,
         fixed_nonce: str | None = None,
         nonce_factory: Callable[[], str] = util.generate_nonce,
-        timeout: float | None = config.DEFAULT_CONNECTION_TIMEOUT,
     ) -> None:
         if buffer_size <= 0:
             raise config.ConnectionError("buffer_size must be > 0")
 
         self._transport = transport
+        self._transport.timeout = timeout
+
         self._renderer = renderer
         self._files = files
         self._buffer_size = buffer_size
         self._fixed_nonce = fixed_nonce
         self._nonce_factory = nonce_factory
-        self._state = contract.ConnectionState.CREATED
-        self._current_nonce: str | None = fixed_nonce
+        self._current_nonce = fixed_nonce
 
-        if timeout is not None:
-            self._transport.timeout = timeout
+        self._state = contract.ConnectionState.CREATED
+        self._read_buffer = bytearray()
 
     @property
     def state(self) -> contract.ConnectionState:
@@ -160,6 +68,9 @@ class ShellSocketConnection(contract.IConnection):
 
     @property
     def delim(self) -> bytes:
+        if not self._current_nonce:
+            raise config.ConnectionError("No active command nonce.")
+
         return f"__DECLUSOR_EOF_{self._current_nonce}__".encode("ascii")
 
     def handshake(self) -> None:
@@ -168,6 +79,7 @@ class ShellSocketConnection(contract.IConnection):
         self.ensure_can_handshake()
 
         self._state = contract.ConnectionState.INITIALIZING
+
         helpers_payload = b"\n".join(self._files.load_all_helpers().values())
         self.write(helpers_payload)
 
@@ -200,38 +112,51 @@ class ShellSocketConnection(contract.IConnection):
         if not self._current_nonce:
             raise config.ConnectionError("No active command nonce for read operation.")
 
-        buffer = bytearray()
+        delim = self.delim
+        delim_len = len(delim)
+
+        if not delim:
+            raise ValueError("Delimiter cannot be empty.")
+
+        buffer = self._read_buffer
 
         while True:
+            pos = buffer.find(delim)
+
+            if pos != -1:
+                if pos > 0:
+                    yield bytes(buffer[:pos])
+
+                del buffer[: pos + delim_len]
+
+                if buffer.startswith(b"\r\n"):
+                    del buffer[:2]
+                elif buffer.startswith(b"\n"):
+                    del buffer[:1]
+
+                self._current_nonce = None
+                return
+
+            keep_len = delim_len - 1
+
+            if len(buffer) > keep_len:
+                safe_cutoff = len(buffer) - keep_len
+
+                yield bytes(buffer[:safe_cutoff])
+                del buffer[:safe_cutoff]
+
             try:
                 chunk = self._transport.read(self._buffer_size)
             except (config.ConnectionClosed, config.ConnectionTimeoutError, config.ConnectionError) as error:
+                if isinstance(error, config.ConnectionClosed):
+                    raise
+
                 raise config.ConnectionClosed(f"Connection interrupted during read: {error}") from error
 
             if not chunk:
                 raise config.ConnectionClosed("Connection closed by client during response stream.")
 
             buffer.extend(chunk)
-
-            while True:
-                pos = buffer.find(self.delim)
-
-                if pos == -1:
-                    break
-
-                if pos > 0:
-                    yield bytes(buffer[:pos])
-
-                buffer = buffer[pos + len(self.delim) :]
-
-                if buffer.startswith(b"\n"):
-                    buffer = buffer[1:]
-
-                return
-
-            if len(buffer) > len(self.delim):
-                yield bytes(buffer[: -len(self.delim)])
-                buffer = buffer[-len(self.delim) :]
 
     def __enter__(self) -> "ShellSocketConnection":
         return self
@@ -247,6 +172,3 @@ class ShellSocketConnection(contract.IConnection):
 
         self._state = contract.ConnectionState.CLOSED
         self._transport.close()
-
-
-DEFAULT_SHELL_SOCKET = ShellSocketRenderer()

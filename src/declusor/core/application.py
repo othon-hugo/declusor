@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from declusor import config, contract, transport
 
 from .launcher import LauncherRenderer
-from .routes import EXIT_ROUTE, OFFICIAL_ROUTES, create_help_route
+from .routes import EXIT_ROUTE, create_help_route
 
 if TYPE_CHECKING:
     from .plugin import PluginManager
@@ -164,7 +164,8 @@ class Application:
     def _connect_routes(self, plugin_routes: contract.RouteTable, /) -> None:
         """Compose official routes with plugin routes and register the result."""
 
-        registrations = {"help": create_help_route(self._router), **OFFICIAL_ROUTES, "exit": EXIT_ROUTE}
+        # TODO: Ajustar testes e documentações. Apenas as rotas protegidas são definidas por padrão. O Plugin pode definir as rotas oficiais se desejar.
+        registrations = {"help": create_help_route(self._router), "exit": EXIT_ROUTE}
 
         for route, registration in plugin_routes.items():
             if route in {"help", "exit"}:

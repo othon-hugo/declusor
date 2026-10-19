@@ -19,10 +19,10 @@ class TransportPipeline:
             layers: Sequence of transport layer factory callables.
         """
 
-        self._layers: Final[tuple[TransportLayerFactory, ...]] = tuple(layers)
+        self._layers: Final[Sequence[TransportLayerFactory]] = tuple(layers)
 
     @property
-    def layers(self) -> tuple[TransportLayerFactory, ...]:
+    def layers(self) -> Sequence[TransportLayerFactory]:
         """Ordered sequence of layer factory callables."""
 
         return self._layers
