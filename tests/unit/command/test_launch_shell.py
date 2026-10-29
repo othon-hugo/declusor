@@ -428,12 +428,13 @@ class TestLaunchShell:
 
         assert stop_event.is_set()
         assert connection.timeout == initial_timeout
+        assert len(dummy_view.errors) == 0
 
     def test_launch_shell_output_handler__connection_error__sets_stop_event_and_restores_timeout(
         self,
         dummy_view: testing.DummyView,
     ) -> None:
-        """Shell output handler catches ConnectionError, signals cooperative stop event, and restores timeout."""
+        """Shell output handler catches ConnectionError, writes error to view, signals stop event, and restores timeout."""
 
         stop_event = util.TaskEvent()
         initial_timeout = 20.0
@@ -448,6 +449,91 @@ class TestLaunchShell:
 
         assert stop_event.is_set()
         assert connection.timeout == initial_timeout
+        assert len(dummy_view.errors) == 1
+        assert dummy_view.errors[0] is connection.read_error
+        assert "network reset during stream" in str(dummy_view.errors[0])
+
+    def test_launch_shell_output_handler__connection_timeout_error__surfaces_error_to_view_and_sets_stop_event(
+        self,
+        dummy_view: testing.DummyView,
+    ) -> None:
+        """Shell output handler catches ConnectionTimeoutError, writes error to view, signals stop event, and restores timeout."""
+
+        stop_event = util.TaskEvent()
+        initial_timeout = 10.0
+        connection = testing.DummyConnection(initial_state=contract.ConnectionState.CONNECTED)
+        connection.timeout = initial_timeout
+        timeout_error = config.ConnectionTimeoutError("socket read timed out", timeout=10.0)
+        connection.read_error = timeout_error
+
+        command = LaunchShell(LaunchShellDTO())
+        handler = command._create_shell_output_handler(connection, dummy_view)
+
+        handler(stop_event)
+
+        assert stop_event.is_set()
+        assert connection.timeout == initial_timeout
+        assert len(dummy_view.errors) == 1
+        assert dummy_view.errors[0] is timeout_error
+        assert "socket read timed out" in str(dummy_view.errors[0])
+
+    def test_launch_shell_output_handler__chunks_before_connection_error__writes_data_and_surfaces_error(
+        self,
+        dummy_view: testing.DummyView,
+    ) -> None:
+        """Shell output handler streams received chunks and surfaces subsequent ConnectionError to view."""
+
+        stop_event = util.TaskEvent()
+        initial_timeout = 30.0
+        chunk_data = [b"partial shell prompt > "]
+        error = config.ConnectionError("abrupt stream termination")
+
+        class StreamingErrorConnection(testing.DummyConnection):
+            def read(self) -> Generator[bytes, None, None]:
+                yield from chunk_data
+                raise error
+
+        connection = StreamingErrorConnection(initial_state=contract.ConnectionState.CONNECTED)
+        connection.timeout = initial_timeout
+
+        command = LaunchShell(LaunchShellDTO())
+        handler = command._create_shell_output_handler(connection, dummy_view)
+
+        handler(stop_event)
+
+        assert stop_event.is_set()
+        assert connection.timeout == initial_timeout
+        assert dummy_view.binary_data == chunk_data
+        assert len(dummy_view.errors) == 1
+        assert dummy_view.errors[0] is error
+
+    def test_launch_shell_output_handler__chunks_before_connection_closed__writes_data_and_exits_quietly(
+        self,
+        dummy_view: testing.DummyView,
+    ) -> None:
+        """Shell output handler streams received chunks and exits quietly without error on ConnectionClosed."""
+
+        stop_event = util.TaskEvent()
+        initial_timeout = 30.0
+        chunk_data = [b"exit\n"]
+
+        class StreamingClosedConnection(testing.DummyConnection):
+            def read(self) -> Generator[bytes, None, None]:
+                yield from chunk_data
+                raise config.ConnectionClosed("remote connection closed cleanly")
+
+        connection = StreamingClosedConnection(initial_state=contract.ConnectionState.CONNECTED)
+        connection.timeout = initial_timeout
+
+        command = LaunchShell(LaunchShellDTO())
+        handler = command._create_shell_output_handler(connection, dummy_view)
+
+        handler(stop_event)
+
+        assert stop_event.is_set()
+        assert connection.timeout == initial_timeout
+        assert dummy_view.binary_data == chunk_data
+        assert len(dummy_view.errors) == 0
 
     def test_launch_shell_input_handler__write_connection_closed__sets_stop_event_and_breaks(
         self,
@@ -590,6 +676,43 @@ class TestLaunchShell:
         assert banner in dummy_view.messages
         assert "[keyboard interrupt received]" in dummy_view.messages
         assert rendered_command.encode("utf-8") in dummy_connection.written
+        assert dummy_connection.timeout == initial_timeout
+        assert len(dummy_view.errors) == 0
+        assert command._stop_event.is_set()
+        for thread in command._task_pool._threads:
+            assert not thread.is_alive()
+
+    def test_launch_shell_lifecycle__connection_error_during_streaming__surfaces_error_and_shuts_down(
+        self,
+        dummy_connection: testing.DummyConnection,
+        dummy_view: testing.DummyView,
+        dummy_file_store: testing.DummyPluginFileStore,
+        dummy_renderer: testing.DummyOperationRenderer,
+    ) -> None:
+        """LaunchShell surfaces ConnectionError in output streamer to view and cleanly shuts down session."""
+
+        conn_error = config.ConnectionError("unexpected connection reset")
+        initial_timeout = 15.0
+
+        dummy_connection.timeout = initial_timeout
+        dummy_connection.read_error = conn_error
+
+        input_source = ScriptedShellInputSource(["id\n"])
+        session = contract.SessionContext(
+            connection=dummy_connection,
+            view=dummy_view,
+            input_source=input_source,
+            plugin_processor=dummy_file_store,
+        )
+
+        dto = LaunchShellDTO()
+        command = LaunchShell(dto)
+
+        command.send_request(session)
+        command.read_response(session)
+
+        assert len(dummy_view.errors) == 1
+        assert dummy_view.errors[0] is conn_error
         assert dummy_connection.timeout == initial_timeout
         assert command._stop_event.is_set()
         for thread in command._task_pool._threads:

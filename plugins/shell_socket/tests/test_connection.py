@@ -1,3 +1,5 @@
+import threading
+import time
 from collections.abc import Callable
 from pathlib import Path
 
@@ -226,6 +228,9 @@ class TestShellSocketConnectionIO:
         with pytest.raises(config.ConnectionError, match="Failed to write to connection"):
             connection.write(b"command")
 
+        assert len(connection._nonce_queue) == 0
+        assert not connection._nonce_ready.is_set()
+
     def test_read__when_connection_is_created__raises_connection_error(
         self,
         make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
@@ -249,11 +254,11 @@ class TestShellSocketConnectionIO:
         with pytest.raises(config.ConnectionClosed, match="Connection is closed"):
             list(conn.read())
 
-    def test_read__when_nonce_is_missing__raises_connection_error(
+    def test_read__when_nonce_is_missing__returns_empty_cleanly(
         self,
         tmp_path: Path,
     ) -> None:
-        """Verify read raises ConnectionError when no active command nonce exists."""
+        """Verify read returns empty generator cleanly when no active command nonce exists."""
 
         launchers = tmp_path / "launchers"
         launchers.mkdir(exist_ok=True)
@@ -274,8 +279,7 @@ class TestShellSocketConnectionIO:
         )
         conn._state = contract.ConnectionState.CONNECTED
 
-        with pytest.raises(config.ConnectionError, match="No active command nonce for read operation"):
-            list(conn.read())
+        assert list(conn.read()) == []
 
     def test_read__with_ephemeral_envelope__terminates_at_delimiter(
         self,
@@ -314,3 +318,108 @@ class TestShellSocketConnectionIO:
 
         chunks = list(conn.read())
         assert b"".join(chunks) == b"uid=0(root) gid=0(root)\n"
+
+    def test_read__when_write_occurs_while_waiting__unblocks_and_yields_output(
+        self,
+        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+    ) -> None:
+        """Verify read unblocks and consumes output when write occurs on another thread while waiting."""
+
+        conn, trans = make_shell_connection(connected=True)
+
+        def delayed_write() -> None:
+            time.sleep(0.02)
+            trans.push_incoming(b"async_output\n__DECLUSOR_EOF_delayed_nonce__\n")
+            conn.write(b"delayed_cmd", nonce="delayed_nonce")
+
+        writer_thread = threading.Thread(target=delayed_write)
+        writer_thread.start()
+
+        chunks = list(conn.read())
+        writer_thread.join()
+
+        assert chunks == [b"async_output\n"]
+
+    def test_read__when_closed_while_waiting__raises_connection_closed(
+        self,
+        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+    ) -> None:
+        """Verify read unblocks immediately and raises ConnectionClosed when connection is closed while waiting."""
+
+        conn, _ = make_shell_connection(connected=True)
+
+        def delayed_close() -> None:
+            time.sleep(0.02)
+            conn.close()
+
+        closer_thread = threading.Thread(target=delayed_close)
+        closer_thread.start()
+
+        with pytest.raises(config.ConnectionClosed, match="Connection is closed"):
+            list(conn.read())
+
+        closer_thread.join()
+
+    def test_read__when_multiple_commands_pipelined__processes_sequential_envelopes(
+        self,
+        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+    ) -> None:
+        """Verify sequential pipelined writes and reads process each transaction envelope in order."""
+
+        conn, trans = make_shell_connection(connected=True)
+
+        conn.write(b"cmd1", nonce="nonce1")
+        conn.write(b"cmd2", nonce="nonce2")
+
+        trans.push_incoming(b"output1\n__DECLUSOR_EOF_nonce1__\noutput2\n__DECLUSOR_EOF_nonce2__\n")
+
+        chunks1 = list(conn.read())
+        assert chunks1 == [b"output1\n"]
+        assert conn.current_nonce == "nonce2"
+
+        chunks2 = list(conn.read())
+        assert chunks2 == [b"output2\n"]
+        assert conn.current_nonce is None
+
+    def test_read__when_transport_times_out__raises_connection_timeout_error(
+        self,
+        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+    ) -> None:
+        """Verify read raises ConnectionTimeoutError when transport read times out."""
+
+        trans = testing.DummyTransport()
+        conn, _ = make_shell_connection(trans, connected=True)
+        conn.write(b"cmd", nonce="timeout_nonce")
+
+        trans.simulate_error_on_next_read(config.ConnectionTimeoutError("socket timeout"))
+
+        with pytest.raises(config.ConnectionTimeoutError, match="socket timeout"):
+            list(conn.read())
+
+    def test_read__when_client_closes_stream_unexpectedly__raises_connection_closed(
+        self,
+        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+    ) -> None:
+        """Verify read raises ConnectionClosed when remote peer closes during stream."""
+
+        trans = testing.DummyTransport()
+        conn, _ = make_shell_connection(trans, connected=True)
+        conn.write(b"cmd", nonce="closed_nonce")
+
+        with pytest.raises(config.ConnectionClosed, match="Connection closed by client during response stream"):
+            list(conn.read())
+
+    def test_read__when_transport_error_during_read__translates_to_connection_closed(
+        self,
+        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+    ) -> None:
+        """Verify read translates generic transport errors to ConnectionClosed."""
+
+        trans = testing.DummyTransport()
+        conn, _ = make_shell_connection(trans, connected=True)
+        conn.write(b"cmd", nonce="error_nonce")
+
+        trans.simulate_error_on_next_read(config.ConnectionError("network reset"))
+
+        with pytest.raises(config.ConnectionClosed, match="Connection interrupted during read"):
+            list(conn.read())

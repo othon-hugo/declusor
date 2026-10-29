@@ -127,7 +127,8 @@ class LaunchShell(contract.ICommand):
         """Return a TaskHandler that streams client output to the view.
 
         Temporarily clears the connection timeout for blocking reads and restores
-        it on completion.
+        it on completion. Catches ConnectionClosed quietly on graceful stream
+        termination and surfaces unexpected ConnectionError failures to the view.
 
         Args:
             connection: Active client connection.
@@ -147,7 +148,11 @@ class LaunchShell(contract.ICommand):
                     try:
                         for chunk in connection.read():
                             view.write_binary_data(chunk)
-                    except (config.ConnectionClosed, config.ConnectionError):
+                    except config.ConnectionClosed:
+                        stop_event.set()
+                        break
+                    except config.ConnectionError as error:
+                        view.write_error(error)
                         stop_event.set()
                         break
             finally:

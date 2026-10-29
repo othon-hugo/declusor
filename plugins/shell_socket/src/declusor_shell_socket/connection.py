@@ -1,4 +1,6 @@
+from collections import deque
 from collections.abc import Callable, Generator
+from threading import Event
 from typing import Final
 
 from declusor import config, contract, util
@@ -34,6 +36,9 @@ class ShellSocketConnection(contract.IConnection):
         self._fixed_nonce = fixed_nonce
         self._nonce_factory = nonce_factory
         self._current_nonce = fixed_nonce
+
+        self._nonce_queue: deque[str] = deque()
+        self._nonce_ready = Event()
 
         self._state = contract.ConnectionState.CREATED
         self._read_buffer = bytearray()
@@ -96,21 +101,34 @@ class ShellSocketConnection(contract.IConnection):
 
         self.ensure_can_perform_io()
 
-        self._current_nonce = nonce or self._fixed_nonce or self._nonce_factory()
-        payload = self._current_nonce.encode("ascii") + b"\x00" + data + b"\x00"
+        active_nonce = nonce or self._fixed_nonce or self._nonce_factory()
+        payload = active_nonce.encode("ascii") + b"\x00" + data + b"\x00"
 
         try:
             self._transport.write(payload)
         except (config.ConnectionClosed, config.ConnectionTimeoutError, config.ConnectionError) as error:
             raise config.ConnectionError(f"Failed to write to connection: {error}") from error
 
+        self._nonce_queue.append(active_nonce)
+        self._current_nonce = active_nonce
+        self._nonce_ready.set()
+
     def read(self) -> Generator[bytes, None, None]:
         """Stream response chunks from the client until the ephemeral envelope delimiter."""
 
         self.ensure_can_perform_io()
 
-        if not self._current_nonce:
-            raise config.ConnectionError("No active command nonce for read operation.")
+        if not self._nonce_queue:
+            self._nonce_ready.wait(timeout=0.1)
+            self.ensure_can_perform_io()
+            if not self._nonce_queue:
+                return
+
+        nonce = self._nonce_queue.popleft()
+        if not self._nonce_queue:
+            self._nonce_ready.clear()
+
+        self._current_nonce = nonce
 
         delim = self.delim
         delim_len = len(delim)
@@ -134,7 +152,7 @@ class ShellSocketConnection(contract.IConnection):
                 elif buffer.startswith(b"\n"):
                     del buffer[:1]
 
-                self._current_nonce = None
+                self._current_nonce = self._nonce_queue[0] if self._nonce_queue else None
                 return
 
             keep_len = delim_len - 1
@@ -147,10 +165,9 @@ class ShellSocketConnection(contract.IConnection):
 
             try:
                 chunk = self._transport.read(self._buffer_size)
-            except (config.ConnectionClosed, config.ConnectionTimeoutError, config.ConnectionError) as error:
-                if isinstance(error, config.ConnectionClosed):
-                    raise
-
+            except (config.ConnectionClosed, config.ConnectionTimeoutError):
+                raise
+            except config.ConnectionError as error:
                 raise config.ConnectionClosed(f"Connection interrupted during read: {error}") from error
 
             if not chunk:
@@ -171,4 +188,5 @@ class ShellSocketConnection(contract.IConnection):
             return
 
         self._state = contract.ConnectionState.CLOSED
+        self._nonce_ready.set()
         self._transport.close()

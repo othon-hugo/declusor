@@ -29,7 +29,13 @@ class ShellSocketRenderer(contract.IOperationRenderer):
     def __post_init__(self) -> None:
         object.__setattr__(self, "_supported_operations", frozenset(self._supported_operations))
 
-    def render_operation_command(self, opcode: "config.OperationCode", /, *args: object) -> str | None:
+    @property
+    def supported_operations(self) -> frozenset[config.OperationCode]:
+        """Set of supported operation codes."""
+
+        return self._supported_operations
+
+    def render_operation_command(self, opcode: config.OperationCode, /, *args: object) -> str | None:
         """Build the shell execution statement for a given operation code."""
 
         if opcode not in self._supported_operations:
@@ -51,13 +57,13 @@ class ShellSocketRenderer(contract.IOperationRenderer):
     def render_exec_command(*args: object) -> str:
         """Render shell command execution statement."""
 
-        return args[0].rstrip("\r\n") if args else ""
+        return str(args[0]).rstrip("\r\n") if args else ""
 
     @staticmethod
     def render_exec_code(*args: object) -> str:
         """Render shell code execution statement."""
 
-        return args[0].rstrip("\r\n") if args else ""
+        return str(args[0]).rstrip("\r\n") if args else ""
 
     @staticmethod
     def render_store_file(*args: object) -> str | None:
@@ -66,10 +72,10 @@ class ShellSocketRenderer(contract.IOperationRenderer):
         if not args:
             return None
 
-        src_file_b64 = args[0]
+        src_file_b64 = str(args[0])
 
         if len(args) > 1 and args[1]:
-            return f"decode_b64 {util.quote(src_file_b64)} | store_file {util.quote(args[1])}"
+            return f"decode_b64 {util.quote(src_file_b64)} | store_file {util.quote(str(args[1]))}"
 
         return f"decode_b64 {util.quote(src_file_b64)} | store_file"
 
@@ -80,8 +86,8 @@ class ShellSocketRenderer(contract.IOperationRenderer):
         if not args:
             return None
 
-        data_b64 = args[0]
-        extra_args = (" " + " ".join(util.quote(a) for a in args[1:])) if len(args) > 1 else ""
+        data_b64 = str(args[0])
+        extra_args = (" " + " ".join(util.quote(str(a)) for a in args[1:])) if len(args) > 1 else ""
 
         try:
             raw_bytes = util.convert_base64_to_bytes(data_b64)
