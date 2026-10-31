@@ -74,9 +74,12 @@ def execute_binary(filepath: str, *args: str, cleanup: bool = False) -> None:
 
             if send_fn:
                 send_fn(1, chunk)
-            else:
+            elif hasattr(sys.stdout, "buffer"):
                 sys.stdout.buffer.write(chunk)
                 sys.stdout.buffer.flush()
+            else:
+                sys.stdout.write(chunk.decode("utf-8", errors="replace"))
+                sys.stdout.flush()
 
         proc.wait()
     finally:
@@ -96,9 +99,12 @@ def execute_system_command(command: str) -> None:
 
         if send_fn:
             send_fn(1, chunk)
-        else:
+        elif hasattr(sys.stdout, "buffer"):
             sys.stdout.buffer.write(chunk)
             sys.stdout.buffer.flush()
+        else:
+            sys.stdout.write(chunk.decode("utf-8", errors="replace"))
+            sys.stdout.flush()
 
     proc.wait()
 

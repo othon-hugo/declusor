@@ -3,6 +3,7 @@ import io
 import json
 import marshal
 import platform
+import signal
 import socket
 import struct
 import sys
@@ -82,7 +83,7 @@ def _execute(payload_bytes: bytes, sock: socket.socket) -> None:
             code = compile(source, "<remote>", "exec")
 
         exec(code, SESSION_SCOPE)  # noqa: S102
-    except (Exception, SystemExit) as exc:
+    except BaseException as exc:  # noqa: B036
         buf.write(f"[py_socket error] {type(exc).__name__}: {exc}\n")
     finally:
         sys.stdout, sys.stderr = old_out, old_err
@@ -96,6 +97,12 @@ def _execute(payload_bytes: bytes, sock: socket.socket) -> None:
 
 
 def main() -> None:
+    try:
+        if hasattr(signal, "SIGINT") and hasattr(signal, "signal"):
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
+    except (AttributeError, ValueError):
+        pass
+
     with socket.create_connection((HOST, PORT)) as sock:
         SESSION_SCOPE["_send_frame"] = lambda ch, data: _send_frame(sock, ch, data)
 

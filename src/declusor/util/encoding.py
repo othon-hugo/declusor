@@ -1,23 +1,23 @@
 from base64 import b64decode, b64encode
 from hashlib import md5, sha256, sha384, sha512
-from shlex import quote as shlex_quote
 from string import Template
 
 
 def quote(s: str) -> str:
-    """Shell-escape a string so it can be safely embedded in a shell command.
+    """Safely quote and escape a string as a single-quoted token.
 
-    Wraps ``shlex.quote`` to produce a single shell-safe token, preventing
-    injection through special characters.
+    Wraps the string in single quotes with embedded single quotes safely
+    escaped, guaranteeing that the result is always a quoted token safe for
+    both shell argument interpolation and Python string literal evaluation.
 
     Args:
-        s: The string to escape.
+        s: The string to quote.
 
     Returns:
-        A shell-quoted version of the input string.
+        A single-quoted escaped version of the input string.
     """
 
-    return shlex_quote(s)
+    return "'" + s.replace("'", "'\"'\"'") + "'"
 
 
 def format_template(template_str: str, /, **kwargs: str | int) -> str:

@@ -1,5 +1,6 @@
 import base64
 import importlib.util
+import io
 import marshal
 from pathlib import Path
 from types import ModuleType
@@ -136,6 +137,15 @@ class TestPySocketStdHelpersExecution:
         std_helpers.execute_system_command("echo 'test system command'")
         captured = capsys.readouterr()
         assert "test system command" in captured.out
+
+    def test_execute_system_command__with_unbuffered_stdout__writes_decoded_text(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Verify execute_system_command falls back to text write when sys.stdout has no buffer."""
+
+        fake_stdout = io.StringIO()
+        monkeypatch.setattr("sys.stdout", fake_stdout)
+
+        std_helpers.execute_system_command("echo 'unbuffered test'")
+        assert "unbuffered test" in fake_stdout.getvalue()
 
 
 class TestPySocketStdHelpersUtilities:

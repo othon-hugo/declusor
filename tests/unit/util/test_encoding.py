@@ -9,10 +9,13 @@ from declusor.util import encoding
 class TestQuote:
     """Verify shell token quoting and escaping behavior."""
 
-    def test_quote__already_safe_token__returns_unquoted_string(self) -> None:
-        """Verify safe alphanumeric strings are left unquoted."""
+    def test_quote__alphanumeric_token__returns_single_quoted_token(self) -> None:
+        """Verify safe alphanumeric strings are wrapped in single quotes."""
 
-        assert encoding.quote("hello_world-123/path.txt") == "hello_world-123/path.txt"
+        assert encoding.quote("hello_world-123/path.txt") == "'hello_world-123/path.txt'"
+        assert encoding.quote("id") == "'id'"
+        assert encoding.quote("pwd") == "'pwd'"
+        assert encoding.quote("whoami") == "'whoami'"
 
     def test_quote__whitespace_in_token__returns_single_quoted_string(self) -> None:
         """Verify strings containing spaces or tabs are safely wrapped in quotes."""
@@ -37,6 +40,11 @@ class TestQuote:
 
         assert encoding.quote("olá mundo") == "'olá mundo'"
         assert encoding.quote("rocket 🚀 test") == "'rocket 🚀 test'"
+
+    def test_quote__embedded_single_quotes__escapes_safely(self) -> None:
+        """Verify embedded single quotes are escaped with safe single-quote sequence."""
+
+        assert encoding.quote("don't") == "'don'\"'\"'t'"
 
 
 class TestFormatTemplate:

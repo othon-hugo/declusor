@@ -85,6 +85,9 @@ class TestPySocketRenderer:
 
         renderer = py_socket.PySocketRenderer()
 
+        for single_cmd in ("id", "pwd", "whoami", "ls"):
+            assert renderer.render_operation_command(config.OperationCode.EXEC_COMMAND, single_cmd) == f"execute_system_command('{single_cmd}')"
+
         cmd = "uname -a && whoami"
         expected = "execute_system_command('uname -a && whoami')"
         assert renderer.render_operation_command(config.OperationCode.EXEC_COMMAND, cmd) == expected

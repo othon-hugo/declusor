@@ -433,3 +433,42 @@ class TestPySocketIntegration:
             listener.close()
             proc.kill()
             proc.wait(timeout=5.0)
+
+    def test_py_socket__executes_single_word_commands__id_and_pwd(self) -> None:
+        """Verify rendered EXEC_COMMAND executes single-word shell commands (id, pwd) without TypeError or NameError."""
+
+        listener = transport.TcpListener("127.0.0.1", 0)
+        port = listener.port
+
+        options = py_socket.PySocketPlugin.extract_options({})
+        plugin_config = py_socket.PySocketPlugin.build_config("127.0.0.1", port, options)
+        runtime = py_socket.PySocketPlugin.build_runtime(plugin_config)
+
+        proc = self._spawn_launcher(runtime.launcher)
+        raw_transport: contract.ITransport | None = None
+
+        try:
+            raw_transport = listener.accept(timeout=5.0)
+            connection = runtime.create_connection(raw_transport)
+            assert isinstance(connection, py_socket.PySocketConnection)
+            connection.handshake()
+
+            for cmd in ("id", "pwd"):
+                rendered = connection.renderer.render_operation_command(
+                    config.OperationCode.EXEC_COMMAND,
+                    cmd,
+                )
+                assert rendered is not None
+                connection.write(rendered.encode("utf-8"))
+
+                response = b"".join(connection.read())
+                assert b"[py_socket error]" not in response
+                assert len(response) > 0
+
+            connection.close()
+        finally:
+            if raw_transport is not None:
+                raw_transport.close()
+            listener.close()
+            proc.kill()
+            proc.wait(timeout=5.0)
