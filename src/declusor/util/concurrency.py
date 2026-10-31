@@ -1,6 +1,6 @@
 from collections.abc import Callable, Generator, Iterator
 from dataclasses import dataclass
-from threading import Event, Thread
+from threading import Event, Lock, Thread
 from types import TracebackType
 from typing import Any, Literal, Self
 
@@ -10,6 +10,39 @@ type TaskHandler = Callable[["TaskEvent"], None]
 
 class TaskEvent(Event):
     """A ``threading.Event`` used as a cooperative stop-flag for ``TaskPool`` tasks."""
+
+
+class TaskLock:
+    """A mutual exclusion primitive wrapping a thread lock for task synchronization."""
+
+    def __init__(self) -> None:
+        self._lock = Lock()
+
+    def acquire(self, blocking: bool = True, timeout: float = -1.0) -> bool:
+        """Acquire the lock, blocking or non-blocking."""
+
+        return self._lock.acquire(blocking, timeout)
+
+    def release(self) -> None:
+        """Release the lock."""
+
+        self._lock.release()
+
+    def locked(self) -> bool:
+        """Return True if the lock is currently acquired."""
+
+        return self._lock.locked()
+
+    def __enter__(self) -> bool:
+        return self._lock.acquire()
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        self._lock.release()
 
 
 @dataclass

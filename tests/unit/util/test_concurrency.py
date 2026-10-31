@@ -16,6 +16,38 @@ class TestTaskEvent:
         assert not event.is_set()
 
 
+class TestTaskLock:
+    """Verify TaskLock mutual exclusion primitive behavior."""
+
+    def test_task_lock_init__default_state__is_unlocked(self) -> None:
+        """Verify TaskLock initializes in an unlocked state."""
+
+        lock = concurrency.TaskLock()
+
+        assert not lock.locked()
+
+    def test_task_lock_acquire_and_release__toggles_locked_state(self) -> None:
+        """Verify explicit acquire and release toggle the locked state."""
+
+        lock = concurrency.TaskLock()
+
+        assert lock.acquire() is True
+        assert lock.locked() is True
+
+        lock.release()
+        assert lock.locked() is False
+
+    def test_task_lock_context_manager__acquires_and_releases(self) -> None:
+        """Verify TaskLock works seamlessly as a context manager."""
+
+        lock = concurrency.TaskLock()
+
+        with lock:
+            assert lock.locked() is True
+
+        assert lock.locked() is False
+
+
 class TestTask:
     """Verify Task dataclass initialization and field storage."""
 

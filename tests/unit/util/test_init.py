@@ -36,6 +36,7 @@ class TestUtilExports:
             "Task",
             "TaskEvent",
             "TaskHandler",
+            "TaskLock",
             "TaskPool",
             "try_load_file",
             "validate_file_extension",

@@ -11,7 +11,9 @@ from declusor.testing.doubles.filestore import (
     DummyPluginFileStore,
 )
 from declusor.testing.doubles.input_source import (
+    DisconnectAwareInputSource,
     DummyInputSource,
+    PacedInteractiveInputSource,
 )
 from declusor.testing.doubles.plugins import (
     DummyConfig,
@@ -42,6 +44,7 @@ from declusor.testing.doubles.view import (
 
 __all__ = [
     "create_memory_transport_pair",
+    "DisconnectAwareInputSource",
     "DummyApplication",
     "DummyCommand",
     "DummyConfig",
@@ -58,4 +61,5 @@ __all__ = [
     "DummyView",
     "MemoryTransport",
     "MemoryTransportListener",
+    "PacedInteractiveInputSource",
 ]

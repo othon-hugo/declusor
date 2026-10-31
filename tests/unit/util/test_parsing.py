@@ -19,13 +19,13 @@ class TestParser:
             parser.error("custom error occurred")
 
     def test_parser_formatter__default_factory__instantiates_help_formatter_with_position(self) -> None:
-        """Verify Parser uses HelpFormatter with max_help_position configured to 30."""
+        """Verify Parser uses HelpFormatter with max_help_position configured to 44."""
 
         parser = parsing.Parser(prog="custom_prog")
         formatter = parser.formatter_class(prog="custom_prog")
 
         assert isinstance(formatter, HelpFormatter)
-        assert getattr(formatter, "_max_help_position", None) == 30
+        assert getattr(formatter, "_max_help_position", None) == 44
 
     def test_parser_init__custom_arguments__configures_parser_properties(self) -> None:
         """Verify Parser accepts and sets custom prog, usage, and description."""

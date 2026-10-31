@@ -1,10 +1,13 @@
 import inspect
-from collections.abc import Mapping
+import threading
+from abc import ABC, abstractmethod
+from collections.abc import Mapping, Sequence
 from pathlib import Path
+from typing import Any
 
 import pytest
 
-from declusor import config, contract, util
+from declusor import command, config, contract, controller, util
 from declusor.testing import doubles
 
 
@@ -180,3 +183,239 @@ class PluginConformanceTestSuite[T: contract.ParsedArguments]:
             sample_options=sample_options,
             tmp_path=tmp_path,
         )
+
+
+class InteractiveShellTestSuite[TConnection: contract.IConnection, TProcessor: contract.IPluginProcessor](ABC):
+    """Base conformance test suite verifying interactive remote shell support in client plugins.
+
+    Client plugins supporting interactive shell operations can inherit from this suite
+    to verify bidirectional terminal streaming, prompt loop integration, cooperative
+    cancellation on KeyboardInterrupt, and network disconnect handling without delimiter leaks.
+    """
+
+    @pytest.fixture
+    @abstractmethod
+    def plugin_class(self) -> type[contract.IPluginExtension[Any]]:
+        """Subclasses must provide the client plugin extension class under test."""
+
+        raise NotImplementedError
+
+    @property
+    def forbidden_delimiters(self) -> Sequence[bytes]:
+        """Delimiters or control tokens that must never leak into raw view output."""
+
+        return ()
+
+    @abstractmethod
+    def create_connected_session(
+        self,
+        tmp_path: Path,
+        transport: contract.ITransport,
+        timeout: float,
+    ) -> tuple[TConnection, TProcessor]:
+        """Establish and return a connected connection and plugin processor over the given transport."""
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def run_mock_client_responder(
+        self,
+        client_transport: contract.ITransport,
+        responses: Mapping[str, bytes],
+        stop_event: threading.Event,
+    ) -> None:
+        """Run simulated client responder servicing commands until stop_event is signaled."""
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def run_mock_client_abrupt_disconnect(
+        self,
+        client_transport: contract.ITransport,
+    ) -> None:
+        """Simulate client-side abrupt network disconnect during an active shell session."""
+
+        raise NotImplementedError
+
+    def is_connection_idle(self, connection: TConnection) -> bool:
+        """Check if connection is in an idle state ready for the next command."""
+
+        return True
+
+    def test_plugin_declares_canonical_shell_route(
+        self,
+        plugin_class: type[contract.IPluginExtension[Any]],
+    ) -> None:
+        """Verify plugin declares a 'shell' route wired to controller.call_shell."""
+
+        assert "shell" in plugin_class.routes, f"Plugin {plugin_class.name} must declare a 'shell' route."
+        registration = plugin_class.routes["shell"]
+        assert registration.controller is controller.call_shell, (
+            f"Plugin {plugin_class.name} 'shell' route controller must be controller.call_shell, got {registration.controller}."
+        )
+
+    def test_launch_shell__multiple_interactive_commands__streams_outputs_without_delimiter_leak(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """Verify interactive shell executes multiple commands, streams output, and prevents delimiter leaks."""
+
+        client_transport, server_transport = doubles.create_memory_transport_pair()
+        initial_timeout = 2.0
+        connection, processor = self.create_connected_session(tmp_path, server_transport, initial_timeout)
+
+        responses: Mapping[str, bytes] = {
+            "echo alpha": b"alpha_output_ok\n",
+            "echo beta": b"beta_output_ok\n",
+        }
+        interactions = (
+            ("echo alpha", b"alpha_output_ok"),
+            ("echo beta", b"beta_output_ok"),
+        )
+
+        view = doubles.DummyView()
+        input_source = doubles.PacedInteractiveInputSource(
+            interactions,
+            view,
+            is_idle_predicate=lambda: self.is_connection_idle(connection),
+            timeout=3.0,
+        )
+        session = contract.SessionContext(
+            connection=connection,
+            view=view,
+            plugin_processor=processor,
+            input_source=input_source,
+        )
+
+        banner = "=== Interactive Remote Shell ==="
+        cmd = command.LaunchShell(command.LaunchShellDTO(banner=banner))
+
+        stop_responder = threading.Event()
+        responder_thread = threading.Thread(
+            target=self.run_mock_client_responder,
+            args=(client_transport, responses, stop_responder),
+            daemon=True,
+        )
+        responder_thread.start()
+
+        try:
+            session.execute(cmd)
+
+            assert any(banner in msg for msg in view.messages), f"Banner {banner!r} missing from view messages."
+
+            accumulated_output = b"".join(view.binary_data)
+            assert b"alpha_output_ok" in accumulated_output, "Output from first interactive command was not received."
+            assert b"beta_output_ok" in accumulated_output, "Output from second interactive command was not received."
+
+            for delimiter in self.forbidden_delimiters:
+                assert delimiter not in accumulated_output, f"Forbidden delimiter {delimiter!r} leaked into view."
+
+            assert not view.errors, f"Unexpected view errors occurred: {view.errors}"
+            assert not cmd._task_pool.errors, f"Unexpected task pool errors: {cmd._task_pool.errors}"
+
+            stop_responder.set()
+            responder_thread.join(timeout=2.0)
+            assert not responder_thread.is_alive(), "Responder thread failed to terminate."
+
+            for thread in cmd._task_pool._threads:
+                assert not thread.is_alive(), f"Task pool thread {thread.name} remained alive."
+
+            assert connection.timeout == initial_timeout, (
+                f"Connection timeout was not restored (expected {initial_timeout}, got {connection.timeout})."
+            )
+        finally:
+            stop_responder.set()
+            responder_thread.join(timeout=1.0)
+            client_transport.close()
+            server_transport.close()
+            connection.close()
+
+    def test_launch_shell__immediate_keyboard_interrupt_before_input__exits_cleanly_without_error(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """Verify immediate KeyboardInterrupt exits cleanly without modifying connection state."""
+
+        client_transport, server_transport = doubles.create_memory_transport_pair()
+        initial_timeout = 2.0
+        connection, processor = self.create_connected_session(tmp_path, server_transport, initial_timeout)
+
+        view = doubles.DummyView()
+        input_source = doubles.DisconnectAwareInputSource(input_exception=KeyboardInterrupt())
+        session = contract.SessionContext(
+            connection=connection,
+            view=view,
+            plugin_processor=processor,
+            input_source=input_source,
+        )
+
+        cmd = command.LaunchShell(command.LaunchShellDTO())
+
+        try:
+            session.execute(cmd)
+
+            assert not view.errors, f"Unexpected view errors occurred: {view.errors}"
+            assert not cmd._task_pool.errors, f"Unexpected task pool errors: {cmd._task_pool.errors}"
+            assert connection.state == contract.ConnectionState.CONNECTED, f"Connection state changed unexpectedly: {connection.state}"
+            assert connection.timeout == initial_timeout, (
+                f"Connection timeout was not restored (expected {initial_timeout}, got {connection.timeout})."
+            )
+            for thread in cmd._task_pool._threads:
+                assert not thread.is_alive(), f"Task pool thread {thread.name} remained alive."
+        finally:
+            client_transport.close()
+            server_transport.close()
+            connection.close()
+
+    def test_launch_shell__client_disconnects_during_command__terminates_gracefully(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """Verify shell terminates cleanly when remote client abruptly disconnects during command execution."""
+
+        client_transport, server_transport = doubles.create_memory_transport_pair()
+        initial_timeout = 2.0
+        connection, processor = self.create_connected_session(tmp_path, server_transport, initial_timeout)
+
+        view = doubles.DummyView()
+        cmd = command.LaunchShell(command.LaunchShellDTO())
+        input_source = doubles.DisconnectAwareInputSource(
+            inputs=["long_running_task\n"],
+            stop_event=cmd._stop_event,
+            timeout=3.0,
+        )
+        session = contract.SessionContext(
+            connection=connection,
+            view=view,
+            plugin_processor=processor,
+            input_source=input_source,
+        )
+
+        disconnect_thread = threading.Thread(
+            target=self.run_mock_client_abrupt_disconnect,
+            args=(client_transport,),
+            daemon=True,
+        )
+        disconnect_thread.start()
+
+        try:
+            session.execute(cmd)
+
+            assert not view.errors, f"Unexpected view errors occurred: {view.errors}"
+            assert not cmd._task_pool.errors, f"Unexpected task pool errors: {cmd._task_pool.errors}"
+            assert cmd._stop_event.is_set(), "Stop event was not set upon remote client disconnect."
+
+            disconnect_thread.join(timeout=2.0)
+            assert not disconnect_thread.is_alive(), "Disconnect thread failed to terminate."
+
+            for thread in cmd._task_pool._threads:
+                assert not thread.is_alive(), f"Task pool thread {thread.name} remained alive."
+
+            assert connection.timeout == initial_timeout, (
+                f"Connection timeout was not restored (expected {initial_timeout}, got {connection.timeout})."
+            )
+        finally:
+            disconnect_thread.join(timeout=1.0)
+            client_transport.close()
+            server_transport.close()
+            connection.close()

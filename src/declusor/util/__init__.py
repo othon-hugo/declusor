@@ -3,12 +3,12 @@ from .concurrency import (
     Task,
     TaskEvent,
     TaskHandler,
+    TaskLock,
     TaskPool,
 )
 from .encoding import (
     convert_base64_to_bytes,
     convert_bytes_to_hex,
-    convert_to_arg,
     convert_to_base64,
     convert_to_bytes,
     format_template,
@@ -17,7 +17,6 @@ from .encoding import (
     hash_sha384,
     hash_sha512,
     quote,
-    revert_from_arg,
     xor_bytes,
 )
 from .network import (
@@ -52,7 +51,6 @@ __all__ = [
     "build_command_parser",
     "convert_base64_to_bytes",
     "convert_bytes_to_hex",
-    "convert_to_arg",
     "convert_to_base64",
     "convert_to_bytes",
     "ensure_directory_exists",
@@ -71,10 +69,10 @@ __all__ = [
     "ParsedArguments",
     "Parser",
     "quote",
-    "revert_from_arg",
     "Task",
     "TaskEvent",
     "TaskHandler",
+    "TaskLock",
     "TaskPool",
     "try_load_file",
     "validate_file_extension",

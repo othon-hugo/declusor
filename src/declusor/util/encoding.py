@@ -37,14 +37,6 @@ def format_template(template_str: str, /, **kwargs: str | int) -> str:
     return Template(template_str).safe_substitute(**kwargs)
 
 
-def convert_to_arg(data: bytes | str, /) -> str:
-    raise NotImplementedError
-
-
-def revert_from_arg(arg: str, /) -> bytes | str:
-    raise NotImplementedError
-
-
 def convert_to_bytes(data: bytes | str, /) -> bytes:
     """Converts a string to bytes using UTF-8 encoding, or returns the input if it's already bytes.
 

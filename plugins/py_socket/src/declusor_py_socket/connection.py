@@ -32,6 +32,9 @@ class PySocketConnection(contract.IConnection):
         self._state = contract.ConnectionState.CREATED
         self._client_runtime: Mapping[str, object] | None = None
         self._is_bytecode_compatible: bool = False
+        self._active_commands: int = 0
+        self._command_ready = util.TaskEvent()
+        self._lock = util.TaskLock()
 
         if timeout is not None:
             self._transport.timeout = timeout
@@ -53,6 +56,13 @@ class PySocketConnection(contract.IConnection):
         """Whether the remote agent's Python bytecode format matches the server."""
 
         return self._is_bytecode_compatible
+
+    @property
+    def is_idle(self) -> bool:
+        """Whether connection has completed all pending commands and is ready for new input."""
+
+        with self._lock:
+            return self._active_commands == 0
 
     @property
     def renderer(self) -> contract.IOperationRenderer:
@@ -191,10 +201,32 @@ class PySocketConnection(contract.IConnection):
         except (config.ConnectionClosed, config.ConnectionTimeoutError, config.ConnectionError) as error:
             raise config.ConnectionError(f"Failed to write to connection: {error}") from error
 
+        if channel == config.ChannelType.STDIN:
+            with self._lock:
+                self._active_commands += 1
+                self._command_ready.set()
+
     def read(self) -> Generator[bytes, None, None]:
         """Stream response chunks from the Python agent until a PROCESS_EXIT frame."""
 
         self.ensure_can_perform_io()
+
+        with self._lock:
+            has_command = self._active_commands > 0
+
+        if not has_command:
+            self._command_ready.wait(timeout=0.1)
+            self.ensure_can_perform_io()
+            with self._lock:
+                has_command = self._active_commands > 0
+            if not has_command:
+                return
+
+        with self._lock:
+            if self._active_commands > 0:
+                self._active_commands -= 1
+                if self._active_commands == 0:
+                    self._command_ready.clear()
 
         while True:
             try:
@@ -246,4 +278,6 @@ class PySocketConnection(contract.IConnection):
             return
 
         self._state = contract.ConnectionState.CLOSED
+        with self._lock:
+            self._command_ready.set()
         self._transport.close()

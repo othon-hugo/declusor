@@ -15,6 +15,7 @@ class TestTestingExports:
         """Verify __all__ is sorted and contains expected public exports."""
 
         expected = [
+            "DisconnectAwareInputSource",
             "DummyApplication",
             "DummyCommand",
             "DummyConfig",
@@ -29,8 +30,10 @@ class TestTestingExports:
             "DummySocket",
             "DummyTransport",
             "DummyView",
+            "InteractiveShellTestSuite",
             "MemoryTransport",
             "MemoryTransportListener",
+            "PacedInteractiveInputSource",
             "PluginConformanceTestSuite",
             "assert_conforms_to_client_plugin",
             "create_dummy_controller_request",
@@ -94,6 +97,7 @@ class TestTestingDoublesExports:
 
         expected = [
             "create_memory_transport_pair",
+            "DisconnectAwareInputSource",
             "DummyApplication",
             "DummyCommand",
             "DummyConfig",
@@ -110,6 +114,7 @@ class TestTestingDoublesExports:
             "DummyView",
             "MemoryTransport",
             "MemoryTransportListener",
+            "PacedInteractiveInputSource",
         ]
 
         assert sorted(testing.doubles.__all__) == sorted(expected)

@@ -1,6 +1,5 @@
 from collections import deque
 from collections.abc import Callable, Generator
-from threading import Event
 from typing import Final
 
 from declusor import config, contract, util
@@ -38,7 +37,7 @@ class ShellSocketConnection(contract.IConnection):
         self._current_nonce = fixed_nonce
 
         self._nonce_queue: deque[str] = deque()
-        self._nonce_ready = Event()
+        self._nonce_ready = util.TaskEvent()
 
         self._state = contract.ConnectionState.CREATED
         self._read_buffer = bytearray()

@@ -3,10 +3,12 @@ from . import (
     pytest_plugin,
 )
 from .conformance import (
+    InteractiveShellTestSuite,
     PluginConformanceTestSuite,
     assert_conforms_to_client_plugin,
 )
 from .doubles import (
+    DisconnectAwareInputSource,
     DummyApplication,
     DummyCommand,
     DummyConfig,
@@ -23,6 +25,7 @@ from .doubles import (
     DummyView,
     MemoryTransport,
     MemoryTransportListener,
+    PacedInteractiveInputSource,
     create_memory_transport_pair,
 )
 from .factories import (
@@ -32,6 +35,7 @@ from .factories import (
 )
 
 __all__ = [
+    "DisconnectAwareInputSource",
     "DummyApplication",
     "DummyCommand",
     "DummyConfig",
@@ -46,8 +50,10 @@ __all__ = [
     "DummySocket",
     "DummyTransport",
     "DummyView",
+    "InteractiveShellTestSuite",
     "MemoryTransport",
     "MemoryTransportListener",
+    "PacedInteractiveInputSource",
     "PluginConformanceTestSuite",
     "assert_conforms_to_client_plugin",
     "create_dummy_controller_request",

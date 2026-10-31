@@ -303,6 +303,7 @@ class TestPySocketConnectionIO:
         dummy_trans.push_incoming(struct.pack(">BI", config.ChannelType.STDOUT, 5) + b"12345")
         conn = py_socket.PySocketConnection(dummy_trans, py_socket.PySocketRenderer(), dummy_file_store)
         conn._state = contract.ConnectionState.CONNECTED
+        conn.write(b"cmd")
 
         with pytest.raises(config.ConnectionClosed, match="TLV frame payload size 5 exceeds maximum 4"):
             list(conn.read())
@@ -410,6 +411,7 @@ class TestPySocketConnectionIO:
         renderer = py_socket.PySocketRenderer()
         conn = py_socket.PySocketConnection(dummy_trans, renderer, dummy_file_store)
         conn._state = contract.ConnectionState.CONNECTED
+        conn.write(b"cmd")
 
         frame1 = struct.pack(">BI", config.ChannelType.STDOUT, 6) + b"hello "
         frame2 = struct.pack(">BI", config.ChannelType.STDOUT, 5) + b"world"
@@ -419,6 +421,19 @@ class TestPySocketConnectionIO:
         chunks = list(conn.read())
 
         assert chunks == [b"hello ", b"world"]
+
+    def test_read__when_connection_is_idle__returns_empty(
+        self,
+        dummy_file_store: testing.DummyPluginFileStore,
+    ) -> None:
+        """Verify read returns immediately without blocking when no active commands are queued."""
+
+        dummy_trans = testing.DummyTransport()
+        renderer = py_socket.PySocketRenderer()
+        conn = py_socket.PySocketConnection(dummy_trans, renderer, dummy_file_store)
+        conn._state = contract.ConnectionState.CONNECTED
+
+        assert list(conn.read()) == []
 
     def test_read__streams_stderr_chunks(
         self,
@@ -430,6 +445,7 @@ class TestPySocketConnectionIO:
         renderer = py_socket.PySocketRenderer()
         conn = py_socket.PySocketConnection(dummy_trans, renderer, dummy_file_store)
         conn._state = contract.ConnectionState.CONNECTED
+        conn.write(b"cmd")
 
         err_frame = struct.pack(">BI", config.ChannelType.STDERR, 13) + b"error payload"
         exit_frame = struct.pack(">BI", config.ChannelType.PROCESS_EXIT, 0)
@@ -449,6 +465,7 @@ class TestPySocketConnectionIO:
         renderer = py_socket.PySocketRenderer()
         conn = py_socket.PySocketConnection(dummy_trans, renderer, dummy_file_store)
         conn._state = contract.ConnectionState.CONNECTED
+        conn.write(b"cmd")
 
         out_frame = struct.pack(">BI", config.ChannelType.STDOUT, 4) + b"done"
         exit_payload = b"exit code 0\n"
@@ -482,10 +499,11 @@ class TestPySocketConnectionIO:
         """Verify read translates transport connection error into ConnectionClosed."""
 
         dummy_trans = testing.DummyTransport()
-        dummy_trans.simulate_error_on_next_read(config.ConnectionError("peer disconnected"))
         renderer = py_socket.PySocketRenderer()
         conn = py_socket.PySocketConnection(dummy_trans, renderer, dummy_file_store)
         conn._state = contract.ConnectionState.CONNECTED
+        conn.write(b"cmd")
+        dummy_trans.simulate_error_on_next_read(config.ConnectionError("peer disconnected"))
 
         with pytest.raises(config.ConnectionClosed, match="Connection interrupted during read"):
             list(conn.read())
@@ -497,10 +515,11 @@ class TestPySocketConnectionIO:
         """Verify read propagates ConnectionTimeoutError directly."""
 
         dummy_trans = testing.DummyTransport()
-        dummy_trans.simulate_error_on_next_read(config.ConnectionTimeoutError("read timeout"))
         renderer = py_socket.PySocketRenderer()
         conn = py_socket.PySocketConnection(dummy_trans, renderer, dummy_file_store)
         conn._state = contract.ConnectionState.CONNECTED
+        conn.write(b"cmd")
+        dummy_trans.simulate_error_on_next_read(config.ConnectionTimeoutError("read timeout"))
 
         with pytest.raises(config.ConnectionTimeoutError, match="read timeout"):
             list(conn.read())
