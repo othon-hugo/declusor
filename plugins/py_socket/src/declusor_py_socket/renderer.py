@@ -57,7 +57,7 @@ class PySocketRenderer(contract.IOperationRenderer):
     def render_exec_command(*args: object) -> str:
         """Render system command execution statement."""
 
-        command = args[0].rstrip("\r\n") if args else ""
+        command = str(args[0]).rstrip("\r\n") if args else ""
 
         return f"execute_system_command({util.quote(command)})"
 
@@ -90,7 +90,7 @@ class PySocketRenderer(contract.IOperationRenderer):
         if not args:
             return None
 
-        src_data_b64 = args[0]
+        src_data_b64 = str(args[0])
 
         try:
             raw_bytes = util.convert_base64_to_bytes(src_data_b64)

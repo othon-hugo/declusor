@@ -18,20 +18,20 @@ class ExecuteFileDTO:
         StorageValidationError: If the file does not exist or is not a regular file.
     """
 
-    source_path: str
+    source_path: Path
     """Validated, absolute or relative ``Path`` to an existing local file."""
 
-    def __post_init__(self) -> None:
-        raw_path = self.source_path.strip()
+    def __init__(self, source_path: Path | str) -> None:
+        raw_path = str(source_path).strip()
 
         if not raw_path:
-            raise config.CommandValidationError("File path cannot be empty.", field="filepath", value=self.source_path)
+            raise config.CommandValidationError("File path cannot be empty.", field="filepath", value=str(source_path))
 
         if "\0" in raw_path:
-            raise config.CommandValidationError("File path cannot contain null bytes.", field="filepath", value=self.source_path)
+            raise config.CommandValidationError("File path cannot contain null bytes.", field="filepath", value=str(source_path))
 
-        validated_path = util.ensure_file_exists(Path(self.source_path))
-        object.__setattr__(self, "filepath", validated_path)
+        validated_path = util.ensure_file_exists(Path(source_path))
+        object.__setattr__(self, "source_path", validated_path)
 
 
 class ExecuteFile(BaseFileCommand[ExecuteFileDTO]):

@@ -253,7 +253,7 @@ class TestApplicationLifecycle:
 
         assert "extra" in router.routes
         assert input_source.completer_routes == router.routes
-        assert router.locate("eval") is controller.call_eval
+        assert router.locate("extra") is controller.call_eval
         with pytest.raises(config.InvalidOperation, match="already configured"):
             app.run(dataclasses.replace(plugin_config, kind=CommandOnlyPlugin.name))
         assert "extra" in router.routes

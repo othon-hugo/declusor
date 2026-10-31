@@ -18,7 +18,8 @@ class SocketTransport(contract.ITransport):
         self._socket = sock
         self._closed = False
 
-        self.timeout = timeout
+        if timeout is not None:
+            self.timeout = timeout
 
     @property
     def is_closed(self) -> bool:
