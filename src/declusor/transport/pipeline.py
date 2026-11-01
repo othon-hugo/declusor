@@ -123,6 +123,6 @@ def default_transport_registry() -> TransportLayerRegistry:
     """Build the default TransportLayerRegistry pre-configured with built-in layers."""
 
     registry = TransportLayerRegistry()
-    registry.register("xor", lambda transport: XorTransport(transport, config.DEFAULT_XOR_KEY))
+    registry.register(config.TransportLayer.XOR.value, lambda transport: XorTransport(transport, config.DEFAULT_XOR_KEY))
 
     return registry

@@ -65,7 +65,12 @@ class TaskPool:
     and raises any exceptions on exit.
     """
 
-    def __init__(self, stop_event: TaskEvent | None = None, max_size: int = 10, daemon_mode: bool = True):
+    def __init__(
+        self,
+        stop_event: TaskEvent | None = None,
+        max_size: int = 10,
+        daemon_mode: bool = True,
+    ) -> None:
         """Initialize a task pool.
 
         Args:

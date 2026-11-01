@@ -4,8 +4,7 @@ from collections.abc import Sequence
 
 import pytest
 
-from declusor import contract
-from declusor.testing import DummyRouter
+from declusor import config, contract, testing
 
 
 def _sample_controller(
@@ -55,6 +54,10 @@ class TestIRouter:
                 registration = self._routes.get(route)
                 return registration.help if registration is not None else contract.RouteHelp()
 
+            def completion_mode(self, route: str, /) -> config.RouteCompletionMode:
+                registration = self._routes.get(route)
+                return registration.completion_mode if registration is not None else config.RouteCompletionMode.NONE
+
             def connect(self, route: str, registration: contract.RouteRegistration, /) -> None:
                 self._routes[route] = registration
 
@@ -79,22 +82,22 @@ class TestDummyRouterContract:
     def test_dummy_router__subclass_and_isinstance__conforms_to_irouter(self) -> None:
         """Verify DummyRouter is a subclass and instance of IRouter."""
 
-        router = DummyRouter()
+        router = testing.DummyRouter()
 
-        assert issubclass(DummyRouter, contract.IRouter)
+        assert issubclass(testing.DummyRouter, contract.IRouter)
         assert isinstance(router, contract.IRouter)
 
     def test_dummy_router__empty_state__returns_empty_routes_sequence(self) -> None:
         """Verify fresh DummyRouter returns an empty sequence of registered routes."""
 
-        router = DummyRouter()
+        router = testing.DummyRouter()
 
         assert router.routes == ()
 
     def test_dummy_router__connect_and_locate__registers_and_resolves_controller(self) -> None:
         """Verify DummyRouter connects and locates registered controllers."""
 
-        router = DummyRouter()
+        router = testing.DummyRouter()
         router.connect("sample", _sample_controller)
 
         assert "sample" in router.routes
@@ -103,7 +106,7 @@ class TestDummyRouterContract:
     def test_dummy_router__help__returns_explicit_registration_metadata(self) -> None:
         """Verify DummyRouter returns help metadata stored in a route registration."""
 
-        router = DummyRouter()
+        router = testing.DummyRouter()
         registration = contract.RouteRegistration(_sample_controller, contract.RouteHelp("Short.", "Long."))
         router.connect("sample", registration)
 
@@ -112,14 +115,14 @@ class TestDummyRouterContract:
     def test_dummy_router__help_unregistered_route__returns_empty_help(self) -> None:
         """Verify DummyRouter returns empty metadata when route is not registered."""
 
-        router = DummyRouter()
+        router = testing.DummyRouter()
 
         assert router.help("nonexistent") == contract.RouteHelp()
 
     def test_dummy_router__positional_only_arguments__reject_keyword_passing(self) -> None:
         """Verify connect, locate, and help enforce positional-only contracts."""
 
-        router = DummyRouter()
+        router = testing.DummyRouter()
 
         with pytest.raises(TypeError, match="positional-only"):
             router.connect(route="sample", registration=contract.RouteRegistration(_sample_controller, contract.RouteHelp()))  # type: ignore[call-arg]

@@ -1,7 +1,5 @@
 """Unit tests for PromptLoop command reading, tokenization, and route dispatching in declusor.presentation.prompt."""
 
-from typing import cast
-
 from declusor import contract, presentation, testing
 
 
@@ -288,74 +286,3 @@ class TestPromptLoopResultHandling:
         prompt.run()
 
         assert dummy_view.messages == ["Session terminated by operator."]
-
-    def test_prompt_loop_controller_returns_raw_terminate_action__terminates_cleanly(
-        self,
-        dummy_router: testing.DummyRouter,
-        test_session: contract.SessionContext,
-        dummy_input_source: testing.DummyInputSource,
-    ) -> None:
-        """PromptLoop terminates cleanly when a controller returns a raw ControllerAction.TERMINATE."""
-
-        dummy_input_source.feed_inputs("quit_raw")
-
-        def raw_exit_controller(
-            session: contract.SessionContext,
-            req: contract.IControllerRequest[contract.ControllerArguments],
-        ) -> contract.ControllerAction:
-            return contract.ControllerAction.TERMINATE
-
-        dummy_router.connect("quit_raw", cast(contract.Controller, raw_exit_controller))
-
-        prompt = presentation.PromptLoop(router=dummy_router, session=test_session)
-        prompt.run()
-
-        assert dummy_router.locate_calls == ["quit_raw"]
-
-    def test_prompt_loop_controller_returns_raw_continue_action__continues_loop(
-        self,
-        dummy_router: testing.DummyRouter,
-        test_session: contract.SessionContext,
-        dummy_input_source: testing.DummyInputSource,
-    ) -> None:
-        """PromptLoop continues loop when a controller returns a raw ControllerAction.CONTINUE."""
-
-        dummy_input_source.feed_inputs("continue_raw", "exit")
-
-        def raw_continue_controller(
-            session: contract.SessionContext,
-            req: contract.IControllerRequest[contract.ControllerArguments],
-        ) -> contract.ControllerAction:
-            return contract.ControllerAction.CONTINUE
-
-        dummy_router.connect("continue_raw", cast(contract.Controller, raw_continue_controller))
-        dummy_router.connect("exit", _terminate_controller)
-
-        prompt = presentation.PromptLoop(router=dummy_router, session=test_session)
-        prompt.run()
-
-        assert dummy_router.locate_calls == ["continue_raw", "exit"]
-
-    def test_prompt_loop_controller_returns_none__defaults_to_continue(
-        self,
-        dummy_router: testing.DummyRouter,
-        test_session: contract.SessionContext,
-        dummy_input_source: testing.DummyInputSource,
-    ) -> None:
-        """PromptLoop treats a controller returning None as ControllerAction.CONTINUE."""
-
-        dummy_input_source.feed_inputs("noop", "exit")
-
-        def none_controller(
-            session: contract.SessionContext,
-            req: contract.IControllerRequest[contract.ControllerArguments],
-        ) -> None:
-            return None
-
-        dummy_router.connect("noop", cast(contract.Controller, none_controller))
-        dummy_router.connect("exit", _terminate_controller)
-
-        prompt = presentation.PromptLoop(router=dummy_router, session=test_session)
-        prompt.run()
-
-        assert dummy_router.locate_calls == ["noop", "exit"]

@@ -111,7 +111,8 @@ def parse_command_arguments(line: str, definitions: ArgumentDefinitions, allow_u
             - list of unknown arguments (if allow_unknown=True)
 
     Raises:
-        InvalidOperation: If an argument type is not supported or if there is a parsing error.
+        InvalidOperation: If an argument type is not supported.
+        ParserError: If there is a syntax or parsing error.
     """
 
     cleaned_line: str = line.strip()
@@ -124,7 +125,7 @@ def parse_command_arguments(line: str, definitions: ArgumentDefinitions, allow_u
     try:
         args_list: list[str] = shlex.split(cleaned_line) if cleaned_line else []
     except ValueError as e:
-        raise config.ControllerError(f"Parsing error: {e}") from e
+        raise config.ParserError(f"Parsing error: {e}") from e
 
     unrecognized_args: list[str]
 

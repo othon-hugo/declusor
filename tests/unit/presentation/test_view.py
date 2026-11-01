@@ -58,7 +58,7 @@ class TestTerminalViewInitialization:
 
         assert view._stdout is sys.stdout
         assert view._stderr is sys.stderr
-        assert view._buffer is getattr(sys.stdout, "buffer", sys.stdout.buffer)
+        assert view._buffer is sys.stdout.buffer
 
     def test_terminal_view_injected_streams__binds_custom_streams(self) -> None:
         """TerminalView retains injected custom text and binary streams."""
@@ -73,61 +73,13 @@ class TestTerminalViewInitialization:
         assert view._stderr is stderr
         assert view._buffer is buffer
 
-    def test_terminal_view_buffer_fallback_from_stdout__uses_stdout_buffer_attribute(self) -> None:
-        """TerminalView extracts the buffer attribute from injected stdout when buffer is omitted."""
+    def test_terminal_view_injected_buffer__binds_custom_binary_buffer(self) -> None:
+        """TerminalView binds the injected binary buffer directly."""
 
-        stdout_with_buf = CustomStreamWithBuffer()
+        custom_buf = io.BytesIO()
+        view = presentation.TerminalView(buffer=custom_buf)
 
-        view = presentation.TerminalView(stdout=stdout_with_buf)
-
-        assert view._buffer is stdout_with_buf.buffer
-
-    def test_terminal_view_buffer_fallback_when_stdout_lacks_buffer__uses_sys_stdout_buffer(self) -> None:
-        """TerminalView falls back to sys.stdout.buffer when stdout stream lacks a buffer attribute."""
-
-        plain_stdout = io.StringIO()
-
-        view = presentation.TerminalView(stdout=plain_stdout)
-
-        assert view._buffer is sys.stdout.buffer
-
-    def test_terminal_view_buffer_fallback_when_sys_stdout_lacks_buffer__uses_in_memory_bytes_io(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
-        """TerminalView falls back to an in-memory BytesIO buffer when sys.stdout lacks a buffer attribute."""
-
-        monkeypatch.setattr(sys, "stdout", io.StringIO())
-
-        view = presentation.TerminalView()
-
-        assert isinstance(view._buffer, io.BytesIO)
-
-    def test_terminal_view_buffer_fallback_when_stdout_and_sys_stdout_lack_buffer__uses_in_memory_bytes_io(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
-        """TerminalView safely uses BytesIO buffer when both injected stdout and sys.stdout lack buffer."""
-
-        monkeypatch.setattr(sys, "stdout", io.StringIO())
-        custom_stdout = io.StringIO()
-
-        view = presentation.TerminalView(stdout=custom_stdout)
-
-        assert isinstance(view._buffer, io.BytesIO)
-
-    def test_terminal_view_buffer_when_stdout_has_buffer_and_sys_stdout_lacks_buffer__uses_stdout_buffer(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
-        """TerminalView preserves stdout.buffer without accessing sys.stdout.buffer when sys.stdout lacks it."""
-
-        monkeypatch.setattr(sys, "stdout", io.StringIO())
-        stdout_with_buf = CustomStreamWithBuffer()
-
-        view = presentation.TerminalView(stdout=stdout_with_buf)
-
-        assert view._buffer is stdout_with_buf.buffer
+        assert view._buffer is custom_buf
 
 
 class TestTerminalViewTextOutputs:

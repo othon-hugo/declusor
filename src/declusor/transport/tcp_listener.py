@@ -9,13 +9,13 @@ from .socket_transport import SocketTransport
 class TcpListener(contract.ITransportListener):
     """TCP server listener that binds an address and accepts SocketTransport clients."""
 
-    def __init__(self, host: str, port: int, backlog: int = 5, /) -> None:
+    def __init__(self, host: str, port: int, backlog: int = config.DEFAULT_TCP_BACKLOG, /) -> None:
         """Bind and listen on the given host and port.
 
         Args:
             host: Interface IP or hostname to bind.
             port: Port number to bind (0 for OS-assigned ephemeral port).
-            backlog: Connection backlog queue size.
+            backlog: Connection backlog queue size. Defaults to config.DEFAULT_TCP_BACKLOG.
 
         Raises:
             ValueError: If port is outside 0-65535 or backlog is not positive.
@@ -31,11 +31,11 @@ class TcpListener(contract.ITransportListener):
         self._closed = False
 
         try:
-            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            self.socket.bind((host, port))
-            self.socket.listen(backlog)
-            self._bound_port = int(self.socket.getsockname()[1])
+            self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            self._socket.bind((host, port))
+            self._socket.listen(backlog)
+            self._bound_port = int(self._socket.getsockname()[1])
         except OSError as err:
             self._closed = True
             raise config.ConnectionError(f"Failed to bind TCP listener on {host}:{port}: {err}") from err
@@ -82,10 +82,10 @@ class TcpListener(contract.ITransportListener):
         if self._closed:
             raise config.ConnectionClosed("Cannot accept on closed listener.")
 
-        self.socket.settimeout(timeout)
+        self._socket.settimeout(timeout)
 
         try:
-            client_sock, _ = self.socket.accept()
+            client_sock, _ = self._socket.accept()
             return SocketTransport(client_sock)
         except TimeoutError as err:
             raise config.ConnectionTimeoutError(f"Timed out after {timeout}s waiting for incoming connection.") from err
@@ -103,4 +103,4 @@ class TcpListener(contract.ITransportListener):
         self._closed = True
 
         with contextlib.suppress(OSError):
-            self.socket.close()
+            self._socket.close()

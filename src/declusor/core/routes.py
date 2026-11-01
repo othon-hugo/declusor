@@ -1,50 +1,53 @@
 from types import MappingProxyType
 
-from declusor import contract, controller
+from declusor import config, contract, controller
 
 OFFICIAL_ROUTES: contract.RouteTable = MappingProxyType(
     {
-        "load": contract.RouteRegistration(
+        config.OfficialRoute.LOAD.value: contract.RouteRegistration(
             controller.call_load,
             contract.RouteHelp(
                 "Load a module on the remote client.",
                 "Usage: load <module>. Loads a module from the configured client module repository.",
             ),
+            completion_mode=config.RouteCompletionMode.MODULE_PATH,
         ),
-        "command": contract.RouteRegistration(
+        config.OfficialRoute.COMMAND.value: contract.RouteRegistration(
             controller.call_command,
             contract.RouteHelp(
                 "Run a command on the remote client.",
                 "Usage: command <command line>. Executes the command and streams its output to this session.",
             ),
         ),
-        "eval": contract.RouteRegistration(
+        config.OfficialRoute.EVAL.value: contract.RouteRegistration(
             controller.call_eval,
             contract.RouteHelp(
                 "Evaluate code in the client runtime.",
                 "Usage: eval <code>. Executes a code snippet directly in the remote agent's native runtime.",
             ),
         ),
-        "shell": contract.RouteRegistration(
+        config.OfficialRoute.SHELL.value: contract.RouteRegistration(
             controller.call_shell,
             contract.RouteHelp(
                 "Start an interactive remote shell.",
                 "Opens an interactive shell over the active client connection. This command takes no arguments.",
             ),
         ),
-        "upload": contract.RouteRegistration(
+        config.OfficialRoute.UPLOAD.value: contract.RouteRegistration(
             controller.call_upload,
             contract.RouteHelp(
                 "Upload a local file to the remote client.",
                 "Usage: upload <filepath> [destination]. The destination path is optional.",
             ),
+            completion_mode=config.RouteCompletionMode.HOST_PATH,
         ),
-        "execute": contract.RouteRegistration(
+        config.OfficialRoute.EXECUTE.value: contract.RouteRegistration(
             controller.call_execute,
             contract.RouteHelp(
                 "Execute a local script on the remote client.",
                 "Usage: execute <filepath>. The script is sent from the local system and executed remotely.",
             ),
+            completion_mode=config.RouteCompletionMode.HOST_PATH,
         ),
     }
 )

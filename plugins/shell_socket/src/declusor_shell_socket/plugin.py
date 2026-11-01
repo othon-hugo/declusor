@@ -28,11 +28,11 @@ class ShellSocketPlugin(contract.IPluginExtension[ShellSocketConfig]):
     author = "github.com/othonhugo"
     options_type = ShellSocketConfig
     routes = {
-        "load": core.OFFICIAL_ROUTES["load"],
-        "command": core.OFFICIAL_ROUTES["command"],
-        "shell": core.OFFICIAL_ROUTES["shell"],
-        "upload": core.OFFICIAL_ROUTES["upload"],
-        "execute": core.OFFICIAL_ROUTES["execute"],
+        config.OfficialRoute.LOAD.value: core.OFFICIAL_ROUTES[config.OfficialRoute.LOAD.value],
+        config.OfficialRoute.COMMAND.value: core.OFFICIAL_ROUTES[config.OfficialRoute.COMMAND.value],
+        config.OfficialRoute.SHELL.value: core.OFFICIAL_ROUTES[config.OfficialRoute.SHELL.value],
+        config.OfficialRoute.UPLOAD.value: core.OFFICIAL_ROUTES[config.OfficialRoute.UPLOAD.value],
+        config.OfficialRoute.EXECUTE.value: core.OFFICIAL_ROUTES[config.OfficialRoute.EXECUTE.value],
     }
 
     @classmethod

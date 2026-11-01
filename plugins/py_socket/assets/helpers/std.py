@@ -8,6 +8,9 @@ import sys
 import tempfile
 from contextlib import suppress
 
+CH_STDOUT: int = 1
+CH_STDERR: int = 2
+
 
 def hash_value(data: str | bytes) -> str:
     if isinstance(data, str):
@@ -73,13 +76,10 @@ def execute_binary(filepath: str, *args: str, cleanup: bool = False) -> None:
                 break
 
             if send_fn:
-                send_fn(1, chunk)
-            elif hasattr(sys.stdout, "buffer"):
+                send_fn(CH_STDOUT, chunk)
+            else:
                 sys.stdout.buffer.write(chunk)
                 sys.stdout.buffer.flush()
-            else:
-                sys.stdout.write(chunk.decode("utf-8", errors="replace"))
-                sys.stdout.flush()
 
         proc.wait()
     finally:
@@ -98,13 +98,10 @@ def execute_system_command(command: str) -> None:
             break
 
         if send_fn:
-            send_fn(1, chunk)
-        elif hasattr(sys.stdout, "buffer"):
+            send_fn(CH_STDOUT, chunk)
+        else:
             sys.stdout.buffer.write(chunk)
             sys.stdout.buffer.flush()
-        else:
-            sys.stdout.write(chunk.decode("utf-8", errors="replace"))
-            sys.stdout.flush()
 
     proc.wait()
 

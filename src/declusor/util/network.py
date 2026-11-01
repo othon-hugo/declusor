@@ -48,15 +48,15 @@ def _handle_socket_exception(e: Exception) -> None:
         Exception: Re-raises the original exception if it is not handled.
     """
 
-    exception_message_table: dict[type[BaseException], str] = {
-        socket.gaierror: "invalid address/hostname.",
-        OverflowError: "port must be 0-65535.",
-        PermissionError: "permission denied.",
-        TimeoutError: "connection timed out waiting for incoming connection.",
-    }
-
-    for exception_type, exception_message in exception_message_table.items():
-        if isinstance(e, exception_type):
-            raise config.ConnectionError(exception_message) from e
-
-    raise e from e
+    try:
+        raise e
+    except socket.gaierror as exc:
+        raise config.ConnectionError("invalid address/hostname.") from exc
+    except OverflowError as exc:
+        raise config.ConnectionError("port must be 0-65535.") from exc
+    except PermissionError as exc:
+        raise config.ConnectionError("permission denied.") from exc
+    except TimeoutError as exc:
+        raise config.ConnectionError("connection timed out waiting for incoming connection.") from exc
+    except Exception:
+        raise

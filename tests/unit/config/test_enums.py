@@ -172,3 +172,89 @@ class TestChannelTypeEnum:
         assert issubclass(config.ChannelType, IntEnum)
         assert isinstance(config.ChannelType.STDOUT, int)
         assert config.ChannelType.STDOUT.value == 1
+
+
+class TestExitCodeEnum:
+    """Tests for ExitCode enumeration."""
+
+    def test_exit_code__members__match_expected_int_values(self) -> None:
+        """Verify ExitCode members map to standard UNIX/POSIX process exit codes."""
+
+        assert config.ExitCode.SUCCESS.value == 0
+        assert config.ExitCode.FAILURE.value == 1
+        assert config.ExitCode.USAGE_ERROR.value == 2
+        assert len(config.ExitCode) == 3
+
+    def test_exit_code__subclass__is_int_enum(self) -> None:
+        """Verify ExitCode is an IntEnum."""
+
+        assert issubclass(config.ExitCode, IntEnum)
+
+
+class TestCoreRouteEnum:
+    """Tests for CoreRoute enumeration."""
+
+    def test_core_route__members__match_expected_string_values(self) -> None:
+        """Verify CoreRoute members map to reserved route names."""
+
+        assert config.CoreRoute.HELP.value == "help"
+        assert config.CoreRoute.EXIT.value == "exit"
+        assert len(config.CoreRoute) == 2
+
+    def test_core_route__subclass__is_str_enum(self) -> None:
+        """Verify CoreRoute is a StrEnum."""
+
+        assert issubclass(config.CoreRoute, StrEnum)
+
+
+class TestOfficialRouteEnum:
+    """Tests for OfficialRoute enumeration."""
+
+    def test_official_route__members__match_expected_string_values(self) -> None:
+        """Verify OfficialRoute members map to standard plugin routes."""
+
+        assert config.OfficialRoute.LOAD.value == "load"
+        assert config.OfficialRoute.COMMAND.value == "command"
+        assert config.OfficialRoute.EVAL.value == "eval"
+        assert config.OfficialRoute.SHELL.value == "shell"
+        assert config.OfficialRoute.UPLOAD.value == "upload"
+        assert config.OfficialRoute.EXECUTE.value == "execute"
+        assert len(config.OfficialRoute) == 6
+
+    def test_official_route__subclass__is_str_enum(self) -> None:
+        """Verify OfficialRoute is a StrEnum."""
+
+        assert issubclass(config.OfficialRoute, StrEnum)
+
+
+class TestRouteCompletionModeEnum:
+    """Tests for RouteCompletionMode enumeration."""
+
+    def test_route_completion_mode__members__match_expected_string_values(self) -> None:
+        """Verify RouteCompletionMode members map to expected string identifiers."""
+
+        assert config.RouteCompletionMode.NONE.value == "none"
+        assert config.RouteCompletionMode.HOST_PATH.value == "host_path"
+        assert config.RouteCompletionMode.MODULE_PATH.value == "module_path"
+        assert config.RouteCompletionMode.ASSET_PATH.value == "asset_path"
+        assert len(config.RouteCompletionMode) == 4
+
+    def test_route_completion_mode__subclass__is_str_enum(self) -> None:
+        """Verify RouteCompletionMode is a StrEnum."""
+
+        assert issubclass(config.RouteCompletionMode, StrEnum)
+
+
+class TestTransportLayerEnum:
+    """Tests for TransportLayer enumeration."""
+
+    def test_transport_layer__members__match_expected_string_values(self) -> None:
+        """Verify TransportLayer members map to recognized transport layer names."""
+
+        assert config.TransportLayer.XOR.value == "xor"
+        assert len(config.TransportLayer) == 1
+
+    def test_transport_layer__subclass__is_str_enum(self) -> None:
+        """Verify TransportLayer is a StrEnum."""
+
+        assert issubclass(config.TransportLayer, StrEnum)

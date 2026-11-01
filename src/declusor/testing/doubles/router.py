@@ -18,13 +18,23 @@ class DummyRouter(contract.IRouter):
 
         return registration.help if registration is not None else contract.RouteHelp()
 
+    def completion_mode(self, route: str, /) -> config.RouteCompletionMode:
+        r = route.strip()
+        registration = self._routes.get(r)
+
+        return registration.completion_mode if registration is not None else config.RouteCompletionMode.NONE
+
     def set_route_help(self, route: str, route_help: contract.RouteHelp) -> None:
         """Override the help metadata for a specific route."""
 
         r = route.strip()
         if r in self._routes:
             registration = self._routes[r]
-            self._routes[r] = contract.RouteRegistration(registration.controller, route_help)
+            self._routes[r] = contract.RouteRegistration(
+                registration.controller,
+                route_help,
+                registration.completion_mode,
+            )
 
     def connect(self, route: str, registration: contract.RouteRegistration | contract.Controller, /) -> None:
         r = route.strip()

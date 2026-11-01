@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Final
 
-from .enums import DeclusorPlugins, ExecutionMode, LauncherOutputMode
+from .enums import CoreRoute, DeclusorPlugins, ExecutionMode, LauncherOutputMode
 
 PROJECT_NAME: Final[str] = "declusor"
 """Name of the project."""
@@ -21,6 +21,12 @@ USER_DIR: Final[Path] = (Path.home() / ".declusor").resolve()
 USER_PLUGINS_DIR: Final[Path] = (USER_DIR / "plugins").resolve()
 """Default user-level plugins directory for drop-in extensions."""
 
+DEFAULT_BUFFER_SIZE: Final[int] = 4096
+"""Default buffer size in bytes for network transport read operations."""
+
+DEFAULT_TCP_BACKLOG: Final[int] = 128
+"""Default socket listen backlog queue depth."""
+
 DEFAULT_SERVER_ACK: Final[bytes] = b"\x00"
 """Default server acknowledgment byte sequence."""
 
@@ -30,14 +36,17 @@ DEFAULT_CLIENT_ACK_SEED: Final[bytes] = b"declusor"
 DEFAULT_CONNECTION_TIMEOUT: Final[float | None] = None
 """Default connection timeout in seconds for network operations; None disables it."""
 
-DEFAULT_DECLUSOR_PLUGIN = DeclusorPlugins.SHELL_SOCKET
+DEFAULT_DECLUSOR_PLUGIN: Final[DeclusorPlugins] = DeclusorPlugins.SHELL_SOCKET
 """Default client plugin identifier."""
 
-DEFAULT_EXECUTION_MODE = ExecutionMode.CLI
+DEFAULT_EXECUTION_MODE: Final[ExecutionMode] = ExecutionMode.CLI
 """Default application execution mode."""
 
 DEFAULT_LAUNCHER_OUTPUT_MODE: Final[LauncherOutputMode] = LauncherOutputMode.TERMINAL
 """Default client launcher output delivery mode."""
+
+PROTECTED_ROUTES: Final[frozenset[str]] = frozenset(route.value for route in CoreRoute)
+"""Reserved application routes that cannot be overridden by plugin commands."""
 
 DEFAULT_XOR_KEY: Final[bytes] = b"declusor"
 """Default obfuscation key for XOR transport layer."""

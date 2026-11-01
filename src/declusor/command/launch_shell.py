@@ -10,9 +10,6 @@ class LaunchShellDTO:
     banner: str | None = None
     """Optional informational banner message displayed upon entering shell mode."""
 
-    def __post_init__(self) -> None:
-        pass
-
 
 class LaunchShell(contract.ICommand):
     """Open an interactive bidirectional shell session with the remote client.
@@ -108,7 +105,11 @@ class LaunchShell(contract.ICommand):
                         config.OperationCode.EXEC_COMMAND,
                         command_request,
                     )
-                    payload = (rendered or command_request).encode()
+
+                    if not rendered:
+                        raise config.InvalidOperation(f"Operation EXEC_COMMAND is not supported by {connection.renderer!r}")
+
+                    payload = rendered.encode()
 
                     try:
                         connection.write(payload)

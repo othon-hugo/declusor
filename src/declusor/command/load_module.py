@@ -13,7 +13,7 @@ class LoadModuleDTO:
     module repository.
 
     Raises:
-        InvalidOperation: If ``module_name`` is empty or consists solely of whitespace.
+        CommandValidationError: If ``module_name`` is empty or consists solely of whitespace.
     """
 
     module_name: str

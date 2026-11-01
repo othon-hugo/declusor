@@ -100,26 +100,6 @@ class TestLoadModuleDTO:
 class TestLoadModule:
     """Tests verifying LoadModule request rendering, validation safety, and response streaming."""
 
-    def test_load_module_send_request__missing_plugin_filestore__raises_command_error(
-        self,
-        dummy_connection: testing.DummyConnection,
-        dummy_view: testing.DummyView,
-        dummy_input_source: testing.DummyInputSource,
-    ) -> None:
-        """LoadModule raises CommandError if SessionContext has no plugin file store configured."""
-
-        session_without_plugin = contract.SessionContext(
-            connection=dummy_connection,
-            view=dummy_view,
-            input_source=dummy_input_source,
-            plugin_processor=None,  # type: ignore[arg-type]
-        )
-        dto = LoadModuleDTO(module_name="discovery/sysinfo")
-        command = LoadModule(dto)
-
-        with pytest.raises(config.CommandError, match="Client file store is not configured for this session."):
-            command.send_request(session_without_plugin)
-
     def test_load_module_send_request__queries_plugin_filestore_with_dto_module_name(
         self,
         dummy_connection: testing.DummyConnection,

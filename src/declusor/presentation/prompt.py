@@ -122,7 +122,7 @@ class PromptLoop(contract.ISessionRunner):
         if not stripped_line:
             raise config.PromptError(command_line, "empty route")
 
-        result: contract.ControllerResult | contract.ControllerAction | None = None
+        result: contract.ControllerResult
 
         match stripped_line.split(" ", 1):
             case [route, argument]:
@@ -132,13 +132,7 @@ class PromptLoop(contract.ISessionRunner):
             case _:
                 raise config.PromptError(command_line, "invalid command")
 
-        if isinstance(result, contract.ControllerResult):
-            if result.message is not None:
-                session.view.write_message(result.message)
+        if result.message is not None:
+            session.view.write_message(result.message)
 
-            return result.action
-
-        if result == contract.ControllerAction.TERMINATE:
-            return contract.ControllerAction.TERMINATE
-
-        return contract.ControllerAction.CONTINUE
+        return result.action

@@ -101,9 +101,7 @@ class IConnection(ABC):
     on exit.
     """
 
-    def __init__(self, connection: "IConnection | None" = None, /) -> None:
-        self._underlying_connection = connection
-
+    @abstractmethod
     def handshake(self) -> None:
         """Execute the plugin-specific handshake to initialize the session.
 
@@ -112,8 +110,7 @@ class IConnection(ABC):
             ConnectionHandshakeError: If protocol initialization fails.
         """
 
-        if self._underlying_connection:
-            self._underlying_connection.handshake()
+        raise NotImplementedError
 
     @property
     @abstractmethod

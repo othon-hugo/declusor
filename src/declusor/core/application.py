@@ -130,8 +130,13 @@ class Application:
 
         plugin_runtime = PluginExtension.build_runtime(plugin_config)
 
-        if self._input_source is not None and (setup_completer := getattr(self._input_source, "setup_completer", None)):
-            setup_completer(self._router.routes, plugin_config.filesystem.assets)
+        if self._input_source is not None:
+            route_completions = {route: self._router.completion_mode(route) for route in self._router.routes}
+            self._input_source.setup_completer(
+                self._router.routes,
+                plugin_config.filesystem.assets,
+                route_completions,
+            )
 
         delivery = plugin_runtime.launcher
         delivery = dataclasses.replace(
@@ -164,12 +169,13 @@ class Application:
     def _connect_routes(self, plugin_routes: contract.RouteTable, /) -> None:
         """Compose official routes with plugin routes and register the result."""
 
-        # TODO: Ajustar testes e documentações. Apenas as rotas protegidas são definidas
-        # por padrão. O Plugin pode definir as rotas oficiais se desejar.
-        registrations = {"help": create_help_route(self._router), "exit": EXIT_ROUTE}
+        registrations = {
+            config.CoreRoute.HELP.value: create_help_route(self._router),
+            config.CoreRoute.EXIT.value: EXIT_ROUTE,
+        }
 
         for route, registration in plugin_routes.items():
-            if route in {"help", "exit"}:
+            if route in config.PROTECTED_ROUTES:
                 raise config.PluginValidationError(f"Plugins cannot override protected route {route!r}.")
 
             registrations[route] = registration

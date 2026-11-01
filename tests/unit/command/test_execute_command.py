@@ -99,13 +99,13 @@ class TestExecuteCommand:
         assert dummy_renderer.render_calls == [(config.OperationCode.EXEC_COMMAND, (command_line,))]
         assert dummy_connection.written == [rendered_payload.encode("utf-8")]
 
-    def test_execute_command_send_request__renderer_returns_none__falls_back_to_raw_command_bytes(
+    def test_execute_command_send_request__renderer_returns_none__raises_invalid_operation(
         self,
         test_session: contract.SessionContext,
         dummy_connection: testing.DummyConnection,
         dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
-        """ExecuteCommand transmits raw UTF-8 command bytes when renderer returns None."""
+        """ExecuteCommand raises InvalidOperation when renderer returns None."""
 
         command_line = "id"
         dummy_renderer.set_rendered_command(config.OperationCode.EXEC_COMMAND, None)
@@ -113,18 +113,19 @@ class TestExecuteCommand:
         dto = ExecuteCommandDTO(command_line=command_line)
         command = ExecuteCommand(dto)
 
-        command.send_request(test_session)
+        with pytest.raises(config.InvalidOperation, match="Operation EXEC_COMMAND is not supported"):
+            command.send_request(test_session)
 
         assert dummy_renderer.render_calls == [(config.OperationCode.EXEC_COMMAND, (command_line,))]
-        assert dummy_connection.written == [command_line.encode("utf-8")]
+        assert dummy_connection.written == []
 
-    def test_execute_command_send_request__renderer_returns_empty_string__falls_back_to_raw_command_bytes(
+    def test_execute_command_send_request__renderer_returns_empty_string__raises_invalid_operation(
         self,
         test_session: contract.SessionContext,
         dummy_connection: testing.DummyConnection,
         dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
-        """ExecuteCommand transmits raw UTF-8 command bytes when renderer returns an empty string."""
+        """ExecuteCommand raises InvalidOperation when renderer returns an empty string."""
 
         command_line = "ls -la"
         dummy_renderer.set_rendered_command(config.OperationCode.EXEC_COMMAND, "")
@@ -132,10 +133,11 @@ class TestExecuteCommand:
         dto = ExecuteCommandDTO(command_line=command_line)
         command = ExecuteCommand(dto)
 
-        command.send_request(test_session)
+        with pytest.raises(config.InvalidOperation, match="Operation EXEC_COMMAND is not supported"):
+            command.send_request(test_session)
 
         assert dummy_renderer.render_calls == [(config.OperationCode.EXEC_COMMAND, (command_line,))]
-        assert dummy_connection.written == [command_line.encode("utf-8")]
+        assert dummy_connection.written == []
 
     def test_execute_command_read_response__stream_chunks__forwards_all_chunks_to_view(
         self,

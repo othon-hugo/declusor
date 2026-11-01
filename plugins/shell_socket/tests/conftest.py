@@ -44,9 +44,8 @@ def make_shell_connection(
             buffer_size=buffer_size,
             fixed_nonce=default_nonce,
             timeout=timeout,
+            initial_state=contract.ConnectionState.CONNECTED if connected else contract.ConnectionState.CREATED,
         )
-        if connected:
-            conn._state = contract.ConnectionState.CONNECTED
 
         return (conn, trans)
 

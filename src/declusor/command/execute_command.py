@@ -13,7 +13,7 @@ class ExecuteCommandDTO:
     and executed on the remote client.
 
     Raises:
-        InvalidOperation: If ``command_line`` is empty or consists solely of whitespace.
+        CommandValidationError: If ``command_line`` is empty or consists solely of whitespace.
     """
 
     command_line: str
@@ -56,6 +56,7 @@ class ExecuteCommand(BaseStreamCommand):
             config.ConnectionClosed: If the connection is closed.
             config.ConnectionTimeoutError: If a transport operation times out.
             config.ConnectionError: If the connection is not ready or a write fails.
+            config.InvalidOperation: If operation EXEC_COMMAND is not supported by the renderer.
         """
 
         session.connection.write(self._payload(session))
@@ -66,7 +67,7 @@ class ExecuteCommand(BaseStreamCommand):
             self._dto.command_line,
         )
 
-        if rendered:
-            return rendered.encode()
+        if not rendered:
+            raise config.InvalidOperation(f"Operation EXEC_COMMAND is not supported by {session.connection.renderer!r}")
 
-        return self._dto.command_line.encode()
+        return rendered.encode()

@@ -39,8 +39,7 @@ class PluginConfig[T: ParsedArguments]:
     options_type: type[T]
     """The concrete TypedDict class for this plugin's parsed options.
 
-    Retained alongside ``options`` so that callers can perform runtime
-    isinstance checks (e.g. ``isinstance(config.options, config.options_type)``)
+    Retained alongside ``options`` to provide static type reflection and schema metadata
     without resorting to ``Any``.
     """
 

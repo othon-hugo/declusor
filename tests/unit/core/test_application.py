@@ -1,7 +1,7 @@
 """Unit tests for Application orchestration and connection lifecycle in declusor.core.application."""
 
 import dataclasses
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 import pytest
@@ -14,12 +14,20 @@ class CompleterInputSource(testing.DummyInputSource):
 
     def __init__(self, inputs: Sequence[str] | None = None) -> None:
         super().__init__(inputs)
-        self.completer_routes: tuple[str, ...] | None = None
+        self.completer_routes: Sequence[str] = ()
         self.assets_dir: Path | None = None
+        self.route_completions: Mapping[str, config.RouteCompletionMode] | None = None
 
-    def setup_completer(self, routes: tuple[str, ...], assets_dir: Path | None = None, /) -> None:
+    def setup_completer(
+        self,
+        routes: Sequence[str],
+        assets_dir: Path | None = None,
+        route_completions: Mapping[str, config.RouteCompletionMode] | None = None,
+        /,
+    ) -> None:
         self.completer_routes = routes
         self.assets_dir = assets_dir
+        self.route_completions = route_completions
 
 
 class TestApplicationInitialization:
@@ -114,7 +122,7 @@ class TestApplicationInitialization:
         """A route collision is detected before any additional route is registered."""
 
         router = core.Router()
-        router.connect("help", controller.call_exit)
+        router.connect("help", contract.RouteRegistration(controller.call_exit))
         view = testing.DummyView()
         manager = core.PluginManager()
         runner = testing.DummySessionRunner()
@@ -849,11 +857,11 @@ class TestApplicationLifecycle:
         assert dummy_conn.closed is True
         assert listener.is_closed is True
 
-    def test_application_run__completer_setup_none__proceeds_without_error(self, tmp_path: Path) -> None:
-        """Application.run handles an input source whose setup_completer attribute is None."""
+    def test_application_run__completer_default__proceeds_without_error(self, tmp_path: Path) -> None:
+        """Application.run handles an input source with default setup_completer implementation."""
 
-        class InputSourceWithNoneCompleter(testing.DummyInputSource):
-            setup_completer = None
+        class InputSourceWithDefaultCompleter(testing.DummyInputSource):
+            pass
 
         listener = testing.MemoryTransportListener()
         _ = listener.create_client()
@@ -871,7 +879,7 @@ class TestApplicationLifecycle:
             testing.DummyView(),
             plugin_manager=manager,
             session_runner=testing.DummySessionRunner(),
-            input_source=InputSourceWithNoneCompleter(),
+            input_source=InputSourceWithDefaultCompleter(),
             listener_factory=lambda host, port: listener,
         )
 

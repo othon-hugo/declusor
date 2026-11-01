@@ -1,11 +1,12 @@
 """Unit tests for the IInputSource contract and DummyInputSource double."""
 
 import inspect
+from collections.abc import Mapping, Sequence
+from pathlib import Path
 
 import pytest
 
-from declusor import contract
-from declusor.testing import DummyInputSource
+from declusor import config, contract, testing
 
 
 class MinimalConcreteInputSource(contract.IInputSource):
@@ -21,6 +22,17 @@ class MinimalConcreteInputSource(contract.IInputSource):
 
         return super().read_raw(prompt)  # type: ignore[safe-super]
 
+    def setup_completer(
+        self,
+        command_routes: Sequence[str],
+        assets_dir: Path | None = None,
+        route_completions: Mapping[str, config.RouteCompletionMode] | None = None,
+        /,
+    ) -> None:
+        """Forward to abstract superclass."""
+
+        super().setup_completer(command_routes, assets_dir, route_completions)  # type: ignore[safe-super]
+
 
 class TestIInputSourceContract:
     """Tests verifying the IInputSource abstract base class contract."""
@@ -34,7 +46,7 @@ class TestIInputSourceContract:
     def test_iinput_source_abstract_methods__declares_all_required_input_contracts(self) -> None:
         """Verify IInputSource declares the expected abstract methods for reading operator input."""
 
-        expected_methods = {"read_command", "read_raw"}
+        expected_methods = {"read_command", "read_raw", "setup_completer"}
 
         assert contract.IInputSource.__abstractmethods__ == frozenset(expected_methods)
 
@@ -59,6 +71,9 @@ class TestIInputSourceContract:
         with pytest.raises(NotImplementedError):
             source.read_raw()
 
+        with pytest.raises(NotImplementedError):
+            source.setup_completer(("help",))
+
     def test_iinput_source_method_signatures__enforce_positional_only_contract(self) -> None:
         """Verify IInputSource method signatures define positional-only parameters with empty default."""
 
@@ -77,15 +92,15 @@ class TestDummyInputSourceContractConformance:
     def test_dummy_input_source_inheritance__implements_iinput_source_interface(self) -> None:
         """Verify DummyInputSource is a concrete subclass of IInputSource."""
 
-        source = DummyInputSource()
+        source = testing.DummyInputSource()
 
-        assert issubclass(DummyInputSource, contract.IInputSource)
+        assert issubclass(testing.DummyInputSource, contract.IInputSource)
         assert isinstance(source, contract.IInputSource)
 
     def test_dummy_input_source_initial_state__queue_and_prompts_are_empty(self) -> None:
         """Verify DummyInputSource defaults to an empty queue and empty prompts list."""
 
-        source = DummyInputSource()
+        source = testing.DummyInputSource()
 
         assert source.prompts == []
         assert source.input_exception is None
@@ -93,7 +108,7 @@ class TestDummyInputSourceContractConformance:
     def test_dummy_input_source_constructor_with_inputs__enqueues_initial_lines(self) -> None:
         """Verify DummyInputSource initializes its queue with provided sequence."""
 
-        source = DummyInputSource(["first_command", "second_command"])
+        source = testing.DummyInputSource(["first_command", "second_command"])
 
         assert source.read_command() == "first_command"
         assert source.read_command() == "second_command"
@@ -101,7 +116,7 @@ class TestDummyInputSourceContractConformance:
     def test_feed_inputs_additional_lines__appends_lines_to_queue(self) -> None:
         """Verify feed_inputs dynamically appends lines to the simulated input queue."""
 
-        source = DummyInputSource()
+        source = testing.DummyInputSource()
 
         source.feed_inputs("help", "exit")
 
@@ -111,7 +126,7 @@ class TestDummyInputSourceContractConformance:
     def test_read_command_default_empty_prompt__records_empty_string_prompt(self) -> None:
         """Verify read_command defaults prompt to empty string and records it."""
 
-        source = DummyInputSource(["run_task"])
+        source = testing.DummyInputSource(["run_task"])
 
         result = source.read_command()
 
@@ -121,7 +136,7 @@ class TestDummyInputSourceContractConformance:
     def test_read_command_custom_prompt__records_prompt_verbatim(self) -> None:
         """Verify read_command accepts and records custom prompt string."""
 
-        source = DummyInputSource(["status"])
+        source = testing.DummyInputSource(["status"])
 
         result = source.read_command("declusor> ")
 
@@ -131,7 +146,7 @@ class TestDummyInputSourceContractConformance:
     def test_read_command_unstripped_input__returns_stripped_command_string(self) -> None:
         """Verify read_command strips leading and trailing whitespace from input."""
 
-        source = DummyInputSource(["   start --verbose   \n\t"])
+        source = testing.DummyInputSource(["   start --verbose   \n\t"])
 
         result = source.read_command()
 
@@ -140,7 +155,7 @@ class TestDummyInputSourceContractConformance:
     def test_read_command_empty_queue__returns_empty_string(self) -> None:
         """Verify read_command returns empty string when simulated input queue is exhausted."""
 
-        source = DummyInputSource()
+        source = testing.DummyInputSource()
 
         result = source.read_command()
 
@@ -149,7 +164,7 @@ class TestDummyInputSourceContractConformance:
     def test_read_command_keyword_argument__raises_type_error(self) -> None:
         """Verify read_command enforces positional-only argument passing."""
 
-        source = DummyInputSource(["exit"])
+        source = testing.DummyInputSource(["exit"])
 
         with pytest.raises(TypeError, match="positional-only"):
             source.read_command(prompt="declusor> ")  # type: ignore[call-arg]
@@ -157,7 +172,7 @@ class TestDummyInputSourceContractConformance:
     def test_read_raw_default_empty_prompt__records_empty_string_prompt(self) -> None:
         """Verify read_raw defaults prompt to empty string and records it."""
 
-        source = DummyInputSource(["raw line\n"])
+        source = testing.DummyInputSource(["raw line\n"])
 
         result = source.read_raw()
 
@@ -167,7 +182,7 @@ class TestDummyInputSourceContractConformance:
     def test_read_raw_custom_prompt__records_prompt_verbatim(self) -> None:
         """Verify read_raw accepts and records custom prompt string."""
 
-        source = DummyInputSource(["raw line\n"])
+        source = testing.DummyInputSource(["raw line\n"])
 
         result = source.read_raw("enter> ")
 
@@ -177,7 +192,7 @@ class TestDummyInputSourceContractConformance:
     def test_read_raw_input_without_newline__appends_newline_to_raw_string(self) -> None:
         """Verify read_raw ensures returned raw line terminates with a newline."""
 
-        source = DummyInputSource(["line without newline"])
+        source = testing.DummyInputSource(["line without newline"])
 
         result = source.read_raw()
 
@@ -186,7 +201,7 @@ class TestDummyInputSourceContractConformance:
     def test_read_raw_input_with_existing_newline__preserves_verbatim(self) -> None:
         """Verify read_raw preserves single trailing newline without appending an extra one."""
 
-        source = DummyInputSource(["already newline\n"])
+        source = testing.DummyInputSource(["already newline\n"])
 
         result = source.read_raw()
 
@@ -195,7 +210,7 @@ class TestDummyInputSourceContractConformance:
     def test_read_raw_empty_queue__returns_single_newline(self) -> None:
         """Verify read_raw returns a single newline when simulated input queue is exhausted."""
 
-        source = DummyInputSource()
+        source = testing.DummyInputSource()
 
         result = source.read_raw()
 
@@ -204,7 +219,7 @@ class TestDummyInputSourceContractConformance:
     def test_read_raw_keyword_argument__raises_type_error(self) -> None:
         """Verify read_raw enforces positional-only argument passing."""
 
-        source = DummyInputSource(["raw\n"])
+        source = testing.DummyInputSource(["raw\n"])
 
         with pytest.raises(TypeError, match="positional-only"):
             source.read_raw(prompt="enter> ")  # type: ignore[call-arg]
@@ -212,7 +227,7 @@ class TestDummyInputSourceContractConformance:
     def test_read_command_injected_exception__raises_and_clears_exception(self) -> None:
         """Verify read_command raises injected input_exception and resets it to None."""
 
-        source = DummyInputSource(["subsequent_command"])
+        source = testing.DummyInputSource(["subsequent_command"])
         source.input_exception = KeyboardInterrupt()
 
         with pytest.raises(KeyboardInterrupt):
@@ -224,7 +239,7 @@ class TestDummyInputSourceContractConformance:
     def test_read_raw_injected_exception__raises_and_clears_exception(self) -> None:
         """Verify read_raw raises injected input_exception and resets it to None."""
 
-        source = DummyInputSource(["subsequent_raw\n"])
+        source = testing.DummyInputSource(["subsequent_raw\n"])
         source.input_exception = EOFError("Console stream closed")
 
         with pytest.raises(EOFError, match="Console stream closed"):

@@ -2,7 +2,7 @@ import inspect
 from collections.abc import Callable, Mapping
 from typing import Any
 
-from declusor import app, contract, core, transport
+from declusor import app, config, contract, core, transport
 
 
 def run_terminal_app(
@@ -70,7 +70,7 @@ def run_terminal_app(
 
     active_app.run(plugin_config)
 
-    return 0
+    return config.ExitCode.SUCCESS
 
 
 def _create_application(

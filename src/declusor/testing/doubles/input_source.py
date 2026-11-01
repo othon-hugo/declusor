@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import time
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
+from pathlib import Path
 
-from declusor import contract, util
+from declusor import config, contract, util
 
 from .view import DummyView
 
@@ -15,6 +16,24 @@ class DummyInputSource(contract.IInputSource):
         self._inputs: list[str] = list(inputs) if inputs is not None else []
         self.input_exception: BaseException | None = None
         self.prompts: list[str] = []
+        self.completer_configured: bool = False
+        self.completer_routes: Sequence[str] = ()
+        self.completer_completions: Mapping[str, config.RouteCompletionMode] | None = None
+        self.completer_assets_dir: Path | None = None
+
+    def setup_completer(
+        self,
+        command_routes: Sequence[str],
+        assets_dir: Path | None = None,
+        route_completions: Mapping[str, config.RouteCompletionMode] | None = None,
+        /,
+    ) -> None:
+        """Record completer setup parameters for test assertion."""
+
+        self.completer_configured = True
+        self.completer_routes = command_routes
+        self.completer_assets_dir = assets_dir
+        self.completer_completions = route_completions
 
     def feed_inputs(self, *lines: str) -> None:
         """Enqueue simulated input lines for read_command and read_raw."""

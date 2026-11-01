@@ -12,16 +12,19 @@ class ConcreteConnection(contract.IConnection):
 
     def __init__(
         self,
-        connection: contract.IConnection | None = None,
         *,
         renderer: contract.IOperationRenderer | None = None,
     ) -> None:
         """Initialize concrete connection double."""
 
-        super().__init__(connection)
         self._renderer: contract.IOperationRenderer = renderer or testing.DummyOperationRenderer()
         self._state: contract.ConnectionState = contract.ConnectionState.CREATED
         self._timeout: float | None = None
+
+    def handshake(self) -> None:
+        """Perform concrete handshake transitioning to CONNECTED."""
+
+        self._state = contract.ConnectionState.CONNECTED
 
     @property
     def state(self) -> contract.ConnectionState:
@@ -172,27 +175,15 @@ class TestIConnection:
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
             contract.IConnection()  # type: ignore[abstract]
 
-    def test_connection_handshake_without_underlying__performs_no_action(self) -> None:
-        """Verify handshake is a no-op when no underlying connection is configured."""
+    def test_connection_handshake__executes_implementation_handshake(self) -> None:
+        """Verify handshake executes concrete connection initialization."""
 
-        connection = ConcreteConnection(None)
-
-        connection.handshake()
-
-        assert connection.state == contract.ConnectionState.CREATED
-
-    def test_connection_handshake_with_underlying__delegates_to_underlying_connection(self) -> None:
-        """Verify handshake delegates to underlying connection when present."""
-
-        underlying = testing.DummyConnection(initial_state=contract.ConnectionState.CREATED)
-        connection = ConcreteConnection(underlying)
-
-        assert underlying.initialize_called is False
+        connection = ConcreteConnection()
+        initial_state = connection.state
+        assert initial_state == contract.ConnectionState.CREATED
 
         connection.handshake()
-
-        assert underlying.initialize_called is True
-        assert underlying.state == contract.ConnectionState.CONNECTED
+        assert connection.state == contract.ConnectionState.CONNECTED
 
     def test_connection_renderer_property__returns_renderer_instance(self) -> None:
         """Verify renderer property returns the renderer instance."""

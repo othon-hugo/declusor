@@ -138,14 +138,15 @@ class TestPySocketStdHelpersExecution:
         captured = capsys.readouterr()
         assert "test system command" in captured.out
 
-    def test_execute_system_command__with_unbuffered_stdout__writes_decoded_text(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Verify execute_system_command falls back to text write when sys.stdout has no buffer."""
+    def test_execute_system_command__with_buffer__writes_binary_to_buffer(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Verify execute_system_command writes directly to sys.stdout.buffer."""
 
-        fake_stdout = io.StringIO()
+        fake_buffer = io.BytesIO()
+        fake_stdout = io.TextIOWrapper(fake_buffer)
         monkeypatch.setattr("sys.stdout", fake_stdout)
 
-        std_helpers.execute_system_command("echo 'unbuffered test'")
-        assert "unbuffered test" in fake_stdout.getvalue()
+        std_helpers.execute_system_command("echo 'buffered test'")
+        assert b"buffered test" in fake_buffer.getvalue()
 
 
 class TestPySocketStdHelpersUtilities:

@@ -95,13 +95,13 @@ class TestEvaluateCode:
         assert dummy_renderer.render_calls == [(config.OperationCode.EXEC_CODE, (code,))]
         assert dummy_connection.written == [rendered_payload.encode("utf-8")]
 
-    def test_evaluate_code_send_request__renderer_returns_none__falls_back_to_raw_code_bytes(
+    def test_evaluate_code_send_request__renderer_returns_none__raises_invalid_operation(
         self,
         test_session: contract.SessionContext,
         dummy_connection: testing.DummyConnection,
         dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
-        """EvaluateCode transmits raw UTF-8 code bytes when renderer returns None."""
+        """EvaluateCode raises InvalidOperation when renderer returns None."""
 
         code = "print('raw_code_fallback')"
         dummy_renderer.set_rendered_command(config.OperationCode.EXEC_CODE, None)
@@ -109,18 +109,19 @@ class TestEvaluateCode:
         dto = EvaluateCodeDTO(code=code)
         command = EvaluateCode(dto)
 
-        command.send_request(test_session)
+        with pytest.raises(config.InvalidOperation, match="Operation EXEC_CODE is not supported"):
+            command.send_request(test_session)
 
         assert dummy_renderer.render_calls == [(config.OperationCode.EXEC_CODE, (code,))]
-        assert dummy_connection.written == [code.encode("utf-8")]
+        assert dummy_connection.written == []
 
-    def test_evaluate_code_send_request__renderer_returns_empty_string__falls_back_to_raw_code_bytes(
+    def test_evaluate_code_send_request__renderer_returns_empty_string__raises_invalid_operation(
         self,
         test_session: contract.SessionContext,
         dummy_connection: testing.DummyConnection,
         dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
-        """EvaluateCode transmits raw UTF-8 code bytes when renderer returns an empty string."""
+        """EvaluateCode raises InvalidOperation when renderer returns an empty string."""
 
         code = "print('empty_string_fallback')"
         dummy_renderer.set_rendered_command(config.OperationCode.EXEC_CODE, "")
@@ -128,10 +129,11 @@ class TestEvaluateCode:
         dto = EvaluateCodeDTO(code=code)
         command = EvaluateCode(dto)
 
-        command.send_request(test_session)
+        with pytest.raises(config.InvalidOperation, match="Operation EXEC_CODE is not supported"):
+            command.send_request(test_session)
 
         assert dummy_renderer.render_calls == [(config.OperationCode.EXEC_CODE, (code,))]
-        assert dummy_connection.written == [code.encode("utf-8")]
+        assert dummy_connection.written == []
 
     def test_evaluate_code_read_response__stream_chunks__forwards_all_chunks_to_view(
         self,

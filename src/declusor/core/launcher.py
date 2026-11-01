@@ -1,4 +1,4 @@
-from declusor import config, contract, util
+from declusor import config, contract
 
 
 class LauncherRenderer:
@@ -42,20 +42,3 @@ class LauncherRenderer:
                         f"Failed to write client launcher to {delivery.output_path}: {error}",
                         output_path=delivery.output_path,
                     ) from error
-
-    @staticmethod
-    def _apply_wrapper(payload: str, template: str | None) -> str:
-        """Substitute payload into wrapper template if provided.
-
-        Args:
-            payload: Decoded client launcher bootstrap script.
-            template: Optional shell wrapper template containing '$DECLUSOR_SCRIPT'.
-
-        Returns:
-            Wrapped launcher string, or raw payload if template is None.
-        """
-
-        if template is None:
-            return payload
-
-        return util.format_template(template, DECLUSOR_SCRIPT=payload)

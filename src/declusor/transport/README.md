@@ -12,6 +12,7 @@ The **transport** package provides concrete implementations of the transport abs
 | `tcp_listener`     | TCP server listener (`TcpListener`) binding network addresses and accepting transports |
 | `socket_transport` | Connected TCP socket transport (`SocketTransport`) with fail-fast exception mapping    |
 | `xor_transport`    | Repeating-key stream cipher decorator (`XorTransport`) resilient to TCP fragmentation  |
+| `pipeline`         | Composable transport layer pipeline (`TransportPipeline`) and registry (`TransportLayerRegistry`) |
 
 ## Design Principles
 

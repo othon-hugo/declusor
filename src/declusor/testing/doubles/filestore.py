@@ -141,4 +141,7 @@ class DummyPluginFileStore(contract.IPluginProcessor):
         if str(module_path) in self.modules:
             return self.modules[str(module_path)]
 
+        if self.modules:
+            raise FileNotFoundError(f"Module {rel_name!r} not found in DummyPluginFileStore.")
+
         return f"module_bytes:{rel_name}".encode()

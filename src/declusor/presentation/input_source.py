@@ -2,7 +2,7 @@ import atexit
 import glob
 import os
 import readline
-from collections.abc import Callable, Collection, Sequence
+from collections.abc import Callable, Collection, Mapping, Sequence
 from contextlib import suppress
 from pathlib import Path
 
@@ -68,6 +68,7 @@ class TerminalInputSource(contract.IInputSource):
         self,
         command_routes: Sequence[str],
         assets_dir: Path | None = None,
+        route_completions: Mapping[str, config.RouteCompletionMode] | None = None,
         /,
         *,
         blocked_names: Collection[str] | None = None,
@@ -78,6 +79,7 @@ class TerminalInputSource(contract.IInputSource):
         Args:
             command_routes: Sequence of available commands.
             assets_dir: Optional base directory for client plugin assets.
+            route_completions: Optional mapping of route identifiers to their completion mode.
             blocked_names: Optional override of file and directory names to exclude.
             blocked_extensions: Optional override of file extensions to exclude.
         """
@@ -166,18 +168,30 @@ class TerminalInputSource(contract.IInputSource):
                 case 0 | 1:
                     return _find_command(text, state)
                 case 2:
-                    if commands[0] in command_routes:
-                        leading_cmd = commands[0]
-                        effective_base: Path | None = None
+                    leading_cmd = commands[0]
+                    if leading_cmd in command_routes:
+                        if route_completions is not None:
+                            mode = route_completions.get(leading_cmd, config.RouteCompletionMode.NONE)
+                        elif assets_dir is None:
+                            mode = config.RouteCompletionMode.HOST_PATH
+                        elif leading_cmd == config.OfficialRoute.LOAD.value:
+                            mode = config.RouteCompletionMode.MODULE_PATH
+                        elif leading_cmd in (config.OfficialRoute.UPLOAD.value, config.OfficialRoute.EXECUTE.value):
+                            mode = config.RouteCompletionMode.HOST_PATH
+                        else:
+                            mode = config.RouteCompletionMode.ASSET_PATH
 
-                        if assets_dir is not None:
-                            if leading_cmd == "load":
-                                modules_dir = assets_dir / "modules"
-                                effective_base = modules_dir if modules_dir.is_dir() else assets_dir
-                            elif leading_cmd not in ("upload", "execute"):
-                                effective_base = assets_dir
-
-                        return _find_file(text, state, base_dir=effective_base)
+                        match mode:
+                            case config.RouteCompletionMode.HOST_PATH:
+                                return _find_file(text, state, base_dir=None)
+                            case config.RouteCompletionMode.MODULE_PATH:
+                                modules_dir = assets_dir / "modules" if assets_dir is not None else None
+                                base = modules_dir if modules_dir is not None and modules_dir.is_dir() else assets_dir
+                                return _find_file(text, state, base_dir=base)
+                            case config.RouteCompletionMode.ASSET_PATH:
+                                return _find_file(text, state, base_dir=assets_dir)
+                            case config.RouteCompletionMode.NONE:
+                                return None
                 case _:
                     return None
 

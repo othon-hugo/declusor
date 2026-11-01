@@ -53,13 +53,7 @@ class SocketTransport(contract.ITransport):
         except OSError:
             return "unknown"
 
-    @property
-    def rawsocket(self) -> socket.socket:
-        """Access the underlying OS socket."""
-
-        return self._socket
-
-    def read(self, max_bytes: int = 4096, /) -> bytes:
+    def read(self, max_bytes: int = config.DEFAULT_BUFFER_SIZE, /) -> bytes:
         """Read up to max_bytes from the socket.
 
         Args:

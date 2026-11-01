@@ -66,6 +66,17 @@ class TestProtocolSettings:
 
         assert config.DEFAULT_XOR_KEY == b"declusor"
 
+    def test_settings__network_buffers__declare_expected_sizes(self) -> None:
+        """Verify default buffer and backlog sizes."""
+
+        assert config.DEFAULT_BUFFER_SIZE == 4096
+        assert config.DEFAULT_TCP_BACKLOG == 128
+
+    def test_settings__protected_routes__contains_help_and_exit(self) -> None:
+        """Verify PROTECTED_ROUTES matches the reserved CoreRoute values."""
+
+        assert config.PROTECTED_ROUTES == frozenset({"help", "exit"})
+
 
 class TestDefaultModeSettings:
     """Tests for default mode and plugin configuration constants."""

@@ -1,6 +1,6 @@
 """Unit tests for TerminalApplication initialization, invariants, and lifecycle."""
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any, cast
 
@@ -14,12 +14,19 @@ class CompleterInputSource(testing.DummyInputSource):
 
     def __init__(self, inputs: Sequence[str] | None = None) -> None:
         super().__init__(inputs)
-        self.completer_routes: tuple[str, ...] | None = None
+        self.completer_routes: Sequence[str] = ()
         self.assets_dir: Path | None = None
 
-    def setup_completer(self, routes: tuple[str, ...], assets_dir: Path | None = None, /) -> None:
-        self.completer_routes = routes
+    def setup_completer(
+        self,
+        routes: Sequence[str],
+        assets_dir: Path | None = None,
+        route_completions: Mapping[str, config.RouteCompletionMode] | None = None,
+        /,
+    ) -> None:
+        self.completer_routes = tuple(routes)
         self.assets_dir = assets_dir
+        self.route_completions = route_completions
 
 
 class TestTerminalApplicationInitialization:
@@ -267,7 +274,7 @@ class TestTerminalApplicationInitialization:
         """When router has a pre-existing standard route, initialization raises DuplicateRouteError."""
 
         router = core.Router()
-        router.connect("help", controller.call_exit)
+        router.connect("help", contract.RouteRegistration(controller.call_exit))
         view = testing.DummyView()
         manager = core.PluginManager()
         runner = testing.DummySessionRunner()

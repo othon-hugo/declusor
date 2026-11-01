@@ -205,13 +205,13 @@ class TestControllerRequestArgumentParsing:
         with pytest.raises(config.ParserError, match="unrecognized arguments"):
             req.parse_arguments(definitions=definitions, allow_unknown=False)
 
-    def test_controller_request_parse_arguments_unclosed_quotes__raises_controller_error(self) -> None:
-        """parse_arguments raises ControllerError when shlex encounters an unclosed quotation mark."""
+    def test_controller_request_parse_arguments_unclosed_quotes__raises_parser_error(self) -> None:
+        """parse_arguments raises ParserError when shlex encounters an unclosed quotation mark."""
 
         req = presentation.ControllerRequest[SampleArguments]('run "unclosed parameter')
         definitions: contract.ArgumentDefinitions = {"cmd": str, "count": int}
 
-        with pytest.raises(config.ControllerError, match="Parsing error"):
+        with pytest.raises(config.ParserError, match="Parsing error"):
             req.parse_arguments(definitions=definitions)
 
     def test_controller_request_parse_arguments_quoted_arguments__preserves_quoted_string_spaces(self) -> None:

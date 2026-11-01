@@ -52,6 +52,7 @@ class EvaluateCode(BaseStreamCommand):
             config.ConnectionClosed: If the connection is closed.
             config.ConnectionTimeoutError: If a transport operation times out.
             config.ConnectionError: If the connection is not ready or a write fails.
+            config.InvalidOperation: If operation EXEC_CODE is not supported by the renderer.
         """
 
         session.connection.write(self._payload(session))
@@ -62,7 +63,7 @@ class EvaluateCode(BaseStreamCommand):
             self._dto.code,
         )
 
-        if rendered:
-            return rendered.encode()
+        if not rendered:
+            raise config.InvalidOperation(f"Operation EXEC_CODE is not supported by {session.connection.renderer!r}")
 
-        return self._dto.code.encode()
+        return rendered.encode()

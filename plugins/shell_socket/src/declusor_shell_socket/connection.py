@@ -22,6 +22,7 @@ class ShellSocketConnection(contract.IConnection):
         buffer_size: int = DEFAULT_BUFFER_SIZE,
         fixed_nonce: str | None = None,
         nonce_factory: Callable[[], str] = util.generate_nonce,
+        initial_state: contract.ConnectionState = contract.ConnectionState.CREATED,
     ) -> None:
         if buffer_size <= 0:
             raise config.ConnectionError("buffer_size must be > 0")
@@ -39,7 +40,7 @@ class ShellSocketConnection(contract.IConnection):
         self._nonce_queue: deque[str] = deque()
         self._nonce_ready = util.TaskEvent()
 
-        self._state = contract.ConnectionState.CREATED
+        self._state = initial_state
         self._read_buffer = bytearray()
 
     @property

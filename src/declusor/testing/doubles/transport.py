@@ -70,6 +70,12 @@ class DummyTransport(contract.ITransport):
 
         return list(self._write_history)
 
+    @property
+    def unread_incoming(self) -> bytes:
+        """Return all queued incoming bytes that have not yet been consumed."""
+
+        return b"".join(self._incoming)
+
     def push_incoming(self, data: bytes, /) -> None:
         """Enqueue incoming data for subsequent read calls."""
 
@@ -85,7 +91,7 @@ class DummyTransport(contract.ITransport):
 
         self._simulated_write_error = error
 
-    def read(self, max_bytes: int = 4096, /) -> bytes:
+    def read(self, max_bytes: int = config.DEFAULT_BUFFER_SIZE, /) -> bytes:
         """Read queued incoming bytes."""
 
         if self._closed:
@@ -175,7 +181,7 @@ class MemoryTransport(contract.ITransport):
 
         return self._peer_address
 
-    def read(self, max_bytes: int = 4096, /) -> bytes:
+    def read(self, max_bytes: int = config.DEFAULT_BUFFER_SIZE, /) -> bytes:
         """Read bytes from the inbox queue."""
 
         if self._closed:

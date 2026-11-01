@@ -1,4 +1,8 @@
 from abc import ABC, abstractmethod
+from collections.abc import Mapping, Sequence
+from pathlib import Path
+
+from declusor import config
 
 
 class IInputSource(ABC):
@@ -8,6 +12,24 @@ class IInputSource(ABC):
     terminal, HTTP request queue, MCP tool invocation). Test doubles
     manage an in-memory input queue.
     """
+
+    @abstractmethod
+    def setup_completer(
+        self,
+        command_routes: Sequence[str],
+        assets_dir: Path | None = None,
+        route_completions: Mapping[str, config.RouteCompletionMode] | None = None,
+        /,
+    ) -> None:
+        """Configure autocompletion for interactive command-line sessions.
+
+        Args:
+            command_routes: Available command route identifiers for autocomplete.
+            assets_dir: Optional base directory for completing file and module paths.
+            route_completions: Optional mapping of route identifiers to their completion mode.
+        """
+
+        raise NotImplementedError
 
     @abstractmethod
     def read_command(self, prompt: str = "", /) -> str:

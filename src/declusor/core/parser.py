@@ -173,7 +173,7 @@ class DeclusorParser(util.Parser):
         Plugin.arg_name,
         ExecutionMode.arg_name,
         LauncherOutput.arg_name,
-        # LauncherWrapper.arg_name,
+        LauncherWrapper.arg_name,
         Timeout.arg_name,
         AssetsDir.arg_name,
         PluginDir.arg_name,
@@ -249,13 +249,12 @@ class DeclusorParser(util.Parser):
             type=self.ExecutionMode,
         )
 
-        # Future feature: launcher wrapper CLI override is disabled for now.
-        # self.add_argument(
-        #     *self.LauncherWrapper.arg_flags,
-        #     help=self.LauncherWrapper.arg_help,
-        #     default=None,
-        #     type=self.LauncherWrapper,
-        # )
+        self.add_argument(
+            *self.LauncherWrapper.arg_flags,
+            help=self.LauncherWrapper.arg_help,
+            default=None,
+            type=self.LauncherWrapper,
+        )
 
         self.add_argument(
             *self.Timeout.arg_flags,
@@ -416,7 +415,7 @@ class DeclusorParser(util.Parser):
         """Validate and resolve requested transport layers against the registry."""
 
         registry = transport_registry or transport.default_transport_registry()
-        raw_layers: list[str] = getattr(args, self.TransportLayer.arg_name, None) or []
+        raw_layers: list[str] = args.transport_layers or []
         available_layers = registry.names()
 
         for layer in raw_layers:
@@ -436,7 +435,7 @@ class DeclusorParser(util.Parser):
         """Apply global CLI overrides to plugin configuration."""
 
         output_mode, output_path = self.parse_launcher_output(args.launcher_output)
-        launcher_wrapper = getattr(args, "launcher_wrapper", None)  # Future feature: launcher wrapper CLI override
+        launcher_wrapper: str | None = args.launcher_wrapper
 
         return dataclasses.replace(
             plugin_config,

@@ -40,7 +40,7 @@ class ITransport(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def read(self, max_bytes: int = 4096, /) -> bytes:
+    def read(self, max_bytes: int = config.DEFAULT_BUFFER_SIZE, /) -> bytes:
         """Read up to max_bytes from the transport.
 
         Returns:
@@ -82,7 +82,7 @@ class ITransport(ABC):
 
         while len(buffer) < count:
             remaining = count - len(buffer)
-            chunk = self.read(min(remaining, 4096))
+            chunk = self.read(min(remaining, config.DEFAULT_BUFFER_SIZE))
 
             if not chunk:
                 raise config.ConnectionClosed(f"Transport closed prematurely: expected {count} bytes, received {len(buffer)}.")

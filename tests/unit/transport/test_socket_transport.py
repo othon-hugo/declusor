@@ -53,14 +53,6 @@ class TestSocketTransportLifecycle:
 
         assert not trans.is_closed
 
-    def test_socket_transport_raw_socket__getter__returns_underlying_socket(self) -> None:
-        """Verify raw_socket returns the underlying socket instance."""
-
-        sock = testing.DummySocket()
-        trans = make_transport(sock)
-
-        assert trans.rawsocket is cast(socket.socket, sock)
-
     def test_socket_transport_is_closed__open_and_closed__reports_correct_state(self) -> None:
         """Verify is_closed reflects the transport closure state."""
 

@@ -308,12 +308,12 @@ class TestLaunchShell:
         assert dummy_renderer.render_calls == [(config.OperationCode.EXEC_COMMAND, (input_command,))]
         assert dummy_connection.written == [rendered_command.encode("utf-8")]
 
-    def test_launch_shell_input_handler__renderer_returns_none__falls_back_to_raw_command_bytes(
+    def test_launch_shell_input_handler__renderer_returns_none__raises_invalid_operation(
         self,
         dummy_connection: testing.DummyConnection,
         dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
-        """Shell input handler falls back to transmitting raw command bytes when renderer returns None."""
+        """Shell input handler raises InvalidOperation when renderer returns None."""
 
         stop_event = util.TaskEvent()
         input_command = "ps aux\n"
@@ -323,17 +323,18 @@ class TestLaunchShell:
         command = LaunchShell(LaunchShellDTO())
         handler = command._create_shell_input_handler(dummy_connection, input_source)
 
-        handler(stop_event)
+        with pytest.raises(config.InvalidOperation, match="Operation EXEC_COMMAND is not supported"):
+            handler(stop_event)
 
         assert dummy_renderer.render_calls == [(config.OperationCode.EXEC_COMMAND, (input_command,))]
-        assert dummy_connection.written == [input_command.encode("utf-8")]
+        assert dummy_connection.written == []
 
-    def test_launch_shell_input_handler__renderer_returns_empty_string__falls_back_to_raw_command_bytes(
+    def test_launch_shell_input_handler__renderer_returns_empty_string__raises_invalid_operation(
         self,
         dummy_connection: testing.DummyConnection,
         dummy_renderer: testing.DummyOperationRenderer,
     ) -> None:
-        """Shell input handler falls back to transmitting raw command bytes when renderer returns an empty string."""
+        """Shell input handler raises InvalidOperation when renderer returns an empty string."""
 
         stop_event = util.TaskEvent()
         input_command = "id\n"
@@ -343,10 +344,11 @@ class TestLaunchShell:
         command = LaunchShell(LaunchShellDTO())
         handler = command._create_shell_input_handler(dummy_connection, input_source)
 
-        handler(stop_event)
+        with pytest.raises(config.InvalidOperation, match="Operation EXEC_COMMAND is not supported"):
+            handler(stop_event)
 
         assert dummy_renderer.render_calls == [(config.OperationCode.EXEC_COMMAND, (input_command,))]
-        assert dummy_connection.written == [input_command.encode("utf-8")]
+        assert dummy_connection.written == []
 
     def test_launch_shell_input_handler__empty_raw_input__skips_rendering_and_transmission(
         self,

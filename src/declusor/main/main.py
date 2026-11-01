@@ -80,23 +80,23 @@ def run(
                     )
                 case _:
                     print(f"Execution mode {plugin_config.mode.value!r} is not supported yet.", file=error_stream)
-                    return 1
+                    return config.ExitCode.FAILURE
 
         except config.ParserError as error:
             print(f"parser error: {error}", file=error_stream)
-            return 2
+            return config.ExitCode.USAGE_ERROR
         except config.DeclusorException as error:
             print(f"declusor error: {error}", file=error_stream)
-            return 1
+            return config.ExitCode.FAILURE
         except KeyboardInterrupt:
-            return 0
+            return config.ExitCode.SUCCESS
         except SystemExit as error:
             if error.code is None:
-                return 0
+                return config.ExitCode.SUCCESS
 
             if isinstance(error.code, int):
                 return error.code
 
             print(error.code, file=error_stream)
 
-            return 1
+            return config.ExitCode.FAILURE

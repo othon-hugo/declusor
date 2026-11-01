@@ -163,10 +163,10 @@ class TestParseCommandArguments:
         assert parsed == {"opt": None}
         assert unknown == []
 
-    def test_parse_command_arguments__unclosed_quote__raises_controller_error(self) -> None:
-        """Verify syntax error in shlex (unclosed quote) raises ControllerError with cause."""
+    def test_parse_command_arguments__unclosed_quote__raises_parser_error(self) -> None:
+        """Verify syntax error in shlex (unclosed quote) raises ParserError with cause."""
 
-        with pytest.raises(config.ControllerError, match="Parsing error: No closing quotation") as exc_info:
+        with pytest.raises(config.ParserError, match="Parsing error: No closing quotation") as exc_info:
             parsing.parse_command_arguments("host 'unclosed quotation", {"host": str})
 
         assert isinstance(exc_info.value.__cause__, ValueError)

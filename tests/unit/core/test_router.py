@@ -15,6 +15,12 @@ def _sample_controller(
     return contract.ControllerResult.for_continuation()
 
 
+_sample_registration = contract.RouteRegistration(
+    _sample_controller,
+    contract.RouteHelp("Sample short help.", "Sample long help."),
+)
+
+
 class TestRouterRegistration:
     """Tests verifying route registration invariants on Router."""
 
@@ -23,7 +29,7 @@ class TestRouterRegistration:
 
         router = core.Router()
 
-        router.connect("sample", _sample_controller)
+        router.connect("sample", _sample_registration)
 
         assert router.routes == ("sample",)
         assert "sample" in router.routes
@@ -33,7 +39,7 @@ class TestRouterRegistration:
 
         router = core.Router()
 
-        router.connect("   sample   ", _sample_controller)
+        router.connect("   sample   ", _sample_registration)
 
         assert router.routes == ("sample",)
         assert router.locate("sample") is _sample_controller
@@ -42,10 +48,10 @@ class TestRouterRegistration:
         """Registering an existing route name raises DuplicateRouteError."""
 
         router = core.Router()
-        router.connect("sample", _sample_controller)
+        router.connect("sample", _sample_registration)
 
         with pytest.raises(config.DuplicateRouteError) as exc_info:
-            router.connect("sample", _sample_controller)
+            router.connect("sample", _sample_registration)
 
         assert exc_info.value.route == "sample"
         assert isinstance(exc_info.value, config.RouterError)
@@ -55,10 +61,10 @@ class TestRouterRegistration:
         """Duplicate detection operates on stripped route strings."""
 
         router = core.Router()
-        router.connect("sample", _sample_controller)
+        router.connect("sample", _sample_registration)
 
         with pytest.raises(config.DuplicateRouteError) as exc_info:
-            router.connect("   sample \t ", _sample_controller)
+            router.connect("   sample \t ", _sample_registration)
 
         assert exc_info.value.route == "sample"
 
@@ -67,9 +73,9 @@ class TestRouterRegistration:
 
         router = core.Router()
 
-        router.connect("first", _sample_controller)
-        router.connect("second", _sample_controller)
-        router.connect("third", _sample_controller)
+        router.connect("first", _sample_registration)
+        router.connect("second", _sample_registration)
+        router.connect("third", _sample_registration)
 
         assert router.routes == ("first", "second", "third")
 
@@ -77,7 +83,7 @@ class TestRouterRegistration:
         """The routes property exposes an immutable tuple."""
 
         router = core.Router()
-        router.connect("alpha", _sample_controller)
+        router.connect("alpha", _sample_registration)
 
         routes = router.routes
 
@@ -90,7 +96,7 @@ class TestRouterRegistration:
         router = core.Router()
 
         with pytest.raises(TypeError, match="positional-only"):
-            router.connect(route="sample", controller=_sample_controller)  # type: ignore[call-arg]
+            router.connect(route="sample", registration=_sample_registration)  # type: ignore[call-arg]
 
 
 class TestRouterResolution:
@@ -100,7 +106,7 @@ class TestRouterResolution:
         """Locating an existing route returns the bound controller."""
 
         router = core.Router()
-        router.connect("sample", _sample_controller)
+        router.connect("sample", _sample_registration)
 
         controller = router.locate("sample")
 
@@ -110,7 +116,7 @@ class TestRouterResolution:
         """Locating handles whitespace padding gracefully by stripping lookup keys."""
 
         router = core.Router()
-        router.connect("sample", _sample_controller)
+        router.connect("sample", _sample_registration)
 
         assert router.locate("   sample   ") is _sample_controller
         assert router.locate("\tsample\n") is _sample_controller
@@ -139,7 +145,7 @@ class TestRouterResolution:
         """The locate method enforces positional-only parameters."""
 
         router = core.Router()
-        router.connect("sample", _sample_controller)
+        router.connect("sample", _sample_registration)
 
         with pytest.raises(TypeError, match="positional-only"):
             router.locate(route="sample")  # type: ignore[call-arg]
@@ -148,12 +154,38 @@ class TestRouterResolution:
         """Route resolution is case-sensitive and does not match uppercase variants."""
 
         router = core.Router()
-        router.connect("sample", _sample_controller)
+        router.connect("sample", _sample_registration)
 
         with pytest.raises(config.RouterError) as exc_info:
             router.locate("SAMPLE")
 
         assert exc_info.value.route == "SAMPLE"
+
+
+class TestRouterCompletionMode:
+    """Tests verifying route completion mode resolution on Router."""
+
+    def test_router__completion_mode__returns_registered_completion_mode(self) -> None:
+        """Completion mode returns the mode stored in route registration."""
+
+        router = core.Router()
+        registration = contract.RouteRegistration(
+            _sample_controller,
+            completion_mode=config.RouteCompletionMode.HOST_PATH,
+        )
+        router.connect("upload", registration)
+
+        assert router.completion_mode("upload") == config.RouteCompletionMode.HOST_PATH
+
+    def test_router__completion_mode_unregistered_route__raises_router_error(self) -> None:
+        """Completion mode raises RouterError when querying an unregistered route."""
+
+        router = core.Router()
+
+        with pytest.raises(config.RouterError) as exc_info:
+            router.completion_mode("nonexistent")
+
+        assert exc_info.value.route == "nonexistent"
 
 
 class TestRouterHelp:
@@ -179,10 +211,10 @@ class TestRouterHelp:
         assert router.help("second") == contract.RouteHelp("Second.")
 
     def test_router__help_without_metadata__ignores_controller_docstring(self) -> None:
-        """Direct controller registration produces empty help despite a controller docstring."""
+        """Direct controller registration without explicit help produces empty RouteHelp."""
 
         router = core.Router()
-        router.connect("undoc", _sample_controller)
+        router.connect("undoc", contract.RouteRegistration(_sample_controller))
 
         assert router.help("undoc") == contract.RouteHelp()
 
@@ -208,7 +240,7 @@ class TestRouterHelp:
         """The help method enforces positional-only parameters."""
 
         router = core.Router()
-        router.connect("sample", _sample_controller)
+        router.connect("sample", _sample_registration)
 
         with pytest.raises(TypeError, match="positional-only"):
             router.help(route="sample")  # type: ignore[call-arg]

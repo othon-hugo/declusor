@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
+
+from declusor import config
 
 if TYPE_CHECKING:
     from .controller import Controller
@@ -17,10 +19,11 @@ class RouteHelp:
 
 @dataclass(frozen=True)
 class RouteRegistration:
-    """Controller and route-owned help metadata registered together."""
+    """Controller, route-owned help metadata, and argument completion semantics."""
 
     controller: "Controller"
-    help: RouteHelp
+    help: RouteHelp = field(default_factory=RouteHelp)
+    completion_mode: config.RouteCompletionMode = config.RouteCompletionMode.NONE
 
 
 RouteTable = Mapping[str, RouteRegistration]
@@ -54,6 +57,19 @@ class IRouter(ABC):
 
         Returns:
             The route's short and detailed help text.
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def completion_mode(self, route: str, /) -> config.RouteCompletionMode:
+        """Return the argument completion mode registered for a route.
+
+        Args:
+            route: The route name to look up.
+
+        Returns:
+            The route's RouteCompletionMode.
         """
 
         raise NotImplementedError

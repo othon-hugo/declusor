@@ -62,18 +62,72 @@ class ExecutionMode(StrEnum):
         raise ValueError(f"Invalid execution mode: {value!r}. Choose from: {valid_modes}")
 
 
-class LauncherOutput(StrEnum):
-    """TODO"""
+class ExitCode(IntEnum):
+    """Process exit codes for CLI execution."""
 
-    TERMINAL = "terminal"
-    SILENT = "silent"
-    FILE = "file"
+    SUCCESS = 0
+    """Normal successful execution."""
+
+    FAILURE = 1
+    """Runtime error or application exception."""
+
+    USAGE_ERROR = 2
+    """Command-line parsing or invocation argument error."""
+
+
+class CoreRoute(StrEnum):
+    """Reserved framework command routes."""
+
+    HELP = "help"
+    """Display general or command-specific usage documentation."""
+
+    EXIT = "exit"
+    """Terminate the active session and exit the application."""
+
+
+class OfficialRoute(StrEnum):
+    """Standard operation command routes provided by framework controllers."""
+
+    LOAD = "load"
+    """Load a remote agent module from assets."""
+
+    COMMAND = "command"
+    """Execute a system shell command."""
+
+    EVAL = "eval"
+    """Evaluate code in the remote agent runtime."""
+
+    SHELL = "shell"
+    """Start an interactive bidirectional remote shell."""
+
+    UPLOAD = "upload"
+    """Upload a local file to the remote agent."""
+
+    EXECUTE = "execute"
+    """Transmit and execute a local script remotely."""
+
+
+class RouteCompletionMode(StrEnum):
+    """Autocompletion target semantics for command arguments."""
+
+    NONE = "none"
+    """Command does not accept path-based autocompletion."""
+
+    HOST_PATH = "host_path"
+    """Complete file and directory paths on the local operator host filesystem."""
+
+    MODULE_PATH = "module_path"
+    """Complete module paths within the active plugin assets/modules directory."""
+
+    ASSET_PATH = "asset_path"
+    """Complete asset file paths within the active plugin assets directory."""
 
 
 class TransportLayer(StrEnum):
-    """TODO"""
+    """Recognized composable transport layer decorators."""
 
     XOR = "xor"
+    """Symmetric XOR obfuscation transport stream cipher layer."""
 
 
 class OperationCode(StrEnum):

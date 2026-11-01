@@ -25,10 +25,15 @@ class Router(contract.IRouter):
 
         return self._locate_registration(route).help
 
+    def completion_mode(self, route: str, /) -> config.RouteCompletionMode:
+        """Return the argument completion mode registered for *route*."""
+
+        return self._locate_registration(route).completion_mode
+
     def connect(
         self,
         route: str,
-        registration: contract.RouteRegistration | contract.Controller,
+        registration: contract.RouteRegistration,
         /,
     ) -> None:
         """Register *registration* under *route*.
@@ -41,9 +46,6 @@ class Router(contract.IRouter):
 
         if route in self._route_table:
             raise config.DuplicateRouteError(route, "route already exists.")
-
-        if not isinstance(registration, contract.RouteRegistration):
-            registration = contract.RouteRegistration(registration, contract.RouteHelp())
 
         self._route_table[route] = registration
 
