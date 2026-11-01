@@ -4,7 +4,9 @@ import importlib.util
 import inspect
 import sys
 import warnings
+from collections.abc import MutableMapping, MutableSequence
 from pathlib import Path
+from types import ModuleType
 
 from declusor import config
 
@@ -54,6 +56,9 @@ def import_plugin_from_file[T](
     file_path: Path,
     expected_type: type[T],
     /,
+    *,
+    module_search_path: MutableSequence[str] | None = None,
+    module_registry: MutableMapping[str, ModuleType] | None = None,
 ) -> type[T] | None:
     """Dynamically import a module or package from file and extract a subclass of ``expected_type``.
 
@@ -61,6 +66,8 @@ def import_plugin_from_file[T](
         module_name: Unique suffix identifier for the loaded module.
         file_path: Path to the target Python file (or package __init__.py).
         expected_type: Base class that the target class must subclass.
+        module_search_path: Import search path to use while loading the plugin. Defaults to ``sys.path``.
+        module_registry: Module registry to use while loading the plugin. Defaults to ``sys.modules``.
 
     Returns:
         First subclass of ``expected_type`` found in the module, or None on failure.
@@ -68,13 +75,19 @@ def import_plugin_from_file[T](
 
     full_module_name = f"declusor_dynamic_plugin_{module_name}"
     search_locations = [str(file_path.parent)] if file_path.name == "__init__.py" else None
+    active_search_path = module_search_path if module_search_path is not None else sys.path
+    active_module_registry = module_registry if module_registry is not None else sys.modules
 
     added_sys_path: str | None = None
+
     if file_path.parent.parent.name == "src":
         src_path = str(file_path.parent.parent)
-        if src_path not in sys.path:
-            sys.path.insert(0, src_path)
+
+        if src_path not in active_search_path:
+            active_search_path.insert(0, src_path)
             added_sys_path = src_path
+
+    previous_module = active_module_registry.get(full_module_name)
 
     try:
         spec = importlib.util.spec_from_file_location(
@@ -87,11 +100,13 @@ def import_plugin_from_file[T](
             return None
 
         module = importlib.util.module_from_spec(spec)
-        sys.modules[full_module_name] = module
+        active_module_registry[full_module_name] = module
         spec.loader.exec_module(module)
 
         for _, obj in inspect.getmembers(module, inspect.isclass):
-            if issubclass(obj, expected_type) and obj is not expected_type:
+            is_plugin_module = obj.__module__ == full_module_name or obj.__module__.startswith(f"{full_module_name}.")
+
+            if is_plugin_module and issubclass(obj, expected_type) and obj is not expected_type:
                 return obj
     except Exception as error:
         warnings.warn(
@@ -101,7 +116,12 @@ def import_plugin_from_file[T](
         )
         return None
     finally:
-        if added_sys_path is not None and added_sys_path in sys.path:
-            sys.path.remove(added_sys_path)
+        if previous_module is None:
+            active_module_registry.pop(full_module_name, None)
+        else:
+            active_module_registry[full_module_name] = previous_module
+
+        if added_sys_path is not None and added_sys_path in active_search_path:
+            active_search_path.remove(added_sys_path)
 
     return None

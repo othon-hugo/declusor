@@ -115,12 +115,14 @@ class ShellSocketConnection(contract.IConnection):
                 raise config.ConnectionHandshakeError("Failed transmitting Stage 1 launcher payload.") from error
 
         helpers_payload = b"\n".join(self._files.load_all_helpers().values())
-        self.write(helpers_payload)
 
         try:
+            self.write(helpers_payload)
+
             for _ in self.read():
                 pass
         except (config.ConnectionClosed, config.ConnectionTimeoutError, config.ConnectionError) as error:
+            self.close()
             raise config.ConnectionHandshakeError("Failed waiting for client handshake envelope.") from error
 
         self._state = contract.ConnectionState.CONNECTED
@@ -150,10 +152,12 @@ class ShellSocketConnection(contract.IConnection):
         if not self._nonce_queue:
             self._nonce_ready.wait(timeout=0.1)
             self.ensure_can_perform_io()
+
             if not self._nonce_queue:
                 return
 
         nonce = self._nonce_queue.popleft()
+
         if not self._nonce_queue:
             self._nonce_ready.clear()
 

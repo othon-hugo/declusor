@@ -1,15 +1,8 @@
 # `py_socket` plugin
 
-## Overview
+`py_socket` provides a cross-platform Python client for Declusor sessions. The plugin uses only the Python standard library and supports in-memory staging, framed command execution, file transfers, and interactive shell operations.
 
-`py_socket` provides a cross-platform Python client for Declusor sessions. The
-plugin uses only the Python standard library and supports in-memory staging,
-framed command execution, file transfers, and interactive shell operations.
-
-The host-side implementation in `src/declusor_py_socket` follows the current
-Declusor Python requirement (Python 3.12+). The files under `assets/` are
-independent payloads delivered to remote targets and intentionally preserve
-their documented older-runtime compatibility.
+The host-side implementation in `src/declusor_py_socket` follows the current Declusor Python requirement (Python 3.12+). The files under `assets/` are independent payloads delivered to remote targets and intentionally preserve their documented older-runtime compatibility.
 
 ## Capabilities
 
@@ -20,11 +13,11 @@ their documented older-runtime compatibility.
 
 ## Compatibility
 
-| Component | Supported environment |
-| --- | --- |
-| Host plugin source | Python 3.12+ |
+| Component           | Supported environment                          |
+| ------------------- | ---------------------------------------------- |
+| Host plugin source  | Python 3.12+                                   |
 | Remote client asset | Python runtime supported by the selected asset |
-| Transport | TCP |
+| Transport           | TCP                                            |
 
 ## Installation
 
@@ -46,26 +39,22 @@ python -m pip install -e plugins/py_socket
 declusor 127.0.0.1 4444 --plugin py_socket
 ```
 
-The listener prints the launcher required to establish the remote session.
-Use the main [Declusor README](../../README.md) for session commands and
-launcher delivery options.
+The listener prints the launcher required to establish the remote session. Use the main [Declusor README](../../README.md) for session commands and launcher delivery options.
 
 ## Protocol
 
-The wire protocol uses chunked TLV frames over TCP. See
-[PROTOCOL.md](PROTOCOL.md) for the frame layout, channels, handshake, and
-session lifecycle.
+The wire protocol uses chunked TLV frames over TCP. See [PROTOCOL.md](PROTOCOL.md) for the frame layout, channels, handshake, and session lifecycle.
 
 ## Package layout
 
-| Path | Responsibility |
-| --- | --- |
-| `src/declusor_py_socket/plugin.py` | Plugin registration, runtime, and asset processing |
-| `src/declusor_py_socket/connection.py` | Connection and framed I/O |
-| `src/declusor_py_socket/renderer.py` | Operation rendering |
-| `assets/launchers/` | Remote bootstrap and client payloads |
-| `assets/helpers/` | Remote helper modules |
-| `assets/modules/` | Optional remote discovery modules |
+| Path                                   | Responsibility                                     |
+| -------------------------------------- | -------------------------------------------------- |
+| `src/declusor_py_socket/plugin.py`     | Plugin registration, runtime, and asset processing |
+| `src/declusor_py_socket/connection.py` | Connection and framed I/O                          |
+| `src/declusor_py_socket/renderer.py`   | Operation rendering                                |
+| `assets/launchers/`                    | Remote bootstrap and client payloads               |
+| `assets/helpers/`                      | Remote helper modules                              |
+| `assets/modules/`                      | Optional remote discovery modules                  |
 
 ## Development and validation
 
@@ -76,16 +65,13 @@ make check TARGET=plugins PLUGIN=py_socket
 make check TARGET=plugin-assets PLUGIN=py_socket
 ```
 
-The asset check validates Python asset syntax without applying the host
-plugin's type-checking rules.
+The asset check validates Python asset syntax without applying the host plugin's type-checking rules.
 
 ## Limitations
 
-- The target must provide a compatible Python interpreter for the selected
-  launcher.
+- The target must provide a compatible Python interpreter for the selected launcher.
 - TCP sessions are not encrypted by this plugin.
-- Remote command execution must only be used on systems where authorization
-  has been obtained.
+- Remote command execution must only be used on systems where authorization has been obtained.
 
 ## License
 

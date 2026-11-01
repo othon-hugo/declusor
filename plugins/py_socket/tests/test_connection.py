@@ -45,6 +45,26 @@ class TestPySocketConnectionLifecycle:
         assert dummy_trans.write_history == []
         assert dummy_trans._incoming == [b"12345"]
 
+    def test_handshake__oversized_stage1_payload__closes_connection(
+        self, dummy_file_store: testing.DummyPluginFileStore, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Reject oversized staged payloads and release the transport immediately."""
+
+        monkeypatch.setattr(config, "MAX_TLV_FRAME_SIZE", 4)
+        dummy_trans = testing.DummyTransport()
+        conn = py_socket.PySocketConnection(
+            dummy_trans,
+            py_socket.PySocketRenderer(),
+            dummy_file_store,
+            stage1_payload=b"12345",
+        )
+
+        with pytest.raises(config.ConnectionHandshakeError, match="Stage 1 payload exceeds maximum"):
+            conn.handshake()
+
+        assert conn.state == contract.ConnectionState.CLOSED
+        assert dummy_trans.is_closed
+
     def test_handshake__when_successful_and_bytecode_compatible__transitions_to_connected(
         self,
         dummy_file_store: testing.DummyPluginFileStore,

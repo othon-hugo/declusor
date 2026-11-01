@@ -1,10 +1,6 @@
 # `shell_socket` plugin
 
-## Overview
-
-`shell_socket` provides a lightweight POSIX shell client for Declusor
-sessions. It uses Bash's `/dev/tcp` support and does not require `nc`,
-`socat`, Python, or other external target-side tools.
+`shell_socket` provides a lightweight POSIX shell client for Declusor sessions. It uses Bash's `/dev/tcp` support and does not require `nc`, `socat`, Python, or other external target-side tools.
 
 ## Capabilities
 
@@ -15,11 +11,11 @@ sessions. It uses Bash's `/dev/tcp` support and does not require `nc`,
 
 ## Compatibility
 
-| Component | Supported environment |
-| --- | --- |
-| Host plugin source | Python 3.12+ |
+| Component           | Supported environment        |
+| ------------------- | ---------------------------- |
+| Host plugin source  | Python 3.12+                 |
 | Remote client asset | Bash with `/dev/tcp` support |
-| Transport | TCP |
+| Transport           | TCP                          |
 
 ## Installation
 
@@ -41,26 +37,22 @@ python -m pip install -e plugins/shell_socket
 declusor 127.0.0.1 4444 --plugin shell_socket
 ```
 
-The listener prints the launcher required to establish the remote session.
-Use the main [Declusor README](../../README.md) for session commands and
-launcher delivery options.
+The listener prints the launcher required to establish the remote session. Use the main [Declusor README](../../README.md) for session commands and launcher delivery options.
 
 ## Protocol
 
-The wire protocol uses ephemeral envelopes over a Bash `/dev/tcp` stream.
-See [PROTOCOL.md](PROTOCOL.md) for framing, delimiter generation, handshake,
-and session lifecycle details.
+The wire protocol uses ephemeral envelopes over a Bash `/dev/tcp` stream. See [PROTOCOL.md](PROTOCOL.md) for framing, delimiter generation, handshake, and session lifecycle details.
 
 ## Package layout
 
-| Path | Responsibility |
-| --- | --- |
-| `src/declusor_shell_socket/plugin.py` | Plugin registration, runtime, and asset processing |
-| `src/declusor_shell_socket/connection.py` | Connection and stream I/O |
-| `src/declusor_shell_socket/renderer.py` | Operation rendering |
-| `assets/launchers/` | Remote bootstrap and client payloads |
-| `assets/helpers/` | Remote helper scripts |
-| `assets/modules/` | Optional remote modules |
+| Path                                      | Responsibility                                     |
+| ----------------------------------------- | -------------------------------------------------- |
+| `src/declusor_shell_socket/plugin.py`     | Plugin registration, runtime, and asset processing |
+| `src/declusor_shell_socket/connection.py` | Connection and stream I/O                          |
+| `src/declusor_shell_socket/renderer.py`   | Operation rendering                                |
+| `assets/launchers/`                       | Remote bootstrap and client payloads               |
+| `assets/helpers/`                         | Remote helper scripts                              |
+| `assets/modules/`                         | Optional remote modules                            |
 
 ## Development and validation
 
@@ -71,17 +63,14 @@ make check TARGET=plugins PLUGIN=shell_socket
 make check TARGET=plugin-assets PLUGIN=shell_socket
 ```
 
-The asset check validates Python asset syntax and runs ShellCheck over shell
-assets. Install ShellCheck locally when it is not already available.
+The asset check validates Python asset syntax and runs ShellCheck over shell assets. Install ShellCheck locally when it is not already available.
 
 ## Limitations
 
 - The target must provide Bash and `/dev/tcp` support.
-- This plugin is not intended for generic `/bin/sh` implementations without
-  the required Bash features.
+- This plugin is not intended for generic `/bin/sh` implementations without the required Bash features.
 - TCP sessions are not encrypted by this plugin.
-- Remote command execution must only be used on systems where authorization
-  has been obtained.
+- Remote command execution must only be used on systems where authorization has been obtained.
 
 ## License
 

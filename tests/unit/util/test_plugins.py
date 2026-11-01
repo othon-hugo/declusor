@@ -2,6 +2,7 @@
 
 import sys
 from pathlib import Path
+from types import ModuleType
 
 from declusor.util import plugin
 
@@ -184,6 +185,19 @@ class TestImportPluginFromFile:
 
         assert result is None
 
+    def test_import_plugin_from_file__imported_subclass__ignores_class_from_external_module(self, tmp_path: Path) -> None:
+        """Verify discovery returns only classes defined by the loaded plugin module or package."""
+
+        file_path = tmp_path / "external_only.py"
+        file_path.write_text(
+            "from tests.unit.util.test_plugins import SamplePlugin\n",
+            encoding="utf-8",
+        )
+
+        result = plugin.import_plugin_from_file("external_only", file_path, SampleBase)
+
+        assert result is None
+
     def test_import_plugin_from_file__no_subclass_defined__returns_none(self, tmp_path: Path) -> None:
         """Verify import_plugin_from_file returns None when module defines no subclass of expected_type."""
 
@@ -265,6 +279,31 @@ class TestImportPluginFromFile:
         finally:
             if src_str in sys.path:
                 sys.path.remove(src_str)
+
+    def test_import_plugin_from_file__injected_import_state__restores_custom_containers(self, tmp_path: Path) -> None:
+        """Verify loading can use caller-owned import state without leaking the temporary module."""
+
+        file_path = tmp_path / "plugin.py"
+        file_path.write_text(
+            "from tests.unit.util.test_plugins import SampleBase\nclass InjectedPlugin(SampleBase):\n    pass\n",
+            encoding="utf-8",
+        )
+        module_name = "declusor_dynamic_plugin_injected_state"
+        existing_module = ModuleType("existing")
+        module_registry: dict[str, ModuleType] = {module_name: existing_module}
+        module_search_path: list[str] = []
+
+        result = plugin.import_plugin_from_file(
+            "injected_state",
+            file_path,
+            SampleBase,
+            module_search_path=module_search_path,
+            module_registry=module_registry,
+        )
+
+        assert result is not None
+        assert module_search_path == []
+        assert module_registry[module_name] is existing_module
 
     def test_import_plugin_from_file__nonexistent_file__returns_none(self, tmp_path: Path) -> None:
         """Verify import_plugin_from_file returns None when target file does not exist."""

@@ -26,10 +26,21 @@ class BaseStreamCommand(contract.ICommand):
             config.ConnectionClosed: If the remote peer terminates the connection unexpectedly.
             config.ConnectionTimeoutError: If a transport operation times out.
             config.ConnectionError: If another transport or protocol read error occurs.
+
+        The socket timeout is temporarily disabled while waiting for the command
+        response so a long-running command is not mistaken for an idle connection.
         """
 
-        for data in session.connection.read():
-            session.view.write_binary_data(data)
+        previous_timeout = session.connection.timeout
+
+        try:
+            session.connection.timeout = None
+
+            for data in session.connection.read():
+                session.view.write_binary_data(data)
+        finally:
+            if not session.connection.is_closed:
+                session.connection.timeout = previous_timeout
 
 
 class BaseFileCommand[T: "ExecuteFileDTO | UploadFileDTO"](BaseStreamCommand):

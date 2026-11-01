@@ -147,11 +147,21 @@ class PySocketConnection(contract.IConnection):
 
         # Step 0: Transmit Stage 1 payload if staged launcher strategy
         if self._stage1_payload is not None:
+            if len(self._stage1_payload) > config.MAX_TLV_FRAME_SIZE:
+                self.close()
+
+                raise config.ConnectionHandshakeError(
+                    f"Stage 1 payload exceeds maximum size of {config.MAX_TLV_FRAME_SIZE} bytes.",
+                    expected_ack=self._expected_ack,
+                )
+
             stage_frame = struct.pack(">I", len(self._stage1_payload)) + self._stage1_payload
 
             try:
                 self._transport.write(stage_frame)
             except (config.ConnectionClosed, config.ConnectionTimeoutError, config.ConnectionError) as error:
+                self.close()
+
                 raise config.ConnectionHandshakeError(
                     "Failed delivering Stage 1 script during handshake.",
                     expected_ack=self._expected_ack,
@@ -179,12 +189,17 @@ class PySocketConnection(contract.IConnection):
             else:
                 self._is_bytecode_compatible = False
         except (config.ConnectionClosed, config.ConnectionTimeoutError, config.ConnectionError) as error:
+            self.close()
             raise config.ConnectionHandshakeError(
                 "Failed reading client runtime metadata during handshake.",
                 expected_ack=self._expected_ack,
             ) from error
-        except Exception:
-            self._is_bytecode_compatible = False
+        except (json.JSONDecodeError, UnicodeDecodeError, TypeError, ValueError) as error:
+            self.close()
+            raise config.ConnectionHandshakeError(
+                "Invalid client runtime metadata during handshake.",
+                expected_ack=self._expected_ack,
+            ) from error
 
         # Step 2: Transmit helper libraries in the negotiated desired encoding
         helpers_payload = self.prepare_helpers_payload()
@@ -197,6 +212,7 @@ class PySocketConnection(contract.IConnection):
             received_ack = self._transport.read_exact(len(expected_ack))
 
             if received_ack != expected_ack:
+                self.close()
                 raise config.ConnectionHandshakeError(
                     "Invalid client ACK during session initialization.",
                     expected_ack=expected_ack,
@@ -205,6 +221,7 @@ class PySocketConnection(contract.IConnection):
         except config.ConnectionHandshakeError:
             raise
         except (config.ConnectionClosed, config.ConnectionTimeoutError, config.ConnectionError) as error:
+            self.close()
             raise config.ConnectionHandshakeError(
                 "Failed waiting for client ACK during session initialization.",
                 expected_ack=expected_ack,

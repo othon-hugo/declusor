@@ -185,6 +185,7 @@ def read_stream(transport):
             return
 
         payload = transport.read_exact(length)
+
         if channel in (config.ChannelType.STDOUT, config.ChannelType.STDERR):
             yield payload
 ```
@@ -202,8 +203,11 @@ def send_frame(sock: socket.socket, channel: int, data: bytes) -> None:
 
 def read_frame(sock: socket.socket) -> bytes | None:
     header = read_exact(sock, 5)
+
     if header is None:
         return None
+
     channel, length = struct.unpack(">BI", header)
+
     return read_exact(sock, length)
 ```
