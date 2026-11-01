@@ -1,17 +1,27 @@
-from declusor import config, contract
+from collections.abc import Callable
+
+from declusor import config, contract, util
 
 
 class LauncherRenderer:
     """Applies delivery mode and optional shell wrapper to client launchers."""
 
-    def __init__(self, view: contract.IView, /) -> None:
+    def __init__(
+        self,
+        view: contract.IView,
+        /,
+        *,
+        clipboard_copier: Callable[..., None] | None = None,
+    ) -> None:
         """Create a LauncherRenderer with the specified operator view.
 
         Args:
             view: Operator view interface handling output presentation.
+            clipboard_copier: Optional callable copying payload to clipboard.
         """
 
         self._view = view
+        self._clipboard_copier = clipboard_copier or util.copy_to_clipboard
 
     def render(self, delivery: contract.LauncherDelivery, /) -> None:
         """Render and deliver the client launcher according to its envelope.
@@ -20,7 +30,7 @@ class LauncherRenderer:
             delivery: Immutable envelope carrying launcher payload and delivery options.
 
         Raises:
-            DeclusorException: If delivering the launcher to a file fails.
+            DeclusorException: If delivering the launcher to a file or clipboard fails.
         """
 
         output = delivery.wrapped_text
@@ -42,3 +52,5 @@ class LauncherRenderer:
                         f"Failed to write client launcher to {delivery.output_path}: {error}",
                         output_path=delivery.output_path,
                     ) from error
+            case config.LauncherOutputMode.CLIPBOARD:
+                self._clipboard_copier(output, view=self._view)

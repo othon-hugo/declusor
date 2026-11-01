@@ -183,6 +183,27 @@ class TestLauncherDelivery:
 
         assert exc_info.value.output_path == tmp_path / "out.sh"
 
+    def test_launcher_delivery_clipboard_mode__without_output_path__instantiates_successfully(self) -> None:
+        """Verify LauncherDelivery allows CLIPBOARD mode without requiring output_path."""
+
+        delivery = contract.LauncherDelivery(
+            script=b"echo hello",
+            output_mode=config.LauncherOutputMode.CLIPBOARD,
+        )
+
+        assert delivery.output_mode == config.LauncherOutputMode.CLIPBOARD
+        assert delivery.output_path is None
+
+    def test_launcher_delivery_clipboard_mode__with_output_path__raises_launcher_delivery_error(self, tmp_path: Path) -> None:
+        """Verify LauncherDelivery rejects output_path when output_mode is CLIPBOARD."""
+
+        with pytest.raises(config.LauncherDeliveryError, match="output_path is only valid when output_mode is FILE"):
+            contract.LauncherDelivery(
+                script=b"echo hello",
+                output_mode=config.LauncherOutputMode.CLIPBOARD,
+                output_path=tmp_path / "out.sh",
+            )
+
 
 class TestIPluginExtension:
     """Tests for IPluginExtension interface."""

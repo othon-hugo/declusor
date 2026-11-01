@@ -21,6 +21,9 @@ class LauncherOutputMode(StrEnum):
     FILE = "file"
     """Write launcher to a file path declared in LauncherDelivery.output_path."""
 
+    CLIPBOARD = "clipboard"
+    """Copy launcher directly to the system clipboard without operator messages."""
+
 
 class LauncherKind(StrEnum):
     """Enumeration of client launcher delivery forms."""

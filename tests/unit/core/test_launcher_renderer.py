@@ -299,6 +299,82 @@ class TestLauncherRendererWrapper:
         assert "plain_unwrapped_script" in view.messages
 
 
+class TestLauncherRendererClipboard:
+    """Tests verifying LauncherRenderer behavior when delivering to CLIPBOARD."""
+
+    def test_render__clipboard_mode__copies_payload_without_view_messages(self) -> None:
+        """LauncherRenderer delegates payload to clipboard copier and leaves view messages empty."""
+
+        view = testing.DummyView()
+        recorded: list[tuple[str, object]] = []
+
+        def custom_copier(text: str, /, *, view: object = None) -> None:
+            recorded.append((text, view))
+
+        renderer = core.LauncherRenderer(view, clipboard_copier=custom_copier)
+        delivery = contract.LauncherDelivery(
+            script=b"echo 'launching stager'",
+            output_mode=config.LauncherOutputMode.CLIPBOARD,
+        )
+        renderer.render(delivery)
+
+        assert recorded == [("echo 'launching stager'", view)]
+        assert len(view.messages) == 0
+        assert len(view.info_messages) == 0
+        assert len(view.success_messages) == 0
+
+    def test_render__clipboard_mode_with_wrapper__copies_wrapped_payload(self) -> None:
+        """LauncherRenderer applies wrapper template before delegating to clipboard copier."""
+
+        view = testing.DummyView()
+        recorded: list[str] = []
+
+        def custom_copier(text: str, /, *, view: object = None) -> None:
+            recorded.append(text)
+
+        renderer = core.LauncherRenderer(view, clipboard_copier=custom_copier)
+        delivery = contract.LauncherDelivery(
+            script=b"import sys; print(sys.version)",
+            output_mode=config.LauncherOutputMode.CLIPBOARD,
+            wrapper_template="python3 -c '$DECLUSOR_SCRIPT'",
+        )
+        renderer.render(delivery)
+
+        assert recorded == ["python3 -c 'import sys; print(sys.version)'"]
+        assert len(view.messages) == 0
+
+    def test_render__clipboard_mode_default_copier__emits_osc52_to_view(self) -> None:
+        """LauncherRenderer with default clipboard utility emits OSC 52 sequence without messages."""
+
+        view = testing.DummyView()
+        renderer = core.LauncherRenderer(view)
+        delivery = contract.LauncherDelivery(
+            script=b"raw_stager_bytes",
+            output_mode=config.LauncherOutputMode.CLIPBOARD,
+        )
+        renderer.render(delivery)
+
+        assert any(b"\x1b]52;c;" in chunk for chunk in view.binary_data)
+        assert len(view.messages) == 0
+
+    def test_render__clipboard_mode_copier_failure__raises_launcher_delivery_error(self) -> None:
+        """LauncherRenderer propagates LauncherDeliveryError when clipboard copying fails."""
+
+        view = testing.DummyView()
+
+        def failing_copier(text: str, /, *, view: object = None) -> None:
+            raise config.LauncherDeliveryError("All clipboard mechanisms failed.")
+
+        renderer = core.LauncherRenderer(view, clipboard_copier=failing_copier)
+        delivery = contract.LauncherDelivery(
+            script=b"stager",
+            output_mode=config.LauncherOutputMode.CLIPBOARD,
+        )
+
+        with pytest.raises(config.LauncherDeliveryError, match="All clipboard mechanisms failed."):
+            renderer.render(delivery)
+
+
 class TestLauncherRendererInitialization:
     """Tests verifying LauncherRenderer initialization invariants."""
 

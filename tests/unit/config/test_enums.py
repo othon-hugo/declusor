@@ -34,7 +34,8 @@ class TestLauncherOutputModeEnum:
         assert config.LauncherOutputMode.TERMINAL.value == "terminal"
         assert config.LauncherOutputMode.SILENT.value == "silent"
         assert config.LauncherOutputMode.FILE.value == "file"
-        assert len(config.LauncherOutputMode) == 3
+        assert config.LauncherOutputMode.CLIPBOARD.value == "clipboard"
+        assert len(config.LauncherOutputMode) == 4
 
     def test_launcher_output_mode__subclass__is_str_enum(self) -> None:
         """Verify LauncherOutputMode is a StrEnum that behaves as a string."""
@@ -42,6 +43,8 @@ class TestLauncherOutputModeEnum:
         assert issubclass(config.LauncherOutputMode, StrEnum)
         assert isinstance(config.LauncherOutputMode.TERMINAL, str)
         assert config.LauncherOutputMode.TERMINAL.value == "terminal"
+        assert isinstance(config.LauncherOutputMode.CLIPBOARD, str)
+        assert config.LauncherOutputMode.CLIPBOARD.value == "clipboard"
 
 
 class TestLauncherKindEnum:

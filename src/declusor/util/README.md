@@ -9,6 +9,7 @@ The **util** package provides stateless helper functions consumed across every l
 
 | Module        | Responsibility                                                    |
 | ------------- | ----------------------------------------------------------------- |
+| `clipboard`   | OSC 52 terminal sequence and system clipboard integration         |
 | `concurrency` | Thread-based cooperative concurrency for the interactive shell    |
 | `encoding`    | Data encoding, hashing, shell quoting, and template formatting    |
 | `lang`        | Language-specific compilation, AST pruning, and runtime helpers   |

@@ -171,6 +171,14 @@ class TestDeclusorParserLauncherOutput:
         assert core.DeclusorParser.LauncherOutput("silent") == "silent"
         assert core.DeclusorParser.LauncherOutput("Silent") == "silent"
 
+    def test_launcher_output__clipboard_string__returns_clipboard_mode(self) -> None:
+        """'clipboard' or 'clip' in any case returns normalized 'clipboard' mode string."""
+
+        assert core.DeclusorParser.LauncherOutput("clipboard") == "clipboard"
+        assert core.DeclusorParser.LauncherOutput("CLIPBOARD") == "clipboard"
+        assert core.DeclusorParser.LauncherOutput("clip") == "clipboard"
+        assert core.DeclusorParser.LauncherOutput("CLIP") == "clipboard"
+
     def test_launcher_output__file_with_valid_path__returns_normalized_file_string(self) -> None:
         """'file:<path>' returns the normalized file path specification string."""
 
@@ -315,6 +323,19 @@ class TestDeclusorParserParseLauncherOutputStaticMethod:
         mode, path = core.DeclusorParser.parse_launcher_output("silent")
 
         assert mode == config.LauncherOutputMode.SILENT
+        assert path is None
+
+    def test_parse_launcher_output__clipboard__returns_clipboard_mode_and_none_path(self) -> None:
+        """'clipboard' and 'clip' return LauncherOutputMode.CLIPBOARD and None destination path."""
+
+        mode, path = core.DeclusorParser.parse_launcher_output("clipboard")
+
+        assert mode == config.LauncherOutputMode.CLIPBOARD
+        assert path is None
+
+        mode, path = core.DeclusorParser.parse_launcher_output("clip")
+
+        assert mode == config.LauncherOutputMode.CLIPBOARD
         assert path is None
 
     def test_parse_launcher_output__file_path__returns_file_mode_and_path(self) -> None:

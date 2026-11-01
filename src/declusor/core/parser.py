@@ -148,7 +148,7 @@ class DeclusorParser(util.Parser):
         """Launcher output mode argument definition."""
 
         arg_name: Final = "launcher_output"
-        arg_help: Final = "client launcher delivery output mode: 'terminal', 'silent', or 'file:<path>' (default: 'terminal')"
+        arg_help: Final = "client launcher delivery output mode: 'terminal', 'silent', 'clipboard', or 'file:<path>' (default: 'terminal')"
         arg_flags: Final = ("-O", "--launcher-output")
         arg_default: Final = config.DEFAULT_LAUNCHER_OUTPUT_MODE.value
 
@@ -165,6 +165,9 @@ class DeclusorParser(util.Parser):
             if lower == config.LauncherOutputMode.SILENT.value:
                 return super().__new__(cls, config.LauncherOutputMode.SILENT.value)
 
+            if lower in (config.LauncherOutputMode.CLIPBOARD.value, "clip"):
+                return super().__new__(cls, config.LauncherOutputMode.CLIPBOARD.value)
+
             if lower.startswith("file:"):
                 path_str = normalized[5:].strip()
 
@@ -173,7 +176,11 @@ class DeclusorParser(util.Parser):
 
                 return super().__new__(cls, normalized)
 
-            valid = f"{config.LauncherOutputMode.TERMINAL.value!r}, {config.LauncherOutputMode.SILENT.value!r}, or 'file:<path>'"
+            valid = (
+                f"{config.LauncherOutputMode.TERMINAL.value!r}, "
+                f"{config.LauncherOutputMode.SILENT.value!r}, "
+                f"{config.LauncherOutputMode.CLIPBOARD.value!r}, or 'file:<path>'"
+            )
 
             raise ValueError(f"invalid launcher output mode: {value!r} (expected {valid})")
 
@@ -225,7 +232,7 @@ class DeclusorParser(util.Parser):
         """Convert a validated launcher output string into mode and optional destination path.
 
         Args:
-            value: Validated launcher output string ('terminal', 'silent', or 'file:<path>').
+            value: Validated launcher output string ('terminal', 'silent', 'clipboard', or 'file:<path>').
 
         Returns:
             Tuple of (LauncherOutputMode, Path | None).
@@ -239,6 +246,9 @@ class DeclusorParser(util.Parser):
 
         if lower == config.LauncherOutputMode.SILENT.value:
             return config.LauncherOutputMode.SILENT, None
+
+        if lower in (config.LauncherOutputMode.CLIPBOARD.value, "clip"):
+            return config.LauncherOutputMode.CLIPBOARD, None
 
         if lower.startswith("file:"):
             return config.LauncherOutputMode.FILE, Path(normalized[5:].strip())

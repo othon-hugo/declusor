@@ -747,6 +747,38 @@ class TestDeclusorParserLauncherOutput:
         assert plugin_config.launcher_output_mode == config.LauncherOutputMode.SILENT
         assert plugin_config.launcher_output_path is None
 
+    def test_parse__explicit_clipboard_output__sets_clipboard_mode(self) -> None:
+        """Specifying --launcher-output clipboard sets CLIPBOARD mode."""
+
+        testing.DummyPlugin.reset()
+        manager = core.PluginManager()
+        manager.register(testing.DummyPlugin)
+
+        parser = core.DeclusorParser(name="test_app")
+        plugin_config = parser.parse(
+            manager,
+            ["127.0.0.1", "9000", "-p", testing.DummyPlugin.name, "--launcher-output", "clipboard"],
+        )
+
+        assert plugin_config.launcher_output_mode == config.LauncherOutputMode.CLIPBOARD
+        assert plugin_config.launcher_output_path is None
+
+    def test_parse__explicit_clip_output__sets_clipboard_mode(self) -> None:
+        """Specifying -O clip alias sets CLIPBOARD mode."""
+
+        testing.DummyPlugin.reset()
+        manager = core.PluginManager()
+        manager.register(testing.DummyPlugin)
+
+        parser = core.DeclusorParser(name="test_app")
+        plugin_config = parser.parse(
+            manager,
+            ["127.0.0.1", "9000", "-p", testing.DummyPlugin.name, "-O", "clip"],
+        )
+
+        assert plugin_config.launcher_output_mode == config.LauncherOutputMode.CLIPBOARD
+        assert plugin_config.launcher_output_path is None
+
     def test_parse__explicit_file_output__sets_file_mode_and_path(self, tmp_path: Path) -> None:
         """Specifying --launcher-output file:<path> sets FILE mode and destination Path."""
 
