@@ -15,6 +15,7 @@ from .launcher import (
     LauncherRenderer,
 )
 from .parser import (
+    DeclusorNamespace,
     DeclusorParser,
 )
 from .plugin import (
@@ -33,6 +34,7 @@ from .routes import (
 __all__ = [
     "Application",
     "create_help_route",
+    "DeclusorNamespace",
     "DeclusorParser",
     "DuplicateRouteError",
     "EXIT_ROUTE",

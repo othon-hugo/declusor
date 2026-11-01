@@ -6,12 +6,13 @@ from declusor import config, contract, core
 class TestCoreExports:
     """Tests verifying public symbols exported by declusor.core."""
 
-    def test_core_all__contains_all_seventeen_public_symbols(self) -> None:
+    def test_core_all__contains_all_eighteen_public_symbols(self) -> None:
         """The core package exports its components, exceptions, and official routes."""
 
         expected = [
             "Application",
             "create_help_route",
+            "DeclusorNamespace",
             "DeclusorParser",
             "DuplicateRouteError",
             "EXIT_ROUTE",
@@ -52,13 +53,14 @@ class TestCoreExports:
 
         from declusor.core.application import Application
         from declusor.core.launcher import LauncherRenderer
-        from declusor.core.parser import DeclusorParser
+        from declusor.core.parser import DeclusorNamespace, DeclusorParser
         from declusor.core.plugin import PluginManager, PluginRegistry
         from declusor.core.router import Router
         from declusor.core.routes import EXIT_ROUTE, OFFICIAL_ROUTES, create_help_route
 
         assert core.Application is Application
         assert core.LauncherRenderer is LauncherRenderer
+        assert core.DeclusorNamespace is DeclusorNamespace
         assert core.DeclusorParser is DeclusorParser
         assert core.PluginManager is PluginManager
         assert core.PluginRegistry is PluginRegistry

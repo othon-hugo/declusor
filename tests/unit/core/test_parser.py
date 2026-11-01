@@ -884,3 +884,23 @@ class TestDeclusorParserTransportLayers:
         )
 
         assert plugin_config.transport_layers == ("custom",)
+
+
+class TestDeclusorNamespace:
+    """Tests verifying DeclusorNamespace static typing and default values."""
+
+    def test_declusor_namespace__default_values__match_configuration_invariants(self) -> None:
+        """Verify newly instantiated DeclusorNamespace holds canonical default values."""
+
+        ns = core.DeclusorNamespace()
+
+        assert ns.host == ""
+        assert ns.port == 0
+        assert ns.plugin is None
+        assert ns.mode == config.DEFAULT_EXECUTION_MODE.value
+        assert ns.launcher_output == config.DEFAULT_LAUNCHER_OUTPUT_MODE.value
+        assert ns.launcher_wrapper is None
+        assert ns.timeout is None
+        assert ns.assets_dir is None
+        assert ns.plugin_dir is None
+        assert ns.transport_layers is None
