@@ -26,7 +26,7 @@ type ParsedArguments = dict[str, Any]
 class Parser(ArgumentParser):
     """Custom argument parser that extends argparse.ArgumentParser."""
 
-    _max_help_position: Final[int] = 44
+    _max_help_position: Final[int] = 64
     """Maximum character offset for aligning option help messages in formatting output."""
 
     def __init__(self, /, prog: str | None = None, usage: str | None = None, description: str | None = None, add_help: bool = True) -> None:

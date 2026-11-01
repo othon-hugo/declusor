@@ -145,6 +145,12 @@ class PySocketConnection(contract.IConnection):
 
         self._state = contract.ConnectionState.INITIALIZING
 
+        try:
+            self._transport.establish()
+        except config.ConnectionError as error:
+            self.close()
+            raise config.ConnectionHandshakeError("Failed establishing transport session.", expected_ack=self._expected_ack) from error
+
         # Step 0: Transmit Stage 1 payload if staged launcher strategy
         if self._stage1_payload is not None:
             if len(self._stage1_payload) > config.MAX_TLV_FRAME_SIZE:

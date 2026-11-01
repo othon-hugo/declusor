@@ -115,6 +115,41 @@ class TestPySocketConnectionLifecycle:
         expected_staged_frame = struct.pack(">I", len(stage1)) + stage1
         assert dummy_trans.write_history[0] == expected_staged_frame
 
+    def test_handshake__establishes_transport_before_plugin_protocol(self, dummy_file_store: testing.DummyPluginFileStore) -> None:
+        """Establish the transport before sending or reading plugin handshake frames."""
+
+        dummy_trans = testing.DummyTransport()
+        events: list[str] = []
+
+        def establish() -> None:
+            events.append("transport")
+
+        dummy_trans.establish = establish  # type: ignore[method-assign]
+        ack = b"\xab" * 32
+        conn = py_socket.PySocketConnection(dummy_trans, py_socket.PySocketRenderer(), dummy_file_store, expected_ack=ack)
+        dummy_trans.push_incoming(_make_metadata_frame() + ack)
+
+        conn.handshake()
+
+        assert events == ["transport"]
+
+    def test_handshake__transport_establishment_failure__closes_connection(self, dummy_file_store: testing.DummyPluginFileStore) -> None:
+        """Close the connection when a transport layer cannot establish its session."""
+
+        dummy_trans = testing.DummyTransport()
+
+        def establish() -> None:
+            raise config.ConnectionError("transport negotiation failed")
+
+        dummy_trans.establish = establish  # type: ignore[method-assign]
+        conn = py_socket.PySocketConnection(dummy_trans, py_socket.PySocketRenderer(), dummy_file_store)
+
+        with pytest.raises(config.ConnectionHandshakeError, match="Failed establishing transport session"):
+            conn.handshake()
+
+        assert conn.is_closed
+        assert dummy_trans.is_closed
+
     def test_handshake__when_bytecode_incompatible__transmits_source_helpers(
         self,
         dummy_file_store: testing.DummyPluginFileStore,

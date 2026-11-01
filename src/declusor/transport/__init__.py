@@ -6,6 +6,9 @@ from declusor.config import (
     ConnectionTimeoutError,
 )
 
+from .hmac_transport import (
+    HmacTransport,
+)
 from .pipeline import (
     TransportLayerFactory,
     TransportLayerRegistry,
@@ -26,6 +29,7 @@ __all__ = [
     "ConnectionClosed",
     "ConnectionError",
     "ConnectionTimeoutError",
+    "HmacTransport",
     "default_transport_registry",
     "SocketTransport",
     "TcpListener",

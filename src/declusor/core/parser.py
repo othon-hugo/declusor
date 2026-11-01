@@ -201,7 +201,7 @@ class DeclusorParser(util.Parser):
         arg_flags: Final = ("-K", "--launcher-kind")
         """CLI flag options."""
 
-        arg_choices: Final = tuple(k.value for k in config.LauncherKind)
+        arg_choices: Final = tuple(config.LauncherKind)
         """Permitted launcher kind string choices."""
 
         arg_default: Final = config.DEFAULT_LAUNCHER_KIND.value
@@ -238,18 +238,13 @@ class DeclusorParser(util.Parser):
         arg_name: Final = "launcher_output"
         """CLI argument destination attribute name."""
 
-        arg_help: Final = "client launcher delivery output mode ('{terminal}', '{silent}', '{clipboard}', or '{file}:<path>')".format(
-            terminal=config.LauncherOutputMode.TERMINAL,
-            silent=config.LauncherOutputMode.SILENT,
-            clipboard=config.LauncherOutputMode.CLIPBOARD,
-            file=config.LauncherOutputMode.FILE,
-        )
+        arg_help: Final = "client launcher delivery output mode"
         """Help description string."""
 
         arg_flags: Final = ("-O", "--launcher-output")
         """CLI flag options."""
 
-        arg_choices: Final = Choices(mode.value for mode in config.LauncherOutputMode)
+        arg_choices: Final = Choices(tuple(config.LauncherOutputMode))
         """Permitted launcher output mode choices."""
 
         arg_default: Final = config.DEFAULT_LAUNCHER_OUTPUT_MODE.value
@@ -295,7 +290,7 @@ class DeclusorParser(util.Parser):
         arg_name: Final = "launcher_wrapper"
         """CLI argument destination attribute name."""
 
-        arg_help: Final = "shell invocation wrapper template containing '$DECLUSOR_SCRIPT' (e.g. \"python3 -c '$DECLUSOR_SCRIPT'\")"
+        arg_help: Final = "shell invocation wrapper template containing '$DECLUSOR_SCRIPT'"
         """Help description string."""
 
         arg_flags: Final = ("-W", "--launcher-wrapper")
@@ -314,6 +309,9 @@ class DeclusorParser(util.Parser):
 
         arg_name: Final = "transport_layers"
         """CLI argument destination attribute name."""
+
+        arg_choices: Final = tuple(config.TransportLayer)
+        """Built-in transport layers exposed by configuration."""
 
         arg_help: Final = "composable transport layer to wrap connection (repeatable)"
         """Help description string."""
@@ -338,9 +336,9 @@ class DeclusorParser(util.Parser):
         Plugin,
         Timeout,
         ExecutionMode,
+        LauncherOutput,
         LauncherKind,
         LauncherWrapper,
-        LauncherOutput,
         TransportLayer,
         AssetsDir,
         PluginDir,
@@ -429,6 +427,14 @@ class DeclusorParser(util.Parser):
         )
 
         self.add_argument(
+            *self.LauncherOutput.arg_flags,
+            help=self.LauncherOutput.arg_help,
+            choices=self.LauncherOutput.arg_choices,
+            default=self.LauncherOutput.arg_default,
+            type=self.LauncherOutput,
+        )
+
+        self.add_argument(
             *self.LauncherKind.arg_flags,
             dest=self.LauncherKind.arg_name,
             help=self.LauncherKind.arg_help,
@@ -442,14 +448,6 @@ class DeclusorParser(util.Parser):
             help=self.LauncherWrapper.arg_help,
             default=None,
             type=self.LauncherWrapper,
-        )
-
-        self.add_argument(
-            *self.LauncherOutput.arg_flags,
-            help=self.LauncherOutput.arg_help,
-            choices=self.LauncherOutput.arg_choices,
-            default=self.LauncherOutput.arg_default,
-            type=self.LauncherOutput,
         )
 
         self.add_argument(

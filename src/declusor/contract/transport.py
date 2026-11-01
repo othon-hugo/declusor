@@ -41,6 +41,16 @@ class ITransport(ABC):
 
         raise NotImplementedError
 
+    def establish(self) -> None:
+        """Establish optional transport-layer session state before protocol I/O.
+
+        Plain transports and stateless decorators do nothing. Secure or
+        authenticated layers may override this method to perform their own
+        negotiation before the plugin-specific connection handshake begins.
+        """
+
+        return None
+
     @abstractmethod
     def read(self, max_bytes: int = config.DEFAULT_BUFFER_SIZE, /) -> bytes:
         """Read up to max_bytes from the transport.
@@ -190,6 +200,11 @@ class ITransportLayer(ITransport, ABC):
         """Remote endpoint address delegated from underlying transport."""
 
         return self._transport.peer_address
+
+    def establish(self) -> None:
+        """Establish the wrapped transport layer before protocol I/O."""
+
+        self._transport.establish()
 
     def close(self) -> None:
         """Close the underlying transport."""

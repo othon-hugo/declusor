@@ -107,6 +107,12 @@ class ShellSocketConnection(contract.IConnection):
 
         self._state = contract.ConnectionState.INITIALIZING
 
+        try:
+            self._transport.establish()
+        except config.ConnectionError as error:
+            self.close()
+            raise config.ConnectionHandshakeError("Failed establishing transport session.") from error
+
         if self._stage1_payload is not None:
             try:
                 self._transport.write(self._stage1_payload + b"\x00")

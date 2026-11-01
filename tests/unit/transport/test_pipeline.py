@@ -115,6 +115,27 @@ class TestTransportPipeline:
 
         assert wrapped.read(1024) == b"data"
 
+    def test_transport_pipeline_wrap__establish__delegates_through_all_layers(self) -> None:
+        """Verify establish reaches the underlying transport through every decorator."""
+
+        events: list[str] = []
+
+        class EstablishingTransport(PrefixTransport):
+            def establish(self) -> None:
+                events.append("inner")
+
+        pipeline = transport.TransportPipeline(
+            [
+                lambda t: PrefixTransport(t, b"OUTER:"),
+                lambda t: EstablishingTransport(t, b"INNER:"),
+            ]
+        )
+
+        wrapped = pipeline.wrap(testing.DummyTransport())
+        wrapped.establish()
+
+        assert events == ["inner"]
+
 
 class TestTransportLayerRegistry:
     """Tests for TransportLayerRegistry."""

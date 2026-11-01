@@ -69,14 +69,14 @@ class ExecutionMode(StrEnum):
     CLI = "cli"
     """Interactive terminal REPL and prompt loop execution mode."""
 
-    API = "api"
-    """Programmatic API daemon mode for external service integration."""
+    # API = "api"
+    # """Programmatic API daemon mode for external service integration."""
 
-    MCP = "mcp"
-    """Model Context Protocol server mode for agentic tool calling."""
+    # MCP = "mcp"
+    # """Model Context Protocol server mode for agentic tool calling."""
 
-    HTTP = "http"
-    """HTTP RESTful server mode for web-based remote interactions."""
+    # HTTP = "http"
+    # """HTTP RESTful server mode for web-based remote interactions."""
 
     @classmethod
     def from_string(cls, value: str, /) -> "ExecutionMode":
@@ -169,6 +169,9 @@ class TransportLayer(StrEnum):
 
     XOR = "xor"
     """Symmetric XOR obfuscation transport stream cipher layer."""
+
+    HMAC = "hmac"
+    """HMAC-SHA256 integrity and authentication layer available through the API."""
 
 
 class OperationCode(StrEnum):

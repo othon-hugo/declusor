@@ -77,6 +77,25 @@ class TestShellSocketConnectionLifecycle:
         with pytest.raises(config.ConnectionHandshakeError, match="Failed waiting for client handshake envelope"):
             conn.handshake()
 
+    def test_handshake__transport_establishment_failure__closes_connection(
+        self,
+        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+    ) -> None:
+        """Close the connection when a transport layer cannot establish its session."""
+
+        conn, trans = make_shell_connection()
+
+        def establish() -> None:
+            raise config.ConnectionError("transport negotiation failed")
+
+        trans.establish = establish  # type: ignore[method-assign]
+
+        with pytest.raises(config.ConnectionHandshakeError, match="Failed establishing transport session"):
+            conn.handshake()
+
+        assert conn.is_closed
+        assert trans.is_closed
+
     def test_handshake__with_ephemeral_envelope__sends_helpers_and_transitions(
         self,
         make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],

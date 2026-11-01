@@ -304,6 +304,7 @@ class TestDeclusorParserTransportLayer:
         assert core.DeclusorParser.TransportLayer.arg_name == "transport_layers"
         assert core.DeclusorParser.TransportLayer.arg_flags == ("-L", "--transport-layer")
         assert core.DeclusorParser.TransportLayer.arg_action == "append"
+        assert core.DeclusorParser.TransportLayer.arg_choices == tuple(config.TransportLayer)
 
 
 class TestDeclusorParserParseLauncherOutputStaticMethod:
