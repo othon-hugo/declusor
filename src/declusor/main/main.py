@@ -25,7 +25,7 @@ def run(
     session_runner: contract.ISessionRunner | None = None,
     stdout: TextIO | None = None,
     stderr: TextIO | None = None,
-) -> int:
+) -> config.ExitCode:
     """Main application composition root and entry point.
 
     Discovers plugins, parses command-line arguments via DeclusorParser,
@@ -96,8 +96,8 @@ def run(
             if error.code is None:
                 return config.ExitCode.SUCCESS
 
-            if isinstance(error.code, int):
-                return error.code
+            if isinstance(error.code, int) and error.code in config.ExitCode:
+                return config.ExitCode(error.code)
 
             print(error.code, file=error_stream)
 

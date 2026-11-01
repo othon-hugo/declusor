@@ -20,7 +20,7 @@ def run_terminal_app(
     view: contract.IView | None = None,
     input_source: contract.IInputSource | None = None,
     session_runner: contract.ISessionRunner | None = None,
-) -> int:
+) -> config.ExitCode:
     """Compose and run an interactive terminal REPL session.
 
     Args:

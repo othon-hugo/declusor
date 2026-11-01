@@ -72,7 +72,7 @@ class TestPluginConfigFactory:
             port=4444,
             filesystem=custom_fs,
             options=custom_opts,
-            mode=config.ExecutionMode.API,
+            mode=config.ExecutionMode.CLI,
             timeout=15.0,
             launcher_output_mode=config.LauncherOutputMode.SILENT,
             launcher_output_path=Path("/tmp/out.sh"),
@@ -85,7 +85,7 @@ class TestPluginConfigFactory:
         assert cfg.port == 4444
         assert cfg.filesystem is custom_fs
         assert cfg.options is custom_opts
-        assert cfg.mode == config.ExecutionMode.API
+        assert cfg.mode == config.ExecutionMode.CLI
         assert cfg.timeout == 15.0
         assert cfg.launcher_output_mode == config.LauncherOutputMode.SILENT
         assert cfg.launcher_output_path == Path("/tmp/out.sh")

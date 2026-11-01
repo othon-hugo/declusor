@@ -127,7 +127,7 @@ class TestDeclusorParserAssetsAndPluginDir:
 class TestDeclusorParserExecutionMode:
     """Tests verifying DeclusorParser.ExecutionMode argument type validation."""
 
-    @pytest.mark.parametrize("mode_name", ["cli", "api", "mcp", "http"])
+    @pytest.mark.parametrize("mode_name", ["cli"])
     def test_execution_mode__valid_choices__returns_execution_mode_instance(self, mode_name: str) -> None:
         """Valid execution modes return string subclass instances matching their enum values."""
 

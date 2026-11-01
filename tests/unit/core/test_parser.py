@@ -558,7 +558,7 @@ class TestDeclusorParserExecutionMode:
         assert plugin_config.mode == config.ExecutionMode.CLI
 
     def test_parse__explicit_mode_long_flag__sets_execution_mode(self) -> None:
-        """Specifying --mode http sets ExecutionMode.HTTP."""
+        """Specifying --mode cli sets ExecutionMode.CLI."""
 
         testing.DummyPlugin.reset()
         manager = core.PluginManager()
@@ -567,13 +567,13 @@ class TestDeclusorParserExecutionMode:
         parser = core.DeclusorParser(name="test_app")
         plugin_config = parser.parse(
             manager,
-            ["127.0.0.1", "9000", "-p", testing.DummyPlugin.name, "--mode", "http"],
+            ["127.0.0.1", "9000", "-p", testing.DummyPlugin.name, "--mode", "cli"],
         )
 
-        assert plugin_config.mode == config.ExecutionMode.HTTP
+        assert plugin_config.mode == config.ExecutionMode.CLI
 
     def test_parse__explicit_mode_short_flag__sets_execution_mode(self) -> None:
-        """Specifying -m mcp sets ExecutionMode.MCP."""
+        """Specifying -m cli sets ExecutionMode.CLI."""
 
         testing.DummyPlugin.reset()
         manager = core.PluginManager()
@@ -582,10 +582,10 @@ class TestDeclusorParserExecutionMode:
         parser = core.DeclusorParser(name="test_app")
         plugin_config = parser.parse(
             manager,
-            ["127.0.0.1", "9000", "-p", testing.DummyPlugin.name, "-m", "mcp"],
+            ["127.0.0.1", "9000", "-p", testing.DummyPlugin.name, "-m", "cli"],
         )
 
-        assert plugin_config.mode == config.ExecutionMode.MCP
+        assert plugin_config.mode == config.ExecutionMode.CLI
 
     def test_parse__invalid_mode__raises_parser_error(self) -> None:
         """Providing an invalid execution mode raises ParserError."""

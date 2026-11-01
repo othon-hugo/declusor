@@ -69,15 +69,6 @@ class ExecutionMode(StrEnum):
     CLI = "cli"
     """Interactive terminal REPL and prompt loop execution mode."""
 
-    # API = "api"
-    # """Programmatic API daemon mode for external service integration."""
-
-    # MCP = "mcp"
-    # """Model Context Protocol server mode for agentic tool calling."""
-
-    # HTTP = "http"
-    # """HTTP RESTful server mode for web-based remote interactions."""
-
     @classmethod
     def from_string(cls, value: str, /) -> "ExecutionMode":
         """Parse execution mode from string in a case-insensitive manner.

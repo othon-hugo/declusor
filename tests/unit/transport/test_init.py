@@ -13,6 +13,7 @@ class TestTransportExports:
             "ConnectionClosed",
             "ConnectionError",
             "ConnectionTimeoutError",
+            "HmacTransport",
             "default_transport_registry",
             "SocketTransport",
             "TcpListener",

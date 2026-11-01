@@ -19,12 +19,14 @@ else
     BUILD_CMD  = $(EXEC)python -m build $(if $(2),--outdir $(2)) $(1)
 endif
 
+PYTEST_EXEC := PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 $(EXEC)pytest --exitfirst
+
 # =============================================================================
 # Project Paths
 # =============================================================================
 PLUGIN_DIRS      := $(patsubst %/pyproject.toml,%,$(wildcard plugins/*/pyproject.toml))
 PLUGIN_TEST_DIRS := $(wildcard plugins/*/tests)
-UNIT_TEST_DIRS   := $(filter-out %/__pycache__,$(wildcard tests/unit/*))
+UNIT_TEST_DIRS   := $(sort $(filter-out %/__pycache__,$(patsubst %/,%,$(wildcard tests/unit/*/))))
 
 ifneq ($(strip $(PLUGIN)),)
     ifeq ($(filter plugins/$(PLUGIN),$(PLUGIN_DIRS)),)
@@ -225,18 +227,23 @@ else
 endif
 
 _test-declusor:
-	$(EXEC)pytest tests/unit
-	$(EXEC)pytest tests/e2e
+	@set -e; \
+	for dir in $(UNIT_TEST_DIRS); do \
+		echo "==> Running unit tests in $$dir..."; \
+		$(PYTEST_EXEC) "$$dir"; \
+	done
+	@echo "==> Running e2e tests in tests/e2e..."; \
+	$(PYTEST_EXEC) tests/e2e
 
 _test-plugins:
 	@for dir in $(PLUGIN_TEST_DIRS); do \
 		echo "==> Running plugin tests in $$dir..."; \
-		$(EXEC)pytest "$$dir" || exit 1; \
+		$(PYTEST_EXEC) "$$dir" || exit 1; \
 	done
 
 _test-plugin:
 	@if [ -n "$(PLUGIN)" ]; then \
-		$(EXEC)pytest "plugins/$(PLUGIN)/tests"; \
+		$(PYTEST_EXEC) "plugins/$(PLUGIN)/tests"; \
 	else \
 		$(MAKE) _test-plugins; \
 	fi

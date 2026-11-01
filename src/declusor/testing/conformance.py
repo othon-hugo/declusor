@@ -31,6 +31,9 @@ def assert_conforms_to_client_plugin[T: contract.ParsedArguments](
     assert inspect.isclass(plugin_cls), f"{plugin_cls!r} must be a class."
     assert issubclass(plugin_cls, contract.IPluginExtension), f"{plugin_cls!r} must subclass contract.IPluginExtension."
 
+    if hasattr(plugin_cls, "reset") and callable(plugin_cls.reset):
+        plugin_cls.reset()
+
     # Invariant 1: Metadata presence
     assert isinstance(plugin_cls.name, str) and plugin_cls.name.strip(), "plugin.name must be a non-empty string."
     assert isinstance(plugin_cls.description, str), "plugin.description must be a string."
@@ -85,6 +88,7 @@ def assert_conforms_to_client_plugin[T: contract.ParsedArguments](
         kind_config = dataclasses.replace(plugin_config, launcher_kind=kind)
         plugin_cls.validate(kind_config)
         kind_runtime = plugin_cls.build_runtime(kind_config)
+
         assert isinstance(kind_runtime, contract.IPluginRuntime), f"build_runtime must return IPluginRuntime, got {type(kind_runtime)}."
         assert isinstance(kind_runtime.launcher, contract.LauncherDelivery), "runtime.launcher must return a LauncherDelivery instance."
         assert kind_runtime.launcher.kind == kind, f"runtime.launcher.kind ({kind_runtime.launcher.kind}) must match requested kind ({kind})."

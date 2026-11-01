@@ -121,21 +121,12 @@ class TestExecutionModeEnum:
         """Verify ExecutionMode members map to expected string modes."""
 
         assert config.ExecutionMode.CLI.value == "cli"
-        assert config.ExecutionMode.API.value == "api"
-        assert config.ExecutionMode.MCP.value == "mcp"
-        assert config.ExecutionMode.HTTP.value == "http"
-        assert len(config.ExecutionMode) == 4
+        assert len(config.ExecutionMode) == 1
 
-    @pytest.mark.parametrize(
-        ("input_str", "expected_mode"),
-        [
-            ("cli", config.ExecutionMode.CLI),
-            ("api", config.ExecutionMode.API),
-            ("mcp", config.ExecutionMode.MCP),
-            ("http", config.ExecutionMode.HTTP),
-        ],
-    )
-    def test_execution_mode_from_string__exact_case__returns_matching_member(self, input_str: str, expected_mode: config.ExecutionMode) -> None:
+    @pytest.mark.parametrize(("input_str", "expected_mode"), [("cli", config.ExecutionMode.CLI)])
+    def test_execution_mode_from_string__exact_case__returns_matching_member(
+        self, input_str: str, expected_mode: config.ExecutionMode | None
+    ) -> None:
         """Verify from_string parses exact lowercase strings."""
 
         assert config.ExecutionMode.from_string(input_str) == expected_mode
@@ -145,16 +136,10 @@ class TestExecutionModeEnum:
         [
             ("CLI", config.ExecutionMode.CLI),
             ("  Cli  ", config.ExecutionMode.CLI),
-            ("API", config.ExecutionMode.API),
-            ("  api \t", config.ExecutionMode.API),
-            ("Mcp", config.ExecutionMode.MCP),
-            ("  MCP  ", config.ExecutionMode.MCP),
-            ("HTTP", config.ExecutionMode.HTTP),
-            (" \n http \t", config.ExecutionMode.HTTP),
         ],
     )
     def test_execution_mode_from_string__case_insensitive_and_whitespace__normalizes_and_returns_member(
-        self, input_str: str, expected_mode: config.ExecutionMode
+        self, input_str: str, expected_mode: config.ExecutionMode | None
     ) -> None:
         """Verify from_string normalizes whitespace and uppercase input."""
 
@@ -165,7 +150,7 @@ class TestExecutionModeEnum:
 
         with pytest.raises(
             ValueError,
-            match=r"Invalid execution mode: 'unsupported'\. Choose from: 'cli', 'api', 'mcp', 'http'",
+            match=r"Invalid execution mode: 'unsupported'\. Choose from: 'cli'",
         ):
             config.ExecutionMode.from_string("unsupported")
 
@@ -322,7 +307,8 @@ class TestTransportLayerEnum:
         """Verify TransportLayer members map to recognized transport layer names."""
 
         assert config.TransportLayer.XOR.value == "xor"
-        assert len(config.TransportLayer) == 1
+        assert config.TransportLayer.HMAC.value == "hmac"
+        assert len(config.TransportLayer) == 2
 
     def test_transport_layer__subclass__is_str_enum(self) -> None:
         """Verify TransportLayer is a StrEnum."""

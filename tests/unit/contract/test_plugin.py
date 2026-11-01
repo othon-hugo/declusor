@@ -67,7 +67,7 @@ class TestPluginConfig:
             options=contract.ParsedArguments(),
             options_type=contract.ParsedArguments,
             filesystem=fs,
-            mode=config.ExecutionMode.API,
+            mode=config.ExecutionMode.CLI,
             timeout=10.5,
             launcher_kind=config.LauncherKind.STAGELESS,
             launcher_output_mode=config.LauncherOutputMode.FILE,
@@ -80,7 +80,7 @@ class TestPluginConfig:
         assert plugin_config.host == "10.0.0.1"
         assert plugin_config.port == 8443
         assert plugin_config.filesystem == fs
-        assert plugin_config.mode == config.ExecutionMode.API
+        assert plugin_config.mode == config.ExecutionMode.CLI
         assert plugin_config.timeout == 10.5
         assert plugin_config.launcher_kind == config.LauncherKind.STAGELESS
         assert plugin_config.launcher_output_mode == config.LauncherOutputMode.FILE

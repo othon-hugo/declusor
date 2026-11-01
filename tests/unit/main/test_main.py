@@ -222,52 +222,14 @@ class TestRunExecutionModes:
         assert exit_code == 0
         assert len(dummy_app.run_calls) == 1
 
-    def test_main__when_mode_is_unsupported_mcp__writes_error_and_returns_one(
-        self,
-        capsys: pytest.CaptureFixture[str],
-    ) -> None:
-        """main returns 1 and outputs error message when unsupported mcp mode is requested."""
-
-        exit_code = main.run(["127.0.0.1", "9000", "--mode", "mcp"])
-
-        assert exit_code == 1
-        captured = capsys.readouterr()
-        assert "Execution mode 'mcp' is not supported yet." in captured.err
-
-    def test_main__when_mode_is_unsupported_api__writes_error_and_returns_one(
-        self,
-        capsys: pytest.CaptureFixture[str],
-    ) -> None:
-        """main returns 1 and outputs error message when unsupported api mode is requested."""
-
-        exit_code = main.run(["127.0.0.1", "9000", "--mode", "api"])
-
-        assert exit_code == 1
-        captured = capsys.readouterr()
-        assert "Execution mode 'api' is not supported yet." in captured.err
-
-    def test_main__when_mode_is_unsupported_http__writes_error_and_returns_one(
-        self,
-        capsys: pytest.CaptureFixture[str],
-    ) -> None:
-        """main returns 1 and outputs error message when unsupported http mode is requested."""
-
-        exit_code = main.run(["127.0.0.1", "9000", "--mode", "http"])
-
-        assert exit_code == 1
-        captured = capsys.readouterr()
-        assert "Execution mode 'http' is not supported yet." in captured.err
-
-    def test_main__when_mode_is_unsupported_with_custom_stderr__writes_diagnostic_to_custom_stream(
-        self,
-    ) -> None:
+    def test_main__when_mode_is_unsupported_with_custom_stderr__writes_diagnostic_to_custom_stream(self) -> None:
         """main directs unsupported mode diagnostic output to injected stderr stream."""
 
         custom_err = io.StringIO()
-        exit_code = main.run(["127.0.0.1", "9000", "--mode", "mcp"], stderr=custom_err)
+        exit_code = main.run(["127.0.0.1", "9000", "--mode", "unsupported"], stderr=custom_err)
 
-        assert exit_code == 1
-        assert "Execution mode 'mcp' is not supported yet." in custom_err.getvalue()
+        assert exit_code != config.ExitCode.SUCCESS
+        assert "invalid ExecutionMode value" in custom_err.getvalue()
 
 
 class TestRunExceptionHandling:
@@ -415,17 +377,6 @@ class TestRunExceptionHandling:
         exit_code = main.run(["127.0.0.1", "9000"], application=dummy_app)
 
         assert exit_code == 0
-
-    def test_main__when_system_exit_non_zero_raised__returns_exit_code(
-        self,
-        dummy_app: testing.DummyApplication,
-    ) -> None:
-        """main catches SystemExit(code) and returns the specified integer exit code."""
-
-        dummy_app.run_error = SystemExit(42)
-        exit_code = main.run(["127.0.0.1", "9000"], application=dummy_app)
-
-        assert exit_code == 42
 
 
 class TestRunAgentOrchestration:
