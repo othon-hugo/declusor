@@ -103,7 +103,10 @@ def main() -> None:
     except (AttributeError, ValueError):
         pass
 
-    with socket.create_connection((HOST, PORT)) as sock:
+    existing_sock = globals().get("_sock")
+    sock = existing_sock if isinstance(existing_sock, socket.socket) else socket.create_connection((HOST, PORT))
+
+    with sock:
         SESSION_SCOPE["_send_frame"] = lambda ch, data: _send_frame(sock, ch, data)
 
         metadata = json.dumps(
@@ -152,5 +155,5 @@ def main() -> None:
             _execute(payload_bytes, sock)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__" or "_sock" in globals():
     main()

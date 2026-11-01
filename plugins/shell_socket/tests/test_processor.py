@@ -146,6 +146,21 @@ class TestShellSocketProcessor:
 
         assert decoded == "connect 127.0.0.1 9000 \\x01\\x02"
 
+    def test_render_launcher__staged_kind__substitutes_stager_template(self, tmp_path: Path) -> None:
+        """Verify render_launcher formats stager script template with host and port."""
+
+        launchers = tmp_path / "launchers"
+        launchers.mkdir(parents=True)
+        stager = launchers / "shell_socket_stager.sh"
+        stager.write_text("connect $DECLUSOR_HOST $DECLUSOR_PORT", encoding="utf-8")
+
+        fs = contract.PluginFilesystem.from_root(tmp_path)
+        processor = shell_socket.ShellSocketProcessor(fs)
+
+        rendered = processor.render_launcher("127.0.0.1", 9000, b"\x01\x02", kind=config.LauncherKind.STAGED)
+
+        assert rendered == b"connect 127.0.0.1 9000"
+
     def test_find_module__with_extension_and_without_extension__finds_target_module(self, tmp_path: Path) -> None:
         """find_module resolves target module path both with and without .sh extension."""
 

@@ -149,6 +149,21 @@ class TestPySocketProcessor:
 
         assert decoded == "HOST = '127.0.0.1'\nPORT = int('9000')\nACK = bytes.fromhex('0102')"
 
+    def test_render_launcher__staged_kind__substitutes_stager_template(self, tmp_path: Path) -> None:
+        """Verify render_launcher formats stager script template with host and port."""
+
+        launchers = tmp_path / "launchers"
+        launchers.mkdir(parents=True)
+        stager = launchers / "py_socket_stager.py"
+        stager.write_text("s = connect(('$DECLUSOR_HOST', $DECLUSOR_PORT))", encoding="utf-8")
+
+        fs = contract.PluginFilesystem.from_root(tmp_path)
+        processor = py_socket.PySocketProcessor(fs)
+
+        rendered = processor.render_launcher("127.0.0.1", 9000, b"\x01\x02", kind=config.LauncherKind.STAGED)
+
+        assert rendered == b"s = connect(('127.0.0.1', 9000))"
+
     def test_render_launcher__substitutes_channel_template_variables(self, tmp_path: Path) -> None:
         """Verify render_launcher formats channel placeholders with numeric ChannelType values."""
 

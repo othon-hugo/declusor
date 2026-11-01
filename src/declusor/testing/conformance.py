@@ -1,3 +1,4 @@
+import dataclasses
 import inspect
 import threading
 from abc import ABC, abstractmethod
@@ -34,6 +35,11 @@ def assert_conforms_to_client_plugin[T: contract.ParsedArguments](
     assert isinstance(plugin_cls.version, str), "plugin.version must be a string."
     assert plugin_cls.options_type is not None, "plugin.options_type must be defined."
     assert isinstance(plugin_cls.routes, Mapping), "plugin.routes must be a mapping."
+    assert isinstance(plugin_cls.supported_launcher_kinds, frozenset), "plugin.supported_launcher_kinds must be a frozenset."
+    assert len(plugin_cls.supported_launcher_kinds) > 0, "plugin.supported_launcher_kinds cannot be empty."
+    for kind in plugin_cls.supported_launcher_kinds:
+        assert isinstance(kind, config.LauncherKind), f"Invalid launcher kind in supported_launcher_kinds: {kind!r}."
+
     normalized_routes: set[str] = set()
     for route, registration in plugin_cls.routes.items():
         assert isinstance(route, str) and route.strip(), "plugin.routes must use non-empty string names."
@@ -57,6 +63,7 @@ def assert_conforms_to_client_plugin[T: contract.ParsedArguments](
         filesystem.modules.mkdir(parents=True, exist_ok=True)
         for ext in (".py", ".sh", ".bash", ".ps1", ".bat", ""):
             (filesystem.launchers / f"{plugin_cls.name}_client{ext}").write_text("# client")
+            (filesystem.launchers / f"{plugin_cls.name}_stager{ext}").write_text("# stager")
             (filesystem.launchers / f"{plugin_cls.name}{ext}").write_text("# client")
         plugin_config = plugin_cls.build_config("127.0.0.1", 9000, options, filesystem=filesystem)
     else:
@@ -72,6 +79,14 @@ def assert_conforms_to_client_plugin[T: contract.ParsedArguments](
     plugin_cls.validate(plugin_config)
 
     # Invariant 5: Runtime creation
+    for kind in plugin_cls.supported_launcher_kinds:
+        kind_config = dataclasses.replace(plugin_config, launcher_kind=kind)
+        plugin_cls.validate(kind_config)
+        kind_runtime = plugin_cls.build_runtime(kind_config)
+        assert isinstance(kind_runtime, contract.IPluginRuntime), f"build_runtime must return IPluginRuntime, got {type(kind_runtime)}."
+        assert isinstance(kind_runtime.launcher, contract.LauncherDelivery), "runtime.launcher must return a LauncherDelivery instance."
+        assert kind_runtime.launcher.kind == kind, f"runtime.launcher.kind ({kind_runtime.launcher.kind}) must match requested kind ({kind})."
+
     runtime = plugin_cls.build_runtime(plugin_config)
     assert isinstance(runtime, contract.IPluginRuntime), f"build_runtime must return IPluginRuntime, got {type(runtime)}."
     assert isinstance(runtime.launcher, contract.LauncherDelivery), "runtime.launcher must return a LauncherDelivery instance."
@@ -146,6 +161,8 @@ class PluginConformanceTestSuite[T: contract.ParsedArguments]:
         assert isinstance(plugin_class.version, str)
         assert plugin_class.options_type is not None
         assert isinstance(plugin_class.routes, Mapping)
+        assert isinstance(plugin_class.supported_launcher_kinds, frozenset)
+        assert len(plugin_class.supported_launcher_kinds) > 0
 
     def test_configure_parser_callable(self, plugin_class: type[contract.IPluginExtension[T]]) -> None:
         """Verify configure_parser accepts a Parser without error."""

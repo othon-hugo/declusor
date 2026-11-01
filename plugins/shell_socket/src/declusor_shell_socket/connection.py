@@ -23,7 +23,22 @@ class ShellSocketConnection(contract.IConnection):
         fixed_nonce: str | None = None,
         nonce_factory: Callable[[], str] = util.generate_nonce,
         initial_state: contract.ConnectionState = contract.ConnectionState.CREATED,
+        stage1_payload: bytes | None = None,
     ) -> None:
+        """Initialize a new POSIX shell-socket client connection.
+
+        Args:
+            transport: Underlying byte-stream transport connected to the remote client.
+            renderer: Operation renderer for command syntax formatting.
+            files: Plugin processor for resolving and loading client libraries and modules.
+            timeout: Optional transport I/O timeout in seconds.
+            buffer_size: Internal read chunk buffer size in bytes.
+            fixed_nonce: Optional fixed transaction delimiter nonce.
+            nonce_factory: Factory callable generating unique transaction nonces.
+            initial_state: Initial lifecycle state of the connection.
+            stage1_payload: Optional raw Stage-1 client bootstrap script transmitted during handshake for staged execution.
+        """
+
         if buffer_size <= 0:
             raise config.ConnectionError("buffer_size must be > 0")
 
@@ -41,6 +56,7 @@ class ShellSocketConnection(contract.IConnection):
         self._nonce_ready = util.TaskEvent()
 
         self._state = initial_state
+        self._stage1_payload = stage1_payload
         self._read_buffer = bytearray()
 
     @property
@@ -84,6 +100,13 @@ class ShellSocketConnection(contract.IConnection):
         self.ensure_can_handshake()
 
         self._state = contract.ConnectionState.INITIALIZING
+
+        if self._stage1_payload is not None:
+            try:
+                self._transport.write(self._stage1_payload + b"\x00")
+            except (config.ConnectionClosed, config.ConnectionTimeoutError, config.ConnectionError) as error:
+                self.close()
+                raise config.ConnectionHandshakeError("Failed transmitting Stage 1 launcher payload.") from error
 
         helpers_payload = b"\n".join(self._files.load_all_helpers().values())
         self.write(helpers_payload)

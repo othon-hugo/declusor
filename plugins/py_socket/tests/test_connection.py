@@ -67,6 +67,32 @@ class TestPySocketConnectionLifecycle:
         expected_helpers_frame = struct.pack(">BI", config.ChannelType.STDIN, len(expected_helpers)) + expected_helpers
         assert dummy_trans.write_history == [expected_helpers_frame]
 
+    def test_handshake__staged_payload_present__transmits_length_prefixed_stage1_before_handshake(
+        self,
+        dummy_file_store: testing.DummyPluginFileStore,
+    ) -> None:
+        """Verify PySocketConnection transmits length-prefixed Stage 1 payload when staged."""
+
+        dummy_trans = testing.DummyTransport()
+        ack = b"\xab" * 32
+        renderer = py_socket.PySocketRenderer()
+        stage1 = b"print('staged payload')"
+        conn = py_socket.PySocketConnection(
+            dummy_trans,
+            renderer,
+            dummy_file_store,
+            expected_ack=ack,
+            stage1_payload=stage1,
+        )
+
+        meta = _make_metadata_frame()
+        dummy_trans.push_incoming(meta + ack)
+        conn.handshake()
+
+        assert conn.state == contract.ConnectionState.CONNECTED
+        expected_staged_frame = struct.pack(">I", len(stage1)) + stage1
+        assert dummy_trans.write_history[0] == expected_staged_frame
+
     def test_handshake__when_bytecode_incompatible__transmits_source_helpers(
         self,
         dummy_file_store: testing.DummyPluginFileStore,

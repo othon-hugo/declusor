@@ -27,6 +27,7 @@ class TestPySocketPluginConfig:
         launchers = tmp_path / "launchers"
         launchers.mkdir()
         (launchers / "py_socket_client.py").write_text("#!/usr/bin/env python3", encoding="utf-8")
+        (launchers / "py_socket_stager.py").write_text("import socket", encoding="utf-8")
 
         fs = contract.PluginFilesystem.from_root(tmp_path)
         options = py_socket.PySocketPlugin.extract_options({})
@@ -35,8 +36,8 @@ class TestPySocketPluginConfig:
         assert cfg.filesystem == fs
         py_socket.PySocketPlugin.validate(cfg)
 
-    def test_validate__missing_launcher_file__raises_parser_error(self, tmp_path: Path) -> None:
-        """Verify plugin configuration validation raises ParserError when launcher file is missing."""
+    def test_validate__missing_client_launcher_file__raises_parser_error(self, tmp_path: Path) -> None:
+        """Verify plugin configuration validation raises ParserError when client launcher file is missing."""
 
         fs = contract.PluginFilesystem.from_root(tmp_path)
         options = py_socket.PySocketPlugin.extract_options({})
@@ -45,12 +46,26 @@ class TestPySocketPluginConfig:
         with pytest.raises(config.ParserError, match="Client launcher file does not exist"):
             py_socket.PySocketPlugin.validate(cfg)
 
+    def test_validate__missing_stager_launcher_file_when_staged__raises_parser_error(self, tmp_path: Path) -> None:
+        """Verify plugin validation raises ParserError when stager file is missing for staged launcher."""
+
+        launchers = tmp_path / "launchers"
+        launchers.mkdir()
+        (launchers / "py_socket_client.py").write_text("#!/usr/bin/env python3", encoding="utf-8")
+
+        fs = contract.PluginFilesystem.from_root(tmp_path)
+        options = py_socket.PySocketPlugin.extract_options({})
+        cfg = py_socket.PySocketPlugin.build_config("127.0.0.1", 9000, options, filesystem=fs)
+
+        with pytest.raises(config.ParserError, match="Stager launcher file does not exist"):
+            py_socket.PySocketPlugin.validate(cfg)
+
 
 class TestPySocketPluginRuntime:
     """Verify PySocketPlugin runtime creation and asset delivery."""
 
-    def test_build_runtime__renders_bundled_launcher__substitutes_connection_parameters(self) -> None:
-        """Verify default bundled py_socket_client.py renders with substituted values."""
+    def test_build_runtime__renders_bundled_staged_launcher_by_default(self) -> None:
+        """Verify default bundled stager renders with substituted parameters."""
 
         options = py_socket.PySocketPlugin.extract_options({})
         cfg = py_socket.PySocketPlugin.build_config("192.168.1.50", 5555, options)
@@ -58,6 +73,27 @@ class TestPySocketPluginRuntime:
 
         delivery = runtime.launcher
         assert isinstance(delivery, contract.LauncherDelivery)
+        assert delivery.kind == config.LauncherKind.STAGED
+        assert delivery.wrapper_template == py_socket.PySocketRuntime.STAGED_WRAPPER_TEMPLATE
+        assert delivery.wrapped_text == f"python3 -c '{delivery.text}'"
+        assert "192.168.1.50" in delivery.text
+        assert "5555" in delivery.text
+        assert "$DECLUSOR_HOST" not in delivery.text
+        assert "$DECLUSOR_PORT" not in delivery.text
+
+    def test_build_runtime__renders_bundled_stageless_launcher__substitutes_connection_parameters(self) -> None:
+        """Verify stageless launcher renders with hex-encoded payload."""
+
+        import dataclasses
+
+        options = py_socket.PySocketPlugin.extract_options({})
+        base_cfg = py_socket.PySocketPlugin.build_config("192.168.1.50", 5555, options)
+        cfg = dataclasses.replace(base_cfg, launcher_kind=config.LauncherKind.STAGELESS)
+        runtime = py_socket.PySocketPlugin.build_runtime(cfg)
+
+        delivery = runtime.launcher
+        assert isinstance(delivery, contract.LauncherDelivery)
+        assert delivery.kind == config.LauncherKind.STAGELESS
         assert delivery.wrapper_template == py_socket.PySocketRuntime.DEFAULT_WRAPPER_TEMPLATE
         assert "bytes.fromhex(" in delivery.wrapped_text
         assert delivery.text in delivery.wrapped_text

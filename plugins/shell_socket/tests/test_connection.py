@@ -90,6 +90,23 @@ class TestShellSocketConnectionLifecycle:
         assert conn.state == contract.ConnectionState.CONNECTED
         assert trans.written_bytes.startswith(b"fixed_handshake_nonce\x00")
 
+    def test_handshake__staged_payload_present__transmits_nul_terminated_stage1_before_handshake(
+        self,
+        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+    ) -> None:
+        """Verify ShellSocketConnection transmits NUL-terminated Stage 1 payload when staged."""
+
+        stage1 = b"echo 'staged payload'"
+        conn, trans = make_shell_connection(
+            default_nonce="fixed_handshake_nonce",
+            stage1_payload=stage1,
+        )
+        trans.push_incoming(b"__DECLUSOR_EOF_fixed_handshake_nonce__\n")
+        conn.handshake()
+
+        assert conn.state == contract.ConnectionState.CONNECTED
+        assert trans.written_bytes.startswith(stage1 + b"\x00")
+
     def test_handshake__with_segmented_envelope__accumulates_chunks_properly(
         self,
         make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],

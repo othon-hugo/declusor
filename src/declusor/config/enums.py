@@ -22,6 +22,40 @@ class LauncherOutputMode(StrEnum):
     """Write launcher to a file path declared in LauncherDelivery.output_path."""
 
 
+class LauncherKind(StrEnum):
+    """Enumeration of client launcher delivery forms."""
+
+    STAGED = "staged"
+    """Deliver a lightweight Stage-0 loader that pulls the client over the socket."""
+
+    STAGELESS = "stageless"
+    """Deliver a complete monolithic self-contained client launcher."""
+
+    @classmethod
+    def from_string(cls, value: str, /) -> "LauncherKind":
+        """Parse launcher kind from string in a case-insensitive manner.
+
+        Args:
+            value: Kind name (e.g. 'staged', 'stageless').
+
+        Returns:
+            Matching LauncherKind member.
+
+        Raises:
+            ValueError: If the string does not match any valid launcher kind.
+        """
+
+        normalized = value.strip().lower()
+
+        for member in cls:
+            if member.value == normalized:
+                return member
+
+        choices = ", ".join(repr(m.value) for m in cls)
+
+        raise ValueError(f"Invalid launcher kind: {value!r}. Valid choices: {choices}")
+
+
 class ExecutionMode(StrEnum):
     """Enumeration of application execution modes."""
 

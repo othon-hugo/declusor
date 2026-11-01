@@ -115,6 +115,60 @@ class TestApplicationE2E:
                     client_process.kill()
                 client_process.wait(timeout=5.0)
 
+    def test_application_run__built_in_python_client_stageless__dispatches_repl_command(self) -> None:
+        """Exercise the application path with a spawned built-in Python agent in stageless mode."""
+
+        import dataclasses
+
+        listener = transport.TcpListener("127.0.0.1", 0)
+        base_config = py_socket.PySocketPlugin.build_config(
+            "127.0.0.1",
+            listener.port,
+            py_socket.PySocketPlugin.extract_options({}),
+        )
+        plugin_config = dataclasses.replace(base_config, launcher_kind=config.LauncherKind.STAGELESS)
+        runtime = py_socket.PySocketPlugin.build_runtime(plugin_config)
+        launcher_command = shlex.split(runtime.launcher.wrapped_text)
+        launcher_command[0] = sys.executable
+
+        router = core.Router()
+        view = testing.DummyView()
+        input_source = testing.DummyInputSource(["command 'echo declusor_stageless_client_e2e'", "exit"])
+        session_runner = presentation.PromptLoop("declusor_stageless_e2e", router=router, session=None)
+        plugin_manager = core.PluginManager()
+        plugin_manager.register(py_socket.PySocketPlugin)
+        app = core.Application(
+            router,
+            view,
+            plugin_manager=plugin_manager,
+            session_runner=session_runner,
+            input_source=input_source,
+            listener_factory=lambda host, port: listener,
+        )
+
+        client_process: subprocess.Popen[bytes] | None = None
+
+        try:
+            client_process = subprocess.Popen(
+                launcher_command,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            app.run(plugin_config)
+
+            response = b"".join(view.binary_data)
+            assert b"declusor_stageless_client_e2e" in response, (
+                f"unexpected response {response!r}; errors={view.errors!r}; messages={view.messages!r}; prompts={input_source.prompts!r}"
+            )
+            assert listener.is_closed
+            assert client_process.wait(timeout=5.0) == 0
+        finally:
+            listener.close()
+            if client_process is not None:
+                if client_process.poll() is None:
+                    client_process.kill()
+                client_process.wait(timeout=5.0)
+
     def test_application_run_in_memory_e2e(self) -> None:
         """Exercise complete Application lifecycle end-to-end using in-memory transports and doubles."""
 

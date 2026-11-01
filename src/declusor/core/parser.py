@@ -17,6 +17,7 @@ class DeclusorNamespace(argparse.Namespace):
     port: int = 0
     plugin: str | None = None
     mode: str = config.DEFAULT_EXECUTION_MODE.value
+    launcher_kind: str = config.DEFAULT_LAUNCHER_KIND.value
     launcher_output: str = config.DEFAULT_LAUNCHER_OUTPUT_MODE.value
     launcher_wrapper: str | None = None
     timeout: float | None = None
@@ -120,6 +121,29 @@ class DeclusorParser(util.Parser):
         arg_help: Final = "additional directory to discover custom drop-in plugins"
         arg_flags: Final = ("--plugin-dir",)
 
+    class LauncherKind(str):
+        """Launcher delivery kind argument definition."""
+
+        arg_name: Final = "launcher_kind"
+        arg_help: Final = "client launcher kind: 'staged' (compact one-liner loader) or 'stageless' (monolithic self-contained client)"
+        arg_flags: Final = ("-K", "--launcher-kind")
+        arg_choices: Final = tuple(k.value for k in config.LauncherKind)
+        arg_default: Final = config.DEFAULT_LAUNCHER_KIND.value
+
+        def __new__(cls, value: str) -> "DeclusorParser.LauncherKind":
+            """Validate and normalize launcher kind."""
+
+            if not value:
+                raise ValueError("launcher kind cannot be empty")
+
+            try:
+                kind = config.LauncherKind.from_string(value)
+            except ValueError as error:
+                choices = ", ".join(repr(k.value) for k in config.LauncherKind)
+                raise ValueError(f"invalid choice: {value!r} (choose from {choices})") from error
+
+            return super().__new__(cls, kind.value)
+
     class LauncherOutput(str):
         """Launcher output mode argument definition."""
 
@@ -187,6 +211,7 @@ class DeclusorParser(util.Parser):
         Port.arg_name,
         Plugin.arg_name,
         ExecutionMode.arg_name,
+        LauncherKind.arg_name,
         LauncherOutput.arg_name,
         LauncherWrapper.arg_name,
         Timeout.arg_name,
@@ -262,6 +287,15 @@ class DeclusorParser(util.Parser):
             choices=self.ExecutionMode.arg_choices,
             default=self.ExecutionMode.arg_default,
             type=self.ExecutionMode,
+        )
+
+        self.add_argument(
+            *self.LauncherKind.arg_flags,
+            dest=self.LauncherKind.arg_name,
+            help=self.LauncherKind.arg_help,
+            choices=self.LauncherKind.arg_choices,
+            default=self.LauncherKind.arg_default,
+            type=self.LauncherKind,
         )
 
         self.add_argument(
@@ -342,10 +376,19 @@ class DeclusorParser(util.Parser):
 
         args = self.parse_args(argv, namespace=DeclusorNamespace())
 
+        launcher_kind = config.LauncherKind.from_string(args.launcher_kind)
+
+        if launcher_kind not in Plugin.supported_launcher_kinds:
+            supported_kinds = ", ".join(repr(k.value) for k in sorted(Plugin.supported_launcher_kinds, key=lambda k: k.value))
+            raise config.ParserError(f"Plugin {Plugin.name!r} does not support launcher kind {launcher_kind.value!r}. Supported: {supported_kinds}")
+
         plugin_config = self._build_plugin_config(Plugin, args)
         transport_layers = self._resolve_transport_layers(args, transport_registry)
 
-        return self._assemble_final_config(plugin_config, args, transport_layers)
+        final_config = self._assemble_final_config(plugin_config, args, launcher_kind, transport_layers)
+        Plugin.validate(final_config)
+
+        return final_config
 
     def _load_cli_plugin_directory(self, manager: "PluginManager", plugin_dir: Path | None, /) -> None:
         """Load external plugins from CLI directory if specified."""
@@ -403,23 +446,19 @@ class DeclusorParser(util.Parser):
         args: DeclusorNamespace,
         /,
     ) -> contract.PluginConfig[contract.ParsedArguments]:
-        """Extract options and build validated base plugin configuration."""
+        """Extract options and build base plugin configuration."""
 
         plugin_options = {key: value for key, value in vars(args).items() if key not in self.declusor_arguments}
         plugin_filesystem = contract.PluginFilesystem.from_root(args.assets_dir) if args.assets_dir is not None else None
 
         options: contract.ParsedArguments = Plugin.extract_options(plugin_options)
-        plugin_config = Plugin.build_config(
+        return Plugin.build_config(
             args.host,
             args.port,
             options,
             filesystem=plugin_filesystem,
             mode=config.ExecutionMode(args.mode),
         )
-
-        Plugin.validate(plugin_config)
-
-        return plugin_config
 
     def _resolve_transport_layers(
         self,
@@ -444,6 +483,7 @@ class DeclusorParser(util.Parser):
         self,
         plugin_config: contract.PluginConfig[contract.ParsedArguments],
         args: DeclusorNamespace,
+        launcher_kind: config.LauncherKind,
         transport_layers: tuple[str, ...],
         /,
     ) -> contract.PluginConfig[contract.ParsedArguments]:
@@ -454,6 +494,7 @@ class DeclusorParser(util.Parser):
         return dataclasses.replace(
             plugin_config,
             timeout=args.timeout,
+            launcher_kind=launcher_kind,
             launcher_output_mode=output_mode,
             launcher_output_path=output_path,
             launcher_wrapper=args.launcher_wrapper,

@@ -96,6 +96,11 @@ class TestDefaultModeSettings:
 
         assert config.DEFAULT_LAUNCHER_OUTPUT_MODE == config.LauncherOutputMode.TERMINAL
 
+    def test_settings__default_launcher_kind__is_staged(self) -> None:
+        """Verify DEFAULT_LAUNCHER_KIND defaults to STAGED."""
+
+        assert config.DEFAULT_LAUNCHER_KIND == config.LauncherKind.STAGED
+
 
 class TestCompletionSettings:
     """Tests for interactive autocomplete filter constants."""

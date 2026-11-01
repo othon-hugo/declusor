@@ -20,10 +20,11 @@ class DummyPluginRuntime(contract.IPluginRuntime):
         client_script: bytes | str = b"#!/bin/sh\necho dummy",
         connection_to_return: contract.IConnection | None = None,
         launcher_delivery: contract.LauncherDelivery | None = None,
+        launcher_kind: config.LauncherKind = config.DEFAULT_LAUNCHER_KIND,
     ) -> None:
         self._file_store: contract.IPluginProcessor = file_store or DummyPluginFileStore()
         script_bytes = client_script.encode("utf-8") if isinstance(client_script, str) else client_script
-        self._launcher_delivery = launcher_delivery or contract.LauncherDelivery(script=script_bytes)
+        self._launcher_delivery = launcher_delivery or contract.LauncherDelivery(script=script_bytes, kind=launcher_kind)
         self.connection_to_return: contract.IConnection | None = connection_to_return
         self.created_connections: list[contract.IConnection] = []
         self.received_transports: list[contract.ITransport] = []
@@ -55,6 +56,7 @@ class DummyPlugin(contract.IPluginExtension[DummyConfig]):
     author: str = "Test Suite"
     options_type = DummyConfig
     routes = core.OFFICIAL_ROUTES
+    supported_launcher_kinds: frozenset[config.LauncherKind] = frozenset({config.LauncherKind.STAGED, config.LauncherKind.STAGELESS})
 
     configured_parsers: list[contract.IArgumentParser] = []
     runtime_instance: contract.IPluginRuntime | None = None
@@ -111,4 +113,4 @@ class DummyPlugin(contract.IPluginExtension[DummyConfig]):
 
     @classmethod
     def build_runtime(cls, plugin_config: contract.PluginConfig[DummyConfig], /) -> contract.IPluginRuntime:
-        return cls.runtime_instance or DummyPluginRuntime()
+        return cls.runtime_instance or DummyPluginRuntime(launcher_kind=plugin_config.launcher_kind)

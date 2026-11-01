@@ -52,6 +52,9 @@ class PluginConfig[T: ParsedArguments]:
     timeout: float | None = None
     """Default network socket operation timeout in seconds."""
 
+    launcher_kind: config.LauncherKind = config.DEFAULT_LAUNCHER_KIND
+    """Delivery form for the client bootstrap script (staged or stageless)."""
+
     launcher_output_mode: config.LauncherOutputMode = config.DEFAULT_LAUNCHER_OUTPUT_MODE
     """Delivery mode for the generated client launcher."""
 
@@ -155,6 +158,9 @@ class IPluginExtension[T: ParsedArguments](ABC):
     routes: "RouteTable"
     """Routes provided by this plugin, keyed by their command names."""
 
+    supported_launcher_kinds: frozenset[config.LauncherKind] = frozenset({config.LauncherKind.STAGELESS})
+    """Set of launcher delivery kinds supported by this client plugin."""
+
     @classmethod
     @abstractmethod
     def configure_parser(cls, parser: "IArgumentParser", /) -> None:
@@ -255,6 +261,9 @@ class LauncherDelivery:
 
     script: bytes
     """Raw launcher payload produced by the plugin."""
+
+    kind: config.LauncherKind = config.DEFAULT_LAUNCHER_KIND
+    """Launcher delivery kind (staged or stageless)."""
 
     output_mode: config.LauncherOutputMode = config.DEFAULT_LAUNCHER_OUTPUT_MODE
     """How the launcher is delivered to the operator."""
@@ -417,13 +426,22 @@ class IPluginProcessor(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def render_launcher(self, host: str, port: int, acknowledge: bytes, /) -> bytes:
-        """Read and render the client bootstrap script.
+    def render_launcher(
+        self,
+        host: str,
+        port: int,
+        acknowledge: bytes,
+        /,
+        *,
+        kind: config.LauncherKind = config.LauncherKind.STAGELESS,
+    ) -> bytes:
+        """Read and render the client bootstrap script for the requested launcher kind.
 
         Args:
             host: Host address embedded in the client script.
             port: Port embedded in the client script.
             acknowledge: Client acknowledgment bytes embedded in the script.
+            kind: Launcher strategy kind (STAGED or STAGELESS).
 
         Returns:
             The rendered client bootstrap script as bytes.

@@ -24,11 +24,24 @@ class PySocketConnection(contract.IConnection):
         *,
         expected_ack: bytes = util.hash_sha256(config.DEFAULT_CLIENT_ACK_SEED),
         timeout: float | None = config.DEFAULT_CONNECTION_TIMEOUT,
+        stage1_payload: bytes | None = None,
     ) -> None:
+        """Initialize a new Python-socket client connection.
+
+        Args:
+            transport: Underlying byte-stream transport connected to the remote client.
+            renderer: Operation renderer for command syntax formatting.
+            files: Plugin processor for resolving and loading client libraries and modules.
+            expected_ack: Expected client acknowledgment byte token verifying handshake.
+            timeout: Optional transport I/O timeout in seconds.
+            stage1_payload: Optional raw Stage-1 client bootstrap script transmitted during handshake for staged execution.
+        """
+
         self._renderer = renderer
         self._files = files
         self._transport = transport
         self._expected_ack = expected_ack
+        self._stage1_payload = stage1_payload
         self._state = contract.ConnectionState.CREATED
         self._client_runtime: Mapping[str, object] | None = None
         self._is_bytecode_compatible: bool = False
@@ -128,11 +141,24 @@ class PySocketConnection(contract.IConnection):
 
         self._state = contract.ConnectionState.INITIALIZING
 
+        # Step 0: Transmit Stage 1 payload if staged launcher strategy
+        if self._stage1_payload is not None:
+            stage_frame = struct.pack(">I", len(self._stage1_payload)) + self._stage1_payload
+
+            try:
+                self._transport.write(stage_frame)
+            except (config.ConnectionClosed, config.ConnectionTimeoutError, config.ConnectionError) as error:
+                raise config.ConnectionHandshakeError(
+                    "Failed delivering Stage 1 script during handshake.",
+                    expected_ack=self._expected_ack,
+                ) from error
+
         # Step 1: Read client runtime metadata TLV frame (channel 1)
         try:
             header = self._transport.read_exact(5)
 
             _, length = struct.unpack(">BI", header)
+
             if length > config.MAX_TLV_FRAME_SIZE:
                 raise config.ConnectionError(f"TLV frame payload size {length} exceeds maximum {config.MAX_TLV_FRAME_SIZE}.")
 

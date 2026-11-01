@@ -2,7 +2,7 @@ import os
 from collections.abc import Mapping
 from pathlib import Path
 
-from declusor import contract
+from declusor import config, contract
 
 
 class DummyPluginFileStore(contract.IPluginProcessor):
@@ -55,7 +55,15 @@ class DummyPluginFileStore(contract.IPluginProcessor):
 
         self.modules[name] = content
 
-    def render_launcher(self, host: str, port: int, acknowledge: bytes, /) -> bytes:
+    def render_launcher(
+        self,
+        host: str,
+        port: int,
+        acknowledge: bytes,
+        /,
+        *,
+        kind: config.LauncherKind = config.LauncherKind.STAGELESS,
+    ) -> bytes:
         """Render client script from configured template as bytes."""
 
         if self.render_error is not None:

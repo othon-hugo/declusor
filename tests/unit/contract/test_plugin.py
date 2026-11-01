@@ -47,6 +47,8 @@ class TestPluginConfig:
         assert plugin_config.mode == config.DEFAULT_EXECUTION_MODE
         assert plugin_config.mode == config.ExecutionMode.CLI
         assert plugin_config.timeout is None
+        assert plugin_config.launcher_kind == config.DEFAULT_LAUNCHER_KIND
+        assert plugin_config.launcher_kind == config.LauncherKind.STAGED
         assert plugin_config.launcher_output_mode == config.DEFAULT_LAUNCHER_OUTPUT_MODE
         assert plugin_config.launcher_output_mode == config.LauncherOutputMode.TERMINAL
         assert plugin_config.launcher_output_path is None
@@ -67,6 +69,7 @@ class TestPluginConfig:
             filesystem=fs,
             mode=config.ExecutionMode.API,
             timeout=10.5,
+            launcher_kind=config.LauncherKind.STAGELESS,
             launcher_output_mode=config.LauncherOutputMode.FILE,
             launcher_output_path=output_path,
             launcher_wrapper="python3 -c '$DECLUSOR_SCRIPT'",
@@ -79,6 +82,7 @@ class TestPluginConfig:
         assert plugin_config.filesystem == fs
         assert plugin_config.mode == config.ExecutionMode.API
         assert plugin_config.timeout == 10.5
+        assert plugin_config.launcher_kind == config.LauncherKind.STAGELESS
         assert plugin_config.launcher_output_mode == config.LauncherOutputMode.FILE
         assert plugin_config.launcher_output_path == output_path
         assert plugin_config.launcher_wrapper == "python3 -c '$DECLUSOR_SCRIPT'"
@@ -102,6 +106,8 @@ class TestLauncherDelivery:
         delivery = contract.LauncherDelivery(script=b"echo hello")
 
         assert delivery.script == b"echo hello"
+        assert delivery.kind == config.DEFAULT_LAUNCHER_KIND
+        assert delivery.kind == config.LauncherKind.STAGED
         assert delivery.output_mode == config.DEFAULT_LAUNCHER_OUTPUT_MODE
         assert delivery.output_mode == config.LauncherOutputMode.TERMINAL
         assert delivery.output_path is None
@@ -218,6 +224,11 @@ class TestIPluginExtension:
         instance = testing.DummyPlugin()
         assert isinstance(instance, contract.IPluginExtension)
         assert instance.routes == testing.DummyPlugin.routes
+
+    def test_iplugin_extension__default_supported_launcher_kinds__is_stageless_frozenset(self) -> None:
+        """Verify IPluginExtension base class defaults to stageless delivery only."""
+
+        assert contract.IPluginExtension.supported_launcher_kinds == frozenset({config.LauncherKind.STAGELESS})
 
 
 class TestIPluginRuntime:

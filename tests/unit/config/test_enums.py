@@ -44,6 +44,73 @@ class TestLauncherOutputModeEnum:
         assert config.LauncherOutputMode.TERMINAL.value == "terminal"
 
 
+class TestLauncherKindEnum:
+    """Tests for LauncherKind enumeration and string parsing."""
+
+    def test_launcher_kind__members__match_expected_string_values(self) -> None:
+        """Verify LauncherKind members map to expected string identifiers."""
+
+        assert config.LauncherKind.STAGED.value == "staged"
+        assert config.LauncherKind.STAGELESS.value == "stageless"
+        assert len(config.LauncherKind) == 2
+
+    def test_launcher_kind__subclass__is_str_enum(self) -> None:
+        """Verify LauncherKind is a StrEnum that behaves as a string."""
+
+        assert issubclass(config.LauncherKind, StrEnum)
+        assert isinstance(config.LauncherKind.STAGED, str)
+        assert config.LauncherKind.STAGED.value == "staged"
+
+    @pytest.mark.parametrize(
+        ("input_str", "expected_kind"),
+        [
+            ("staged", config.LauncherKind.STAGED),
+            ("stageless", config.LauncherKind.STAGELESS),
+        ],
+    )
+    def test_launcher_kind_from_string__exact_case__returns_matching_member(
+        self,
+        input_str: str,
+        expected_kind: config.LauncherKind,
+    ) -> None:
+        """Verify from_string parses exact lowercase strings."""
+
+        assert config.LauncherKind.from_string(input_str) == expected_kind
+
+    @pytest.mark.parametrize(
+        ("input_str", "expected_kind"),
+        [
+            ("STAGED", config.LauncherKind.STAGED),
+            ("  Staged  ", config.LauncherKind.STAGED),
+            ("STAGELESS", config.LauncherKind.STAGELESS),
+            (" \n stageless \t", config.LauncherKind.STAGELESS),
+        ],
+    )
+    def test_launcher_kind_from_string__case_insensitive_and_whitespace__normalizes_and_returns_member(
+        self,
+        input_str: str,
+        expected_kind: config.LauncherKind,
+    ) -> None:
+        """Verify from_string normalizes whitespace and uppercase input."""
+
+        assert config.LauncherKind.from_string(input_str) == expected_kind
+
+    def test_launcher_kind_from_string__unrecognized_string__raises_value_error_with_choices(self) -> None:
+        """Verify from_string raises ValueError listing valid launcher kinds."""
+
+        with pytest.raises(
+            ValueError,
+            match=r"Invalid launcher kind: 'unsupported'\. Valid choices: 'staged', 'stageless'",
+        ):
+            config.LauncherKind.from_string("unsupported")
+
+    def test_launcher_kind_from_string__empty_string__raises_value_error(self) -> None:
+        """Verify from_string raises ValueError on empty string input."""
+
+        with pytest.raises(ValueError, match="Invalid launcher kind: ''"):
+            config.LauncherKind.from_string("")
+
+
 class TestExecutionModeEnum:
     """Tests for ExecutionMode enumeration and string parsing."""
 

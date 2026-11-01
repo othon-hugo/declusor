@@ -21,6 +21,7 @@ def make_shell_connection(
         buffer_size: int = shell_socket.ShellSocketConnection.DEFAULT_BUFFER_SIZE,
         timeout: float | None = config.DEFAULT_CONNECTION_TIMEOUT,
         connected: bool = False,
+        stage1_payload: bytes | None = None,
     ) -> tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]:
         launchers = tmp_path / "launchers"
         launchers.mkdir(exist_ok=True)
@@ -45,6 +46,7 @@ def make_shell_connection(
             fixed_nonce=default_nonce,
             timeout=timeout,
             initial_state=contract.ConnectionState.CONNECTED if connected else contract.ConnectionState.CREATED,
+            stage1_payload=stage1_payload,
         )
 
         return (conn, trans)

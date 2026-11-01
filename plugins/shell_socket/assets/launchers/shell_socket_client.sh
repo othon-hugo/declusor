@@ -1,4 +1,6 @@
-exec 3<>"/dev/tcp/$DECLUSOR_HOST/$DECLUSOR_PORT" || exit 1
+if ! { true >&3; } 2>/dev/null; then
+    exec 3<>"/dev/tcp/$DECLUSOR_HOST/$DECLUSOR_PORT" || exit 1
+fi
 trap 'exec 3>&-' EXIT
 
 while read -r -d '' -u 3 nonce && IFS= read -r -d '' -u 3 data; do

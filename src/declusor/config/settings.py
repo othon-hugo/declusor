@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Final
 
-from .enums import CoreRoute, DeclusorPlugins, ExecutionMode, LauncherOutputMode
+from .enums import CoreRoute, DeclusorPlugins, ExecutionMode, LauncherKind, LauncherOutputMode
 
 PROJECT_NAME: Final[str] = "declusor"
 """Name of the project."""
@@ -44,6 +44,9 @@ DEFAULT_EXECUTION_MODE: Final[ExecutionMode] = ExecutionMode.CLI
 
 DEFAULT_LAUNCHER_OUTPUT_MODE: Final[LauncherOutputMode] = LauncherOutputMode.TERMINAL
 """Default client launcher output delivery mode."""
+
+DEFAULT_LAUNCHER_KIND: Final[LauncherKind] = LauncherKind.STAGED
+"""Default client launcher delivery strategy."""
 
 PROTECTED_ROUTES: Final[frozenset[str]] = frozenset(route.value for route in CoreRoute)
 """Reserved application routes that cannot be overridden by plugin commands."""
