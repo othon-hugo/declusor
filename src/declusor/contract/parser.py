@@ -1,3 +1,5 @@
+"""CLI argument parser abstractions and argument registration contracts."""
+
 from typing import Any, Protocol, TypedDict, runtime_checkable
 
 

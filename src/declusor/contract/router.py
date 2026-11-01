@@ -1,3 +1,5 @@
+"""Command routing contracts, route metadata definitions, and completion mode specifications."""
+
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
@@ -14,7 +16,10 @@ class RouteHelp:
     """Short and detailed help text associated with a route."""
 
     short: str = ""
+    """Brief single-line summary of route purpose shown in help listings."""
+
     complement: str = ""
+    """Extended usage syntax and argument instructions shown in route details."""
 
 
 @dataclass(frozen=True)
@@ -22,8 +27,13 @@ class RouteRegistration:
     """Controller, route-owned help metadata, and argument completion semantics."""
 
     controller: "Controller"
+    """Controller function handling requests directed to this route."""
+
     help: RouteHelp = field(default_factory=RouteHelp)
+    """Structured documentation and usage metadata for this route."""
+
     completion_mode: config.RouteCompletionMode = config.RouteCompletionMode.NONE
+    """Argument autocompletion policy enforced during terminal input."""
 
 
 RouteTable = Mapping[str, RouteRegistration]

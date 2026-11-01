@@ -1,3 +1,5 @@
+"""Pytest configuration for shell_socket plugin tests."""
+
 from collections.abc import Callable
 from pathlib import Path
 

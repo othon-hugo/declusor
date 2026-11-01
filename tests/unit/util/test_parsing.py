@@ -1,3 +1,5 @@
+"""Unit tests verifying custom Parser and argument definition parsing."""
+
 from argparse import HelpFormatter
 from typing import Optional, Union
 

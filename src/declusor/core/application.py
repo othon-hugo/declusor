@@ -1,3 +1,5 @@
+"""Core application lifecycle coordinator and dependency container."""
+
 import dataclasses
 from collections.abc import Callable
 from typing import TYPE_CHECKING

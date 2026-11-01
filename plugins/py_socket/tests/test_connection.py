@@ -1,3 +1,5 @@
+"""Unit tests verifying PySocketConnection TLV protocol frames, handshake, and errors."""
+
 import importlib.util
 import json
 import struct

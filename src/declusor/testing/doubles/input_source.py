@@ -1,3 +1,5 @@
+"""Deterministic input source double simulating queued operator input."""
+
 from __future__ import annotations
 
 import time
@@ -13,6 +15,8 @@ class DummyInputSource(contract.IInputSource):
     """Fully-typed in-memory input source simulating operator input."""
 
     def __init__(self, inputs: Sequence[str] | None = None) -> None:
+        """Initialize input source double with optional pre-queued input lines."""
+
         self._inputs: list[str] = list(inputs) if inputs is not None else []
         self.input_exception: BaseException | None = None
         self.prompts: list[str] = []
@@ -208,9 +212,11 @@ class PacedInteractiveInputSource(DummyInputSource):
         """
 
         deadline = time.monotonic() + self._timeout
+
         while time.monotonic() < deadline:
             accumulated = b"".join(self._view.binary_data[self._view_cursor :])
             idle = self._is_idle_predicate() if self._is_idle_predicate is not None else True
+
             if expected in accumulated and idle:
                 self._view_cursor = len(self._view.binary_data)
 

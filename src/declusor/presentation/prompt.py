@@ -1,3 +1,5 @@
+"""Interactive REPL prompt loop, signal trapping, and controller dispatch runner."""
+
 from declusor import config, contract
 
 from .request import ControllerRequest

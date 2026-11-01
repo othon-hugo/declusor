@@ -1,3 +1,5 @@
+"""Unit tests verifying Pytest fixtures provided by declusor_testing."""
+
 from collections.abc import Generator
 
 from declusor import contract, testing

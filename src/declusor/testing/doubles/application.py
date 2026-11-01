@@ -1,3 +1,5 @@
+"""Deterministic application test double recording execution calls."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -22,6 +24,8 @@ class DummyApplication(core.Application):
         input_source: contract.IInputSource | None = None,
         transport_registry: transport.TransportLayerRegistry | None = None,
     ) -> None:
+        """Initialize application double with injected components and error policy."""
+
         from declusor import transport
         from declusor.testing.doubles.input_source import DummyInputSource
         from declusor.testing.doubles.router import DummyRouter

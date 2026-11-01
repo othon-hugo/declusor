@@ -1,3 +1,5 @@
+"""Thread-based cooperative concurrency, task pools, and synchronization primitives."""
+
 from collections.abc import Callable, Generator, Iterator
 from dataclasses import dataclass
 from threading import Event, Lock, Thread
@@ -16,6 +18,8 @@ class TaskLock:
     """A mutual exclusion primitive wrapping a thread lock for task synchronization."""
 
     def __init__(self) -> None:
+        """Initialize an underlying mutual exclusion lock."""
+
         self._lock = Lock()
 
     def acquire(self, blocking: bool = True, timeout: float = -1.0) -> bool:
@@ -34,6 +38,8 @@ class TaskLock:
         return self._lock.locked()
 
     def __enter__(self) -> bool:
+        """Enter context manager and acquire lock."""
+
         return self._lock.acquire()
 
     def __exit__(
@@ -42,6 +48,8 @@ class TaskLock:
         exc_val: BaseException | None,
         exc_tb: TracebackType | None,
     ) -> None:
+        """Exit context manager and release lock."""
+
         self._lock.release()
 
 
@@ -50,7 +58,10 @@ class Task:
     """Holds the outcome of a single task execution (result or exception)."""
 
     result: Any | None = None
+    """Returned result of the task callable upon successful completion."""
+
     exception: Exception | None = None
+    """Captured exception raised during task callable execution."""
 
 
 class TaskPool:
@@ -166,12 +177,16 @@ class TaskPool:
             self._results.append(task)
 
     def _run_task(self, handle_task: TaskHandler, /, thread_result: Task) -> None:
+        """Execute a task callable and store its returned value or raised exception."""
+
         try:
             thread_result.result = handle_task(self._stop_event)
         except Exception as e:
             thread_result.exception = e
 
     def __enter__(self) -> Self:
+        """Start all registered tasks on context entry."""
+
         self.start_all()
 
         return self
@@ -182,6 +197,8 @@ class TaskPool:
         exc_v: BaseException | None,
         exc_tb: TracebackType | None,
     ) -> Literal[False]:
+        """Stop worker tasks and aggregate raised exceptions on context exit."""
+
         for _ in self.return_all():
             pass
 

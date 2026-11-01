@@ -1,3 +1,5 @@
+"""Application layer controller protocols, handler signatures, and action results."""
+
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass

@@ -1,3 +1,5 @@
+"""Unit tests verifying DummyView and DummyInputSource recording."""
+
 import pytest
 
 from declusor import testing

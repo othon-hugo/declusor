@@ -1,3 +1,5 @@
+"""Utility package providing stateless helpers, encoding, concurrency, and parsing tools."""
+
 from . import lang
 from .clipboard import (
     BinaryWriter,

@@ -1,3 +1,5 @@
+"""Command router implementation mapping route strings to controllers and metadata."""
+
 from declusor import config, contract
 
 
@@ -12,6 +14,8 @@ class Router(contract.IRouter):
     """
 
     def __init__(self) -> None:
+        """Initialize an empty route table."""
+
         self._route_table: dict[str, contract.RouteRegistration] = {}
 
     @property

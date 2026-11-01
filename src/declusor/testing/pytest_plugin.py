@@ -1,3 +1,5 @@
+"""Pytest plugin registering common Declusor fixtures and test hooks."""
+
 from collections.abc import Generator
 
 import pytest

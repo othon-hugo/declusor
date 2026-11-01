@@ -1,3 +1,5 @@
+"""Terminal view implementations and stream-isolated console output formatters."""
+
 import sys
 from typing import BinaryIO, TextIO
 
@@ -13,6 +15,8 @@ class TerminalView(contract.IView):
         stderr: TextIO | None = None,
         buffer: BinaryIO | None = None,
     ) -> None:
+        """Initialize terminal view with optional standard output, standard error, and binary streams."""
+
         self._stdout: TextIO = stdout if stdout is not None else sys.stdout
         self._stderr: TextIO = stderr if stderr is not None else sys.stderr
         self._buffer: BinaryIO = buffer if buffer is not None else sys.stdout.buffer

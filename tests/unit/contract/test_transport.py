@@ -1,3 +1,5 @@
+"""Unit tests verifying ITransport contracts and default methods."""
+
 import pytest
 
 from declusor import config, contract

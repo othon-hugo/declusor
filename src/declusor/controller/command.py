@@ -1,3 +1,5 @@
+"""Generic remote command execution controller handling standard CLI requests."""
+
 from declusor import command, contract
 
 

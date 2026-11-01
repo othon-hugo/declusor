@@ -21,7 +21,7 @@ The **util** package provides stateless helper functions consumed across every l
 
 ## Design Principles
 
-1. **Statelessness** — all functions are pure or only depend on `config` constants.
-2. **Single Purpose** — each function performs exactly one well-defined operation.
-3. **Defensive Programming** — inputs are validated; errors raise domain exceptions such as `InvalidOperation` or `ConnectionError`.
-4. **Type Safety** — all functions carry full type annotations.
+1. **Statelessness**: all functions are pure or only depend on `config` constants.
+2. **Single Purpose**: each function performs exactly one well-defined operation.
+3. **Defensive Programming**: inputs are validated; errors raise domain exceptions such as `InvalidOperation` or `ConnectionError`.
+4. **Type Safety**: all functions carry full type annotations.

@@ -1,3 +1,5 @@
+"""Unit tests verifying Python AST pruning, compilation, and bytecode serialization."""
+
 import importlib.util
 import platform
 import sys

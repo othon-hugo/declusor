@@ -1,3 +1,5 @@
+"""Controller request DTOs and command argument parsing implementations."""
+
 from dataclasses import dataclass
 from typing import cast
 
@@ -9,6 +11,7 @@ class ControllerRequest[T: contract.ControllerArguments](contract.IControllerReq
     """Concrete implementation of IControllerRequest using util.parse_command_arguments."""
 
     request_line: str = ""
+    """Raw unparsed command line input string entered by the operator."""
 
     def parse_arguments(
         self,

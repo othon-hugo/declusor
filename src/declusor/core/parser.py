@@ -1,3 +1,5 @@
+"""Command-line argument parser, typed namespaces, and configuration builder."""
+
 import argparse
 import dataclasses
 from collections.abc import Sequence
@@ -14,16 +16,37 @@ class DeclusorNamespace(argparse.Namespace):
     """Strongly-typed namespace for Declusor CLI arguments."""
 
     host: str = ""
+    """Listening IP address or hostname."""
+
     port: int = 0
+    """Listening TCP port number."""
+
     plugin: str | None = None
+    """Selected client plugin name."""
+
     mode: str = config.DEFAULT_EXECUTION_MODE.value
+    """Application execution mode identifier."""
+
     launcher_kind: str = config.DEFAULT_LAUNCHER_KIND.value
+    """Client launcher delivery kind (staged or stageless)."""
+
     launcher_output: str = config.DEFAULT_LAUNCHER_OUTPUT_MODE.value
+    """Client launcher delivery output destination mode."""
+
     launcher_wrapper: str | None = None
+    """Custom shell wrapper template string."""
+
     timeout: float | None = None
+    """Network connection timeout in seconds."""
+
     assets_dir: Path | None = None
+    """Custom assets root directory path."""
+
     plugin_dir: Path | None = None
+    """Custom external drop-in plugin directory path."""
+
     transport_layers: list[str] | None = None
+    """Sequence of composable transport layer identifiers."""
 
 
 class DeclusorParser(util.Parser):
@@ -33,9 +56,14 @@ class DeclusorParser(util.Parser):
         """Validated host value parsed from the command line."""
 
         arg_name: Final = "host"
+        """Positional argument destination attribute name."""
+
         arg_help: Final = "IP address or hostname where the service should run"
+        """Help description string."""
 
         def __new__(cls, value: str) -> "DeclusorParser.Host":
+            """Validate host string invariant to ensure non-empty address."""
+
             if not value:
                 raise ValueError("host cannot be empty")
 
@@ -45,9 +73,14 @@ class DeclusorParser(util.Parser):
         """Validated TCP port parsed from the command line."""
 
         arg_name: Final = "port"
+        """Positional argument destination attribute name."""
+
         arg_help: Final = "port number to listen on for incoming connections"
+        """Help description string."""
 
         def __new__(cls, value: int | str) -> "DeclusorParser.Port":
+            """Validate TCP port range invariant between 0 and 65535."""
+
             port = int(value)
 
             if not 0 <= port <= 65535:
@@ -59,10 +92,17 @@ class DeclusorParser(util.Parser):
         """Plugin name parsed from the command line."""
 
         arg_name: Final = "plugin"
+        """CLI argument destination attribute name."""
+
         arg_help: Final = "agent responsible for handling requests"
+        """Help description string."""
+
         arg_flags: Final = ("-p", "--plugin")
+        """CLI flag options."""
 
         def __new__(cls, value: str) -> "DeclusorParser.Plugin":
+            """Validate plugin name invariant to ensure non-empty string."""
+
             if not value:
                 raise ValueError("plugin cannot be empty")
 
@@ -72,12 +112,23 @@ class DeclusorParser(util.Parser):
         """Execution mode argument definition."""
 
         arg_name: Final = "mode"
+        """CLI argument destination attribute name."""
+
         arg_help: Final = "runtime execution mode (e.g. cli, api, mcp, http)"
+        """Help description string."""
+
         arg_flags: Final = ("-m", "--mode")
+        """CLI flag options."""
+
         arg_choices: Final = tuple(config.ExecutionMode)
+        """Permitted execution mode enum choices."""
+
         arg_default: Final = config.DEFAULT_EXECUTION_MODE
+        """Default execution mode fallback value."""
 
         def __new__(cls, value: str) -> "DeclusorParser.ExecutionMode":
+            """Validate and normalize execution mode choice."""
+
             if not value:
                 raise ValueError("execution mode cannot be empty")
 
@@ -93,10 +144,17 @@ class DeclusorParser(util.Parser):
         """Network socket operation timeout argument definition."""
 
         arg_name: Final = "timeout"
+        """CLI argument destination attribute name."""
+
         arg_help: Final = "network socket timeout in seconds (e.g. 1.0, 5.0)"
+        """Help description string."""
+
         arg_flags: Final = ("-t", "--timeout")
+        """CLI flag options."""
 
         def __new__(cls, value: float | str) -> "DeclusorParser.Timeout":
+            """Validate timeout value invariant to ensure positive float."""
+
             try:
                 timeout = float(value)
             except (TypeError, ValueError) as error:
@@ -111,24 +169,43 @@ class DeclusorParser(util.Parser):
         """Root directory containing application assets."""
 
         arg_name: Final = "assets_dir"
+        """CLI argument destination attribute name."""
+
         arg_help: Final = "root directory containing client launchers, helpers, and modules"
+        """Help description string."""
+
         arg_flags: Final = ("--assets-dir",)
+        """CLI flag options."""
 
     class PluginDir(Path):
         """Additional directory from which plugins are discovered."""
 
         arg_name: Final = "plugin_dir"
+        """CLI argument destination attribute name."""
+
         arg_help: Final = "additional directory to discover custom drop-in plugins"
+        """Help description string."""
+
         arg_flags: Final = ("--plugin-dir",)
+        """CLI flag options."""
 
     class LauncherKind(str):
         """Launcher delivery kind argument definition."""
 
         arg_name: Final = "launcher_kind"
+        """CLI argument destination attribute name."""
+
         arg_help: Final = "client launcher kind: 'staged' (compact one-liner loader) or 'stageless' (monolithic self-contained client)"
+        """Help description string."""
+
         arg_flags: Final = ("-K", "--launcher-kind")
+        """CLI flag options."""
+
         arg_choices: Final = tuple(k.value for k in config.LauncherKind)
+        """Permitted launcher kind string choices."""
+
         arg_default: Final = config.DEFAULT_LAUNCHER_KIND.value
+        """Default launcher kind choice."""
 
         def __new__(cls, value: str) -> "DeclusorParser.LauncherKind":
             """Validate and normalize launcher kind."""
@@ -148,11 +225,20 @@ class DeclusorParser(util.Parser):
         """Launcher output mode argument definition."""
 
         arg_name: Final = "launcher_output"
+        """CLI argument destination attribute name."""
+
         arg_help: Final = "client launcher delivery output mode: 'terminal', 'silent', 'clipboard', or 'file:<path>' (default: 'terminal')"
+        """Help description string."""
+
         arg_flags: Final = ("-O", "--launcher-output")
+        """CLI flag options."""
+
         arg_default: Final = config.DEFAULT_LAUNCHER_OUTPUT_MODE.value
+        """Default launcher output mode value."""
 
         def __new__(cls, value: str) -> "DeclusorParser.LauncherOutput":
+            """Validate and normalize launcher output argument value."""
+
             if not value:
                 raise ValueError("launcher output cannot be empty")
 
@@ -188,10 +274,17 @@ class DeclusorParser(util.Parser):
         """Launcher shell wrapper template argument definition."""
 
         arg_name: Final = "launcher_wrapper"
+        """CLI argument destination attribute name."""
+
         arg_help: Final = "shell invocation wrapper template containing '$DECLUSOR_SCRIPT' (e.g. \"python3 -c '$DECLUSOR_SCRIPT'\")"
+        """Help description string."""
+
         arg_flags: Final = ("-W", "--launcher-wrapper")
+        """CLI flag options."""
 
         def __new__(cls, value: str) -> "DeclusorParser.LauncherWrapper":
+            """Validate launcher wrapper template invariant."""
+
             if not value:
                 raise ValueError("launcher wrapper cannot be empty")
 
@@ -201,9 +294,16 @@ class DeclusorParser(util.Parser):
         """Transport layer argument definition."""
 
         arg_name: Final = "transport_layers"
+        """CLI argument destination attribute name."""
+
         arg_help: Final = "composable transport layer to wrap connection (repeatable, e.g. --transport-layer xor)"
+        """Help description string."""
+
         arg_action: Final = "append"
+        """Argparse action type."""
+
         arg_flags: Final = ("-L", "--transport-layer")
+        """CLI flag options."""
 
         def __new__(cls, value: str) -> "DeclusorParser.TransportLayer":
             """Validate and normalize transport layer identifier."""
@@ -226,6 +326,7 @@ class DeclusorParser(util.Parser):
         PluginDir.arg_name,
         TransportLayer.arg_name,
     )
+    """Tuple of standard argument names recognized by the core Declusor engine."""
 
     @staticmethod
     def parse_launcher_output(value: str) -> tuple[config.LauncherOutputMode, Path | None]:
@@ -269,6 +370,8 @@ class DeclusorParser(util.Parser):
         self._configure_common_arguments()
 
     def _configure_common_arguments(self) -> None:
+        """Configure standard positional and optional command-line flags."""
+
         if self._is_configured:
             return
 

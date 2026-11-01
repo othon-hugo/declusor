@@ -1,3 +1,5 @@
+"""Unit tests verifying ShellSocketConnection nonce-delimited streaming and handshake."""
+
 import threading
 import time
 from collections.abc import Callable

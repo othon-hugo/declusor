@@ -1,3 +1,5 @@
+"""Interactive reverse shell streaming command and session launch DTO."""
+
 from dataclasses import dataclass
 
 from declusor import config, contract, util
@@ -93,6 +95,8 @@ class LaunchShell(contract.ICommand):
         """
 
         def _handle_request(stop_event: util.TaskEvent) -> None:
+            """Read raw command input from operator and write encoded payload to connection."""
+
             while not stop_event.is_set():
                 command_request = input_source.read_raw()
 
@@ -140,6 +144,8 @@ class LaunchShell(contract.ICommand):
         """
 
         def _handle_response(stop_event: util.TaskEvent) -> None:
+            """Stream incoming connection chunks to operator presentation view."""
+
             previous_timeout = connection.timeout
 
             try:

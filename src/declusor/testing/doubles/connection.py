@@ -1,3 +1,5 @@
+"""Deterministic connection test double managing state transitions."""
+
 from collections.abc import Generator, Sequence
 from typing import Self
 
@@ -16,6 +18,8 @@ class DummyConnection(contract.IConnection):
         initial_state: contract.ConnectionState = contract.ConnectionState.CREATED,
         transport: contract.ITransport | None = None,
     ) -> None:
+        """Initialize connection double with client renderer, incoming chunks, and state."""
+
         self._client: contract.IOperationRenderer = client or DummyOperationRenderer()
         self._state: contract.ConnectionState = initial_state
         self._timeout: float | None = None
@@ -30,22 +34,32 @@ class DummyConnection(contract.IConnection):
 
     @property
     def state(self) -> contract.ConnectionState:
+        """Return the current connection state."""
+
         return self._state
 
     @state.setter
     def state(self, value: contract.ConnectionState) -> None:
+        """Update connection state."""
+
         self._state = value
 
     @property
     def renderer(self) -> contract.IOperationRenderer:
+        """Return the active operation renderer."""
+
         return self._client
 
     @property
     def timeout(self) -> float | None:
+        """Return the connection timeout in seconds."""
+
         return self._timeout
 
     @timeout.setter
     def timeout(self, value: float | None, /) -> None:
+        """Set connection timeout in seconds."""
+
         self._timeout = value
 
     def handshake(self) -> None:
@@ -93,6 +107,8 @@ class DummyConnection(contract.IConnection):
             self._transport.close()
 
     def __enter__(self) -> Self:
+        """Enter context manager, returning self."""
+
         return self
 
     def __exit__(
@@ -101,4 +117,6 @@ class DummyConnection(contract.IConnection):
         exc_val: BaseException | None,
         exc_tb: object,
     ) -> None:
+        """Exit context manager, closing simulated connection."""
+
         self.close()

@@ -1,3 +1,5 @@
+"""Python socket client plugin package."""
+
 from .connection import (
     PySocketConnection,
 )

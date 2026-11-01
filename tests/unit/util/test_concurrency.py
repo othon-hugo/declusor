@@ -1,3 +1,5 @@
+"""Unit tests verifying TaskPool, TaskLock, and cooperative concurrency primitives."""
+
 import time
 
 import pytest

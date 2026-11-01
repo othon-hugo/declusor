@@ -1,3 +1,5 @@
+"""Interactive reverse shell controller launching bidirectional task streaming."""
+
 from declusor import command, contract
 
 

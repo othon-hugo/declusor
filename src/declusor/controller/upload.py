@@ -1,3 +1,5 @@
+"""File upload controller dispatching to UploadFile command."""
+
 from declusor import command, contract
 
 

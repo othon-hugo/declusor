@@ -1,3 +1,5 @@
+"""Remote shell command execution command and parameter validation DTO."""
+
 from dataclasses import dataclass
 
 from declusor import config, contract
@@ -20,6 +22,8 @@ class ExecuteCommandDTO:
     """command_line: Non-empty shell command line string."""
 
     def __post_init__(self) -> None:
+        """Validate command line content to ensure non-empty command."""
+
         if not self.command_line or not self.command_line.strip():
             raise config.CommandValidationError(
                 "Command line cannot be empty.",
@@ -62,6 +66,8 @@ class ExecuteCommand(BaseStreamCommand):
         session.connection.write(self._payload(session))
 
     def _payload(self, session: contract.SessionContext, /) -> bytes:
+        """Render the command line payload through the active connection renderer."""
+
         rendered = session.connection.renderer.render_operation_command(
             config.OperationCode.EXEC_COMMAND,
             self._dto.command_line,

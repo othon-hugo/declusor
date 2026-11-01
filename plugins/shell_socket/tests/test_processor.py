@@ -1,3 +1,5 @@
+"""Unit tests verifying ShellSocketProcessor asset resolution, helpers, and modules."""
+
 from pathlib import Path
 
 import declusor_shell_socket as shell_socket

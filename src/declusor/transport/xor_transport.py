@@ -1,3 +1,5 @@
+"""XOR stream encryption transport layer decorator."""
+
 from declusor import contract, util
 
 

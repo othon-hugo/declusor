@@ -18,10 +18,10 @@ The **core** package provides infrastructure services implementing domain contra
 
 ## Design Principles
 
-1. **Contract Compliance** — classes implement abstractions defined in `contract`.
-2. **Infrastructure Decoupling** — routing and parsing are completely decoupled from concrete client implementations.
-3. **Multi-Tier Discovery & Precedence** — `PluginManager` discovers plugins dynamically at runtime across built-ins, PEP 621 entry points, and drop-in folders.
-4. **Validation Barrier** — `PluginManager` validates plugin classes prior to registration, preventing faulty third-party code from compromising runtime stability.
-5. **Collaborator Hook Binding** — `Application.run` binds input source hooks (such as `setup_completer`), forwarding registered route mappings and the active plugin's `assets_dir`.
+1. **Contract Compliance**: classes implement abstractions defined in `contract`.
+2. **Infrastructure Decoupling**: routing and parsing are completely decoupled from concrete client implementations.
+3. **Multi-Tier Discovery & Precedence**: `PluginManager` discovers plugins dynamically at runtime across built-ins, PEP 621 entry points, and drop-in folders.
+4. **Validation Barrier**: `PluginManager` validates plugin classes prior to registration, preventing faulty third-party code from compromising runtime stability.
+5. **Collaborator Hook Binding**: `Application.run` binds input source hooks (such as `setup_completer`), forwarding registered route mappings and the active plugin's `assets_dir`.
 
 `core.OFFICIAL_ROUTES` is an immutable mapping of the reusable built-in plugin routes. `Application` composes it with the selected plugin's `routes` mapping, where plugin values override official registrations with the same name. It then adds protected `help` and `exit` registrations and validates the complete route set before connecting it. Route names remain open-ended strings; collisions with routes already present in the injected router are rejected. An application instance may be reused for the same plugin, but changing plugins requires a new instance because routers do not remove routes.

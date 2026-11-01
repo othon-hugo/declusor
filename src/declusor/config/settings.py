@@ -1,3 +1,5 @@
+"""Framework constants, default parameters, and filesystem path configurations."""
+
 from pathlib import Path
 from typing import Final
 

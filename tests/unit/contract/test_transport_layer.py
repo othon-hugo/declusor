@@ -1,3 +1,5 @@
+"""Unit tests verifying ITransportLayer decorator contracts."""
+
 import pytest
 
 from declusor import contract

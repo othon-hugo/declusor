@@ -1,3 +1,5 @@
+"""Unit tests verifying DummyRouter, DummyApplication, and component doubles."""
+
 import pytest
 
 from declusor import config, contract, core, testing, util

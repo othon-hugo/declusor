@@ -1,3 +1,5 @@
+"""Python socket client operation renderer translating opcodes to Python syntax."""
+
 from dataclasses import dataclass, field
 from typing import Final
 
@@ -27,6 +29,8 @@ class PySocketRenderer(contract.IOperationRenderer):
     """Set of operation codes supported by this renderer."""
 
     def __post_init__(self) -> None:
+        """Freeze supported operations into an immutable frozenset."""
+
         object.__setattr__(self, "_supported_operations", frozenset(self._supported_operations))
 
     @property

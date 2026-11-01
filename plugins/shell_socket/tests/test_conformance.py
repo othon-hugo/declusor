@@ -1,3 +1,5 @@
+"""Plugin conformance test suite execution for shell_socket."""
+
 from pathlib import Path
 
 import declusor_shell_socket as shell_socket

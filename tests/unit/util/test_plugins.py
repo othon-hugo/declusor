@@ -1,3 +1,5 @@
+"""Unit tests verifying plugin entry discovery and dynamic loading."""
+
 import sys
 from pathlib import Path
 

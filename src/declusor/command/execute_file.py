@@ -1,3 +1,5 @@
+"""Remote script file execution command and parameter validation DTO."""
+
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -22,6 +24,8 @@ class ExecuteFileDTO:
     """Validated, absolute or relative ``Path`` to an existing local file."""
 
     def __init__(self, source_path: Path | str) -> None:
+        """Validate source path existence and store resolved Path."""
+
         raw_path = str(source_path).strip()
 
         if not raw_path:

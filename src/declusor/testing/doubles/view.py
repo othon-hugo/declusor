@@ -1,3 +1,5 @@
+"""Deterministic view double capturing messages, errors, and output."""
+
 from declusor import contract
 
 
@@ -5,6 +7,8 @@ class DummyView(contract.IView):
     """Fully-typed in-memory view capturing all presentation output."""
 
     def __init__(self) -> None:
+        """Initialize in-memory output lists for captured view messages."""
+
         self.messages: list[str] = []
         self.binary_data: list[bytes] = []
         self.errors: list[str | BaseException] = []

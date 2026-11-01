@@ -1,3 +1,5 @@
+"""Command package encapsulating remote operations, execution DTOs, and shell streaming."""
+
 from declusor.config import (
     CommandError,
     CommandValidationError,

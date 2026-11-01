@@ -1,3 +1,5 @@
+"""Unit tests verifying PluginConformanceTestSuite validation behavior."""
+
 from pathlib import Path
 
 import pytest

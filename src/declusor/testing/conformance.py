@@ -1,3 +1,5 @@
+"""Reusable conformance test suite verifying plugin contract implementations."""
+
 import dataclasses
 import inspect
 import threading

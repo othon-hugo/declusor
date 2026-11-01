@@ -1,3 +1,5 @@
+"""Python socket client plugin extension, runtime adapter, and asset processor."""
+
 import os
 from collections.abc import Mapping
 from pathlib import Path
@@ -26,10 +28,19 @@ class PySocketPlugin(contract.IPluginExtension[PySocketConfig]):
     """
 
     name = "py_socket"
+    """Unique plugin identifier."""
+
     description = "Cross-platform Python reverse-shell with in-memory execution and subprocess fallback."
+    """Human-readable plugin description."""
+
     version = "1.0.0"
+    """SemVer version string."""
+
     author = "Declusor Team"
+    """Author identifier."""
+
     options_type = PySocketConfig
+    """Parsed options schema type."""
 
     routes = {
         config.OfficialRoute.LOAD.value: core.OFFICIAL_ROUTES[config.OfficialRoute.LOAD.value],
@@ -39,6 +50,7 @@ class PySocketPlugin(contract.IPluginExtension[PySocketConfig]):
         config.OfficialRoute.UPLOAD.value: core.OFFICIAL_ROUTES[config.OfficialRoute.UPLOAD.value],
         config.OfficialRoute.EXECUTE.value: core.OFFICIAL_ROUTES[config.OfficialRoute.EXECUTE.value],
     }
+    """Supported route table mappings."""
 
     supported_launcher_kinds: frozenset[config.LauncherKind] = frozenset(
         {
@@ -46,6 +58,7 @@ class PySocketPlugin(contract.IPluginExtension[PySocketConfig]):
             config.LauncherKind.STAGELESS,
         }
     )
+    """Set of supported launcher delivery kinds."""
 
     @classmethod
     def configure_parser(cls, parser: contract.IArgumentParser, /) -> None:
@@ -109,9 +122,14 @@ class PySocketRuntime(contract.IPluginRuntime):
     """Runtime adapter between Python client configuration and its transport."""
 
     DEFAULT_WRAPPER_TEMPLATE: Final[str] = "python3 -c 'exec(bytes.fromhex(\"$DECLUSOR_SCRIPT\"))'"
+    """Default shell invocation template for monolithic stageless launcher."""
+
     STAGED_WRAPPER_TEMPLATE: Final[str] = "python3 -c '$DECLUSOR_SCRIPT'"
+    """Shell invocation template for lightweight staged loader."""
 
     def __init__(self, plugin_config: contract.PluginConfig[PySocketConfig], /) -> None:
+        """Initialize Python client runtime with active configuration, renderer, and processor."""
+
         self._plugin_config = plugin_config
         self._renderer = PySocketRenderer()
         self._expected_ack = util.hash_sha256(config.DEFAULT_CLIENT_ACK_SEED)
@@ -179,6 +197,8 @@ class PySocketProcessor(contract.IPluginProcessor):
         library_extensions: tuple[str, ...] = (".py",),
         module_extensions: tuple[str, ...] = (".py",),
     ) -> None:
+        """Initialize asset processor with filesystem paths and permitted extensions."""
+
         self._filesystem = filesystem
         self._library_extensions = library_extensions
         self._module_extensions = module_extensions

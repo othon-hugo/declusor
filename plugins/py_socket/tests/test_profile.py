@@ -1,3 +1,5 @@
+"""Unit tests verifying PySocketRenderer opcode translation into Python statements."""
+
 from declusor import config, util
 
 import declusor_py_socket as py_socket

@@ -1,3 +1,5 @@
+"""Deterministic in-memory transport test doubles."""
+
 import queue
 from collections.abc import Sequence
 

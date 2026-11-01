@@ -1,3 +1,5 @@
+"""Unit tests verifying ShellSocketPlugin parser configuration, config builder, and runtime creation."""
+
 import dataclasses
 from pathlib import Path
 

@@ -1,3 +1,5 @@
+"""Transport package providing network listeners, socket transports, and composable stream decorators."""
+
 from declusor.config import (
     ConnectionClosed,
     ConnectionError,

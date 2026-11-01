@@ -1,3 +1,5 @@
+"""Shell socket client plugin package."""
+
 from .connection import (
     ShellSocketConnection,
 )

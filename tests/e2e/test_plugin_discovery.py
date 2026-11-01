@@ -1,3 +1,5 @@
+"""End-to-end integration tests verifying dynamic plugin discovery from CLI and user directories."""
+
 from pathlib import Path
 
 from declusor import app

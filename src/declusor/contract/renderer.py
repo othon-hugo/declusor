@@ -1,3 +1,5 @@
+"""Payload rendering, opcode generation, and script preparation contracts."""
+
 from abc import ABC, abstractmethod
 
 from declusor import config

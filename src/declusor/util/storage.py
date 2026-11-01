@@ -1,3 +1,5 @@
+"""Filesystem validation, binary file reading, and directory inspection utilities."""
+
 from pathlib import Path
 
 from declusor import config

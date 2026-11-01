@@ -1,3 +1,5 @@
+"""Connection state machines, protocol profiles, and reverse-shell connection contracts."""
+
 from abc import ABC, abstractmethod
 from collections.abc import Generator
 from enum import StrEnum
@@ -244,7 +246,11 @@ class IConnection(ABC):
         raise NotImplementedError
 
     def __enter__(self) -> Self:
+        """Enter context manager, returning active connection instance."""
+
         return self
 
     def __exit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: object) -> None:
+        """Exit context manager, closing transport resources."""
+
         self.close()

@@ -1,3 +1,5 @@
+"""TCP network listener implementing ITransportListener with graceful connection acceptance."""
+
 import contextlib
 import socket
 

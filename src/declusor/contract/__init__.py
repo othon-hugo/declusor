@@ -1,3 +1,5 @@
+"""Domain contract package defining interfaces and abstract lifecycle protocols."""
+
 from declusor.config import (
     ConnectionClosed,
     ConnectionError,

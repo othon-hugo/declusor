@@ -1,3 +1,5 @@
+"""Interactive help controller inspecting registered routes and usage documentation."""
+
 from declusor import contract
 
 

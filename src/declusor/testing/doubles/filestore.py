@@ -1,3 +1,5 @@
+"""In-memory plugin file store double."""
+
 import os
 from collections.abc import Mapping
 from pathlib import Path
@@ -16,6 +18,8 @@ class DummyPluginFileStore(contract.IPluginProcessor):
         helpers_map: dict[str, bytes] | None = None,
         filesystem: contract.PluginFilesystem | None = None,
     ) -> None:
+        """Initialize in-memory plugin file store double with mock assets and filesystem."""
+
         self.script_template: str = script_template
         self.library_bytes: bytes = library_bytes
         self.modules: dict[str, bytes] = dict(modules) if modules is not None else {}

@@ -1,3 +1,5 @@
+"""Launcher delivery renderer dispatching staged and stageless client scripts to target outputs."""
+
 from collections.abc import Callable
 
 from declusor import config, contract, util

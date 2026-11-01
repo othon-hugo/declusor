@@ -1,3 +1,5 @@
+"""Local file execution controller dispatching to ExecuteFile command."""
+
 from declusor import command, contract
 
 

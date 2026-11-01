@@ -1,3 +1,5 @@
+"""Encoding, hashing, shell argument quoting, and string template formatting utilities."""
+
 from base64 import b64decode, b64encode
 from hashlib import md5, sha256, sha384, sha512
 from string import Template

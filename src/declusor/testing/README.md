@@ -16,7 +16,7 @@ The **testing** package provides reusable, fully-typed test infrastructure, doub
 
 ## Design Principles
 
-1. **Deterministic Test Doubles** — eliminates fragile, untyped `MagicMock` setups in favor of predictable, contract-compliant doubles.
-2. **Contract Conformance** — provides reusable test suites (`PluginConformanceTestSuite`) ensuring external plugins strictly satisfy host invariants.
-3. **Configured Static Typing** — fixtures, doubles, and factories are checked by the repository's Mypy strict profile, including its explicit exceptions in `pyproject.toml`.
-4. **Isolated Test State** — doubles maintain explicit reset capabilities to prevent test contamination and state leakage across runs.
+1. **Deterministic Test Doubles**: eliminates fragile, untyped `MagicMock` setups in favor of predictable, contract-compliant doubles.
+2. **Contract Conformance**: provides reusable test suites (`PluginConformanceTestSuite`) ensuring external plugins strictly satisfy host invariants.
+3. **Configured Static Typing**: fixtures, doubles, and factories are checked by the repository's Mypy strict profile, including its explicit exceptions in `pyproject.toml`.
+4. **Isolated Test State**: doubles maintain explicit reset capabilities to prevent test contamination and state leakage across runs.

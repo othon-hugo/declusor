@@ -1,3 +1,5 @@
+"""Low-level network socket creation and blocking listener context managers."""
+
 import socket
 from collections.abc import Generator
 from contextlib import contextmanager

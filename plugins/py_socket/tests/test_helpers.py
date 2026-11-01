@@ -1,3 +1,5 @@
+"""Unit tests verifying py_socket helper library integrity and execution."""
+
 import base64
 import importlib.util
 import io

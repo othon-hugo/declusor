@@ -1,3 +1,5 @@
+"""Specialized interactive terminal application, prompt runner wiring, and factories."""
+
 from collections.abc import Callable, Sequence
 from pathlib import Path
 

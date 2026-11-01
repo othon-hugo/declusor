@@ -1,3 +1,5 @@
+"""Test double implementations adhering to domain contracts."""
+
 from declusor.testing.doubles.application import (
     DummyApplication,
 )

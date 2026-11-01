@@ -1,3 +1,5 @@
+"""End-to-end integration tests verifying application startup, connection, and REPL workflows."""
+
 import shlex
 import subprocess
 import sys

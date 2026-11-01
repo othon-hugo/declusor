@@ -1,3 +1,5 @@
+"""Operator input source contracts, readline abstractions, and prompt providers."""
+
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from pathlib import Path

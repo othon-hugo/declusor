@@ -1,3 +1,5 @@
+"""Composable transport layer decorator pipeline and transport registry."""
+
 from collections.abc import Callable, Sequence
 from typing import Final
 

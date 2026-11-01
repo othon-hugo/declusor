@@ -1,3 +1,5 @@
+"""CLI entrypoint configuring argument parser, plugin manager, and runtime bootstrap."""
+
 import contextlib
 import sys
 from collections.abc import Callable, Sequence

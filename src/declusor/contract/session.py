@@ -1,3 +1,5 @@
+"""Interactive REPL session lifecycle contracts and context coordinators."""
+
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 

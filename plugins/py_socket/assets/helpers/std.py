@@ -66,6 +66,7 @@ def execute_bytecode(data: bytes) -> None:
 def execute_binary(filepath: str, *args: str, cleanup: bool = False) -> None:
     try:
         os.chmod(filepath, 0o700)
+
         proc = subprocess.Popen([filepath, *args], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)  # noqa: S603
         send_fn = globals().get("_send_frame")
 

@@ -1,3 +1,5 @@
+"""Unit tests verifying IConnection state machines and lifecycle predicates."""
+
 from collections.abc import Generator
 
 import pytest

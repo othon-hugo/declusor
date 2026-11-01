@@ -46,7 +46,7 @@ mkdir -p my_plugin/src/declusor_my_plugin
 mkdir -p my_plugin/assets/{launchers,helpers,modules}
 mkdir -p my_plugin/tests
 touch my_plugin/pyproject.toml my_plugin/README.md
-touch my_plugin/src/declusor_my_plugin/{__init__.py,plugin.py,connection.py}
+touch my_plugin/src/declusor_my_plugin/{__init__.py,plugin.py,connection.py,renderer.py}
 ```
 
 Canonical layout:

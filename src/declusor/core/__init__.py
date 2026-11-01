@@ -1,3 +1,5 @@
+"""Core infrastructure package providing application runtime, routing, parsing, and registries."""
+
 from declusor.config import (
     DuplicateRouteError,
     LauncherDeliveryError,

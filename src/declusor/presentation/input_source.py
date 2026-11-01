@@ -1,3 +1,5 @@
+"""Terminal input source with readline support, command history, and path autocompletion."""
+
 import atexit
 import glob
 import os
@@ -19,6 +21,8 @@ class TerminalInputSource(contract.IInputSource):
         blocked_names: Collection[str] | None = None,
         blocked_extensions: Collection[str] | None = None,
     ) -> None:
+        """Initialize terminal input source with reader function and completion exclusion filters."""
+
         self._reader: Callable[[str], str] = reader if reader is not None else input
         self._history_file: Path | None = None
         self._blocked_names: frozenset[str] = frozenset(blocked_names) if blocked_names is not None else config.DEFAULT_COMPLETION_BLOCKED_NAMES
@@ -142,7 +146,11 @@ class TerminalInputSource(contract.IInputSource):
             return files
 
         def _complete_line(text: str, state: int) -> str | None:
+            """Readline completion function determining command and path matches."""
+
             def _find_file(text: str, state: int, base_dir: Path | None = None) -> str | None:
+                """Return matching filesystem path entry at index state."""
+
                 matches = _search_file(text, base_dir=base_dir)
 
                 if state < len(matches):
@@ -151,6 +159,8 @@ class TerminalInputSource(contract.IInputSource):
                 return None
 
             def _find_command(text: str, state: int) -> str | None:
+                """Return matching command route entry at index state."""
+
                 matches = [line for line in command_routes if line.startswith(text)]
 
                 if state < len(matches):

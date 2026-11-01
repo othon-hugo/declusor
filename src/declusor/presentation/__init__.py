@@ -1,3 +1,5 @@
+"""Presentation package providing terminal views, prompt loops, and input sources."""
+
 from declusor.config import (
     PromptError,
 )

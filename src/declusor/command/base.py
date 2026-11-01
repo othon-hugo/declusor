@@ -1,3 +1,5 @@
+"""Base command implementations for streaming output and file transfer operations."""
+
 from typing import TYPE_CHECKING, Literal
 
 from declusor import config, contract, util

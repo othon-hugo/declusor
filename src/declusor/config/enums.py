@@ -1,7 +1,11 @@
+"""Centralized domain enumerations for Declusor."""
+
 from enum import IntEnum, StrEnum
 
 
 class DeclusorPlugins(StrEnum):
+    """Canonical built-in plugin identifiers."""
+
     SHELL_SOCKET = "shell_socket"
     """POSIX shell socket client transport plugin."""
 

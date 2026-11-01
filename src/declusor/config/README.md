@@ -41,9 +41,9 @@ DeclusorWarning (Warning)
 
 ## Design Principles
 
-1. **Centralisation** — all settings and constants live here.
-2. **Immutability** — values are class-level constants, not mutated at runtime.
-3. **Type Safety** — `StrEnum` members and typed exceptions prevent invalid states.
-4. **Semantic Exceptions** — each exception type conveys specific error context.
+1. **Centralisation**: all settings and constants live here.
+2. **Immutability**: values are class-level constants, not mutated at runtime.
+3. **Type Safety**: `StrEnum` members and typed exceptions prevent invalid states.
+4. **Semantic Exceptions**: each exception type conveys specific error context.
 
 Route names are open-ended strings defined by route registrations, not a closed configuration enum. The plugin contract and `core.OFFICIAL_ROUTES` provide the types and reusable defaults for route declarations.

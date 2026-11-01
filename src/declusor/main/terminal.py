@@ -1,3 +1,5 @@
+"""Terminal application runner configuring listener, connection, and prompt loops."""
+
 import inspect
 from collections.abc import Callable, Mapping
 from typing import Any

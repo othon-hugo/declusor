@@ -1,3 +1,5 @@
+"""Encapsulated remote command execution lifecycle contracts."""
+
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 

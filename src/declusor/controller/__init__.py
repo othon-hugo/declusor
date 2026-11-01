@@ -1,3 +1,5 @@
+"""Controller package routing user input to domain commands and presentation views."""
+
 from declusor.config import (
     ControllerError,
 )

@@ -1,3 +1,5 @@
+"""Declusor: A modular, extensible reverse-shell framework and payload delivery handler."""
+
 from . import (
     app,
     command,

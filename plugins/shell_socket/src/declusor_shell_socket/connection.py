@@ -1,3 +1,5 @@
+"""Shell socket client connection implementing nonce-delimited streaming protocol."""
+
 from collections import deque
 from collections.abc import Callable, Generator
 from typing import Final
@@ -85,10 +87,14 @@ class ShellSocketConnection(contract.IConnection):
 
     @timeout.setter
     def timeout(self, value: float | None) -> None:
+        """Set the underlying transport timeout."""
+
         self._transport.timeout = value
 
     @property
     def delim(self) -> bytes:
+        """Delimiter sequence marking end of output for the active command nonce."""
+
         if not self._current_nonce:
             raise config.ConnectionError("No active command nonce.")
 
@@ -199,9 +205,13 @@ class ShellSocketConnection(contract.IConnection):
             buffer.extend(chunk)
 
     def __enter__(self) -> "ShellSocketConnection":
+        """Enter context manager, returning self."""
+
         return self
 
     def __exit__(self, *_: object) -> None:
+        """Exit context manager, closing connection transport."""
+
         self.close()
 
     def close(self) -> None:

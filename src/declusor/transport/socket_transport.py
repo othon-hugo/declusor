@@ -1,3 +1,5 @@
+"""Concrete TCP socket transport implementing ITransport over standard sockets."""
+
 import contextlib
 import socket
 

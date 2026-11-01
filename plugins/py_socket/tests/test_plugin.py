@@ -1,3 +1,5 @@
+"""Unit tests verifying PySocketPlugin parser configuration, config builder, and runtime creation."""
+
 from pathlib import Path
 
 import pytest

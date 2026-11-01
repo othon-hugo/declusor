@@ -1,3 +1,5 @@
+"""Unit tests verifying await_connection socket listener context manager."""
+
 import socket
 import threading
 import time

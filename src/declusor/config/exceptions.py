@@ -1,3 +1,5 @@
+"""Canonical domain exception and warning hierarchy for Declusor."""
+
 from pathlib import Path
 from typing import Any
 

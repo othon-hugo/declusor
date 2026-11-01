@@ -1,3 +1,5 @@
+"""Unit tests verifying DummyConnection state transitions and chunks."""
+
 import pytest
 
 from declusor import config, contract, testing

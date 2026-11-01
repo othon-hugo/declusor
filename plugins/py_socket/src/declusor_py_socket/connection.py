@@ -1,3 +1,5 @@
+"""Python reverse-shell client connection implementing RFC TLV binary protocol."""
+
 import json
 import struct
 from collections.abc import Generator, Mapping
@@ -91,6 +93,8 @@ class PySocketConnection(contract.IConnection):
 
     @timeout.setter
     def timeout(self, value: float | None) -> None:
+        """Set the underlying transport timeout."""
+
         self._transport.timeout = value
 
     def prepare_helpers_payload(self) -> bytes:
@@ -296,9 +300,13 @@ class PySocketConnection(contract.IConnection):
                 yield payload
 
     def __enter__(self) -> "PySocketConnection":
+        """Enter context manager, returning self."""
+
         return self
 
     def __exit__(self, *_: object) -> None:
+        """Exit context manager, closing connection transport."""
+
         self.close()
 
     def close(self) -> None:

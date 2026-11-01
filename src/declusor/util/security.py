@@ -1,3 +1,5 @@
+"""Security validation guards, path traversal checks, and CSPRNG token utilities."""
+
 import secrets
 from collections.abc import Iterable
 from pathlib import Path

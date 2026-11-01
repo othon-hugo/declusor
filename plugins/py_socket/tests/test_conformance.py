@@ -1,3 +1,5 @@
+"""Plugin conformance test suite execution for py_socket."""
+
 from pathlib import Path
 
 import pytest

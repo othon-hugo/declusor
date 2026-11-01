@@ -1,3 +1,5 @@
+"""Official route registrations, controller bindings, and default route table declarations."""
+
 from types import MappingProxyType
 
 from declusor import config, contract, controller

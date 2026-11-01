@@ -1,3 +1,5 @@
+"""Unit tests verifying ShellSocketRenderer opcode translation into Bash syntax."""
+
 import declusor_shell_socket as shell_socket
 
 from declusor import config, util

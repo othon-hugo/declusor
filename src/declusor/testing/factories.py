@@ -1,3 +1,5 @@
+"""Test double factory helpers and default test configuration builders."""
+
 from pathlib import Path
 from typing import overload
 

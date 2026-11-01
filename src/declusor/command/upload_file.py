@@ -1,3 +1,5 @@
+"""Remote file upload command and parameter validation DTO."""
+
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -25,6 +27,8 @@ class UploadFileDTO:
     """Optional remote destination file path."""
 
     def __init__(self, source_path: Path | str, destination_path: str | None = None) -> None:
+        """Validate local source file and remote destination path constraints."""
+
         raw_path = str(source_path).strip()
 
         if not raw_path:

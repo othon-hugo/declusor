@@ -1,3 +1,5 @@
+"""Remote module loading and staging command and parameter validation DTO."""
+
 from dataclasses import dataclass
 
 from declusor import config, contract, util
@@ -20,6 +22,8 @@ class LoadModuleDTO:
     """Non-empty module identifier or relative path (e.g. ``discovery/sysinfo``)."""
 
     def __post_init__(self) -> None:
+        """Validate module name invariant to ensure non-empty stripped identifier."""
+
         if not self.module_name or not self.module_name.strip():
             raise config.CommandValidationError(
                 "Module name cannot be empty.",
@@ -65,6 +69,8 @@ class LoadModule(BaseStreamCommand):
         session.connection.write(self._payload(session).encode())
 
     def _payload(self, session: contract.SessionContext, /) -> str:
+        """Load module from plugin assets and render using the active renderer."""
+
         if session.plugin is None:
             raise config.CommandError("Client file store is not configured for this session.")
 

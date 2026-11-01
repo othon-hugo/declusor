@@ -1,3 +1,5 @@
+"""Testing package exposing test doubles, factories, and conformance suites."""
+
 from . import (
     doubles,
     pytest_plugin,

@@ -1,3 +1,5 @@
+"""In-memory socket double simulating network stream byte transfers."""
+
 from typing import Self
 
 
@@ -12,6 +14,8 @@ class DummySocket:
         *,
         timeout: float | None = None,
     ) -> None:
+        """Initialize socket double with simulated incoming bytes and peer address."""
+
         self._incoming: bytearray = bytearray(incoming_bytes)
         self.recv_chunks: list[bytes] = []
         self._sent: bytearray = bytearray()
@@ -121,6 +125,8 @@ class DummySocket:
         return self.fileno_val
 
     def __enter__(self) -> Self:
+        """Enter context manager, returning self."""
+
         return self
 
     def __exit__(
@@ -129,4 +135,6 @@ class DummySocket:
         exc_val: BaseException | None,
         exc_tb: object,
     ) -> None:
+        """Exit context manager, closing simulated socket."""
+
         self.close()

@@ -1,3 +1,5 @@
+"""Integration tests verifying py_socket client connection and execution flows."""
+
 import base64
 import shlex
 import subprocess

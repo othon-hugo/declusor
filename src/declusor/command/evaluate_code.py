@@ -1,3 +1,5 @@
+"""Native client runtime in-memory code evaluation command and DTO."""
+
 from dataclasses import dataclass
 
 from declusor import config, contract
@@ -20,6 +22,8 @@ class EvaluateCodeDTO:
     """Non-empty code string to evaluate."""
 
     def __post_init__(self) -> None:
+        """Validate code string invariant to ensure non-empty content."""
+
         if not self.code or not self.code.strip():
             raise config.CommandValidationError("Code cannot be empty.", field="code", value=self.code)
 
@@ -58,6 +62,8 @@ class EvaluateCode(BaseStreamCommand):
         session.connection.write(self._payload(session))
 
     def _payload(self, session: contract.SessionContext, /) -> bytes:
+        """Render the code execution payload through the active connection renderer."""
+
         rendered = session.connection.renderer.render_operation_command(
             config.OperationCode.EXEC_CODE,
             self._dto.code,

@@ -1,3 +1,5 @@
+"""Unit tests verifying shell_socket helper scripts and standard library concatenation."""
+
 import base64
 import subprocess
 from pathlib import Path

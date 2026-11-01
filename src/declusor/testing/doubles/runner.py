@@ -1,3 +1,5 @@
+"""Deterministic session runner test double."""
+
 from declusor import contract
 
 
@@ -5,6 +7,8 @@ class DummySessionRunner(contract.ISessionRunner):
     """Deterministic test double for ISessionRunner tracking execution invocations."""
 
     def __init__(self, run_error: BaseException | None = None) -> None:
+        """Initialize session runner double with optional error to raise on run."""
+
         self.run_calls: list[tuple[contract.SessionContext, contract.IRouter]] = []
         self.run_error: BaseException | None = run_error
 

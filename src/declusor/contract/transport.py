@@ -1,3 +1,5 @@
+"""Physical transport abstractions, stream decorators, and network listener interfaces."""
+
 from abc import ABC, abstractmethod
 from typing import Self
 

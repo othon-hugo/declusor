@@ -1,3 +1,5 @@
+"""Unit tests verifying test configuration and request factories."""
+
 from pathlib import Path
 
 from declusor import config, contract, testing

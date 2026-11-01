@@ -1,3 +1,5 @@
+"""Configuration package providing constants, enumerations, and exceptions."""
+
 from .enums import (
     ChannelType,
     CoreRoute,

@@ -1,3 +1,5 @@
+"""Main package serving as the composition root and CLI entry point."""
+
 from .main import (
     run,
 )

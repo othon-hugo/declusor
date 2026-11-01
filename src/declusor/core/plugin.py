@@ -1,3 +1,5 @@
+"""Client plugin registry and multi-tier dynamic discovery manager."""
+
 import importlib.metadata
 import inspect
 from collections.abc import Callable, Iterable, Mapping, Sequence
@@ -75,6 +77,7 @@ class PluginManager(PluginRegistry):
     """
 
     ENTRY_POINT_GROUP = "declusor.plugins"
+    """Standard Python entry point group name for external Declusor plugin packages."""
 
     def __init__(self) -> None:
         """Initialize an empty plugin manager."""

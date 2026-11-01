@@ -1,3 +1,5 @@
+"""Module loading controller delegating to LoadModule command."""
+
 from declusor import command, contract
 
 

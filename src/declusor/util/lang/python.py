@@ -1,3 +1,5 @@
+"""Python compilation, AST source sanitization, and bytecode serialization utilities."""
+
 import ast
 import importlib.util
 import marshal
@@ -25,6 +27,8 @@ class NativeSourceSanitizer(ast.NodeTransformer):
         strip_annotations: bool = True,
         strip_asserts: bool = True,
     ) -> None:
+        """Initialize AST sanitizer with configurable stripping toggles."""
+
         super().__init__()
 
         self.strip_docstrings = strip_docstrings

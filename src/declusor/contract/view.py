@@ -1,3 +1,5 @@
+"""Operator view, message formatting, and presentation contracts."""
+
 from abc import ABC, abstractmethod
 
 

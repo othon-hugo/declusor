@@ -1,3 +1,5 @@
+"""Deterministic operation renderer test double."""
+
 from declusor import config, contract
 
 
@@ -9,6 +11,8 @@ class DummyOperationRenderer(contract.IOperationRenderer):
         name: str = "dummy_renderer",
         rendered_commands: dict[config.OperationCode, str | None] | None = None,
     ) -> None:
+        """Initialize renderer double with optional predefined opcode mappings."""
+
         self._name = name
         self.rendered_commands: dict[config.OperationCode, str | None] = dict(rendered_commands) if rendered_commands is not None else {}
         self.render_calls: list[tuple[config.OperationCode, tuple[object, ...]]] = []

@@ -1,3 +1,5 @@
+"""Unit tests verifying encoding, template formatting, hashing, and quoting."""
+
 import binascii
 import hashlib
 

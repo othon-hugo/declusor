@@ -1,3 +1,5 @@
+"""Clean application termination controller signaling prompt loop teardown."""
+
 from declusor import contract
 
 

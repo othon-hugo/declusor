@@ -1,3 +1,5 @@
+"""Native runtime code evaluation controller dispatching to EvaluateCode."""
+
 from declusor import command, contract
 
 

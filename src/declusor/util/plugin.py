@@ -1,3 +1,5 @@
+"""Plugin discovery, layout detection, and dynamic module loading utilities."""
+
 import importlib.util
 import inspect
 import sys

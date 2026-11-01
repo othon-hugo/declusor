@@ -1,3 +1,5 @@
+"""Custom argument parser subclasses and typed argument definition builders."""
+
 import shlex
 import types
 from argparse import ArgumentParser, HelpFormatter
@@ -25,8 +27,11 @@ class Parser(ArgumentParser):
     """Custom argument parser that extends argparse.ArgumentParser."""
 
     _max_help_position: Final[int] = 44
+    """Maximum character offset for aligning option help messages in formatting output."""
 
     def __init__(self, /, prog: str | None = None, usage: str | None = None, description: str | None = None, add_help: bool = True) -> None:
+        """Initialize custom argument parser with customized help formatter."""
+
         formatter_class = self.get_formatter_class()
 
         super().__init__(
@@ -49,6 +54,8 @@ class Parser(ArgumentParser):
 
     @classmethod
     def _default_formatter_factory(cls, *, prog: str) -> HelpFormatter:
+        """Construct a HelpFormatter configured with max_help_position."""
+
         return HelpFormatter(prog, max_help_position=cls._max_help_position)
 
 

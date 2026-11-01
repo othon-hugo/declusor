@@ -1,3 +1,5 @@
+"""Unit tests verifying PySocketProcessor asset resolution, helpers, and modules."""
+
 import struct
 from collections.abc import Callable
 from pathlib import Path
