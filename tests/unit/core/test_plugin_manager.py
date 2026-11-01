@@ -614,8 +614,10 @@ class TestPluginManagerEntryPointDiscovery:
         """Discovers and registers valid plugins exposed via Python entry points."""
 
         entry_point = DummyEntryPoint(name="valid_ep", plugin_cls=DummyValidPlugin)
+        observed_groups: list[str] = []
 
         def loader(*, group: str) -> Iterable[DummyEntryPoint]:
+            observed_groups.append(group)
             return [entry_point]
 
         manager = core.PluginManager()
@@ -624,6 +626,7 @@ class TestPluginManagerEntryPointDiscovery:
         assert "dummy_valid" in loaded
         assert manager.get("dummy_valid") is DummyValidPlugin
         assert manager.get_source("dummy_valid") == "entry_point:valid_ep"
+        assert observed_groups == [config.ENTRY_POINT_GROUP]
 
     def test_load_from_entry_points__loader_raising_exception__returns_empty_list(self) -> None:
         """When entry_points_loader raises an exception, it is caught and returns empty list."""

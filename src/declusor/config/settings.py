@@ -11,6 +11,9 @@ PROJECT_NAME: Final[str] = "declusor"
 PROJECT_DESCRIPTION: Final[str] = "A fast, modular, and extensible reverse-shell framework and payload delivery handler."
 """Short description of the project."""
 
+ENTRY_POINT_GROUP = "declusor.plugins"
+"""Standard Python entry point group name for external Declusor plugin packages."""
+
 ROOT_DIR: Final[Path] = Path(__file__).resolve().parents[3]
 """Normalized root directory of the project."""
 

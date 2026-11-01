@@ -224,6 +224,17 @@ class DeclusorParser(util.Parser):
     class LauncherOutput(str):
         """Launcher output mode argument definition."""
 
+        class Choices(tuple[str, ...]):
+            """Choices displayed by argparse while allowing file destinations."""
+
+            def __contains__(self, value: object) -> bool:
+                """Accept enum values and file destinations."""
+
+                if isinstance(value, str) and value.startswith("file:"):
+                    return bool(value[5:].strip())
+
+                return super().__contains__(value)
+
         arg_name: Final = "launcher_output"
         """CLI argument destination attribute name."""
 
@@ -237,6 +248,9 @@ class DeclusorParser(util.Parser):
 
         arg_flags: Final = ("-O", "--launcher-output")
         """CLI flag options."""
+
+        arg_choices: Final = Choices(mode.value for mode in config.LauncherOutputMode)
+        """Permitted launcher output mode choices."""
 
         arg_default: Final = config.DEFAULT_LAUNCHER_OUTPUT_MODE.value
         """Default launcher output mode value."""
@@ -318,18 +332,18 @@ class DeclusorParser(util.Parser):
 
             return super().__new__(cls, value.strip().lower())
 
-    declusor_arguments: Final = (
-        Host.arg_name,
-        Port.arg_name,
-        Plugin.arg_name,
-        ExecutionMode.arg_name,
-        LauncherKind.arg_name,
-        LauncherOutput.arg_name,
-        LauncherWrapper.arg_name,
-        Timeout.arg_name,
-        AssetsDir.arg_name,
-        PluginDir.arg_name,
-        TransportLayer.arg_name,
+    declusor_arg_types: Final = (
+        Host,
+        Port,
+        Plugin,
+        Timeout,
+        ExecutionMode,
+        LauncherKind,
+        LauncherWrapper,
+        LauncherOutput,
+        TransportLayer,
+        AssetsDir,
+        PluginDir,
     )
     """Tuple of standard argument names recognized by the core Declusor engine."""
 
@@ -433,6 +447,7 @@ class DeclusorParser(util.Parser):
         self.add_argument(
             *self.LauncherOutput.arg_flags,
             help=self.LauncherOutput.arg_help,
+            choices=self.LauncherOutput.arg_choices,
             default=self.LauncherOutput.arg_default,
             type=self.LauncherOutput,
         )
@@ -566,10 +581,13 @@ class DeclusorParser(util.Parser):
     ) -> contract.PluginConfig[contract.ParsedArguments]:
         """Extract options and build base plugin configuration."""
 
-        plugin_options = {key: value for key, value in vars(args).items() if key not in self.declusor_arguments}
+        declusor_arg_names = map(lambda t: t.arg_name, iter(self.declusor_arg_types))
+
+        plugin_options = {key: value for key, value in vars(args).items() if key not in declusor_arg_names}
         plugin_filesystem = contract.PluginFilesystem.from_root(args.assets_dir) if args.assets_dir is not None else None
 
         options: contract.ParsedArguments = Plugin.extract_options(plugin_options)
+
         return Plugin.build_config(
             args.host,
             args.port,

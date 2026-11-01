@@ -77,9 +77,6 @@ class PluginManager(PluginRegistry):
     ensuring that malformed or non-conforming plugins cannot destabilize the runtime.
     """
 
-    ENTRY_POINT_GROUP = "declusor.plugins"
-    """Standard Python entry point group name for external Declusor plugin packages."""
-
     def __init__(self) -> None:
         """Initialize an empty plugin manager."""
 
@@ -236,7 +233,7 @@ class PluginManager(PluginRegistry):
     def load_from_entry_points(
         self,
         *,
-        group: str = ENTRY_POINT_GROUP,
+        group: str = config.ENTRY_POINT_GROUP,
         allow_override: bool = True,
         entry_points_loader: Callable[..., Iterable[Any]] | None = None,
     ) -> list[str]:

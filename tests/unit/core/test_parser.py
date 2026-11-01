@@ -718,6 +718,15 @@ class TestDeclusorParserLauncherKind:
 class TestDeclusorParserLauncherOutput:
     """Tests verifying launcher output configuration parsing in DeclusorParser."""
 
+    def test_help__launcher_output__shows_available_choices(self) -> None:
+        """Launcher output help lists the available output modes."""
+
+        parser = core.DeclusorParser(name="test_app")
+
+        help_text = parser.format_help()
+
+        assert "-O, --launcher-output {terminal,silent,clipboard,file}" in help_text
+
     def test_parse__default_launcher_output__is_terminal_with_none_path(self) -> None:
         """Default launcher output mode is TERMINAL with None path."""
 

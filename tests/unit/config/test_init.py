@@ -34,6 +34,7 @@ class TestConfigExports:
             "DEFAULT_SERVER_ACK",
             "DEFAULT_TCP_BACKLOG",
             "DEFAULT_XOR_KEY",
+            "ENTRY_POINT_GROUP",
             "DuplicateRouteError",
             "ExecutionMode",
             "ExitCode",

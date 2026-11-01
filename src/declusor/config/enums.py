@@ -22,11 +22,11 @@ class LauncherOutputMode(StrEnum):
     SILENT = "silent"
     """Suppress all launcher output."""
 
-    FILE = "file"
-    """Write launcher to a file path declared in LauncherDelivery.output_path."""
-
     CLIPBOARD = "clipboard"
     """Copy launcher directly to the system clipboard without operator messages."""
+
+    FILE = "file"
+    """Write launcher to a file path declared in LauncherDelivery.output_path."""
 
 
 class LauncherKind(StrEnum):

@@ -81,6 +81,11 @@ class TestProtocolSettings:
 class TestDefaultModeSettings:
     """Tests for default mode and plugin configuration constants."""
 
+    def test_settings__entry_point_group__matches_plugin_metadata_group(self) -> None:
+        """Verify ENTRY_POINT_GROUP identifies the standard plugin metadata group."""
+
+        assert config.ENTRY_POINT_GROUP == "declusor.plugins"
+
     def test_settings__default_declusor_plugin__is_shell_socket(self) -> None:
         """Verify DEFAULT_DECLUSOR_PLUGIN defaults to SHELL_SOCKET."""
 
