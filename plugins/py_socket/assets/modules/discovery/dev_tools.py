@@ -1,4 +1,8 @@
 import shutil
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from std import format_table, label
 
 tools = [
     ("Python 3", "python3"),
@@ -30,8 +34,8 @@ try:
         results.append([name, binary, status])
 
     headers = ["Tool", "Binary", "Path"]
-
     table_output = format_table(headers, results)
+
     label("Development Tools", table_output)
 except Exception as e:
-    label("Development Tools", e)
+    label("Development Tools", str(e))

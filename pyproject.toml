@@ -60,6 +60,12 @@ build-backend = "uv_build"
 default-groups = ["dev"]
 link-mode = "copy"
 
+[tool.uv.workspace]
+members = ["plugins/*"]
+
+[tool.uv.sources]
+declusor = { workspace = true }
+
 [tool.ruff]
 line-length = 150
 target-version = "py312"
@@ -86,7 +92,7 @@ indent-style = "space"
 
 [tool.mypy]
 python_version = "3.12"
-mypy_path = "src:.:plugins/shell_socket/src:plugins/py_socket/src"
+mypy_path = "src:.:plugins/shell_socket/src:plugins/py_socket/src:plugins/py_socket/assets/helpers"
 explicit_package_bases = true
 exclude = ["plugins/.*/assets/.*"]
 pretty = true
@@ -103,4 +109,12 @@ testpaths = ["tests", "plugins"]
 norecursedirs = [
     ".vscode",
     "__pycache__",
+]
+
+[tool.pyright]
+extraPaths = [
+    "src",
+    "plugins/py_socket/src",
+    "plugins/py_socket/assets/helpers",
+    "plugins/shell_socket/src",
 ]

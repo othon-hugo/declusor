@@ -6,6 +6,13 @@ resolution-markers = [
     "python_full_version < '3.15'",
 ]
 
+[manifest]
+members = [
+    "declusor",
+    "declusor-py-socket",
+    "declusor-shell-socket",
+]
+
 [[package]]
 name = "colorama"
 version = "0.4.6"
@@ -42,6 +49,46 @@ dev = [
     { name = "pytest", specifier = ">=8.3.4,<9" },
     { name = "ruff", specifier = ">=0.8,<1" },
 ]
+
+[[package]]
+name = "declusor-py-socket"
+version = "0.1.0"
+source = { editable = "plugins/py_socket" }
+dependencies = [
+    { name = "declusor" },
+]
+
+[package.optional-dependencies]
+testing = [
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "declusor", editable = "." },
+    { name = "pytest", marker = "extra == 'testing'", specifier = ">=8.3.4,<9" },
+]
+provides-extras = ["testing"]
+
+[[package]]
+name = "declusor-shell-socket"
+version = "0.1.0"
+source = { editable = "plugins/shell_socket" }
+dependencies = [
+    { name = "declusor" },
+]
+
+[package.optional-dependencies]
+testing = [
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "declusor", editable = "." },
+    { name = "pytest", marker = "extra == 'testing'", specifier = ">=8.3.4,<9" },
+]
+provides-extras = ["testing"]
 
 [[package]]
 name = "iniconfig"

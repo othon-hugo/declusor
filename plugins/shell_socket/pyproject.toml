@@ -22,3 +22,6 @@ build-backend = "uv_build"
 
 [tool.uv]
 link-mode = "copy"
+
+[tool.uv.sources]
+declusor = { workspace = true }

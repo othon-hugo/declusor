@@ -1,6 +1,10 @@
 import os
 import platform
 import sys
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from std import label
 
 try:
     import subprocess
@@ -13,7 +17,7 @@ try:
 
     label("Running Processes", result.stdout.strip())
 except Exception as e:
-    label("Running Processes", e)
+    label("Running Processes", str(e))
 
 try:
     info = [
@@ -28,11 +32,11 @@ try:
 
     label("System Information", "\n".join(info))
 except Exception as e:
-    label("System Information", e)
+    label("System Information", str(e))
 
 
 try:
     env_lines = [f"{k}={v}" for k, v in sorted(os.environ.items())]
     label("Environment Variables", "\n".join(env_lines))
 except Exception as e:
-    label("Environment Variables", e)
+    label("Environment Variables", str(e))

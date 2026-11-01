@@ -23,6 +23,9 @@ build-backend = "uv_build"
 [tool.uv]
 link-mode = "copy"
 
+[tool.uv.sources]
+declusor = { workspace = true }
+
 [tool.ruff]
 target-version = "py312"
 line-length = 150
@@ -30,17 +33,24 @@ line-length = 150
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP"]
 
+[tool.ruff.lint.per-file-ignores]
+"assets/**" = ["F821"]
+"assets/launchers/*.py" = ["I001", "F821", "E702", "E501", "W292"]
+
+[tool.ruff.format]
+exclude = ["assets/**"]
+
 [tool.mypy]
 python_version = "3.12"
 strict = true
 disallow_any_explicit = true
 show_error_codes = true
 warn_unused_ignores = true
+mypy_path = "../../src:src:.:assets/helpers"
+exclude = ["assets/.*"]
 
-[[tool.mypy.overrides]]
-module = ["assets.modules.*"]
-disable_error_code = ["name-defined", "type-arg"]
-
-[[tool.mypy.overrides]]
-module = ["assets.helpers.*"]
-disable_error_code = ["name-defined", "type-arg"]
+[tool.pyright]
+extraPaths = [
+    "src",
+    "assets/helpers",
+]

