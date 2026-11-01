@@ -26,6 +26,7 @@ class TcpListener(contract.ITransportListener):
 
         if not 0 <= port <= 65535:
             raise ValueError(f"Port must be between 0 and 65535, got {port}.")
+
         if backlog <= 0:
             raise ValueError(f"Backlog must be positive, got {backlog}.")
 
@@ -33,14 +34,41 @@ class TcpListener(contract.ITransportListener):
         self._closed = False
 
         try:
-            self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            self._socket.bind((host, port))
-            self._socket.listen(backlog)
-            self._bound_port = int(self._socket.getsockname()[1])
+            addresses = socket.getaddrinfo(host, port, type=socket.SOCK_STREAM, flags=socket.AI_PASSIVE)
         except OSError as err:
             self._closed = True
             raise config.ConnectionError(f"Failed to bind TCP listener on {host}:{port}: {err}") from err
+
+        listener: socket.socket | None = None
+        last_error: OSError | None = None
+
+        for family, socket_type, protocol, _, address in addresses:
+            candidate: socket.socket | None = None
+
+            try:
+                candidate = socket.socket(family, socket_type, protocol)
+                candidate.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                candidate.bind(address)
+                candidate.listen(backlog)
+
+                listener = candidate
+
+                break
+            except OSError as err:
+                last_error = err
+
+                if candidate is not None:
+                    with contextlib.suppress(OSError):
+                        candidate.close()
+
+        if listener is None:
+            self._closed = True
+
+            detail = last_error or OSError("no usable address")
+            raise config.ConnectionError(f"Failed to bind TCP listener on {host}:{port}: {detail}") from detail
+
+        self._socket = listener
+        self._bound_port = int(listener.getsockname()[1])
 
     @property
     def is_closed(self) -> bool:
@@ -62,9 +90,10 @@ class TcpListener(contract.ITransportListener):
 
     @property
     def local_endpoint(self) -> str:
-        """Return the local listening endpoint description (e.g. '0.0.0.0:9000')."""
+        """Return the local listening endpoint description (e.g. '127.0.0.1:9000')."""
 
-        return f"{self._host}:{self._bound_port}"
+        host = f"[{self._host}]" if ":" in self._host and not self._host.startswith("[") else self._host
+        return f"{host}:{self._bound_port}"
 
     def accept(self, timeout: float | None = None) -> SocketTransport:
         """Wait for and return an accepted incoming SocketTransport.

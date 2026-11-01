@@ -203,7 +203,7 @@ class ITransportListener(ABC):
     @property
     @abstractmethod
     def local_endpoint(self) -> str:
-        """Return the local listening endpoint description (e.g. '0.0.0.0:9000')."""
+        """Return the local listening endpoint description (e.g. '127.0.0.1:9000')."""
 
         raise NotImplementedError
 

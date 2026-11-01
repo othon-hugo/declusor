@@ -63,10 +63,10 @@ class TestFormatTemplate:
     def test_format_template__integer_values__converts_and_substitutes(self) -> None:
         """Verify integer keyword arguments are converted and formatted."""
 
-        template = "listen 0.0.0.0:$PORT count=$COUNT"
+        template = "listen 127.0.0.1:$PORT count=$COUNT"
         result = encoding.format_template(template, PORT=4444, COUNT=10)
 
-        assert result == "listen 0.0.0.0:4444 count=10"
+        assert result == "listen 127.0.0.1:4444 count=10"
 
     def test_format_template__braced_placeholders__substitutes_values(self) -> None:
         """Verify braced placeholders like ${NAME} are substituted correctly."""

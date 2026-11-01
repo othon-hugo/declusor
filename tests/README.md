@@ -32,7 +32,7 @@ Native client transport plugins maintain colocated test suites within their auto
 3. **Autonomous Plugin Colocation**: Native plugin tests live directly inside `plugins/<plugin>/tests/`, ensuring that plugins remain autonomous and cleanly extractable into independent repositories.
 4. **Contract Conformance Verification**: Every plugin verifies adherence to framework invariants by subclassing `declusor.testing.PluginConformanceTestSuite`.
 5. **Defensive Testing & Invariant Validation**: Invariant violations (empty commands, path traversal, unsupported opcodes, invalid arguments) must explicitly assert raised domain exceptions (`config.InvalidOperation`, `config.ParserError`, `config.RouterError`, `config.ConnectionError`, `config.CommandValidationError`).
-6. **Configured Static Type Checking**: Test suites are checked with the repository's strict mypy profile (`make type-check`). The profile contains explicit `Any`-related exceptions in `pyproject.toml`; public APIs and test helpers should still use precise types.
+6. **Configured Static Type Checking**: Test suites are checked with the repository's strict mypy profile as part of `make check`. The profile contains explicit `Any`-related exceptions in `pyproject.toml`; public APIs and test helpers should still use precise types.
 7. **Controlled Resource Boundaries**: Most component tests use typed doubles and `tmp_path`. Tests for the TCP listener and socket adapter use loopback or ephemeral sockets only; they must not depend on external hosts and must close resources deterministically.
 8. **Dual-Channel Stream Isolation**: Presentation and CLI composition tests strictly isolate raw binary byte streams (`sys.stdout.buffer`) from formatted text streams (`sys.stdout`), ensuring zero stream leakage across test runners.
 
@@ -40,11 +40,11 @@ Native client transport plugins maintain colocated test suites within their auto
 
 | Behavior under test                                                                      | Owning test level   | Primary location / command                                                         |
 | :--------------------------------------------------------------------------------------- | :------------------ | :--------------------------------------------------------------------------------- |
-| Public package exports and import surfaces                                               | Unit                | `tests/unit/<package>/test_init.py`; `make test-unit`                              |
-| DTO validation, function branches, state transitions, and error translation              | Unit                | `tests/unit/<package>/`; `make test-unit`                                          |
-| Socket adapter behavior at the OS boundary                                               | Unit boundary tests | `tests/unit/transport/`; loopback only, run via `make test-unit`                   |
-| Application startup, REPL routing, real client handshake, command response, and teardown | E2E                 | `tests/e2e/`; `make test-e2e`                                                      |
-| Plugin-specific framing, assets, renderer, and native client behavior                    | Plugin              | `plugins/<plugin>/tests/`; `make test-plugins` or `make test-plugin PLUGIN=<name>` |
+| Public package exports and import surfaces                                               | Unit                | `tests/unit/<package>/test_init.py`; `make test TARGET=declusor`                   |
+| DTO validation, function branches, state transitions, and error translation              | Unit                | `tests/unit/<package>/`; `make test TARGET=declusor`                               |
+| Socket adapter behavior at the OS boundary                                               | Unit boundary tests | `tests/unit/transport/`; loopback only, run via `make test TARGET=declusor`        |
+| Application startup, REPL routing, real client handshake, command response, and teardown | E2E                 | `tests/e2e/`; `make test TARGET=declusor`                                          |
+| Plugin-specific framing, assets, renderer, and native client behavior                    | Plugin              | `plugins/<plugin>/tests/`; `make test TARGET=plugins`                              |
 | Shared plugin extension requirements                                                     | Conformance         | Plugin `test_conformance.py` subclasses `PluginConformanceTestSuite`               |
 
 Each test should have one primary behavior and one clear owner. Unit tests cover branches and local contracts; end-to-end tests cover cross-layer workflows without duplicating every unit edge case; plugin suites cover implementation-specific protocol behavior. Prefer the shared conformance suite for common plugin requirements and keep plugin tests for behavior unique to that implementation. Every source package `__all__` has an export check; root `declusor` and `declusor.testing.doubles` checks live in `tests/unit/testing/test_init.py`, and the `util.lang` check is nested under `tests/unit/util/lang/`.
@@ -80,20 +80,17 @@ make check
 # Run all test suites across memory-isolated processes sequentially
 make test
 
-# Run component and adapter-boundary tests across all 11 core packages
-make test-unit
-
-# Run full application, REPL, CLI, and real-client workflows
-make test-e2e
+# Run host component, adapter-boundary, and application workflows
+make test TARGET=declusor
 
 # Run autonomous plugin tests across all colocated plugin packages
-make test-plugins
+make test TARGET=plugins
 
 # Run tests for a specific package during iterative development
 .venv/bin/pytest tests/unit/command -v
 .venv/bin/pytest tests/unit/presentation -v
 
 # Run tests for a specific plugin package
-make test-plugin PLUGIN=shell_socket
-make test-plugin PLUGIN=py_socket
+make test TARGET=plugins PLUGIN=shell_socket
+make test TARGET=plugins PLUGIN=py_socket
 ```

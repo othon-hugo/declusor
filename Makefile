@@ -6,6 +6,8 @@
 UV           ?= $(shell command -v uv 2>/dev/null)
 UV_LINK_MODE ?= copy
 VENV         ?= .venv
+TARGET       ?= declusor
+PLUGIN       ?=
 
 ifneq ($(strip $(UV)),)
     EXEC      := $(UV) run 
@@ -18,71 +20,119 @@ else
 endif
 
 # =============================================================================
-# Project & Plugin Paths
+# Project Paths
 # =============================================================================
-PLUGIN           ?=
-TARGET_PATH       = $(if $(PLUGIN),plugins/$(PLUGIN),.)
-PLUGIN_PATH       = $(if $(PLUGIN),plugins/$(PLUGIN),plugins)
-PLUGIN_TEST_PATH  = $(if $(PLUGIN),plugins/$(PLUGIN)/tests,plugins)
-
 PLUGIN_DIRS      := $(patsubst %/pyproject.toml,%,$(wildcard plugins/*/pyproject.toml))
 PLUGIN_TEST_DIRS := $(wildcard plugins/*/tests)
 UNIT_TEST_DIRS   := $(filter-out %/__pycache__,$(wildcard tests/unit/*))
+
+ifneq ($(strip $(PLUGIN)),)
+    ifeq ($(filter plugins/$(PLUGIN),$(PLUGIN_DIRS)),)
+        $(error Unknown PLUGIN='$(PLUGIN)'; available plugins: $(notdir $(PLUGIN_DIRS)))
+    endif
+    ifneq ($(filter declusor all,$(TARGET)),)
+        $(error PLUGIN is only valid with TARGET=plugins or TARGET=plugin-assets)
+    endif
+endif
+
+ifeq ($(TARGET),declusor)
+    TARGET_PATH := .
+    TEST_PATH := tests
+else ifeq ($(TARGET),plugins)
+    TARGET_PATH := $(if $(PLUGIN),plugins/$(PLUGIN),plugins)
+    TEST_PATH := $(if $(PLUGIN),plugins/$(PLUGIN)/tests,plugins)
+else ifeq ($(TARGET),plugin-assets)
+    ASSET_PATH := $(if $(PLUGIN),plugins/$(PLUGIN)/assets,plugins)
+else ifeq ($(TARGET),all)
+else
+    $(error Invalid TARGET='$(TARGET)'; use TARGET=declusor, plugins, plugin-assets, or all)
+endif
 
 # =============================================================================
 # Phony Targets
 # =============================================================================
 .PHONY: help \
-        install install-plugins \
-        check format format-check lint type-check \
-        check-plugin format-plugin format-check-plugin lint-plugin type-check-plugin \
-        test test-unit test-e2e test-plugins test-plugin \
-        ci build build-plugins build-all clean \
-        build-labs run-labs stop-labs clean-labs status-labs
+        install format compile test check package clean ci \
+        labs-build labs-run labs-stop labs-clean labs-status \
+        _install-declusor _install-plugins _format-declusor _format-plugins \
+        _format-check-declusor _format-check-plugins _lint-declusor _lint-plugins \
+        _lint-assets _type-check-declusor _type-check-plugins _compile-declusor \
+        _compile-plugins _compile-assets _test-declusor _test-plugins _test-plugin \
+        _check-declusor _check-plugins _check-assets _package-declusor _package-plugins
 
 ##@ Help
 
 help: ## Display this help message
 	@awk 'BEGIN { \
 		FS = ":.*##"; \
-		printf "\n\033[1mUsage:\033[0m\n  make \033[36m<target>\033[0m [PLUGIN=<name>]\n" \
+		printf "\n\033[1mUsage:\033[0m\n  make \033[36m<target>\033[0m [TARGET=declusor|plugins|plugin-assets|all] [PLUGIN=<name>]\n" \
 	} \
-	/^[a-zA-Z0-9_-]+:.*?##/ { \
+	/^[a-zA-Z0-9-]+:.*?##/ { \
 		printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2 \
 	} \
 	/^##@/ { \
 		printf "\n\033[1m%s\033[0m\n", substr($$0, 5) \
 	}' $(MAKEFILE_LIST)
+	@printf "\nExamples:\n  make check\n  make check TARGET=plugins PLUGIN=py_socket\n  make check TARGET=plugin-assets\n  make package TARGET=all\n"
 
 ##@ Setup & Packaging
 
-install: ## Sync dependencies and install plugins in editable mode
+install: ## Install the selected TARGET (default: declusor)
+ifeq ($(TARGET),declusor)
+	$(MAKE) _install-declusor
+else ifeq ($(TARGET),plugins)
+	$(MAKE) _install-plugins
+else ifeq ($(TARGET),all)
+	$(MAKE) _install-declusor _install-plugins
+else
+	$(error TARGET=$(TARGET) does not support install)
+endif
+
+_install-declusor:
 ifneq ($(strip $(UV)),)
 	$(UV) sync --link-mode=$(UV_LINK_MODE)
-	$(MAKE) install-plugins
 else ifneq ($(wildcard $(VENV)),)
 	$(EXEC)python -m pip install -e ".[dev,testing]"
-	$(MAKE) install-plugins
 else
 	@echo "Notice: uv not found and $(VENV) does not exist; create $(VENV) or install uv."
 endif
 
-install-plugins: ## Install all plugins in editable mode
-	@for dir in $(PLUGIN_DIRS); do \
-		echo "==> Installing plugin $$dir..."; \
-		$(PIP_EDIT) "$$dir"; \
-	done
+_install-plugins:
+	@set -e; \
+		if [ -n "$(PLUGIN)" ]; then \
+			$(PIP_EDIT) "plugins/$(PLUGIN)"; \
+		else \
+			for dir in $(PLUGIN_DIRS); do \
+				echo "==> Installing plugin $$dir..."; \
+				$(PIP_EDIT) "$$dir"; \
+			done; \
+		fi
 
-build: ## Build root package
+package: ## Build packages for the selected TARGET
+ifeq ($(TARGET),declusor)
+	$(MAKE) _package-declusor
+else ifeq ($(TARGET),plugins)
+	$(MAKE) _package-plugins
+else ifeq ($(TARGET),all)
+	$(MAKE) _package-declusor _package-plugins
+else
+	$(error TARGET=$(TARGET) does not support package)
+endif
+
+_package-declusor:
 	$(call BUILD_CMD,.,)
 
-build-plugins: ## Build all plugin packages into plugins/*/dist
-	@for dir in $(PLUGIN_DIRS); do \
-		echo "==> Building plugin $$dir..."; \
-		$(call BUILD_CMD,"$$dir","$$dir/dist") || exit 1; \
-	done
-
-build-all: build build-plugins ## Build root and all plugin packages
+_package-plugins:
+	@set -e; \
+		if [ -n "$(PLUGIN)" ]; then \
+			echo "==> Building plugin plugins/$(PLUGIN)..."; \
+			$(call BUILD_CMD,"plugins/$(PLUGIN)","plugins/$(PLUGIN)/dist"); \
+		else \
+			for dir in $(PLUGIN_DIRS); do \
+				echo "==> Building plugin $$dir..."; \
+				$(call BUILD_CMD,"$$dir","$$dir/dist"); \
+			done; \
+		fi
 
 clean: ## Remove build artifacts and tool caches
 	rm -rf build/ dist/ .pytest_cache/ .mypy_cache/ .ruff_cache/
@@ -91,65 +141,131 @@ clean: ## Remove build artifacts and tool caches
 
 ##@ Quality & Static Analysis
 
-check: format-check lint type-check test ## Run format-check, lint, type-check, and test
+format: ## Format the selected TARGET
+ifeq ($(TARGET),declusor)
+	$(MAKE) _format-declusor
+else ifeq ($(TARGET),plugins)
+	$(MAKE) _format-plugins
+else ifeq ($(TARGET),all)
+	$(MAKE) format TARGET=declusor
+	$(MAKE) format TARGET=plugins
+else
+	$(error TARGET=$(TARGET) does not support format)
+endif
 
-format: ## Auto-format and autofix lint issues (supports PLUGIN=<name>)
+_format-declusor:
+	$(EXEC)ruff format .
+	$(EXEC)ruff check . --fix
+
+_format-plugins:
 	$(EXEC)ruff format $(TARGET_PATH)
 	$(EXEC)ruff check $(TARGET_PATH) --fix
 
-format-check: ## Check code formatting with ruff (supports PLUGIN=<name>)
+_format-check-declusor:
+	$(EXEC)ruff format . --check
+
+_format-check-plugins:
 	$(EXEC)ruff format $(TARGET_PATH) --check
 
-lint: ## Run ruff linter (supports PLUGIN=<name>)
+_lint-declusor:
+	$(EXEC)ruff check .
+
+_lint-plugins:
 	$(EXEC)ruff check $(TARGET_PATH)
 
-type-check: ## Run mypy static type checker (supports PLUGIN=<name>)
+_lint-assets:
+	@command -v shellcheck >/dev/null || { echo "shellcheck is required for TARGET=plugin-assets"; exit 1; }
+	@set -e; \
+		for dir in $(if $(PLUGIN),plugins/$(PLUGIN)/assets,plugins/*/assets); do \
+			[ -d "$$dir" ] || continue; \
+			find "$$dir" -type f -name '*.sh' -exec shellcheck {} +; \
+		done
+
+_type-check-declusor:
+	$(EXEC)mypy .
+
+_type-check-plugins:
 	$(EXEC)mypy $(TARGET_PATH)
 
-ci: check build ## Run full CI pipeline (checks + build)
+compile: ## Compile Python files for the selected TARGET
+ifeq ($(TARGET),declusor)
+	$(MAKE) _compile-declusor
+else ifeq ($(TARGET),plugins)
+	$(MAKE) _compile-plugins
+else ifeq ($(TARGET),plugin-assets)
+	$(MAKE) _compile-assets
+else ifeq ($(TARGET),all)
+	$(MAKE) _compile-declusor _compile-plugins _compile-assets
+endif
 
-# Plugin-scoped aliases
-check-plugin: format-check-plugin lint-plugin type-check-plugin test-plugin ## Run all checks for plugins (or single PLUGIN=<name>)
+_compile-declusor:
+	$(EXEC)python -m compileall -q .
 
-format-plugin: ## Format plugins (or single PLUGIN=<name>)
-	$(EXEC)ruff format $(PLUGIN_PATH)
-	$(EXEC)ruff check $(PLUGIN_PATH) --fix
+_compile-plugins:
+	$(EXEC)python -m compileall -q $(TARGET_PATH)
 
-format-check-plugin: ## Check formatting for plugins (or single PLUGIN=<name>)
-	$(EXEC)ruff format $(PLUGIN_PATH) --check
+_compile-assets:
+	@set -e; \
+		for dir in $(if $(PLUGIN),plugins/$(PLUGIN)/assets,plugins/*/assets); do \
+			[ -d "$$dir" ] || continue; \
+			find "$$dir" -type f -name '*.py' -exec $(EXEC)python -m py_compile {} +; \
+		done
 
-lint-plugin: ## Lint plugins (or single PLUGIN=<name>)
-	$(EXEC)ruff check $(PLUGIN_PATH)
+##@ Testing & Verification
 
-type-check-plugin: ## Type-check plugins (or single PLUGIN=<name>)
-	$(EXEC)mypy $(PLUGIN_PATH)
+test: ## Test the selected TARGET
+ifeq ($(TARGET),declusor)
+	$(MAKE) _test-declusor
+else ifeq ($(TARGET),plugins)
+	$(MAKE) _test-plugin
+else ifeq ($(TARGET),all)
+	$(MAKE) _test-declusor _test-plugins
+else
+	$(error TARGET=$(TARGET) does not support test)
+endif
 
-##@ Testing
+_test-declusor:
+	$(EXEC)pytest tests/unit
+	$(EXEC)pytest tests/e2e
 
-test: test-unit test-e2e test-plugins ## Run unit, e2e, and plugin test suites
-
-test-unit: ## Run unit test suites
-	@for dir in $(UNIT_TEST_DIRS); do \
-		if [ -d "$$dir" ]; then \
-			echo "==> Running unit tests in $$dir..."; \
-			$(EXEC)pytest "$$dir" || exit 1; \
-		fi; \
-	done
-
-test-e2e: ## Run end-to-end tests
-	@if [ -d "tests/e2e" ]; then \
-		echo "==> Running e2e tests..."; \
-		$(EXEC)pytest tests/e2e; \
-	fi
-
-test-plugins: ## Run tests across all plugins
+_test-plugins:
 	@for dir in $(PLUGIN_TEST_DIRS); do \
 		echo "==> Running plugin tests in $$dir..."; \
 		$(EXEC)pytest "$$dir" || exit 1; \
 	done
 
-test-plugin: ## Run tests for a specific plugin (PLUGIN=<name>)
-	$(EXEC)pytest $(PLUGIN_TEST_PATH)
+_test-plugin:
+	@if [ -n "$(PLUGIN)" ]; then \
+		$(EXEC)pytest "plugins/$(PLUGIN)/tests"; \
+	else \
+		$(MAKE) _test-plugins; \
+	fi
+
+check: ## Run all applicable checks for the selected TARGET
+ifeq ($(TARGET),declusor)
+	$(MAKE) _check-declusor
+else ifeq ($(TARGET),plugins)
+	$(MAKE) _check-plugins
+else ifeq ($(TARGET),plugin-assets)
+	$(MAKE) _check-assets
+else ifeq ($(TARGET),all)
+	$(MAKE) _check-declusor _check-plugins _check-assets
+endif
+
+_check-declusor:
+	$(MAKE) _format-check-declusor _lint-declusor _type-check-declusor \
+		_compile-declusor _test-declusor TARGET=declusor
+
+_check-plugins:
+	$(MAKE) _format-check-plugins _lint-plugins _type-check-plugins \
+		_compile-plugins _test-plugin TARGET=plugins PLUGIN="$(PLUGIN)"
+
+_check-assets:
+	$(MAKE) _lint-assets _compile-assets TARGET=plugin-assets PLUGIN="$(PLUGIN)"
+
+ci: ## Run the full local CI pipeline
+	$(MAKE) check TARGET=all
+	$(MAKE) package TARGET=all
 
 ##@ Declusor Labs
 
@@ -160,12 +276,10 @@ include docker/04-leviathan/leviathan.mk
 
 LABS := 01 02 03 04
 
-build-labs: $(addprefix build-,$(LABS)) ## Build all 4 challenge Docker images
-run-labs:   $(addprefix run-,$(LABS)) ## Start all 4 containers in background
-stop-labs:  $(addprefix stop-,$(LABS)) ## Stop all running containers
-
-clean-labs: $(addprefix clean-,$(LABS)) ## Stop and remove all containers and built images
+labs-build: $(addprefix build-,$(LABS)) ## Build all challenge Docker images
+labs-run: $(addprefix run-,$(LABS)) ## Start all lab containers in background
+labs-stop: $(addprefix stop-,$(LABS)) ## Stop all running lab containers
+labs-clean: $(addprefix clean-,$(LABS)) ## Stop and remove all lab containers and images
 	@echo "[+] Declusor environment completely wiped."
-
-status-labs: ## Display running state and ports of all containers
+labs-status: ## Display running state and ports of all lab containers
 	@docker ps -a --filter "name=declusor-" --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"

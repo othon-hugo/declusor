@@ -2,6 +2,7 @@
 
 import importlib.metadata
 import inspect
+import warnings
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
@@ -222,7 +223,12 @@ class PluginManager(PluginRegistry):
                 try:
                     self.register(plugin_class, source=f"{source_label}:{item.name}", allow_override=allow_override)
                     loaded_names.append(plugin_class.name)
-                except (config.PluginValidationError, ValueError):
+                except (config.PluginValidationError, ValueError) as error:
+                    warnings.warn(
+                        f"Skipped plugin {item.name!r} from {source_label}: {type(error).__name__}: {error}",
+                        config.DeclusorWarning,
+                        stacklevel=2,
+                    )
                     continue
 
         return loaded_names
@@ -250,7 +256,12 @@ class PluginManager(PluginRegistry):
         try:
             loader = entry_points_loader or importlib.metadata.entry_points
             discovered = loader(group=group)
-        except Exception:
+        except Exception as error:
+            warnings.warn(
+                f"Failed to discover entry points for group {group!r}: {type(error).__name__}: {error}",
+                config.DeclusorWarning,
+                stacklevel=2,
+            )
             return []
 
         for entry_point in discovered:
@@ -258,7 +269,12 @@ class PluginManager(PluginRegistry):
                 candidate = entry_point.load()
                 self.register(candidate, source=f"entry_point:{entry_point.name}", allow_override=allow_override)
                 loaded_names.append(candidate.name)
-            except Exception:
+            except Exception as error:
+                warnings.warn(
+                    f"Skipped entry-point plugin {entry_point.name!r}: {type(error).__name__}: {error}",
+                    config.DeclusorWarning,
+                    stacklevel=2,
+                )
                 continue
 
         return loaded_names

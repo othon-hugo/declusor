@@ -27,6 +27,7 @@ class XorTransport(contract.ITransportLayer):
             raise ValueError("XOR key cannot be empty.")
 
         super().__init__(transport)
+
         self._key = key
         self._write_offset = 0
         self._read_offset = 0

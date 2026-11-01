@@ -132,6 +132,7 @@ def copy_to_clipboard(
 
     payload = text.encode("utf-8")
     mechanisms_succeeded: int = 0
+    failures: list[str] = []
 
     if emit_osc52:
         osc52_seq = build_osc52_sequence(payload)
@@ -140,14 +141,16 @@ def copy_to_clipboard(
             try:
                 view.write_binary_data(osc52_seq)
                 mechanisms_succeeded += 1
-            except Exception:
+            except Exception as error:
+                failures.append(f"OSC 52: {type(error).__name__}: {error}")
                 pass
         else:
             try:
                 sys.stdout.buffer.write(osc52_seq)
                 sys.stdout.buffer.flush()
                 mechanisms_succeeded += 1
-            except (AttributeError, OSError):
+            except (AttributeError, OSError) as error:
+                failures.append(f"OSC 52: {type(error).__name__}: {error}")
                 pass
 
     runner = command_runner if command_runner is not None else default_command_runner
@@ -158,8 +161,10 @@ def copy_to_clipboard(
             if runner(cmd, payload):
                 mechanisms_succeeded += 1
                 break
-        except Exception:
+        except Exception as error:
+            failures.append(f"{cmd[0]}: {type(error).__name__}: {error}")
             continue
 
     if mechanisms_succeeded == 0:
-        raise config.LauncherDeliveryError("Failed to copy launcher payload to system clipboard: all clipboard mechanisms failed.")
+        details = f" Details: {'; '.join(failures)}" if failures else ""
+        raise config.LauncherDeliveryError(f"Failed to copy launcher payload to system clipboard: all clipboard mechanisms failed.{details}")

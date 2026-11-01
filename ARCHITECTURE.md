@@ -276,10 +276,10 @@ sequenceDiagram
 
 ## Architecture Quality & Safety Invariants
 
-1. **Configured Strict Type Checking**: The codebase (core framework, native plugins, and test suites) is checked with the project's Mypy strict profile (`make type-check`). Explicit `Any`-related exceptions are recorded in `pyproject.toml`.
+1. **Configured Strict Type Checking**: The codebase (core framework, native plugins, and test suites) is checked with the project's Mypy strict profile as part of `make check`. Explicit `Any`-related exceptions are recorded in `pyproject.toml`.
 2. **Mock-Free Testing**: Internal and external tests use typed test doubles and conformance suites, preventing test fragility caused by mock drift.
 3. **Class-Based Test Suite Grouping**: All unit, integration, and e2e test files group test cases into intention-revealing test classes (`class Test<Component><Aspect>:`). Loose top-level test functions are strictly forbidden.
-4. **Memory-Isolated Test Execution**: Automated testing executes across partitioned, memory-isolated processes (`make test-unit`, `make test-e2e`, `make test-plugins`), eliminating memory accumulation and container OOM risks.
+4. **Memory-Isolated Test Execution**: Automated testing executes across partitioned, memory-isolated processes (`make test TARGET=declusor` and `make test TARGET=plugins`), eliminating memory accumulation and container OOM risks.
 5. **Dual-Channel Stream Isolation**: Complete physical separation of raw binary payloads (`sys.stdout.buffer`) from formatted console output (`sys.stdout`).
 6. **Fail-Fast Validation**: Inputs, file paths, and plugin descriptors are validated at system boundaries before entering core execution paths.
 7. **Sandboxed File Operations**: All filesystem interactions enforce path-traversal safeguards and extension constraints.

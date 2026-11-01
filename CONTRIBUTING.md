@@ -223,7 +223,7 @@ Every package directory must maintain a `README.md` containing at least:
 ### Strict Static Typing
 
 - All production and test code must carry complete, precise type annotations.
-- `make type-check` must pass with zero errors under the configured Mypy strict profile. Explicit `Any`-related exceptions are documented in `pyproject.toml`.
+- `make check` must pass with zero errors under the configured Mypy strict profile. Explicit `Any`-related exceptions are documented in `pyproject.toml`.
 - Never use untyped `Any` where a generic `TypeVar`, `Protocol`, or explicit union can be defined.
 
 ### Dynamic Signature Introspection
@@ -300,10 +300,9 @@ Executing all 1,300+ tests in a single monolithic `pytest` command process accum
 
 Always execute tests using partitioned sessions:
 
-- `make test-unit`: Runs component-level unit tests across all 11 core packages.
-- `make test-e2e`: Runs interactive REPL and CLI integration scenarios.
-- `make test-plugins`: Runs autonomous plugin tests in an isolated process.
-- `make test`: Runs `test-unit`, `test-e2e`, and `test-plugins` sequentially in separate Python processes.
+- `make test TARGET=declusor`: Runs component-level unit and E2E tests in separate processes.
+- `make test TARGET=plugins`: Runs autonomous plugin tests in isolated processes.
+- `make test TARGET=all`: Runs all host and plugin test suites.
 - Granular iterative testing: `.venv/bin/pytest tests/unit/<package_name> -v`.
 
 ### CLI & Dual-Channel Stream Isolation
@@ -389,18 +388,17 @@ Before opening a pull request or submitting code, ensure that all quality gates 
 # Run the complete verification suite (formatting check, linting, configured Mypy strict profile, and tests)
 make check
 
-# Granular verification targets
-make format-check                       # Verify code formatting with Ruff
+# Formatting and verification targets
 make format                             # Automatically format code and apply safe fixes
-make lint                               # Run Ruff linter checks
-make type-check                         # Run configured Mypy strict type analysis across host, plugins, and tests
+make check TARGET=declusor              # Run formatting, lint, type, compile, and test checks
 make test                               # Run all unit, integration, and conformance tests
 make compile                            # Verify bytecode compilation across src, tests, and plugins
 
 # Plugin verification targets
-make check-plugin PLUGIN=<plugin_name>  # Full check for a specific plugin
-make test-plugin PLUGIN=<plugin_name>   # Run tests for a specific plugin
-make test-plugins                       # Run tests across all plugins
+make check TARGET=plugins PLUGIN=<plugin_name>  # Full check for a specific plugin
+make check TARGET=plugin-assets PLUGIN=<plugin_name>  # Validate plugin assets
+make test TARGET=plugins PLUGIN=<plugin_name>   # Run tests for a specific plugin
+make test TARGET=plugins                # Run tests across all plugins
 ```
 
 ## Git Workflow & Commit Guidelines

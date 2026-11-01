@@ -161,8 +161,8 @@ class TestMyPluginConformance(testing.PluginConformanceTestSuite[MyOptions]):
 Execute verification using `make`:
 
 ```bash
-make check-plugin PLUGIN=my_plugin  # Full quality check (format, lint, strict mypy, tests)
-make test-plugin PLUGIN=my_plugin   # Run dedicated unit and conformance tests
+make check TARGET=plugins PLUGIN=my_plugin  # Full quality check (format, lint, strict mypy, tests)
+make test TARGET=plugins PLUGIN=my_plugin  # Run dedicated unit and conformance tests
 ```
 
 ### 4. Test Live with Declusor
@@ -170,5 +170,5 @@ make test-plugin PLUGIN=my_plugin   # Run dedicated unit and conformance tests
 Run Declusor pointing to your plugin directory:
 
 ```bash
-declusor 0.0.0.0 9000 --plugin my_plugin --plugin-dir /path/to/my_plugin
+declusor 127.0.0.1 9000 --plugin my_plugin --plugin-dir /path/to/my_plugin
 ```

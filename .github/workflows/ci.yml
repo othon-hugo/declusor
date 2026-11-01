@@ -62,20 +62,11 @@ jobs:
       - name: Install dependencies
         run: make install
 
-      - name: Check formatting
-        run: make format-check
+      - name: Run checks
+        run: make check
 
-      - name: Lint
-        run: make lint
-
-      - name: Type check
-        run: make type-check
-
-      - name: Compile
-        run: make compile
-
-  kernel-unit-tests:
-    name: Kernel unit tests
+  kernel-tests:
+    name: Kernel tests
     needs: changes
     if: needs.changes.outputs.shared == 'true'
     runs-on: ubuntu-latest
@@ -89,24 +80,7 @@ jobs:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
       - run: make install
-      - run: make test-unit
-
-  kernel-e2e-tests:
-    name: Kernel end-to-end tests
-    needs: changes
-    if: needs.changes.outputs.shared == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-      - uses: astral-sh/setup-uv@v7
-        with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-      - run: make install
-      - run: make test-e2e
+      - run: make test TARGET=declusor
 
   shell-socket:
     name: shell_socket checks
@@ -125,8 +99,8 @@ jobs:
       - name: Install shellcheck
         run: sudo apt-get update && sudo apt-get install --yes shellcheck
       - run: make install
-      - run: make check-plugin PLUGIN=shell_socket
-      - run: make check-shellsocket-assets
+      - run: make check TARGET=plugins PLUGIN=shell_socket
+      - run: make check TARGET=plugin-assets PLUGIN=shell_socket
 
   py-socket:
     name: py_socket checks
@@ -143,8 +117,8 @@ jobs:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
       - run: make install
-      - run: make check-plugin PLUGIN=py_socket
-      - run: make check-pysocket-assets
+      - run: make check TARGET=plugins PLUGIN=py_socket
+      - run: make check TARGET=plugin-assets PLUGIN=py_socket
 
   distributions:
     name: Build and discover distributions
@@ -160,7 +134,7 @@ jobs:
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
-      - run: make build-labs
+      - run: make package TARGET=all
       - name: Install built distributions in a clean environment
         run: |
           uv venv .ci-venv
@@ -180,8 +154,7 @@ jobs:
     needs:
       - changes
       - kernel-quality
-      - kernel-unit-tests
-      - kernel-e2e-tests
+      - kernel-tests
       - shell-socket
       - py-socket
       - distributions

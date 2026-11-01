@@ -31,7 +31,7 @@ line-length = 150
 select = ["E", "F", "W", "I", "B", "UP"]
 
 [tool.mypy]
-python_version = "3.7"
+python_version = "3.12"
 strict = true
 show_error_codes = true
 warn_unused_ignores = true
@@ -43,4 +43,3 @@ disable_error_code = ["name-defined", "type-arg"]
 [[tool.mypy.overrides]]
 module = ["assets.helpers.*"]
 disable_error_code = ["name-defined", "type-arg"]
-

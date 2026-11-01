@@ -3,7 +3,10 @@
 import importlib.util
 import inspect
 import sys
+import warnings
 from pathlib import Path
+
+from declusor import config
 
 
 def find_plugin_entry(plugin_dir: Path, /) -> Path | None:
@@ -90,7 +93,12 @@ def import_plugin_from_file[T](
         for _, obj in inspect.getmembers(module, inspect.isclass):
             if issubclass(obj, expected_type) and obj is not expected_type:
                 return obj
-    except Exception:
+    except Exception as error:
+        warnings.warn(
+            f"Failed to import plugin candidate {file_path}: {type(error).__name__}: {error}",
+            config.DeclusorWarning,
+            stacklevel=2,
+        )
         return None
     finally:
         if added_sys_path is not None and added_sys_path in sys.path:

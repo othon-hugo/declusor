@@ -79,8 +79,10 @@ class SocketTransport(contract.ITransport):
 
         try:
             data = self._socket.recv(max_bytes)
+
             if not data:
                 return b""
+
             return data
         except TimeoutError as err:
             raise config.ConnectionTimeoutError(f"Socket read timed out: {err}") from err
@@ -124,6 +126,7 @@ class SocketTransport(contract.ITransport):
             return
 
         self._closed = True
+
         with contextlib.suppress(OSError):
             self._socket.shutdown(socket.SHUT_RDWR)
 

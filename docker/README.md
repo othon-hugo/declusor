@@ -23,7 +23,7 @@ Instead of abstract puzzles, these four progressive Alpine-based labs simulate a
 | **Target Host**   | `127.0.0.1` |
 
 > [!WARNING]
-> **Security Note:** Direct SSH root login is strictly disabled (`PermitRootLogin no`). Competitors must authenticate as the low-privileged `player` account and leverage local enumeration to escalate.
+> **Security Note**: Direct SSH root login is strictly disabled (`PermitRootLogin no`). Competitors must authenticate as the low-privileged `player` account and leverage local enumeration to escalate.
 
 ## Quick Start & Management
 
