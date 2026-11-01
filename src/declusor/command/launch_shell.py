@@ -74,7 +74,7 @@ class LaunchShell(contract.ICommand):
             session.view.write_message("[interactive shell terminated]")
         finally:
             self._task_pool.stop()
-            self._task_pool.wait_all()
+            self._task_pool.wait_all(timeout=2.0)
 
     def _create_shell_input_handler(
         self,

@@ -6,7 +6,7 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 import pytest
-from declusor import config, contract, testing
+from declusor import command, config, contract, testing
 
 import declusor_py_socket as py_socket
 
@@ -137,3 +137,84 @@ class TestPySocketInteractiveShell(testing.InteractiveShellTestSuite[py_socket.P
                 finally:
                     client_transport.close()
                 break
+
+    def test_launch_shell__multiple_commands_then_ctrl_c__preserves_connection_for_subsequent_commands(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """Verify LaunchShell handles Ctrl+C cleanly and preserves connection for subsequent commands."""
+
+        client_transport, server_transport = testing.create_memory_transport_pair()
+        initial_timeout = 2.0
+        connection, processor = self.create_connected_session(tmp_path, server_transport, initial_timeout)
+
+        responses: Mapping[str, bytes] = {
+            "id": b"uid=1000(operator) gid=1000(operator)\n",
+            "uname -a": b"Linux declusor-node 6.1.0 #1 SMP PREEMPT_DYNAMIC x86_64 GNU/Linux\n",
+        }
+        interactions = (
+            ("id", b"uid=1000(operator)"),
+            ("uname -a", b"Linux declusor-node"),
+        )
+
+        view = testing.DummyView()
+        input_source = testing.PacedInteractiveInputSource(
+            interactions,
+            view,
+            is_idle_predicate=lambda: self.is_connection_idle(connection),
+            terminal_exception=KeyboardInterrupt(),
+            timeout=3.0,
+        )
+        session = contract.SessionContext(
+            connection=connection,
+            view=view,
+            plugin_processor=processor,
+            input_source=input_source,
+        )
+
+        banner = "=== Interactive Remote Shell ==="
+        shell_cmd = command.LaunchShell(command.LaunchShellDTO(banner=banner))
+
+        stop_responder = threading.Event()
+        responder_thread = threading.Thread(
+            target=self.run_mock_client_responder,
+            args=(client_transport, responses, stop_responder),
+            daemon=True,
+        )
+        responder_thread.start()
+
+        try:
+            session.execute(shell_cmd)
+
+            assert any(banner in msg for msg in view.messages), f"Banner {banner!r} missing from view messages."
+            assert "[keyboard interrupt received]" in view.messages, f"Expected '[keyboard interrupt received]' in view messages, got {view.messages}"
+
+            accumulated_output = b"".join(view.binary_data)
+            assert b"uid=1000(operator)" in accumulated_output, "Output from 'id' command was not received."
+            assert b"Linux declusor-node" in accumulated_output, "Output from 'uname -a' command was not received."
+
+            assert not view.errors, f"Unexpected view errors during shell execution: {view.errors}"
+            assert not shell_cmd._task_pool.errors, f"Unexpected task pool errors: {shell_cmd._task_pool.errors}"
+            assert connection.state == contract.ConnectionState.CONNECTED, f"Connection state changed unexpectedly: {connection.state}"
+            assert connection.timeout == initial_timeout, (
+                f"Connection timeout was not restored (expected {initial_timeout}, got {connection.timeout})."
+            )
+
+            for thread in shell_cmd._task_pool._threads:
+                assert not thread.is_alive(), f"Task pool thread {thread.name} remained alive after shutdown."
+
+            binary_count_before = len(view.binary_data)
+            subsequent_cmd = command.ExecuteCommand(command.ExecuteCommandDTO("id"))
+            session.execute(subsequent_cmd)
+
+            subsequent_output = b"".join(view.binary_data[binary_count_before:])
+            assert b"uid=1000(operator)" in subsequent_output, f"Subsequent 'id' command output was not received: {subsequent_output!r}"
+            assert not view.errors, f"Unexpected view errors after subsequent command: {view.errors}"
+            assert connection.state == contract.ConnectionState.CONNECTED
+            assert connection.timeout == initial_timeout
+        finally:
+            stop_responder.set()
+            responder_thread.join(timeout=1.0)
+            client_transport.close()
+            server_transport.close()
+            connection.close()

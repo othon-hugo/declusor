@@ -221,6 +221,28 @@ class TestTaskPoolLifecycle:
         pool = concurrency.TaskPool()
         pool.wait_all()
 
+    def test_task_pool_wait_all__with_timeout__bounds_wait_time(self) -> None:
+        """Verify wait_all with a timeout bounds thread join duration."""
+
+        stall_event = concurrency.TaskEvent()
+        pool = concurrency.TaskPool()
+
+        def stalled_task(stop_event: concurrency.TaskEvent) -> None:
+            stall_event.wait(timeout=1.0)
+
+        pool.add_task(stalled_task)
+        pool.start_all()
+
+        try:
+            start = time.monotonic()
+            pool.wait_all(timeout=0.05)
+            elapsed = time.monotonic() - start
+
+            assert elapsed < 0.5
+        finally:
+            stall_event.set()
+            pool.wait_all()
+
     def test_task_pool_stop__called__sets_shared_stop_event(self) -> None:
         """Verify stop signals the cooperative cancellation TaskEvent."""
 

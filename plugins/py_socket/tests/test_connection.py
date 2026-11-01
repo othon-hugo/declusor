@@ -90,6 +90,25 @@ class TestPySocketConnectionLifecycle:
         expected_helpers_frame = struct.pack(">BI", config.ChannelType.STDIN, len(raw_helpers)) + raw_helpers
         assert dummy_trans.write_history == [expected_helpers_frame]
 
+    def test_handshake__after_initialization__resets_active_commands_and_is_idle(
+        self,
+        dummy_file_store: testing.DummyPluginFileStore,
+    ) -> None:
+        """Verify that completing handshake resets active commands and leaves connection idle."""
+
+        dummy_trans = testing.DummyTransport()
+        ack = b"\xab" * 32
+        renderer = py_socket.PySocketRenderer()
+        conn = py_socket.PySocketConnection(dummy_trans, renderer, dummy_file_store, expected_ack=ack)
+
+        meta = _make_metadata_frame()
+        dummy_trans.push_incoming(meta + ack)
+        conn.handshake()
+
+        assert conn.state == contract.ConnectionState.CONNECTED
+        assert conn.is_idle is True
+        assert conn._active_commands == 0
+
     def test_handshake__when_already_connected__raises_connection_error(
         self,
         dummy_file_store: testing.DummyPluginFileStore,

@@ -121,12 +121,17 @@ class TaskPool:
             if not thread.is_alive():
                 thread.start()
 
-    def wait_all(self) -> None:
-        """Wait until all threads have finished execution."""
+    def wait_all(self, timeout: float | None = None) -> None:
+        """Wait until all threads have finished execution.
+
+        Args:
+            timeout: Optional maximum seconds to wait for each thread to join.
+                If None, waits indefinitely.
+        """
 
         for thread in list(self._threads):
             if thread.is_alive():
-                thread.join()
+                thread.join(timeout=timeout)
 
     def stop(self) -> None:
         """Signal all threads to stop (cooperative cancellation)."""

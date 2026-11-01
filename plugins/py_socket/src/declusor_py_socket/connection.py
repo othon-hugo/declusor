@@ -182,6 +182,10 @@ class PySocketConnection(contract.IConnection):
 
         self._state = contract.ConnectionState.CONNECTED
 
+        with self._lock:
+            self._active_commands = 0
+            self._command_ready.clear()
+
     def write(self, data: bytes, /) -> None:
         """Send a command payload to the remote Python agent over the STDIN bus."""
 
