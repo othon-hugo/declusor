@@ -170,7 +170,64 @@ Plugins bundle default assets within their own directories. Operators can overla
 2. **Helpers (`assets/helpers`)**: Library scripts concatenated and evaluated in-memory during session initialization.
 3. **Modules (`assets/modules`)**: On-demand operational scripts loaded dynamically during post-exploitation.
 
+## Single-Socket Stager Micro-Framework
+
+Declusor decouples initial client payload delivery from persistent session establishment via a two-stage single-socket micro-framework (`LauncherKind`):
+
+- **Staged Mode (`LauncherKind.STAGED`, Default)**:
+  - Generates an ultra-compact Stage 0 launcher (~85 characters for POSIX Bash, ~135 characters for Python).
+  - The Stage 0 stager connects back to the listening address and opens a TCP bidirectional stream (e.g., file descriptor 3 in Bash, or a socket in Python).
+  - The Declusor engine accepts the connection, detects staged mode, and immediately transmits the monolithic Stage 1 client script over the **same physical TCP socket**.
+  - The target client reads the payload directly from the open socket descriptor into process memory and evaluates it (`IFS= read -r -d "" -u 3 c; eval "$c"` or `exec(...)`).
+  - The running client seamlessly inherits the established transport connection without dropping or reconnecting the TCP session.
+- **Stageless Mode (`LauncherKind.STAGELESS`)**:
+  - Compiles the full client transport, state machine, and initial protocol logic directly into a standalone self-contained launcher script.
+  - Used in environments where second-stage delivery is prohibited by egress filtering or when single-shot monolithic payload injection is required.
+
 ## System Execution Flows
+
+### End-to-End Operational Lifecycle
+
+```mermaid
+flowchart TD
+    Start(["CLI Invocation: declusor &lt;host&gt; &lt;port&gt;"]) --> Discover["PluginManager: Dynamic Multi-Tier Discovery"]
+    Discover --> Barrier{"Contract Validation Barrier"}
+    Barrier -- Fails --> Reject["Raise PluginError & Exit"]
+    Barrier -- Passes --> InitListener["TcpListener: Bind & Listen on Socket"]
+
+    InitListener --> GenLauncher{"LauncherKind Check"}
+    GenLauncher -- "STAGED (Default)" --> Stage0["Generate Stage 0 Micro-Stager (~85 chars)"]
+    GenLauncher -- "STAGELESS" --> Stageless["Generate Monolithic Embedded Client"]
+
+    Stage0 --> Delivery["Deliver Launcher (Terminal / Clipboard / File)"]
+    Stageless --> Delivery
+
+    Delivery --> WaitConnect["TcpListener: Wait & Accept Incoming TCP Socket"]
+    TargetRemote["Remote Target: Execute Launcher"] -.->|TCP Connect| WaitConnect
+
+    WaitConnect --> CheckStaged{"Is Staged Mode?"}
+    CheckStaged -- Yes --> PushStage1["Transmit Stage 1 Client Script over same TCP Socket"]
+    PushStage1 --> EvalStage1["Target reads FD 3 & Evaluates Stage 1 In-Memory"]
+    EvalStage1 --> Handshake
+    CheckStaged -- No --> Handshake["Negotiate Session Handshake & Push Helpers"]
+
+    Handshake --> AckCheck{"Target ACK Valid?"}
+    AckCheck -- No --> DropConn["Close Transport & Terminate"]
+    AckCheck -- Yes --> ReplInit["Initialize SessionContext & Start Interactive REPL"]
+
+    subgraph REPL Loop ["Interactive Session Loop"]
+        Prompt["Operator: Input Command"] --> RouteLookup["Router: Resolve Command Controller"]
+        RouteLookup --> ExecCmd["Controller: Dispatch Framed Command DTO"]
+        ExecCmd --> StreamOutput["Stream Output Chunks to Presentation View"]
+        StreamOutput --> CheckSignal{"Action Signal"}
+        CheckSignal -- CONTINUE --> Prompt
+        CheckSignal -- TERMINATE --> CleanExit["Close Transport & Clean Exit"]
+    end
+
+    ReplInit --> REPL Loop
+```
+
+### Protocol Sequence Diagram
 
 ```mermaid
 sequenceDiagram
@@ -189,8 +246,13 @@ sequenceDiagram
     Core->>Plugin: Validate contract & load plugin
     Core-->>Main: Configured client runtime
     Main->>Listener: with listener: accept incoming transport
-    Remote->>Listener: Connect TCP socket
+    Operator->>Remote: Deliver & execute Stage 0 launcher
+    Remote->>Listener: Connect TCP socket (Stage 0)
     Listener-->>Main: Return ITransport (SocketTransport)
+    opt Staged Mode (Default)
+        Main->>Remote: Stream Stage 1 client script over open socket
+        Remote->>Remote: Evaluate Stage 1 in-memory (reusing open socket)
+    end
     Main->>Plugin: runtime.create_connection(transport)
     Plugin->>Remote: Initialize session & negotiate helpers (via transport)
     Remote-->>Plugin: Acknowledge handshake (ACK sentinel)
@@ -221,3 +283,5 @@ sequenceDiagram
 5. **Dual-Channel Stream Isolation**: Complete physical separation of raw binary payloads (`sys.stdout.buffer`) from formatted console output (`sys.stdout`).
 6. **Fail-Fast Validation**: Inputs, file paths, and plugin descriptors are validated at system boundaries before entering core execution paths.
 7. **Sandboxed File Operations**: All filesystem interactions enforce path-traversal safeguards and extension constraints.
+8. **Deterministic Contract-First Design**: Components communicate strictly through domain abstractions (`@abstractmethod`). Duck-typing and runtime reflection probing (`hasattr`/`getattr`) are eliminated in favor of explicit protocols and registration validation barriers.
+9. **Exhaustive In-Code Documentation & Docstring Rhythm**: 100% of modules, classes, methods, and class attributes are documented with explicit docstrings (`"""..."""` placed directly under attribute declarations). Exactly one blank line separates closing docstring quotes from executable statements.

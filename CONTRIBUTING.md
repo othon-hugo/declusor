@@ -169,6 +169,21 @@ Each subpackage re-exports its respective domain exceptions from `declusor.confi
 
 When handling or raising layer-specific errors, consumers can import them directly from the relevant package namespace (e.g. `core.ParserError`, `command.CommandError`).
 
+### Class Attribute Docstrings
+
+Every class-level attribute declaration must carry its own explicit docstring placed immediately beneath the attribute statement:
+
+```python
+class DeclusorParser:
+    """Command line argument parser for Declusor."""
+
+    default_program_name: Final = "declusor"
+    """Standard binary executable invocation name."""
+
+    description: Final = "Reverse-shell framework and payload delivery handler."
+    """CLI help banner overview text."""
+```
+
 ### Docstring Rhythm (Blank Line Separation)
 
 Never glue docstrings directly to executable code. Always insert exactly one blank line between the closing triple quotes (`"""`) of a docstring and the first line of code inside functions, methods, and nested controllers:
@@ -189,6 +204,13 @@ def test_something() -> None:
     result = compute()
     assert result is True
 ```
+
+### Deterministic Contract Design & Zero Duck-Typing
+
+All component capabilities and interfaces must be declared on explicit domain contracts (`@abstractmethod` in `declusor.contract`):
+
+- **Prohibited**: Runtime reflection probing with `hasattr()`, `getattr()`, or `setattr()` to inspect capabilities dynamically.
+- **Required**: Static type safety through explicit interfaces verified at registration barriers (`PluginManager`, `Router`) and checked under the configured Mypy strict profile.
 
 ### Package README Documentation
 
@@ -339,6 +361,26 @@ dependencies = ["declusor>=0.3.1"]
 <plugin_name> = "declusor_<plugin_name>:<PluginClass>"
 ```
 
+### Stager & Client Asset Requirements
+
+Every plugin supporting client execution must provide two launcher assets in `assets/launchers/`:
+
+1. **Stage 0 Micro-Stager (`<plugin_name>_stager.<ext>`)**: A compact one-liner (~85 characters for shell, ~135 characters for Python) that establishes a connection back to the listener and reads Stage 1 payload directly from the open socket into memory.
+2. **Stage 1 Client (`<plugin_name>_client.<ext>`)**: Monolithic client script pushed over the open socket in staged mode, or delivered directly in stageless mode (`-K stageless`).
+
+### Contract Conformance Testing
+
+Every plugin must implement contract conformance tests by inheriting from `testing.PluginConformanceTestSuite`:
+
+```python
+from declusor import testing
+from declusor_my_plugin import MyPlugin
+
+
+class TestMyPluginConformance(testing.PluginConformanceTestSuite):
+    plugin_class = MyPlugin
+```
+
 ## Verification & Quality Gates
 
 Before opening a pull request or submitting code, ensure that all quality gates pass using the project `Makefile`:
@@ -371,7 +413,7 @@ Create dedicated topic branches from `main` using descriptive prefix naming:
 - `fix/<bug-name>`: Defect repairs or bug resolutions
 - `refactor/<target>`: Structural code improvements preserving behavior
 - `test/<target>`: Test doubles, conformance suites, or coverage additions
-- `docs/<topic>`: Documentation, architectural guides, or specification updates
+- `docs/<topic>`: Documentation, architectural guides, or design updates
 
 ### Conventional Commits
 

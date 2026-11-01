@@ -69,7 +69,7 @@ exclude = [
 ]
 
 [tool.ruff.lint]
-ignore = ["SIM117", "SIM300"]
+ignore = ["SIM117", "SIM300", "UP032"]
 select = [
     "E",
     "F",

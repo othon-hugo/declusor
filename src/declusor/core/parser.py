@@ -114,7 +114,7 @@ class DeclusorParser(util.Parser):
         arg_name: Final = "mode"
         """CLI argument destination attribute name."""
 
-        arg_help: Final = "runtime execution mode (e.g. cli, api, mcp, http)"
+        arg_help: Final = "runtime execution mode"
         """Help description string."""
 
         arg_flags: Final = ("-m", "--mode")
@@ -146,7 +146,7 @@ class DeclusorParser(util.Parser):
         arg_name: Final = "timeout"
         """CLI argument destination attribute name."""
 
-        arg_help: Final = "network socket timeout in seconds (e.g. 1.0, 5.0)"
+        arg_help: Final = "network socket timeout in seconds"
         """Help description string."""
 
         arg_flags: Final = ("-t", "--timeout")
@@ -195,7 +195,7 @@ class DeclusorParser(util.Parser):
         arg_name: Final = "launcher_kind"
         """CLI argument destination attribute name."""
 
-        arg_help: Final = "client launcher kind: 'staged' (compact one-liner loader) or 'stageless' (monolithic self-contained client)"
+        arg_help: Final = "client launcher kind"
         """Help description string."""
 
         arg_flags: Final = ("-K", "--launcher-kind")
@@ -227,7 +227,12 @@ class DeclusorParser(util.Parser):
         arg_name: Final = "launcher_output"
         """CLI argument destination attribute name."""
 
-        arg_help: Final = "client launcher delivery output mode: 'terminal', 'silent', 'clipboard', or 'file:<path>' (default: 'terminal')"
+        arg_help: Final = "client launcher delivery output mode ('{terminal}', '{silent}', '{clipboard}', or '{file}:<path>')".format(
+            terminal=config.LauncherOutputMode.TERMINAL,
+            silent=config.LauncherOutputMode.SILENT,
+            clipboard=config.LauncherOutputMode.CLIPBOARD,
+            file=config.LauncherOutputMode.FILE,
+        )
         """Help description string."""
 
         arg_flags: Final = ("-O", "--launcher-output")
@@ -296,7 +301,7 @@ class DeclusorParser(util.Parser):
         arg_name: Final = "transport_layers"
         """CLI argument destination attribute name."""
 
-        arg_help: Final = "composable transport layer to wrap connection (repeatable, e.g. --transport-layer xor)"
+        arg_help: Final = "composable transport layer to wrap connection (repeatable)"
         """Help description string."""
 
         arg_action: Final = "append"
@@ -395,6 +400,13 @@ class DeclusorParser(util.Parser):
         )
 
         self.add_argument(
+            *self.Timeout.arg_flags,
+            help=self.Timeout.arg_help,
+            default=None,
+            type=self.Timeout,
+        )
+
+        self.add_argument(
             *self.ExecutionMode.arg_flags,
             help=self.ExecutionMode.arg_help,
             choices=self.ExecutionMode.arg_choices,
@@ -416,13 +428,6 @@ class DeclusorParser(util.Parser):
             help=self.LauncherWrapper.arg_help,
             default=None,
             type=self.LauncherWrapper,
-        )
-
-        self.add_argument(
-            *self.Timeout.arg_flags,
-            help=self.Timeout.arg_help,
-            default=None,
-            type=self.Timeout,
         )
 
         self.add_argument(
