@@ -30,11 +30,11 @@ class TcpListener(contract.ITransportListener):
         if backlog <= 0:
             raise ValueError(f"Backlog must be positive, got {backlog}.")
 
-        self._host = host
+        self._host = str(host)
         self._closed = False
 
         try:
-            addresses = socket.getaddrinfo(host, port, type=socket.SOCK_STREAM, flags=socket.AI_PASSIVE)
+            addresses = socket.getaddrinfo(str(host), int(port), type=socket.SOCK_STREAM, flags=socket.AI_PASSIVE)
         except OSError as err:
             self._closed = True
             raise config.ConnectionError(f"Failed to bind TCP listener on {host}:{port}: {err}") from err

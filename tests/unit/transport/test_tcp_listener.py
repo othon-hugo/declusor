@@ -60,6 +60,22 @@ class TestTcpListenerLifecycle:
         assert not tcp_listener.is_closed
         assert tcp_listener.port > 0
 
+    def test_tcp_listener_init__custom_int_subclass_port__binds_successfully(self) -> None:
+        """Verify custom int subclass (such as parser Port) binds without CPython socket errors."""
+
+        class CustomPort(int):
+            pass
+
+        class CustomHost(str):
+            pass
+
+        listener = transport.TcpListener(CustomHost("127.0.0.1"), CustomPort(0))
+        try:
+            assert not listener.is_closed
+            assert listener.port > 0
+        finally:
+            listener.close()
+
     def test_tcp_listener_init__privileged_port__raises_connection_error(self) -> None:
         """Verify attempting to bind a privileged port (<1024) raises ConnectionError."""
 
