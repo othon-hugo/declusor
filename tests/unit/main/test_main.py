@@ -179,6 +179,7 @@ class TestMainApplicationFactory:
     ) -> None:
         """main validates CLI transport layer against explicitly injected transport registry."""
 
+        testing.DummyPlugin.reset()
         registry = transport.TransportLayerRegistry()
         registry.register("dummy_layer", lambda t: t)
 
@@ -197,6 +198,7 @@ class TestMainApplicationFactory:
     ) -> None:
         """main derives transport registry from application when transport_registry is omitted."""
 
+        testing.DummyPlugin.reset()
         dummy_app.transport_registry.register("app_layer", lambda t: t)
 
         exit_code = main.run(

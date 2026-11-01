@@ -163,6 +163,9 @@ class IPluginExtension[T: ParsedArguments](ABC):
     supported_launcher_kinds: frozenset[config.LauncherKind] = frozenset({config.LauncherKind.STAGELESS})
     """Set of launcher delivery kinds supported by this client plugin."""
 
+    supported_transport_layers: frozenset[config.TransportLayer | str] = frozenset()
+    """Set of transport layer types supported by this client plugin."""
+
     @classmethod
     @abstractmethod
     def configure_parser(cls, parser: "IArgumentParser", /) -> None:
@@ -436,6 +439,7 @@ class IPluginProcessor(ABC):
         /,
         *,
         kind: config.LauncherKind = config.LauncherKind.STAGELESS,
+        transport_layers: tuple[str, ...] = (),
     ) -> bytes:
         """Read and render the client bootstrap script for the requested launcher kind.
 
@@ -444,6 +448,7 @@ class IPluginProcessor(ABC):
             port: Port embedded in the client script.
             acknowledge: Client acknowledgment bytes embedded in the script.
             kind: Launcher strategy kind (STAGED or STAGELESS).
+            transport_layers: Optional sequence of active transport layer protocol names.
 
         Returns:
             The rendered client bootstrap script as bytes.

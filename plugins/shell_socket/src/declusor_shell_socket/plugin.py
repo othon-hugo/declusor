@@ -56,6 +56,9 @@ class ShellSocketPlugin(contract.IPluginExtension[ShellSocketConfig]):
     )
     """Set of supported launcher delivery kinds."""
 
+    supported_transport_layers: frozenset[config.TransportLayer] = frozenset()
+    """Set of supported transport layer kinds. Shell socket requires pure ASCII/NUL streams over /dev/tcp."""
+
     @classmethod
     def configure_parser(cls, parser: contract.IArgumentParser, /) -> None:
         """Register shell_socket-specific command-line arguments."""
@@ -222,6 +225,7 @@ class ShellSocketProcessor(contract.IPluginProcessor):
         /,
         *,
         kind: config.LauncherKind = config.LauncherKind.STAGELESS,
+        transport_layers: tuple[str, ...] = (),
     ) -> bytes:
         """Read, interpolate, and render the client launcher script.
 
@@ -230,6 +234,7 @@ class ShellSocketProcessor(contract.IPluginProcessor):
             port: Port embedded in the client script.
             acknowledge: Client acknowledgment bytes embedded in the script.
             kind: Launcher distribution kind (staged or stageless).
+            transport_layers: Optional sequence of active transport layer protocol names.
 
         Returns:
             The rendered launcher script as bytes (hex-encoded for stageless, UTF-8 for staged).

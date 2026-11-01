@@ -1047,6 +1047,27 @@ class TestDeclusorParserTransportLayers:
 
         assert plugin_config.transport_layers == ("custom",)
 
+    def test_parse__unsupported_transport_layer_for_plugin__raises_parser_error(self) -> None:
+        """Transport layer supported by registry but unsupported by plugin raises ParserError."""
+
+        class UnsupportedPlugin(testing.DummyPlugin):
+            name = "unsupported_plugin"
+            supported_transport_layers = frozenset()
+
+        manager = core.PluginManager()
+        manager.register(UnsupportedPlugin)
+
+        parser = core.DeclusorParser(name="test_app")
+
+        with pytest.raises(
+            config.ParserError,
+            match=r"Plugin 'unsupported_plugin' does not support transport layer 'xor'\. Supported: none",
+        ):
+            parser.parse(
+                manager,
+                ["127.0.0.1", "9000", "-p", "unsupported_plugin", "--transport-layer", "xor"],
+            )
+
 
 class TestDeclusorNamespace:
     """Tests verifying DeclusorNamespace static typing and default values."""

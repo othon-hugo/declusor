@@ -67,6 +67,7 @@ class DummyPluginFileStore(contract.IPluginProcessor):
         /,
         *,
         kind: config.LauncherKind = config.LauncherKind.STAGELESS,
+        transport_layers: tuple[str, ...] = (),
     ) -> bytes:
         """Render client script from configured template as bytes."""
 

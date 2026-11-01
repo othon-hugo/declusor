@@ -2,6 +2,7 @@
 
 from collections.abc import Mapping
 from pathlib import Path
+from typing import Final
 
 from declusor import config, contract, core
 
@@ -79,6 +80,19 @@ class DummyPlugin(contract.IPluginExtension[DummyConfig]):
     supported_launcher_kinds: frozenset[config.LauncherKind] = frozenset({config.LauncherKind.STAGED, config.LauncherKind.STAGELESS})
     """Set of supported launcher kinds."""
 
+    DEFAULT_SUPPORTED_TRANSPORT_LAYERS: Final[frozenset[config.TransportLayer | str]] = frozenset(
+        {
+            config.TransportLayer.XOR,
+            "custom",
+            "dummy_layer",
+            "app_layer",
+        }
+    )
+    """Default supported transport layers for test double."""
+
+    supported_transport_layers: frozenset[config.TransportLayer | str] = DEFAULT_SUPPORTED_TRANSPORT_LAYERS
+    """Set of supported transport layer kinds."""
+
     configured_parsers: list[contract.IArgumentParser] = []
     """Record of parsers passed to configure_parser."""
 
@@ -95,6 +109,7 @@ class DummyPlugin(contract.IPluginExtension[DummyConfig]):
         cls.configured_parsers.clear()
         cls.runtime_instance = None
         cls.validation_error = None
+        cls.supported_transport_layers = cls.DEFAULT_SUPPORTED_TRANSPORT_LAYERS
 
     @classmethod
     def configure_parser(cls, parser: contract.IArgumentParser, /) -> None:

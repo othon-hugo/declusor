@@ -23,11 +23,17 @@ class TestPySocketPluginConfig:
         assert cfg.filesystem is not None
         py_socket.PySocketPlugin.validate(cfg)
 
+    def test_supported_transport_layers__is_empty_frozenset(self) -> None:
+        """Verify PySocketPlugin declares no supported transport layers."""
+
+        assert py_socket.PySocketPlugin.supported_transport_layers == frozenset()
+
     def test_build_config__custom_filesystem__resolves_against_custom_filesystem(self, tmp_path: Path) -> None:
         """When custom filesystem is provided, plugin resolves against that filesystem."""
 
         launchers = tmp_path / "launchers"
         launchers.mkdir()
+
         (launchers / "py_socket_client.py").write_text("#!/usr/bin/env python3", encoding="utf-8")
         (launchers / "py_socket_stager.py").write_text("import socket", encoding="utf-8")
 

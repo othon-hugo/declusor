@@ -60,6 +60,9 @@ class PySocketPlugin(contract.IPluginExtension[PySocketConfig]):
     )
     """Set of supported launcher delivery kinds."""
 
+    supported_transport_layers: frozenset[config.TransportLayer] = frozenset({})
+    """Set of supported transport layer protocols."""
+
     @classmethod
     def configure_parser(cls, parser: contract.IArgumentParser, /) -> None:
         """Register py_socket-specific command-line arguments."""
@@ -151,6 +154,7 @@ class PySocketRuntime(contract.IPluginRuntime):
             self._plugin_config.port,
             self._expected_ack,
             kind=kind,
+            transport_layers=self._plugin_config.transport_layers,
         )
 
         wrapper = self.STAGED_WRAPPER_TEMPLATE if kind is config.LauncherKind.STAGED else self.DEFAULT_WRAPPER_TEMPLATE
@@ -171,6 +175,7 @@ class PySocketRuntime(contract.IPluginRuntime):
                 self._plugin_config.port,
                 self._expected_ack,
                 kind=config.LauncherKind.STAGELESS,
+                transport_layers=self._plugin_config.transport_layers,
             )
             stage1_payload = bytes.fromhex(stageless_bytes.decode("ascii"))
 
@@ -225,6 +230,7 @@ class PySocketProcessor(contract.IPluginProcessor):
         /,
         *,
         kind: config.LauncherKind = config.LauncherKind.STAGELESS,
+        transport_layers: tuple[str, ...] = (),
     ) -> bytes:
         """Read, interpolate, sanitize, and return client launcher script."""
 

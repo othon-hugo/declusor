@@ -45,6 +45,10 @@ def assert_conforms_to_client_plugin[T: contract.ParsedArguments](
     for kind in plugin_cls.supported_launcher_kinds:
         assert isinstance(kind, config.LauncherKind), f"Invalid launcher kind in supported_launcher_kinds: {kind!r}."
 
+    assert isinstance(plugin_cls.supported_transport_layers, frozenset), "plugin.supported_transport_layers must be a frozenset."
+    for layer in plugin_cls.supported_transport_layers:
+        assert isinstance(layer, (config.TransportLayer, str)), f"Invalid transport layer in supported_transport_layers: {layer!r}."
+
     normalized_routes: set[str] = set()
     for route, registration in plugin_cls.routes.items():
         assert isinstance(route, str) and route.strip(), "plugin.routes must use non-empty string names."
@@ -169,6 +173,7 @@ class PluginConformanceTestSuite[T: contract.ParsedArguments]:
         assert isinstance(plugin_class.routes, Mapping)
         assert isinstance(plugin_class.supported_launcher_kinds, frozenset)
         assert len(plugin_class.supported_launcher_kinds) > 0
+        assert isinstance(plugin_class.supported_transport_layers, frozenset)
 
     def test_configure_parser_callable(self, plugin_class: type[contract.IPluginExtension[T]]) -> None:
         """Verify configure_parser accepts a Parser without error."""

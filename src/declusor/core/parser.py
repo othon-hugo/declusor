@@ -516,6 +516,13 @@ class DeclusorParser(util.Parser):
         plugin_config = self._build_plugin_config(Plugin, args)
         transport_layers = self._resolve_transport_layers(args, transport_registry)
 
+        supported_layers = {layer.value if isinstance(layer, config.TransportLayer) else str(layer) for layer in Plugin.supported_transport_layers}
+
+        for layer in transport_layers:
+            if layer not in supported_layers:
+                supported_str = ", ".join(repr(k) for k in sorted(supported_layers)) or "none"
+                raise config.ParserError(f"Plugin {Plugin.name!r} does not support transport layer {layer!r}. Supported: {supported_str}")
+
         final_config = self._assemble_final_config(plugin_config, args, launcher_kind, transport_layers)
         Plugin.validate(final_config)
 
