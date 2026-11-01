@@ -50,7 +50,7 @@ class TestControllerExports:
         """Every symbol declared in __all__ is an accessible attribute of the controller module."""
 
         for name in controller.__all__:
-            assert hasattr(controller, name), f"declusor.controller is missing expected export: {name}"
+            assert name in dir(controller), f"declusor.controller is missing expected export: {name}"
 
     def test_controller_exports__exception_reexports__match_config_exceptions(self) -> None:
         """Exception symbols re-exported from controller are identical to config definitions."""

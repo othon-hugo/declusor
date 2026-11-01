@@ -1,7 +1,5 @@
 """Unit tests for terminal REPL runner bootstrap in declusor.main.terminal."""
 
-from typing import Any
-
 import pytest
 
 from declusor import config, contract, core, testing, transport
@@ -31,7 +29,7 @@ class TestRunTerminalApp:
 
         manager = core.PluginManager()
         cfg = testing.create_dummy_plugin_config()
-        factory_kwargs: dict[str, Any] = {}
+        factory_kwargs: dict[str, object] = {}
 
         def tracking_factory(*, plugin_manager: core.PluginManager | None = None) -> core.Application:
             factory_kwargs["plugin_manager"] = plugin_manager
@@ -108,9 +106,9 @@ class TestRunTerminalApp:
     ) -> None:
         """run_terminal_app forwards all orchestration doubles to a kwargs-aware application factory."""
 
-        captured_kwargs: dict[str, Any] = {}
+        captured_kwargs: dict[str, object] = {}
 
-        def kwargs_factory(**kwargs: Any) -> core.Application:
+        def kwargs_factory(**kwargs: object) -> core.Application:
             captured_kwargs.update(kwargs)
             return dummy_app
 
@@ -172,7 +170,7 @@ class TestRunTerminalApp:
     ) -> None:
         """run_terminal_app forwards only declared parameters when factory accepts a subset of kwargs."""
 
-        captured: dict[str, Any] = {}
+        captured: dict[str, object] = {}
 
         def partial_factory(
             *,
@@ -208,7 +206,7 @@ class TestRunTerminalApp:
 
         call_count = 0
 
-        def buggy_factory(**kwargs: Any) -> core.Application:
+        def buggy_factory(**kwargs: object) -> core.Application:
             nonlocal call_count
             call_count += 1
             raise TypeError("internal logic error")

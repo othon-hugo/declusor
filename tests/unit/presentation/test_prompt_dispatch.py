@@ -25,7 +25,7 @@ class TestPromptLoopCommandReading:
         """PromptLoop passes its formatted prompt prefix to input_source.read_command."""
 
         dummy_input_source.feed_inputs("exit")
-        dummy_router.connect("exit", _terminate_controller)
+        dummy_router.connect("exit", contract.RouteRegistration(_terminate_controller))
 
         prompt = presentation.PromptLoop(
             "custom_app",
@@ -45,7 +45,7 @@ class TestPromptLoopCommandReading:
         """PromptLoop skips empty or whitespace-only lines and re-prompts until input is non-empty."""
 
         dummy_input_source.feed_inputs("", "   ", "\t  \n", "exit")
-        dummy_router.connect("exit", _terminate_controller)
+        dummy_router.connect("exit", contract.RouteRegistration(_terminate_controller))
 
         prompt = presentation.PromptLoop(
             "loop_app",
@@ -79,7 +79,7 @@ class TestPromptLoopRouteDispatch:
             return contract.ControllerResult(action=contract.ControllerAction.TERMINATE)
 
         dummy_input_source.feed_inputs("status")
-        dummy_router.connect("status", info_controller)
+        dummy_router.connect("status", contract.RouteRegistration(info_controller))
 
         prompt = presentation.PromptLoop(router=dummy_router, session=test_session)
         prompt.run()
@@ -105,8 +105,8 @@ class TestPromptLoopRouteDispatch:
             return contract.ControllerResult(action=contract.ControllerAction.CONTINUE)
 
         dummy_input_source.feed_inputs("echo   hello world from declusor   ", "exit")
-        dummy_router.connect("echo", echo_controller)
-        dummy_router.connect("exit", _terminate_controller)
+        dummy_router.connect("echo", contract.RouteRegistration(echo_controller))
+        dummy_router.connect("exit", contract.RouteRegistration(_terminate_controller))
 
         prompt = presentation.PromptLoop(router=dummy_router, session=test_session)
         prompt.run()
@@ -132,7 +132,7 @@ class TestPromptLoopRouteDispatch:
             return contract.ControllerResult(action=contract.ControllerAction.TERMINATE)
 
         dummy_input_source.feed_inputs("   ping   127.0.0.1   ")
-        dummy_router.connect("ping", ping_controller)
+        dummy_router.connect("ping", contract.RouteRegistration(ping_controller))
 
         prompt = presentation.PromptLoop(router=dummy_router, session=test_session)
         prompt.run()
@@ -159,7 +159,7 @@ class TestPromptLoopRouteDispatch:
             return contract.ControllerResult(action=contract.ControllerAction.TERMINATE)
 
         dummy_input_source.feed_inputs("   whoami   ")
-        dummy_router.connect("whoami", whoami_controller)
+        dummy_router.connect("whoami", contract.RouteRegistration(whoami_controller))
 
         prompt = presentation.PromptLoop(router=dummy_router, session=test_session)
         prompt.run()
@@ -189,10 +189,10 @@ class TestPromptLoopRouteDispatch:
             return controller
 
         dummy_input_source.feed_inputs("step1", "step2", "step3", "exit")
-        dummy_router.connect("step1", make_recorder("step1"))
-        dummy_router.connect("step2", make_recorder("step2"))
-        dummy_router.connect("step3", make_recorder("step3"))
-        dummy_router.connect("exit", _terminate_controller)
+        dummy_router.connect("step1", contract.RouteRegistration(make_recorder("step1")))
+        dummy_router.connect("step2", contract.RouteRegistration(make_recorder("step2")))
+        dummy_router.connect("step3", contract.RouteRegistration(make_recorder("step3")))
+        dummy_router.connect("exit", contract.RouteRegistration(_terminate_controller))
 
         prompt = presentation.PromptLoop(router=dummy_router, session=test_session)
         prompt.run()
@@ -224,8 +224,8 @@ class TestPromptLoopResultHandling:
                 message="Step completed successfully.",
             )
 
-        dummy_router.connect("run_step", step_controller)
-        dummy_router.connect("exit", _terminate_controller)
+        dummy_router.connect("run_step", contract.RouteRegistration(step_controller))
+        dummy_router.connect("exit", contract.RouteRegistration(_terminate_controller))
 
         prompt = presentation.PromptLoop(router=dummy_router, session=test_session)
         prompt.run()
@@ -252,8 +252,8 @@ class TestPromptLoopResultHandling:
                 message=None,
             )
 
-        dummy_router.connect("silent_step", silent_controller)
-        dummy_router.connect("exit", _terminate_controller)
+        dummy_router.connect("silent_step", contract.RouteRegistration(silent_controller))
+        dummy_router.connect("exit", contract.RouteRegistration(_terminate_controller))
 
         prompt = presentation.PromptLoop(router=dummy_router, session=test_session)
         prompt.run()
@@ -280,7 +280,7 @@ class TestPromptLoopResultHandling:
                 message="Session terminated by operator.",
             )
 
-        dummy_router.connect("bye", bye_controller)
+        dummy_router.connect("bye", contract.RouteRegistration(bye_controller))
 
         prompt = presentation.PromptLoop(router=dummy_router, session=test_session)
         prompt.run()

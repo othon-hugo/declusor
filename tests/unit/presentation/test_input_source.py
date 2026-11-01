@@ -1,12 +1,11 @@
 """Unit tests for TerminalInputSource presentation component in declusor.presentation.input_source."""
 
 import builtins
-import readline
 from pathlib import Path
 
 import pytest
 
-from declusor import config, contract, presentation
+from declusor import config, contract, presentation, testing
 
 
 class RecordingReader:
@@ -144,62 +143,44 @@ class TestTerminalInputSourceHistory:
     def test_terminal_input_source_enable_history_when_file_exists__reads_history_via_readline(
         self,
         tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """enable_history reads history file into readline when the file already exists on disk."""
 
         history_file = tmp_path / ".test_history"
         history_file.write_text("cmd1\ncmd2\n")
 
-        read_paths: list[str] = []
-
-        def stub_read_history(path: str) -> None:
-            read_paths.append(path)
-
-        monkeypatch.setattr(readline, "read_history_file", stub_read_history)
-
-        source = presentation.TerminalInputSource()
+        dummy_readline = testing.DummyReadlineAdapter()
+        source = presentation.TerminalInputSource(readline_adapter=dummy_readline)
         source.enable_history(history_file)
 
-        assert read_paths == [str(history_file)]
+        assert dummy_readline.read_paths == [str(history_file)]
 
     def test_terminal_input_source_enable_history_when_file_does_not_exist__does_not_call_read(
         self,
         tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """enable_history bypasses read_history_file when the history file does not exist."""
 
         history_file = tmp_path / "nonexistent_history"
-        read_called = False
+        dummy_readline = testing.DummyReadlineAdapter()
 
-        def stub_read_history(path: str) -> None:
-            nonlocal read_called
-            read_called = True
-
-        monkeypatch.setattr(readline, "read_history_file", stub_read_history)
-
-        source = presentation.TerminalInputSource()
+        source = presentation.TerminalInputSource(readline_adapter=dummy_readline)
         source.enable_history(history_file)
 
-        assert read_called is False
+        assert dummy_readline.read_paths == []
 
     def test_terminal_input_source_enable_history_suppresses_permission_error(
         self,
         tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """enable_history suppresses PermissionError when reading history file."""
 
         history_file = tmp_path / ".test_history"
         history_file.write_text("cmd\n")
 
-        def stub_read_raising_permission_error(path: str) -> None:
-            raise PermissionError("Access denied")
+        dummy_readline = testing.DummyReadlineAdapter(read_error=PermissionError("Access denied"))
 
-        monkeypatch.setattr(readline, "read_history_file", stub_read_raising_permission_error)
-
-        source = presentation.TerminalInputSource()
+        source = presentation.TerminalInputSource(readline_adapter=dummy_readline)
         source.enable_history(history_file)
 
         assert source._history_file == history_file
@@ -207,14 +188,12 @@ class TestTerminalInputSourceHistory:
     def test_terminal_input_source_enable_history_when_readline_is_none__returns_gracefully(
         self,
         tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """enable_history returns immediately when readline module is unavailable."""
 
-        monkeypatch.setattr(presentation.input_source, "readline", None)
-
+        dummy_readline = testing.DummyReadlineAdapter(is_available=False)
         history_file = tmp_path / ".test_history"
-        source = presentation.TerminalInputSource()
+        source = presentation.TerminalInputSource(readline_adapter=dummy_readline)
 
         source.enable_history(history_file)
 
@@ -223,57 +202,38 @@ class TestTerminalInputSourceHistory:
     def test_terminal_input_source_save_history__writes_history_file_via_readline(
         self,
         tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """_save_history invokes readline.write_history_file with the configured path."""
 
         history_file = tmp_path / ".saved_history"
-        written_paths: list[str] = []
+        dummy_readline = testing.DummyReadlineAdapter()
 
-        def stub_write_history(path: str) -> None:
-            written_paths.append(path)
-
-        monkeypatch.setattr(readline, "write_history_file", stub_write_history)
-
-        source = presentation.TerminalInputSource()
+        source = presentation.TerminalInputSource(readline_adapter=dummy_readline)
         source.enable_history(history_file)
         source._save_history()
 
-        assert written_paths == [str(history_file)]
+        assert dummy_readline.written_paths == [str(history_file)]
 
-    def test_terminal_input_source_save_history_when_history_file_is_none__does_nothing(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
+    def test_terminal_input_source_save_history_when_history_file_is_none__does_nothing(self) -> None:
         """_save_history returns cleanly without calling readline when history_file is None."""
 
-        written_paths: list[str] = []
+        dummy_readline = testing.DummyReadlineAdapter()
 
-        def stub_write_history(path: str) -> None:
-            written_paths.append(path)
-
-        monkeypatch.setattr(readline, "write_history_file", stub_write_history)
-
-        source = presentation.TerminalInputSource()
+        source = presentation.TerminalInputSource(readline_adapter=dummy_readline)
         source._save_history()
 
-        assert written_paths == []
+        assert dummy_readline.written_paths == []
 
     def test_terminal_input_source_save_history_suppresses_permission_error(
         self,
         tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """_save_history suppresses PermissionError when saving history to disk."""
 
         history_file = tmp_path / ".test_history"
+        dummy_readline = testing.DummyReadlineAdapter(write_error=PermissionError("Disk write protected"))
 
-        def stub_write_raising_permission_error(path: str) -> None:
-            raise PermissionError("Disk write protected")
-
-        monkeypatch.setattr(readline, "write_history_file", stub_write_raising_permission_error)
-
-        source = presentation.TerminalInputSource()
+        source = presentation.TerminalInputSource(readline_adapter=dummy_readline)
         source.enable_history(history_file)
         source._save_history()
 
@@ -282,14 +242,12 @@ class TestTerminalInputSourceHistory:
     def test_terminal_input_source_save_history_when_readline_is_none__returns_gracefully(
         self,
         tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """_save_history returns cleanly when readline is None."""
 
-        source = presentation.TerminalInputSource()
+        dummy_readline = testing.DummyReadlineAdapter(is_available=False)
+        source = presentation.TerminalInputSource(readline_adapter=dummy_readline)
         source.enable_history(tmp_path / "history")
-
-        monkeypatch.setattr(presentation.input_source, "readline", None)
 
         source._save_history()
 
@@ -307,18 +265,13 @@ class TestTerminalInputSourceHistory:
     def test_terminal_input_source_save_history_suppresses_generic_os_error(
         self,
         tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """_save_history suppresses generic OSError such as read-only filesystem or device full."""
 
         history_file = tmp_path / ".test_history"
+        dummy_readline = testing.DummyReadlineAdapter(write_error=OSError(30, "Read-only file system"))
 
-        def stub_write_raising_os_error(path: str) -> None:
-            raise OSError(30, "Read-only file system")
-
-        monkeypatch.setattr(readline, "write_history_file", stub_write_raising_os_error)
-
-        source = presentation.TerminalInputSource()
+        source = presentation.TerminalInputSource(readline_adapter=dummy_readline)
         source.enable_history(history_file)
         source._save_history()
 
@@ -349,3 +302,60 @@ class TestTerminalInputSourceConfiguration:
 
         assert source.blocked_names == frozenset(custom_names)
         assert source.blocked_extensions == frozenset(custom_exts)
+
+
+class TestSystemReadlineAdapter:
+    """Tests verifying behavior of SystemReadlineAdapter backed by stdlib readline."""
+
+    def test_system_readline_adapter_availability(self) -> None:
+        """SystemReadlineAdapter is available on standard Linux Python runtimes."""
+
+        adapter = presentation.SystemReadlineAdapter()
+
+        assert adapter.is_available is True
+
+    def test_system_readline_adapter_line_buffer_and_delims(self) -> None:
+        """SystemReadlineAdapter returns string line buffer and delimiter set."""
+
+        adapter = presentation.SystemReadlineAdapter()
+
+        assert isinstance(adapter.get_line_buffer(), str)
+        assert isinstance(adapter.get_completer_delims(), str)
+
+    def test_system_readline_adapter_completer_roundtrip(self) -> None:
+        """SystemReadlineAdapter allows registering and clearing completer callable."""
+
+        adapter = presentation.SystemReadlineAdapter()
+
+        def stub_completer(text: str, state: int) -> str | None:
+            return None
+
+        adapter.set_completer(stub_completer)
+        assert adapter.get_completer() is stub_completer
+
+        adapter.set_completer(None)
+        assert adapter.get_completer() is None
+
+    def test_system_readline_adapter_delims_and_bindings(self) -> None:
+        """SystemReadlineAdapter allows setting delimiters and parse_and_bind initialization."""
+
+        adapter = presentation.SystemReadlineAdapter()
+        original_delims = adapter.get_completer_delims()
+
+        try:
+            adapter.set_completer_delims(" \t\n;")
+            assert adapter.get_completer_delims() == " \t\n;"
+            adapter.parse_and_bind("tab: complete")
+        finally:
+            adapter.set_completer_delims(original_delims)
+
+    def test_system_readline_adapter_history_file(self, tmp_path: Path) -> None:
+        """SystemReadlineAdapter can read and write history files."""
+
+        adapter = presentation.SystemReadlineAdapter()
+        history_file = tmp_path / "system_history.txt"
+        history_file.write_text("cmd1\ncmd2\n")
+
+        adapter.read_history_file(str(history_file))
+        adapter.write_history_file(str(history_file))
+        assert history_file.exists()

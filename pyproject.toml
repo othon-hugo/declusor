@@ -91,12 +91,13 @@ explicit_package_bases = true
 exclude = ["plugins/.*/assets/.*"]
 pretty = true
 strict = true
+disallow_any_explicit = true
 disallow_any_expr = false
 disallow_any_unimported = false
 disallow_subclassing_any = false
 
 [tool.pytest.ini_options]
-addopts = "-ra --strict-markers --tb=short -v --import-mode=importlib"
+addopts = "-ra --no-header --no-summary --strict-markers --quiet --tb=short --disable-warnings --import-mode=importlib"
 pythonpath = ["src", ".", "plugins/shell_socket/src", "plugins/py_socket/src"]
 testpaths = ["tests", "plugins"]
 norecursedirs = [

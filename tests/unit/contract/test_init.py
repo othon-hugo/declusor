@@ -24,14 +24,17 @@ class TestContractExports:
             "ICommand",
             "IConnection",
             "IControllerRequest",
+            "IEntryPoint",
             "IInputSource",
             "InvalidOperation",
             "IOperationRenderer",
             "IPluginExtension",
             "IPluginProcessor",
             "IPluginRuntime",
+            "IReadlineAdapter",
             "IRouter",
             "ISessionRunner",
+            "ISocket",
             "ITransport",
             "ITransportLayer",
             "ITransportListener",
@@ -48,6 +51,8 @@ class TestContractExports:
         ]
 
         assert sorted(contract.__all__) == sorted(expected)
+        assert len(contract.__all__) == 38
+
         for symbol in expected:
-            assert hasattr(contract, symbol), f"declusor.contract is missing export: {symbol}"
+            assert symbol in dir(contract), f"declusor.contract is missing export: {symbol}"
             assert not symbol.startswith("_")

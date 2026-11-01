@@ -77,8 +77,8 @@ class TestPromptLoopKeyboardInterrupt:
         ) -> contract.ControllerResult:
             raise KeyboardInterrupt()
 
-        dummy_router.connect("interrupt_cmd", interrupting_controller)
-        dummy_router.connect("exit", _terminate_controller)
+        dummy_router.connect("interrupt_cmd", contract.RouteRegistration(interrupting_controller))
+        dummy_router.connect("exit", contract.RouteRegistration(_terminate_controller))
 
         prompt = presentation.PromptLoop(
             "test_cli",
@@ -112,7 +112,7 @@ class TestPromptLoopConnectionClosed:
         ) -> contract.ControllerResult:
             raise closed_exc
 
-        dummy_router.connect("disconnect_cmd", disconnect_controller)
+        dummy_router.connect("disconnect_cmd", contract.RouteRegistration(disconnect_controller))
 
         prompt = presentation.PromptLoop(
             "test_cli",
@@ -138,7 +138,7 @@ class TestPromptLoopDeclusorException:
         """Unknown route dispatches RouterError to view and continues processing next command."""
 
         dummy_input_source.feed_inputs("nonexistent_command", "exit")
-        dummy_router.connect("exit", _terminate_controller)
+        dummy_router.connect("exit", contract.RouteRegistration(_terminate_controller))
 
         prompt = presentation.PromptLoop(
             "test_cli",
@@ -170,8 +170,8 @@ class TestPromptLoopDeclusorException:
         ) -> contract.ControllerResult:
             raise cmd_exc
 
-        dummy_router.connect("failing_cmd", fail_controller)
-        dummy_router.connect("exit", _terminate_controller)
+        dummy_router.connect("failing_cmd", contract.RouteRegistration(fail_controller))
+        dummy_router.connect("exit", contract.RouteRegistration(_terminate_controller))
 
         prompt = presentation.PromptLoop(
             "test_cli",
@@ -201,8 +201,8 @@ class TestPromptLoopDeclusorException:
         ) -> contract.ControllerResult:
             raise parser_exc
 
-        dummy_router.connect("parse_err_cmd", parse_err_controller)
-        dummy_router.connect("exit", _terminate_controller)
+        dummy_router.connect("parse_err_cmd", contract.RouteRegistration(parse_err_controller))
+        dummy_router.connect("exit", contract.RouteRegistration(_terminate_controller))
 
         prompt = presentation.PromptLoop(
             "test_cli",
@@ -232,8 +232,8 @@ class TestPromptLoopDeclusorException:
         ) -> contract.ControllerResult:
             raise invalid_op_exc
 
-        dummy_router.connect("invalid_op_cmd", invalid_op_controller)
-        dummy_router.connect("exit", _terminate_controller)
+        dummy_router.connect("invalid_op_cmd", contract.RouteRegistration(invalid_op_controller))
+        dummy_router.connect("exit", contract.RouteRegistration(_terminate_controller))
 
         prompt = presentation.PromptLoop(
             "test_cli",
@@ -263,8 +263,8 @@ class TestPromptLoopDeclusorException:
         ) -> contract.ControllerResult:
             raise ctrl_exc
 
-        dummy_router.connect("ctrl_err_cmd", ctrl_err_controller)
-        dummy_router.connect("exit", _terminate_controller)
+        dummy_router.connect("ctrl_err_cmd", contract.RouteRegistration(ctrl_err_controller))
+        dummy_router.connect("exit", contract.RouteRegistration(_terminate_controller))
 
         prompt = presentation.PromptLoop(
             "test_cli",

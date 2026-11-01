@@ -2,12 +2,11 @@
 
 import inspect
 from collections.abc import Callable, Mapping
-from typing import Any
 
 from declusor import app, config, contract, core, transport
 
 
-def run_terminal_app(
+def run_terminal_app(  # type: ignore[explicit-any]
     plugin_config: contract.PluginConfig[contract.ParsedArguments],
     *,
     plugin_manager: core.PluginManager | None = None,
@@ -45,7 +44,7 @@ def run_terminal_app(
     if application is not None:
         active_app = application
     else:
-        factory_kwargs: dict[str, Any] = {"plugin_manager": plugin_manager}
+        factory_kwargs: dict[str, object] = {"plugin_manager": plugin_manager}
 
         if transport_registry is not None:
             factory_kwargs["transport_registry"] = transport_registry
@@ -75,9 +74,9 @@ def run_terminal_app(
     return config.ExitCode.SUCCESS
 
 
-def _create_application(
+def _create_application(  # type: ignore[explicit-any]
     factory: Callable[..., core.Application],
-    kwargs: Mapping[str, Any],
+    kwargs: Mapping[str, object],
 ) -> core.Application:
     """Invoke application factory passing only keyword arguments matching its signature."""
 

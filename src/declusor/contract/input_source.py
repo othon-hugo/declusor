@@ -1,10 +1,52 @@
 """Operator input source contracts, readline abstractions, and prompt providers."""
 
 from abc import ABC, abstractmethod
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
+from typing import Protocol
 
 from declusor import config
+
+
+class IReadlineAdapter(Protocol):
+    """Abstraction over terminal readline operations for deterministic testing."""
+
+    @property
+    def is_available(self) -> bool:
+        """Return True when an underlying readline implementation is available."""
+        ...
+
+    def get_line_buffer(self) -> str:
+        """Return the current contents of the readline line buffer."""
+        ...
+
+    def get_completer(self) -> Callable[[str, int], str | None] | None:
+        """Return the currently registered completer callable."""
+        ...
+
+    def get_completer_delims(self) -> str:
+        """Return the word delimiters used for tab completion."""
+        ...
+
+    def set_completer(self, completer: Callable[[str, int], str | None] | None = None, /) -> None:
+        """Set the readline completer function."""
+        ...
+
+    def set_completer_delims(self, string: str, /) -> None:
+        """Set the word delimiters for tab completion."""
+        ...
+
+    def parse_and_bind(self, line: str, /) -> None:
+        """Execute a readline initialization line."""
+        ...
+
+    def read_history_file(self, filename: str, /) -> None:
+        """Load a readline history file from disk."""
+        ...
+
+    def write_history_file(self, filename: str, /) -> None:
+        """Write the readline history buffer to disk."""
+        ...
 
 
 class IInputSource(ABC):

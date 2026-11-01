@@ -5,6 +5,7 @@ from declusor.config import (
 )
 
 from .input_source import (
+    SystemReadlineAdapter,
     TerminalInputSource,
 )
 from .prompt import (
@@ -21,6 +22,7 @@ __all__ = [
     "ControllerRequest",
     "PromptError",
     "PromptLoop",
+    "SystemReadlineAdapter",
     "TerminalInputSource",
     "TerminalView",
 ]

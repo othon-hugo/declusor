@@ -1,7 +1,6 @@
 """Testing package exposing test doubles, factories, and conformance suites."""
 
 from . import (
-    doubles,
     pytest_plugin,
 )
 from .conformance import (
@@ -20,6 +19,7 @@ from .doubles import (
     DummyPlugin,
     DummyPluginFileStore,
     DummyPluginRuntime,
+    DummyReadlineAdapter,
     DummyRouter,
     DummySessionRunner,
     DummySocket,
@@ -47,6 +47,7 @@ __all__ = [
     "DummyPlugin",
     "DummyPluginFileStore",
     "DummyPluginRuntime",
+    "DummyReadlineAdapter",
     "DummyRouter",
     "DummySessionRunner",
     "DummySocket",
@@ -62,6 +63,5 @@ __all__ = [
     "create_dummy_plugin_config",
     "create_memory_transport_pair",
     "create_test_session",
-    "doubles",
     "pytest_plugin",
 ]

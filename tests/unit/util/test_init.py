@@ -51,6 +51,7 @@ class TestUtilExports:
         ]
 
         assert sorted(util.__all__) == sorted(expected)
+        assert len(util.__all__) == len(expected)
         for symbol in expected:
-            assert hasattr(util, symbol), f"declusor.util is missing export: {symbol}"
+            assert symbol in dir(util), f"declusor.util is missing export: {symbol}"
             assert not symbol.startswith("_")

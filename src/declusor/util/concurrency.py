@@ -4,9 +4,9 @@ from collections.abc import Callable, Generator, Iterator
 from dataclasses import dataclass
 from threading import Event, Lock, Thread
 from types import TracebackType
-from typing import Any, Literal, Self
+from typing import Literal, Self
 
-type TaskHandler = Callable[["TaskEvent"], Any]
+type TaskHandler = Callable[["TaskEvent"], object]
 """Callable invoked by each worker thread with the shared stop-event."""
 
 
@@ -57,7 +57,7 @@ class TaskLock:
 class Task:
     """Holds the outcome of a single task execution (result or exception)."""
 
-    result: Any | None = None
+    result: object | None = None
     """Returned result of the task callable upon successful completion."""
 
     exception: Exception | None = None

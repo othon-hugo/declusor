@@ -20,15 +20,15 @@ class TestParser:
         with pytest.raises(config.ParserError, match="custom error occurred"):
             parser.error("custom error occurred")
 
-    def test_parser_formatter__default_factory__instantiates_help_formatter_with_position(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_parser_formatter__default_factory__instantiates_help_formatter_with_position(self) -> None:
         """Verify Parser uses HelpFormatter with max_help_position configured to 64."""
 
-        monkeypatch.setenv("COLUMNS", "120")
         parser = parsing.Parser(prog="custom_prog")
         formatter = parser.formatter_class(prog="custom_prog")
 
         assert isinstance(formatter, HelpFormatter)
-        assert getattr(formatter, "_max_help_position", None) == 64
+        assert parsing.Parser.MAX_HELP_POSITION == 64
+        assert formatter._max_help_position == 64
 
     def test_parser_init__custom_arguments__configures_parser_properties(self) -> None:
         """Verify Parser accepts and sets custom prog, usage, and description."""

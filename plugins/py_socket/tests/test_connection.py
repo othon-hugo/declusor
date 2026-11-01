@@ -30,14 +30,12 @@ class TestPySocketConnectionLifecycle:
     def test_handshake__oversized_metadata_frame__rejects_before_reading_body(
         self,
         dummy_file_store: testing.DummyPluginFileStore,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """Reject oversized metadata using its header before consuming the body."""
 
-        monkeypatch.setattr(config, "MAX_TLV_FRAME_SIZE", 4)
         dummy_trans = testing.DummyTransport()
         dummy_trans.push_incoming(struct.pack(">BI", config.ChannelType.STDOUT, 5) + b"12345")
-        conn = py_socket.PySocketConnection(dummy_trans, py_socket.PySocketRenderer(), dummy_file_store)
+        conn = py_socket.PySocketConnection(dummy_trans, py_socket.PySocketRenderer(), dummy_file_store, max_tlv_frame_size=4)
 
         with pytest.raises(config.ConnectionHandshakeError, match="Failed reading client runtime metadata"):
             conn.handshake()
@@ -45,18 +43,16 @@ class TestPySocketConnectionLifecycle:
         assert dummy_trans.write_history == []
         assert dummy_trans._incoming == [b"12345"]
 
-    def test_handshake__oversized_stage1_payload__closes_connection(
-        self, dummy_file_store: testing.DummyPluginFileStore, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_handshake__oversized_stage1_payload__closes_connection(self, dummy_file_store: testing.DummyPluginFileStore) -> None:
         """Reject oversized staged payloads and release the transport immediately."""
 
-        monkeypatch.setattr(config, "MAX_TLV_FRAME_SIZE", 4)
         dummy_trans = testing.DummyTransport()
         conn = py_socket.PySocketConnection(
             dummy_trans,
             py_socket.PySocketRenderer(),
             dummy_file_store,
             stage1_payload=b"12345",
+            max_tlv_frame_size=4,
         )
 
         with pytest.raises(config.ConnectionHandshakeError, match="Stage 1 payload exceeds maximum"):
@@ -379,13 +375,11 @@ class TestPySocketConnectionIO:
     def test_write__oversized_frame__raises_before_transport_write(
         self,
         dummy_file_store: testing.DummyPluginFileStore,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """Reject oversized outgoing payloads before constructing a transport frame."""
 
-        monkeypatch.setattr(config, "MAX_TLV_FRAME_SIZE", 4)
         dummy_trans = testing.DummyTransport()
-        conn = py_socket.PySocketConnection(dummy_trans, py_socket.PySocketRenderer(), dummy_file_store)
+        conn = py_socket.PySocketConnection(dummy_trans, py_socket.PySocketRenderer(), dummy_file_store, max_tlv_frame_size=4)
         conn._state = contract.ConnectionState.CONNECTED
 
         with pytest.raises(ValueError, match="TLV frame payload exceeds maximum size"):
@@ -396,14 +390,12 @@ class TestPySocketConnectionIO:
     def test_read__oversized_frame__closes_before_reading_body(
         self,
         dummy_file_store: testing.DummyPluginFileStore,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """Reject oversized response payloads before reading their bodies and close the connection."""
 
-        monkeypatch.setattr(config, "MAX_TLV_FRAME_SIZE", 4)
         dummy_trans = testing.DummyTransport()
         dummy_trans.push_incoming(struct.pack(">BI", config.ChannelType.STDOUT, 5) + b"12345")
-        conn = py_socket.PySocketConnection(dummy_trans, py_socket.PySocketRenderer(), dummy_file_store)
+        conn = py_socket.PySocketConnection(dummy_trans, py_socket.PySocketRenderer(), dummy_file_store, max_tlv_frame_size=4)
         conn._state = contract.ConnectionState.CONNECTED
         conn.write(b"cmd")
 

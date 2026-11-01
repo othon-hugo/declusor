@@ -67,5 +67,5 @@ class TestConfigExports:
 
         assert sorted(config.__all__) == sorted(expected)
         for symbol in expected:
-            assert hasattr(config, symbol), f"declusor.config is missing export: {symbol}"
+            assert symbol in dir(config), f"declusor.config is missing export: {symbol}"
             assert not symbol.startswith("_")

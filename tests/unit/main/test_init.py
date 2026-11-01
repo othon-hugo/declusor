@@ -17,13 +17,13 @@ class TestMainExports:
         ]
 
         assert sorted(main.__all__) == sorted(expected)
-        assert len(main.__all__) == 2
+        assert len(main.__all__) == len(expected)
 
     def test_main_exports__every_symbol_in_all__is_accessible_on_module(self) -> None:
         """Every symbol declared in __all__ is an accessible attribute of the main module."""
 
         for name in main.__all__:
-            assert hasattr(main, name), f"declusor.main is missing expected export: {name}"
+            assert name in dir(main), f"declusor.main is missing expected export: {name}"
 
     def test_main_exports__submodule_symbols__match_underlying_definitions(self) -> None:
         """Exported functions match their underlying submodule definitions."""
@@ -44,5 +44,5 @@ class TestMainExports:
         """The root declusor package declares main in its __all__ exports and attribute namespace."""
 
         assert "main" in declusor.__all__
-        assert hasattr(declusor, "main")
+        assert "main" in dir(declusor)
         assert declusor.main is main

@@ -1,9 +1,8 @@
 """Unit tests for argument parser contracts and type definitions."""
 
 import argparse
-from typing import Any
 
-from declusor import contract
+from declusor import contract, util
 
 
 class TestParsedArguments:
@@ -46,9 +45,9 @@ class TestIArgumentParser:
             """Minimal parser implementing add_argument."""
 
             def __init__(self) -> None:
-                self.calls: list[tuple[tuple[str, ...], dict[str, Any]]] = []
+                self.calls: list[tuple[tuple[str, ...], dict[str, object]]] = []
 
-            def add_argument(self, *name_or_flags: str, **kwargs: Any) -> object:
+            def add_argument(self, *name_or_flags: str, **kwargs: object) -> object:
                 self.calls.append((name_or_flags, kwargs))
                 return None
 
@@ -79,4 +78,4 @@ class TestIArgumentParser:
     def test_iargument_parser__runtime_checkable__protocol_is_runtime_checkable(self) -> None:
         """Verify IArgumentParser is decorated with runtime_checkable."""
 
-        assert getattr(contract.IArgumentParser, "_is_runtime_protocol", False) is True
+        assert issubclass(util.Parser, contract.IArgumentParser)

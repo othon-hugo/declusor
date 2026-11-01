@@ -1,7 +1,7 @@
 """Unit tests for public package exports in declusor.presentation.__init__."""
 
 from declusor import config, presentation
-from declusor.presentation.input_source import TerminalInputSource
+from declusor.presentation.input_source import SystemReadlineAdapter, TerminalInputSource
 from declusor.presentation.prompt import PromptLoop
 from declusor.presentation.request import ControllerRequest
 from declusor.presentation.view import TerminalView
@@ -10,25 +10,26 @@ from declusor.presentation.view import TerminalView
 class TestPresentationExports:
     """Tests verifying public symbols exported by declusor.presentation."""
 
-    def test_presentation_all__contains_all_five_public_symbols(self) -> None:
-        """The presentation package exports exactly the five canonical public symbols."""
+    def test_presentation_all__contains_all_six_public_symbols(self) -> None:
+        """The presentation package exports exactly the six canonical public symbols."""
 
         expected = [
             "ControllerRequest",
             "PromptError",
             "PromptLoop",
+            "SystemReadlineAdapter",
             "TerminalInputSource",
             "TerminalView",
         ]
 
         assert sorted(presentation.__all__) == sorted(expected)
-        assert len(presentation.__all__) == 5
+        assert len(presentation.__all__) == 6
 
     def test_presentation_exports__every_symbol_in_all__is_accessible_on_module(self) -> None:
         """Every symbol declared in __all__ is an accessible attribute of the presentation module."""
 
         for name in presentation.__all__:
-            assert hasattr(presentation, name), f"declusor.presentation is missing expected export: {name}"
+            assert name in dir(presentation), f"declusor.presentation is missing expected export: {name}"
 
     def test_presentation_exports__exception_reexports__match_config_exceptions(self) -> None:
         """Exception symbols re-exported from presentation are identical to config definitions."""
@@ -40,5 +41,6 @@ class TestPresentationExports:
 
         assert presentation.ControllerRequest is ControllerRequest
         assert presentation.PromptLoop is PromptLoop
+        assert presentation.SystemReadlineAdapter is SystemReadlineAdapter
         assert presentation.TerminalInputSource is TerminalInputSource
         assert presentation.TerminalView is TerminalView

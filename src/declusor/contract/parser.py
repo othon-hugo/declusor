@@ -1,6 +1,6 @@
 """CLI argument parser abstractions and argument registration contracts."""
 
-from typing import Any, Protocol, TypedDict, runtime_checkable
+from typing import Protocol, TypedDict, runtime_checkable
 
 
 class ParsedArguments(TypedDict):
@@ -19,7 +19,7 @@ class IArgumentParser(Protocol):
     structurally without multiple-inheritance conflicts.
     """
 
-    def add_argument(self, *name_or_flags: str, **kwargs: Any) -> object:
+    def add_argument(self, *name_or_flags: str, **kwargs: object) -> object:
         """Register a command-line argument or option.
 
         Args:

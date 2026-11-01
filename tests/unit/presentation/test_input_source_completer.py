@@ -1,13 +1,11 @@
 """Unit tests for TerminalInputSource tab completion and file discovery in declusor.presentation.input_source."""
 
-import glob
-import readline
 from collections.abc import Callable
 from pathlib import Path
 
 import pytest
 
-from declusor import presentation
+from declusor import presentation, testing
 
 
 def _get_configured_completer(
@@ -18,7 +16,7 @@ def _get_configured_completer(
     """Helper to configure completer and retrieve the bound readline completer function."""
 
     source.setup_completer(routes, assets_dir)
-    completer = readline.get_completer()
+    completer = source.readline_adapter.get_completer()
     assert completer is not None
     return completer
 
@@ -29,26 +27,23 @@ class TestTerminalInputSourceCompleterSetup:
     def test_terminal_input_source_setup_completer__configures_delims_and_completer(self) -> None:
         """setup_completer binds the line completion function and sets word delimiters."""
 
-        source = presentation.TerminalInputSource()
+        readline_double = testing.DummyReadlineAdapter()
+        source = presentation.TerminalInputSource(readline_adapter=readline_double)
 
         source.setup_completer(["help", "exit"])
 
-        completer = readline.get_completer()
+        completer = readline_double.get_completer()
         assert callable(completer)
-        delims = readline.get_completer_delims()
+        delims = readline_double.get_completer_delims()
         assert " " in delims
         assert "\t" in delims
         assert ";" in delims
 
-    def test_terminal_input_source_setup_completer_when_readline_is_none__returns_gracefully(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
+    def test_terminal_input_source_setup_completer_when_readline_is_none__returns_gracefully(self) -> None:
         """setup_completer returns cleanly when readline is None."""
 
-        monkeypatch.setattr(presentation.input_source, "readline", None)
-
-        source = presentation.TerminalInputSource()
+        readline_double = testing.DummyReadlineAdapter(is_available=False)
+        source = presentation.TerminalInputSource(readline_adapter=readline_double)
         source.setup_completer(["help", "exit"])
 
     def test_terminal_input_source_setup_completer_positional_only__raises_type_error(self) -> None:
@@ -71,103 +66,74 @@ class TestTerminalInputSourceCompleterSetup:
 class TestTerminalInputSourceCommandCompletion:
     """Tests verifying command route prefix matching in TerminalInputSource completer."""
 
-    def test_terminal_input_source_complete_command__returns_matching_routes_in_order(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
+    def test_terminal_input_source_complete_command__returns_matching_routes_in_order(self) -> None:
         """Command completion returns matching routes in sequence and None at end."""
 
-        source = presentation.TerminalInputSource()
+        readline_double = testing.DummyReadlineAdapter(line_buffer="ex")
+        source = presentation.TerminalInputSource(readline_adapter=readline_double)
         completer = _get_configured_completer(source, ["help", "exit", "execute", "eval"])
-
-        monkeypatch.setattr(readline, "get_line_buffer", lambda: "ex")
 
         assert completer("ex", 0) == "exit"
         assert completer("ex", 1) == "execute"
         assert completer("ex", 2) is None
 
-    def test_terminal_input_source_complete_command_empty_prefix__returns_all_routes(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
+    def test_terminal_input_source_complete_command_empty_prefix__returns_all_routes(self) -> None:
         """Command completion with empty prefix returns all registered routes."""
 
-        source = presentation.TerminalInputSource()
+        readline_double = testing.DummyReadlineAdapter(line_buffer="")
+        source = presentation.TerminalInputSource(readline_adapter=readline_double)
         completer = _get_configured_completer(source, ["exit", "help"])
-
-        monkeypatch.setattr(readline, "get_line_buffer", lambda: "")
 
         assert completer("", 0) == "exit"
         assert completer("", 1) == "help"
         assert completer("", 2) is None
 
-    def test_terminal_input_source_complete_command_no_matches__returns_none(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
+    def test_terminal_input_source_complete_command_no_matches__returns_none(self) -> None:
         """Command completion returns None immediately when no routes match the prefix."""
 
-        source = presentation.TerminalInputSource()
+        readline_double = testing.DummyReadlineAdapter(line_buffer="zz")
+        source = presentation.TerminalInputSource(readline_adapter=readline_double)
         completer = _get_configured_completer(source, ["help", "exit"])
-
-        monkeypatch.setattr(readline, "get_line_buffer", lambda: "zz")
 
         assert completer("zz", 0) is None
 
-    def test_terminal_input_source_complete_command_state_beyond_bounds__returns_none(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
+    def test_terminal_input_source_complete_command_state_beyond_bounds__returns_none(self) -> None:
         """Command completion returns None when state exceeds total matching routes."""
 
-        source = presentation.TerminalInputSource()
+        readline_double = testing.DummyReadlineAdapter(line_buffer="ex")
+        source = presentation.TerminalInputSource(readline_adapter=readline_double)
         completer = _get_configured_completer(source, ["exit"])
-
-        monkeypatch.setattr(readline, "get_line_buffer", lambda: "ex")
 
         assert completer("ex", 99) is None
 
-    def test_terminal_input_source_complete_get_line_buffer_exception__returns_none(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
+    def test_terminal_input_source_complete_get_line_buffer_exception__returns_none(self) -> None:
         """Completer catches exceptions from readline.get_line_buffer and returns None."""
 
-        source = presentation.TerminalInputSource()
+        readline_double = testing.DummyReadlineAdapter(line_buffer_error=RuntimeError("buffer unavailable"))
+        source = presentation.TerminalInputSource(readline_adapter=readline_double)
         completer = _get_configured_completer(source, ["exit"])
-
-        def broken_get_line_buffer() -> str:
-            raise RuntimeError("buffer unavailable")
-
-        monkeypatch.setattr(readline, "get_line_buffer", broken_get_line_buffer)
 
         assert completer("ex", 0) is None
 
     def test_terminal_input_source_complete_command_with_leading_whitespace__returns_matching_routes(
         self,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """Command completion ignores leading whitespace in line buffer and matches prefix."""
 
-        source = presentation.TerminalInputSource()
+        readline_double = testing.DummyReadlineAdapter(line_buffer="   ex")
+        source = presentation.TerminalInputSource(readline_adapter=readline_double)
         completer = _get_configured_completer(source, ["exit", "execute"])
-
-        monkeypatch.setattr(readline, "get_line_buffer", lambda: "   ex")
 
         assert completer("ex", 0) == "exit"
         assert completer("ex", 1) == "execute"
         assert completer("ex", 2) is None
 
-    def test_terminal_input_source_complete_command_whitespace_only_buffer__returns_all_routes(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
+    def test_terminal_input_source_complete_command_whitespace_only_buffer__returns_all_routes(self) -> None:
         """Command completion with whitespace-only line buffer and empty text yields all routes."""
 
-        source = presentation.TerminalInputSource()
+        readline_double = testing.DummyReadlineAdapter(line_buffer="    ")
+        source = presentation.TerminalInputSource(readline_adapter=readline_double)
         completer = _get_configured_completer(source, ["alpha", "beta"])
-
-        monkeypatch.setattr(readline, "get_line_buffer", lambda: "    ")
 
         assert completer("", 0) == "alpha"
         assert completer("", 1) == "beta"
@@ -180,18 +146,16 @@ class TestTerminalInputSourceFileCompletion:
     def test_terminal_input_source_complete_file__matches_files_in_directory(
         self,
         tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """File completion discovers matching files when the leading command is registered."""
-
-        source = presentation.TerminalInputSource()
-        completer = _get_configured_completer(source, ["upload", "exit"])
 
         target_file = tmp_path / "payload.bin"
         target_file.write_bytes(b"data")
         prefix = str(tmp_path / "pay")
 
-        monkeypatch.setattr(readline, "get_line_buffer", lambda: f"upload {prefix}")
+        readline_double = testing.DummyReadlineAdapter(line_buffer=f"upload {prefix}")
+        source = presentation.TerminalInputSource(readline_adapter=readline_double)
+        completer = _get_configured_completer(source, ["upload", "exit"])
 
         match = completer(prefix, 0)
         assert match == str(target_file)
@@ -200,18 +164,16 @@ class TestTerminalInputSourceFileCompletion:
     def test_terminal_input_source_complete_file__appends_trailing_slash_to_directories(
         self,
         tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """File completion appends trailing path separator to matching directory names."""
-
-        source = presentation.TerminalInputSource()
-        completer = _get_configured_completer(source, ["upload"])
 
         sub_dir = tmp_path / "subfolder"
         sub_dir.mkdir()
         prefix = str(tmp_path / "sub")
 
-        monkeypatch.setattr(readline, "get_line_buffer", lambda: f"upload {prefix}")
+        readline_double = testing.DummyReadlineAdapter(line_buffer=f"upload {prefix}")
+        source = presentation.TerminalInputSource(readline_adapter=readline_double)
+        completer = _get_configured_completer(source, ["upload"])
 
         match = completer(prefix, 0)
         assert match == f"{sub_dir}/"
@@ -220,18 +182,16 @@ class TestTerminalInputSourceFileCompletion:
     def test_terminal_input_source_complete_file_state_beyond_bounds__returns_none(
         self,
         tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """File completion returns None without IndexError when state exceeds matches."""
-
-        source = presentation.TerminalInputSource()
-        completer = _get_configured_completer(source, ["upload"])
 
         target_file = tmp_path / "data.bin"
         target_file.write_bytes(b"123")
         prefix = str(tmp_path / "dat")
 
-        monkeypatch.setattr(readline, "get_line_buffer", lambda: f"upload {prefix}")
+        readline_double = testing.DummyReadlineAdapter(line_buffer=f"upload {prefix}")
+        source = presentation.TerminalInputSource(readline_adapter=readline_double)
+        completer = _get_configured_completer(source, ["upload"])
 
         assert completer(prefix, 0) == str(target_file)
         assert completer(prefix, 1) is None
@@ -240,50 +200,41 @@ class TestTerminalInputSourceFileCompletion:
     def test_terminal_input_source_complete_file_when_command_not_in_routes__returns_none(
         self,
         tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """File completion is rejected when the leading command is not in registered routes."""
 
-        source = presentation.TerminalInputSource()
-        completer = _get_configured_completer(source, ["upload"])
-
         prefix = str(tmp_path / "some_file")
-        monkeypatch.setattr(readline, "get_line_buffer", lambda: f"unregistered_cmd {prefix}")
+        readline_double = testing.DummyReadlineAdapter(line_buffer=f"unregistered_cmd {prefix}")
+        source = presentation.TerminalInputSource(readline_adapter=readline_double)
+        completer = _get_configured_completer(source, ["upload"])
 
         assert completer(prefix, 0) is None
 
-    def test_terminal_input_source_complete_file_os_error_during_search__returns_none(
-        self,
-        monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
+    def test_terminal_input_source_complete_file_os_error_during_search__returns_none(self) -> None:
         """File completion gracefully suppresses OSError raised during directory search."""
-
-        source = presentation.TerminalInputSource()
-        completer = _get_configured_completer(source, ["upload"])
 
         def broken_glob(*args: object, **kwargs: object) -> list[str]:
             raise OSError("I/O error during directory read")
 
-        monkeypatch.setattr(glob, "glob", broken_glob)
-        monkeypatch.setattr(readline, "get_line_buffer", lambda: "upload /invalid/path")
+        readline_double = testing.DummyReadlineAdapter(line_buffer="upload /invalid/path")
+        source = presentation.TerminalInputSource(readline_adapter=readline_double, file_lister=broken_glob)
+        completer = _get_configured_completer(source, ["upload"])
 
         assert completer("/invalid/path", 0) is None
 
     def test_terminal_input_source_complete_file_with_leading_whitespace_in_line_buffer__discovers_matches(
         self,
         tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """File completion succeeds when line buffer has leading spaces before the command."""
-
-        source = presentation.TerminalInputSource()
-        completer = _get_configured_completer(source, ["upload"])
 
         target_file = tmp_path / "archive.tar"
         target_file.write_bytes(b"content")
         prefix = str(tmp_path / "arch")
 
-        monkeypatch.setattr(readline, "get_line_buffer", lambda: f"   upload   {prefix}")
+        readline_double = testing.DummyReadlineAdapter(line_buffer=f"   upload   {prefix}")
+        source = presentation.TerminalInputSource(readline_adapter=readline_double)
+        completer = _get_configured_completer(source, ["upload"])
 
         assert completer(prefix, 0) == str(target_file)
         assert completer(prefix, 1) is None
@@ -291,12 +242,8 @@ class TestTerminalInputSourceFileCompletion:
     def test_terminal_input_source_complete_file_multiple_matches_sorted__returns_alphabetical_sequence(
         self,
         tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """File completion yields multiple matches in deterministic lexicographical order."""
-
-        source = presentation.TerminalInputSource()
-        completer = _get_configured_completer(source, ["upload"])
 
         file_z = tmp_path / "file_z.bin"
         file_a = tmp_path / "file_a.bin"
@@ -306,7 +253,9 @@ class TestTerminalInputSourceFileCompletion:
         file_m.write_bytes(b"m")
 
         prefix = str(tmp_path / "file_")
-        monkeypatch.setattr(readline, "get_line_buffer", lambda: f"upload {prefix}")
+        readline_double = testing.DummyReadlineAdapter(line_buffer=f"upload {prefix}")
+        source = presentation.TerminalInputSource(readline_adapter=readline_double)
+        completer = _get_configured_completer(source, ["upload"])
 
         assert completer(prefix, 0) == str(file_a)
         assert completer(prefix, 1) == str(file_m)
@@ -316,18 +265,16 @@ class TestTerminalInputSourceFileCompletion:
     def test_terminal_input_source_complete_file_with_glob_special_characters__escapes_literal_filename(
         self,
         tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """File completion treats glob special characters like brackets in search term as literals."""
-
-        source = presentation.TerminalInputSource()
-        completer = _get_configured_completer(source, ["upload"])
 
         special_file = tmp_path / "[payload].bin"
         special_file.write_bytes(b"data")
 
         prefix = str(tmp_path / "[pay")
-        monkeypatch.setattr(readline, "get_line_buffer", lambda: f"upload {prefix}")
+        readline_double = testing.DummyReadlineAdapter(line_buffer=f"upload {prefix}")
+        source = presentation.TerminalInputSource(readline_adapter=readline_double)
+        completer = _get_configured_completer(source, ["upload"])
 
         assert completer(prefix, 0) == str(special_file)
         assert completer(prefix, 1) is None
@@ -335,17 +282,15 @@ class TestTerminalInputSourceFileCompletion:
     def test_terminal_input_source_complete_file_empty_search_term__lists_current_directory(
         self,
         tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """File completion with empty search term lists files in the current working directory."""
 
-        source = presentation.TerminalInputSource()
-        completer = _get_configured_completer(source, ["upload"])
-
         file1 = tmp_path / "alpha.txt"
         file1.write_bytes(b"1")
-        monkeypatch.chdir(tmp_path)
-        monkeypatch.setattr(readline, "get_line_buffer", lambda: "upload ")
+
+        readline_double = testing.DummyReadlineAdapter(line_buffer="upload ")
+        source = presentation.TerminalInputSource(readline_adapter=readline_double, working_dir=tmp_path)
+        completer = _get_configured_completer(source, ["upload"])
 
         assert completer("", 0) == "alpha.txt"
         assert completer("", 1) is None
@@ -357,7 +302,6 @@ class TestTerminalInputSourceAssetCompletion:
     def test_terminal_input_source_complete_load__with_assets_modules__completes_from_modules_dir(
         self,
         tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """load command autocompletes payload modules from the plugin's assets/modules directory."""
 
@@ -368,14 +312,14 @@ class TestTerminalInputSourceAssetCompletion:
         (modules_dir / "dev_tools.py").write_bytes(b"")
         (assets_dir / "helpers").mkdir()
 
-        source = presentation.TerminalInputSource()
+        readline_double = testing.DummyReadlineAdapter(line_buffer="load ")
+        source = presentation.TerminalInputSource(readline_adapter=readline_double)
         completer = _get_configured_completer(source, ["load", "upload"], assets_dir=assets_dir)
 
-        monkeypatch.setattr(readline, "get_line_buffer", lambda: "load ")
         assert completer("", 0) == "discovery/"
         assert completer("", 1) is None
 
-        monkeypatch.setattr(readline, "get_line_buffer", lambda: "load discovery/")
+        readline_double.line_buffer = "load discovery/"
         assert completer("discovery/", 0) == "discovery/dev_tools.py"
         assert completer("discovery/", 1) == "discovery/system_info.py"
         assert completer("discovery/", 2) is None
@@ -383,7 +327,6 @@ class TestTerminalInputSourceAssetCompletion:
     def test_terminal_input_source_complete_load__with_assets_without_modules__completes_from_assets_root(
         self,
         tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """load command falls back to assets directory root when modules subdirectory is absent."""
 
@@ -391,17 +334,16 @@ class TestTerminalInputSourceAssetCompletion:
         assets_dir.mkdir()
         (assets_dir / "payload.py").write_bytes(b"")
 
-        source = presentation.TerminalInputSource()
+        readline_double = testing.DummyReadlineAdapter(line_buffer="load ")
+        source = presentation.TerminalInputSource(readline_adapter=readline_double)
         completer = _get_configured_completer(source, ["load"], assets_dir=assets_dir)
 
-        monkeypatch.setattr(readline, "get_line_buffer", lambda: "load ")
         assert completer("", 0) == "payload.py"
         assert completer("", 1) is None
 
     def test_terminal_input_source_complete_load__with_explicit_host_prefix__completes_from_host_filesystem(
         self,
         tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """load command respects explicit ./ prefix to complete from the operator host directory."""
 
@@ -413,18 +355,16 @@ class TestTerminalInputSourceAssetCompletion:
         host_dir.mkdir()
         (host_dir / "local_script.py").write_bytes(b"")
 
-        monkeypatch.chdir(host_dir)
-        source = presentation.TerminalInputSource()
+        readline_double = testing.DummyReadlineAdapter(line_buffer="load ./loc")
+        source = presentation.TerminalInputSource(readline_adapter=readline_double, working_dir=host_dir)
         completer = _get_configured_completer(source, ["load"], assets_dir=assets_dir)
 
-        monkeypatch.setattr(readline, "get_line_buffer", lambda: "load ./loc")
         assert completer("./loc", 0) == "./local_script.py"
         assert completer("./loc", 1) is None
 
     def test_terminal_input_source_complete_upload__with_assets_dir__defaults_to_host_filesystem(
         self,
         tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """upload command completes from the host working directory even when assets_dir is configured."""
 
@@ -436,18 +376,16 @@ class TestTerminalInputSourceAssetCompletion:
         host_dir.mkdir()
         (host_dir / "upload_target.bin").write_bytes(b"")
 
-        monkeypatch.chdir(host_dir)
-        source = presentation.TerminalInputSource()
+        readline_double = testing.DummyReadlineAdapter(line_buffer="upload ")
+        source = presentation.TerminalInputSource(readline_adapter=readline_double, working_dir=host_dir)
         completer = _get_configured_completer(source, ["upload", "load"], assets_dir=assets_dir)
 
-        monkeypatch.setattr(readline, "get_line_buffer", lambda: "upload ")
         assert completer("", 0) == "upload_target.bin"
         assert completer("", 1) is None
 
     def test_terminal_input_source_complete_execute__with_assets_dir__defaults_to_host_filesystem(
         self,
         tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """execute command completes from the host working directory even when assets_dir is configured."""
 
@@ -459,11 +397,10 @@ class TestTerminalInputSourceAssetCompletion:
         host_dir.mkdir()
         (host_dir / "run_me.sh").write_bytes(b"")
 
-        monkeypatch.chdir(host_dir)
-        source = presentation.TerminalInputSource()
+        readline_double = testing.DummyReadlineAdapter(line_buffer="execute ")
+        source = presentation.TerminalInputSource(readline_adapter=readline_double, working_dir=host_dir)
         completer = _get_configured_completer(source, ["execute"], assets_dir=assets_dir)
 
-        monkeypatch.setattr(readline, "get_line_buffer", lambda: "execute ")
         assert completer("", 0) == "run_me.sh"
         assert completer("", 1) is None
 
@@ -474,7 +411,6 @@ class TestTerminalInputSourceBlocklistFiltering:
     def test_terminal_input_source_complete_file__skips_blocked_directories_and_files(
         self,
         tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """File completion omits standard cache/environment directories and metadata files."""
 
@@ -486,11 +422,9 @@ class TestTerminalInputSourceBlocklistFiltering:
         (tmp_path / ".DS_Store").write_bytes(b"")
         (tmp_path / "subfolder").mkdir()
 
-        monkeypatch.chdir(tmp_path)
-        source = presentation.TerminalInputSource()
+        readline_double = testing.DummyReadlineAdapter(line_buffer="upload ")
+        source = presentation.TerminalInputSource(readline_adapter=readline_double, working_dir=tmp_path)
         completer = _get_configured_completer(source, ["upload"])
-
-        monkeypatch.setattr(readline, "get_line_buffer", lambda: "upload ")
 
         assert completer("", 0) == "subfolder/"
         assert completer("", 1) == "valid.txt"
@@ -499,7 +433,6 @@ class TestTerminalInputSourceBlocklistFiltering:
     def test_terminal_input_source_complete_file__skips_blocked_extensions(
         self,
         tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """File completion omits files with compiled bytecode, swap, or backup extensions."""
 
@@ -510,11 +443,9 @@ class TestTerminalInputSourceBlocklistFiltering:
         (tmp_path / "backup.bak").write_bytes(b"")
         (tmp_path / "readme~").write_bytes(b"")
 
-        monkeypatch.chdir(tmp_path)
-        source = presentation.TerminalInputSource()
+        readline_double = testing.DummyReadlineAdapter(line_buffer="upload ")
+        source = presentation.TerminalInputSource(readline_adapter=readline_double, working_dir=tmp_path)
         completer = _get_configured_completer(source, ["upload"])
-
-        monkeypatch.setattr(readline, "get_line_buffer", lambda: "upload ")
 
         assert completer("", 0) == "script.py"
         assert completer("", 1) is None
@@ -522,7 +453,6 @@ class TestTerminalInputSourceBlocklistFiltering:
     def test_terminal_input_source_complete_file__when_inside_blocked_directory__returns_empty(
         self,
         tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """File completion immediately returns empty when searching within a blocked directory."""
 
@@ -530,21 +460,19 @@ class TestTerminalInputSourceBlocklistFiltering:
         cache_dir.mkdir()
         (cache_dir / "target.pyc").write_bytes(b"")
 
-        monkeypatch.chdir(tmp_path)
-        source = presentation.TerminalInputSource()
+        readline_double = testing.DummyReadlineAdapter(line_buffer="upload __pycache__/")
+        source = presentation.TerminalInputSource(readline_adapter=readline_double, working_dir=tmp_path)
         completer = _get_configured_completer(source, ["upload"])
 
-        monkeypatch.setattr(readline, "get_line_buffer", lambda: "upload __pycache__/")
         assert completer("__pycache__/", 0) is None
 
         abs_prefix = str(cache_dir / "tar")
-        monkeypatch.setattr(readline, "get_line_buffer", lambda: f"upload {abs_prefix}")
+        readline_double.line_buffer = f"upload {abs_prefix}"
         assert completer(abs_prefix, 0) is None
 
     def test_terminal_input_source_complete_file__setup_completer_keyword_override(
         self,
         tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """setup_completer keyword arguments override default blocked names and extensions."""
 
@@ -552,19 +480,16 @@ class TestTerminalInputSourceBlocklistFiltering:
         (tmp_path / "custom_blocked.txt").write_bytes(b"")
         (tmp_path / "bytecode.pyc").write_bytes(b"")
 
-        monkeypatch.chdir(tmp_path)
-        source = presentation.TerminalInputSource()
-        completer = readline.get_completer()
+        readline_double = testing.DummyReadlineAdapter(line_buffer="upload ")
+        source = presentation.TerminalInputSource(readline_adapter=readline_double, working_dir=tmp_path)
 
         source.setup_completer(
             ["upload"],
             blocked_names=["custom_blocked.txt"],
             blocked_extensions=[],
         )
-        completer = readline.get_completer()
+        completer = source.readline_adapter.get_completer()
         assert completer is not None
-
-        monkeypatch.setattr(readline, "get_line_buffer", lambda: "upload ")
 
         assert completer("", 0) == "bytecode.pyc"
         assert completer("", 1) == "keep.txt"
@@ -573,7 +498,6 @@ class TestTerminalInputSourceBlocklistFiltering:
     def test_terminal_input_source_complete_asset__skips_blocked_names_and_extensions(
         self,
         tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """Asset module completion filters out blocked cache directories and bytecode files."""
 
@@ -584,10 +508,9 @@ class TestTerminalInputSourceBlocklistFiltering:
         (modules_dir / "discovery.pyc").write_bytes(b"")
         (modules_dir / "__pycache__").mkdir()
 
-        source = presentation.TerminalInputSource()
+        readline_double = testing.DummyReadlineAdapter(line_buffer="load ")
+        source = presentation.TerminalInputSource(readline_adapter=readline_double)
         completer = _get_configured_completer(source, ["load"], assets_dir=assets_dir)
-
-        monkeypatch.setattr(readline, "get_line_buffer", lambda: "load ")
 
         assert completer("", 0) == "discovery.py"
         assert completer("", 1) is None

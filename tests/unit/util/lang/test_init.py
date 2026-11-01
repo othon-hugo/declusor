@@ -12,6 +12,7 @@ class TestLangExports:
         expected = ["python"]
 
         assert sorted(lang.__all__) == expected
+        assert len(lang.__all__) == len(expected)
         for symbol in expected:
-            assert hasattr(lang, symbol), f"declusor.util.lang is missing export: {symbol}"
+            assert symbol in dir(lang), f"declusor.util.lang is missing export: {symbol}"
             assert not symbol.startswith("_")

@@ -1,9 +1,34 @@
 """Physical transport abstractions, stream decorators, and network listener interfaces."""
 
 from abc import ABC, abstractmethod
-from typing import Self
+from typing import Protocol, Self
 
 from declusor import config
+
+
+class ISocket(Protocol):
+    """Protocol for socket objects utilized by stream transports."""
+
+    def recv(self, bufsize: int, /) -> bytes:
+        """Receive data from the socket."""
+
+    def sendall(self, data: bytes, /) -> None:
+        """Send all data to the socket."""
+
+    def settimeout(self, value: float | None, /) -> None:
+        """Set a timeout on blocking socket operations."""
+
+    def gettimeout(self) -> float | None:
+        """Get the timeout of the socket."""
+
+    def getpeername(self) -> object:
+        """Return the remote address to which the socket is connected."""
+
+    def shutdown(self, how: int, /) -> None:
+        """Shut down one or both halves of the connection."""
+
+    def close(self) -> None:
+        """Close the socket."""
 
 
 class ITransport(ABC):

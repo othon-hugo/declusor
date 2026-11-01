@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any, TypedDict
+from typing import TYPE_CHECKING, Never, TypedDict
 
 if TYPE_CHECKING:
     from .session import SessionContext
@@ -54,7 +54,7 @@ class IControllerRequest[T: ControllerArguments](ABC):
         raise NotImplementedError
 
 
-type Controller = Callable[["SessionContext", IControllerRequest[Any]], "ControllerResult"]
+type Controller = Callable[["SessionContext", IControllerRequest[Never]], "ControllerResult"]
 """Type alias for a controller function.
 
 A controller receives an active session context and the command request from the

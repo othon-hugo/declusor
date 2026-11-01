@@ -4,7 +4,7 @@ import argparse
 import dataclasses
 from collections.abc import Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Final
 
 from declusor import config, contract, transport, util
 
@@ -230,8 +230,9 @@ class DeclusorParser(util.Parser):
             def __contains__(self, value: object) -> bool:
                 """Accept enum values and file destinations."""
 
-                if isinstance(value, str) and value.startswith("file:"):
-                    return bool(value[5:].strip())
+                match value:
+                    case str() if value.startswith("file:"):
+                        return bool(value[5:].strip())
 
                 return super().__contains__(value)
 
@@ -516,7 +517,7 @@ class DeclusorParser(util.Parser):
         plugin_config = self._build_plugin_config(Plugin, args)
         transport_layers = self._resolve_transport_layers(args, transport_registry)
 
-        supported_layers = {layer.value if isinstance(layer, config.TransportLayer) else str(layer) for layer in Plugin.supported_transport_layers}
+        supported_layers = {str(layer) for layer in Plugin.supported_transport_layers}
 
         for layer in transport_layers:
             if layer not in supported_layers:
@@ -543,7 +544,7 @@ class DeclusorParser(util.Parser):
         manager: "PluginManager",
         requested_plugin: object,
         /,
-    ) -> type[contract.IPluginExtension[Any]]:
+    ) -> contract.PluginExtensionType:
         """Resolve and validate the target plugin from available registrations."""
 
         available_plugins = manager.names()
@@ -553,8 +554,11 @@ class DeclusorParser(util.Parser):
         if not plugin_name:
             raise config.ParserError("No client plugin available.")
 
-        if not isinstance(plugin_name, str):
-            raise config.ParserError(f"argument -p/--plugin: expected string, got {type(plugin_name).__name__}")
+        match plugin_name:
+            case str():
+                pass
+            case _:
+                raise config.ParserError(f"argument -p/--plugin: expected string, got {type(plugin_name).__name__}")
 
         if plugin_name not in available_plugins:
             choices = ", ".join(repr(name) for name in available_plugins)
@@ -580,7 +584,7 @@ class DeclusorParser(util.Parser):
 
     def _build_plugin_config(
         self,
-        Plugin: type[contract.IPluginExtension[Any]],
+        Plugin: contract.PluginExtensionType,
         args: DeclusorNamespace,
         /,
     ) -> contract.PluginConfig[contract.ParsedArguments]:

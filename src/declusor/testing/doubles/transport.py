@@ -15,8 +15,9 @@ class DummyTransport(contract.ITransport):
 
     def __init__(
         self,
-        incoming_data: bytes | list[bytes] | None = None,
+        incoming_data: bytes = b"",
         *,
+        incoming_chunks: Sequence[bytes] = (),
         peer_address: str = "127.0.0.1:54321",
     ) -> None:
         """Initialize with optional pre-loaded incoming data and remote address."""
@@ -26,10 +27,10 @@ class DummyTransport(contract.ITransport):
         self._timeout: float | None = None
         self._incoming: list[bytes] = []
 
-        if isinstance(incoming_data, bytes):
+        if incoming_data:
             self._incoming.append(incoming_data)
-        elif incoming_data is not None:
-            self._incoming.extend(incoming_data)
+        if incoming_chunks:
+            self._incoming.extend(incoming_chunks)
 
         self._written = bytearray()
         self._write_history: list[bytes] = []

@@ -16,13 +16,13 @@ class TestAppExports:
         ]
 
         assert sorted(app.__all__) == sorted(expected)
-        assert len(app.__all__) == 2
+        assert len(app.__all__) == len(expected)
 
     def test_app_exports__every_symbol_in_all__is_accessible_on_module(self) -> None:
         """Every symbol declared in __all__ is an accessible attribute of the app module."""
 
         for name in app.__all__:
-            assert hasattr(app, name), f"declusor.app is missing expected export: {name}"
+            assert name in dir(app), f"declusor.app is missing expected export: {name}"
 
     def test_app_exports__submodule_symbols__match_terminal_module(self) -> None:
         """Component classes and factories match their underlying submodule definitions."""

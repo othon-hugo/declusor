@@ -103,10 +103,11 @@ class TestPySocketStdHelpersExecution:
     """Unit tests for execution primitives."""
 
     def test_execute_source__valid_code__executes_in_scope(self) -> None:
-        """Verify execute_source compiles and executes Python code in globals."""
+        """Verify execute_source compiles and executes Python code in scope."""
 
-        std_helpers.execute_source("foo_var = 12345")
-        assert getattr(std_helpers, "foo_var", None) == 12345
+        scope: dict[str, object] = {}
+        std_helpers.execute_source("foo_var = 12345", scope=scope)
+        assert scope["foo_var"] == 12345
 
     def test_execute_source__syntax_error__handles_cleanly(self, capsys: pytest.CaptureFixture[str]) -> None:
         """Verify execute_source catches and prints syntax errors without terminating."""
@@ -121,8 +122,9 @@ class TestPySocketStdHelpersExecution:
         code = compile("marshaled_var = 9999", "<test>", "exec")
         code_bytes = marshal.dumps(code)
 
-        std_helpers.execute_bytecode(code_bytes)
-        assert getattr(std_helpers, "marshaled_var", None) == 9999
+        scope: dict[str, object] = {}
+        std_helpers.execute_bytecode(code_bytes, scope=scope)
+        assert scope["marshaled_var"] == 9999
 
     def test_execute_binary__executable_script__runs_and_cleans_up(self, tmp_path: Path) -> None:
         """Verify execute_binary executes binary payload and cleans up when cleanup=True."""
@@ -140,14 +142,11 @@ class TestPySocketStdHelpersExecution:
         captured = capsys.readouterr()
         assert "test system command" in captured.out
 
-    def test_execute_system_command__with_buffer__writes_binary_to_buffer(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Verify execute_system_command writes directly to sys.stdout.buffer."""
+    def test_execute_system_command__with_buffer__writes_binary_to_buffer(self) -> None:
+        """Verify execute_system_command writes directly to output_buffer."""
 
         fake_buffer = io.BytesIO()
-        fake_stdout = io.TextIOWrapper(fake_buffer)
-        monkeypatch.setattr("sys.stdout", fake_stdout)
-
-        std_helpers.execute_system_command("echo 'buffered test'")
+        std_helpers.execute_system_command("echo 'buffered test'", output_buffer=fake_buffer)
         assert b"buffered test" in fake_buffer.getvalue()
 
 

@@ -6,7 +6,6 @@ import threading
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Any
 
 import pytest
 
@@ -31,8 +30,7 @@ def assert_conforms_to_client_plugin[T: contract.ParsedArguments](
     assert inspect.isclass(plugin_cls), f"{plugin_cls!r} must be a class."
     assert issubclass(plugin_cls, contract.IPluginExtension), f"{plugin_cls!r} must subclass contract.IPluginExtension."
 
-    if hasattr(plugin_cls, "reset") and callable(plugin_cls.reset):
-        plugin_cls.reset()
+    plugin_cls.reset()
 
     # Invariant 1: Metadata presence
     assert isinstance(plugin_cls.name, str) and plugin_cls.name.strip(), "plugin.name must be a non-empty string."
@@ -223,7 +221,7 @@ class InteractiveShellTestSuite[TConnection: contract.IConnection, TProcessor: c
 
     @pytest.fixture
     @abstractmethod
-    def plugin_class(self) -> type[contract.IPluginExtension[Any]]:
+    def plugin_class(self) -> contract.PluginExtensionType:
         """Subclasses must provide the client plugin extension class under test."""
 
         raise NotImplementedError
@@ -272,7 +270,7 @@ class InteractiveShellTestSuite[TConnection: contract.IConnection, TProcessor: c
 
     def test_plugin_declares_canonical_shell_route(
         self,
-        plugin_class: type[contract.IPluginExtension[Any]],
+        plugin_class: contract.PluginExtensionType,
     ) -> None:
         """Verify plugin declares a 'shell' route wired to controller.call_shell."""
 

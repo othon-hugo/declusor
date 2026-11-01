@@ -1,5 +1,7 @@
 """Interactive help controller inspecting registered routes and usage documentation."""
 
+from collections.abc import Callable
+
 from declusor import contract
 
 
@@ -10,7 +12,9 @@ class HelpArguments(contract.ControllerArguments, total=False):
     """Optional command route name to query usage help for."""
 
 
-def create_help_controller(router: contract.IRouter) -> contract.Controller:
+def create_help_controller(
+    router: contract.IRouter,
+) -> Callable[[contract.SessionContext, contract.IControllerRequest[HelpArguments]], contract.ControllerResult]:
     """Create a help controller that queries *router* for routes and help metadata.
 
     Args:

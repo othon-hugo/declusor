@@ -46,7 +46,7 @@ class TestITransport:
     def test_transport_read_exact_fragmented_chunks__accumulates_into_exact_bytes(self) -> None:
         """Verify read_exact accumulates across multiple fragmented stream chunks."""
 
-        transport = DummyTransport(incoming_data=[b"chunk_", b"by_", b"chunk"])
+        transport = DummyTransport(incoming_chunks=[b"chunk_", b"by_", b"chunk"])
 
         result = transport.read_exact(14)
 

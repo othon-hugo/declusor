@@ -77,8 +77,7 @@ class TestIInputSourceContract:
     def test_iinput_source_method_signatures__enforce_positional_only_contract(self) -> None:
         """Verify IInputSource method signatures define positional-only parameters with empty default."""
 
-        for method_name in ("read_command", "read_raw"):
-            func = getattr(contract.IInputSource, method_name)
+        for func in (contract.IInputSource.read_command, contract.IInputSource.read_raw):
             sig = inspect.signature(func)
             param = sig.parameters["prompt"]
 

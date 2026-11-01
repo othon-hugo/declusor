@@ -10,9 +10,10 @@ from declusor import config, contract, core, transport
 from .terminal import run_terminal_app
 
 
-def run(
+def run(  # type: ignore[explicit-any]
     argv: Sequence[str] | None = None,
     *,
+    sys_argv: Sequence[str] | None = None,
     application: core.Application | None = None,
     plugin_manager: core.PluginManager | None = None,
     application_factory: Callable[..., core.Application] | None = None,
@@ -34,6 +35,7 @@ def run(
 
     Args:
         argv: Optional command-line argument list. Defaults to sys.argv[1:].
+        sys_argv: Optional raw sys.argv replacement.
         application: Optional application instance for test injection.
         plugin_manager: Optional pre-configured plugin manager instance.
         application_factory: Optional factory creating Application when omitted.
@@ -51,7 +53,7 @@ def run(
         Process exit code. ``0`` for success, ``1`` for runtime error, ``2`` for usage error.
     """
 
-    args = list(argv) if argv is not None else sys.argv[1:]
+    args = list(argv) if argv is not None else (list(sys_argv)[1:] if sys_argv is not None else sys.argv[1:])
     error_stream = stderr if stderr is not None else sys.stderr
 
     with (
@@ -93,12 +95,11 @@ def run(
         except KeyboardInterrupt:
             return config.ExitCode.SUCCESS
         except SystemExit as error:
-            if error.code is None:
-                return config.ExitCode.SUCCESS
-
-            if isinstance(error.code, int) and error.code in config.ExitCode:
-                return config.ExitCode(error.code)
-
-            print(error.code, file=error_stream)
-
-            return config.ExitCode.FAILURE
+            match error.code:
+                case None:
+                    return config.ExitCode.SUCCESS
+                case int() as code if code in config.ExitCode:
+                    return config.ExitCode(code)
+                case _:
+                    print(error.code, file=error_stream)
+                    return config.ExitCode.FAILURE

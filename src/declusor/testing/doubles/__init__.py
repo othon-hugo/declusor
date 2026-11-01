@@ -25,6 +25,9 @@ from declusor.testing.doubles.plugins import (
 from declusor.testing.doubles.profile import (
     DummyOperationRenderer,
 )
+from declusor.testing.doubles.readline import (
+    DummyReadlineAdapter,
+)
 from declusor.testing.doubles.router import (
     DummyRouter,
 )
@@ -56,6 +59,7 @@ __all__ = [
     "DummyPlugin",
     "DummyPluginFileStore",
     "DummyPluginRuntime",
+    "DummyReadlineAdapter",
     "DummyRouter",
     "DummySessionRunner",
     "DummySocket",

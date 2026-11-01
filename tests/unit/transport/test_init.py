@@ -24,6 +24,7 @@ class TestTransportExports:
         ]
 
         assert sorted(transport.__all__) == sorted(expected)
+        assert len(transport.__all__) == len(expected)
         for symbol in expected:
-            assert hasattr(transport, symbol), f"declusor.transport is missing export: {symbol}"
+            assert symbol in dir(transport), f"declusor.transport is missing export: {symbol}"
             assert not symbol.startswith("_")

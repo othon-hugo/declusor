@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Protocol
 
 from declusor import config, util
 
@@ -14,8 +14,19 @@ if TYPE_CHECKING:
     from .router import RouteTable
     from .transport import ITransport
 
-type PluginExtensionType = type["IPluginExtension[Any]"]
+type PluginExtensionType = type["IPluginExtension[ParsedArguments]"]
 """Concrete plugin extension class type."""
+
+
+class IEntryPoint(Protocol):
+    """Protocol representing a discoverable Python package entry point."""
+
+    @property
+    def name(self) -> str:
+        """Entry point identifier."""
+
+    def load(self) -> PluginExtensionType:
+        """Load and return the registered plugin extension class."""
 
 
 @dataclass(frozen=True)
@@ -142,7 +153,7 @@ class IPluginExtension[T: ParsedArguments](ABC):
     parse-to-config pipeline.
     """
 
-    name: str
+    name: str = ""
     """Unique identifier used to select the client from the command line."""
 
     description: str = ""
@@ -157,7 +168,7 @@ class IPluginExtension[T: ParsedArguments](ABC):
     options_type: type[T]
     """The concrete TypedDict class for this plugin's parsed options."""
 
-    routes: "RouteTable"
+    routes: "RouteTable" = {}
     """Routes provided by this plugin, keyed by their command names."""
 
     supported_launcher_kinds: frozenset[config.LauncherKind] = frozenset({config.LauncherKind.STAGELESS})
@@ -165,6 +176,12 @@ class IPluginExtension[T: ParsedArguments](ABC):
 
     supported_transport_layers: frozenset[config.TransportLayer | str] = frozenset()
     """Set of transport layer types supported by this client plugin."""
+
+    @classmethod
+    def reset(cls) -> None:
+        """Reset any mutable class-level state used by test doubles."""
+
+        return None
 
     @classmethod
     @abstractmethod

@@ -46,16 +46,13 @@ class DummyRouter(contract.IRouter):
                 registration.completion_mode,
             )
 
-    def connect(self, route: str, registration: contract.RouteRegistration | contract.Controller, /) -> None:
+    def connect(self, route: str, registration: contract.RouteRegistration, /) -> None:
         """Register a route with its associated controller and metadata."""
 
         r = route.strip()
 
         if r in self._routes:
             raise config.DuplicateRouteError(r, f"route already exists: {r}")
-
-        if not isinstance(registration, contract.RouteRegistration):
-            registration = contract.RouteRegistration(registration, contract.RouteHelp())
 
         self._routes[r] = registration
 

@@ -35,7 +35,7 @@ class TestCoreExports:
         """Every symbol listed in __all__ is an accessible attribute of the core module."""
 
         for name in core.__all__:
-            assert hasattr(core, name), f"declusor.core is missing expected export: {name}"
+            assert name in dir(core), f"declusor.core is missing expected export: {name}"
 
     def test_core_exports__exception_reexports__match_config_exceptions(self) -> None:
         """Exception symbols re-exported from core are identical to their config definitions."""

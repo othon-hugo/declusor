@@ -20,7 +20,7 @@ class DummyPluginRuntime(contract.IPluginRuntime):
     def __init__(
         self,
         file_store: contract.IPluginProcessor | None = None,
-        client_script: bytes | str = b"#!/bin/sh\necho dummy",
+        client_script: str = "#!/bin/sh\necho dummy",
         connection_to_return: contract.IConnection | None = None,
         launcher_delivery: contract.LauncherDelivery | None = None,
         launcher_kind: config.LauncherKind = config.DEFAULT_LAUNCHER_KIND,
@@ -28,7 +28,7 @@ class DummyPluginRuntime(contract.IPluginRuntime):
         """Initialize plugin runtime double with mock processor and launcher delivery."""
 
         self._file_store: contract.IPluginProcessor = file_store or DummyPluginFileStore()
-        script_bytes = client_script.encode("utf-8") if isinstance(client_script, str) else client_script
+        script_bytes = client_script.encode("utf-8")
         self._launcher_delivery = launcher_delivery or contract.LauncherDelivery(script=script_bytes, kind=launcher_kind)
         self.connection_to_return: contract.IConnection | None = connection_to_return
         self.created_connections: list[contract.IConnection] = []

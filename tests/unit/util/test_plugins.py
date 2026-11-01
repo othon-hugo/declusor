@@ -10,6 +10,8 @@ from declusor.util import plugin
 class SampleBase:
     """Base class for plugin discovery tests."""
 
+    is_src_present: bool = False
+
 
 class SamplePlugin(SampleBase):
     """Concrete sample plugin subclass."""
@@ -254,7 +256,7 @@ class TestImportPluginFromFile:
         result = plugin.import_plugin_from_file("src_sys_path_test", init_file, SampleBase)
 
         assert result is not None
-        assert getattr(result, "is_src_present", False) is True
+        assert result.is_src_present is True
         assert src_str not in sys.path
 
     def test_import_plugin_from_file__src_already_in_sys_path__preserves_existing_sys_path(self, tmp_path: Path) -> None:

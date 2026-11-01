@@ -38,14 +38,12 @@ class NativeSourceSanitizer(ast.NodeTransformer):
     def _strip_docstring(self, body: list[ast.stmt]) -> None:
         """Remove docstring node if present as the first statement in a body."""
 
-        if (
-            self.strip_docstrings
-            and body
-            and isinstance(body[0], ast.Expr)
-            and isinstance(body[0].value, ast.Constant)
-            and isinstance(body[0].value.value, str)
-        ):
-            body.pop(0)
+        if not self.strip_docstrings:
+            return
+
+        match body:
+            case [ast.Expr(value=ast.Constant(value=str())), *rest]:
+                body[:] = rest
 
     def visit_Module(self, node: ast.Module) -> ast.Module:
         """Visit module node and strip top-level docstring."""
@@ -238,13 +236,16 @@ def check_bytecode_compatibility(
     if client_implementation != platform.python_implementation():
         return False
 
-    if isinstance(client_magic, str):
-        try:
-            magic_bytes = bytes.fromhex(client_magic)
-        except ValueError:
+    match client_magic:
+        case str():
+            try:
+                magic_bytes = bytes.fromhex(client_magic)
+            except ValueError:
+                return False
+        case bytes():
+            magic_bytes = client_magic
+        case _:
             return False
-    else:
-        magic_bytes = client_magic
 
     if magic_bytes != importlib.util.MAGIC_NUMBER:
         return False

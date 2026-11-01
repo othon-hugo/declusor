@@ -29,5 +29,5 @@ class TestCommandExports:
 
         assert sorted(command.__all__) == sorted(expected)
         for symbol in expected:
-            assert hasattr(command, symbol), f"declusor.command is missing export: {symbol}"
+            assert symbol in dir(command), f"declusor.command is missing export: {symbol}"
             assert not symbol.startswith("_")

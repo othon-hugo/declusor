@@ -49,15 +49,13 @@ class TestExecuteFileDTO:
     def test_execute_file_dto_init__relative_path__normalizes_to_resolved_path(
         self,
         tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """ExecuteFileDTO normalizes relative file paths to absolute resolved Paths."""
 
         script_file = tmp_path / "local_script.sh"
         script_file.write_bytes(TEST_SCRIPT_CONTENT)
-        monkeypatch.chdir(tmp_path)
 
-        dto = ExecuteFileDTO(source_path=Path("local_script.sh"))
+        dto = ExecuteFileDTO(source_path=Path("local_script.sh"), base_dir=tmp_path)
 
         assert dto.source_path == script_file.resolve()
         assert dto.source_path.is_absolute()
@@ -358,15 +356,13 @@ class TestUploadFileDTO:
     def test_upload_file_dto_init__relative_filepath__normalizes_to_resolved_path(
         self,
         tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """UploadFileDTO normalizes relative file paths to absolute resolved Paths."""
 
         payload_file = tmp_path / "local_payload.bin"
         payload_file.write_bytes(TEST_BINARY_CONTENT)
-        monkeypatch.chdir(tmp_path)
 
-        dto = UploadFileDTO(source_path=Path("local_payload.bin"))
+        dto = UploadFileDTO(source_path=Path("local_payload.bin"), base_dir=tmp_path)
 
         assert dto.source_path == payload_file.resolve()
         assert dto.source_path.is_absolute()

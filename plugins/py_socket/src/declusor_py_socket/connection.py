@@ -27,6 +27,7 @@ class PySocketConnection(contract.IConnection):
         expected_ack: bytes = util.hash_sha256(config.DEFAULT_CLIENT_ACK_SEED),
         timeout: float | None = config.DEFAULT_CONNECTION_TIMEOUT,
         stage1_payload: bytes | None = None,
+        max_tlv_frame_size: int = config.MAX_TLV_FRAME_SIZE,
     ) -> None:
         """Initialize a new Python-socket client connection.
 
@@ -37,6 +38,7 @@ class PySocketConnection(contract.IConnection):
             expected_ack: Expected client acknowledgment byte token verifying handshake.
             timeout: Optional transport I/O timeout in seconds.
             stage1_payload: Optional raw Stage-1 client bootstrap script transmitted during handshake for staged execution.
+            max_tlv_frame_size: Maximum allowed TLV frame size in bytes.
         """
 
         self._renderer = renderer
@@ -44,6 +46,7 @@ class PySocketConnection(contract.IConnection):
         self._transport = transport
         self._expected_ack = expected_ack
         self._stage1_payload = stage1_payload
+        self._max_tlv_frame_size = max_tlv_frame_size
         self._state = contract.ConnectionState.CREATED
         self._client_runtime: Mapping[str, object] | None = None
         self._is_bytecode_compatible: bool = False
@@ -153,11 +156,11 @@ class PySocketConnection(contract.IConnection):
 
         # Step 0: Transmit Stage 1 payload if staged launcher strategy
         if self._stage1_payload is not None:
-            if len(self._stage1_payload) > config.MAX_TLV_FRAME_SIZE:
+            if len(self._stage1_payload) > self._max_tlv_frame_size:
                 self.close()
 
                 raise config.ConnectionHandshakeError(
-                    f"Stage 1 payload exceeds maximum size of {config.MAX_TLV_FRAME_SIZE} bytes.",
+                    f"Stage 1 payload exceeds maximum size of {self._max_tlv_frame_size} bytes.",
                     expected_ack=self._expected_ack,
                 )
 
@@ -179,21 +182,22 @@ class PySocketConnection(contract.IConnection):
 
             _, length = struct.unpack(">BI", header)
 
-            if length > config.MAX_TLV_FRAME_SIZE:
-                raise config.ConnectionError(f"TLV frame payload size {length} exceeds maximum {config.MAX_TLV_FRAME_SIZE}.")
+            if length > self._max_tlv_frame_size:
+                raise config.ConnectionError(f"TLV frame payload size {length} exceeds maximum {self._max_tlv_frame_size}.")
 
             raw_meta = self._transport.read_exact(length) if length > 0 else b"{}"
             metadata = json.loads(raw_meta.decode("utf-8", errors="replace"))
 
-            if isinstance(metadata, dict):
-                self._client_runtime = metadata
-                self._is_bytecode_compatible = util.lang.python.check_bytecode_compatibility(
-                    metadata.get("magic", ""),
-                    metadata.get("version", []),
-                    metadata.get("implementation", "CPython"),
-                )
-            else:
-                self._is_bytecode_compatible = False
+            match metadata:
+                case dict():
+                    self._client_runtime = metadata
+                    self._is_bytecode_compatible = util.lang.python.check_bytecode_compatibility(
+                        metadata.get("magic", ""),
+                        metadata.get("version", []),
+                        metadata.get("implementation", "CPython"),
+                    )
+                case _:
+                    self._is_bytecode_compatible = False
         except (config.ConnectionClosed, config.ConnectionTimeoutError, config.ConnectionError) as error:
             self.close()
             raise config.ConnectionHandshakeError(
@@ -248,8 +252,8 @@ class PySocketConnection(contract.IConnection):
         """Send a TLV-framed payload on a specific bus to the remote Python agent."""
 
         self.ensure_can_perform_io()
-        if len(data) > config.MAX_TLV_FRAME_SIZE:
-            raise ValueError(f"TLV frame payload exceeds maximum size of {config.MAX_TLV_FRAME_SIZE} bytes.")
+        if len(data) > self._max_tlv_frame_size:
+            raise ValueError(f"TLV frame payload exceeds maximum size of {self._max_tlv_frame_size} bytes.")
 
         frame = struct.pack(">BI", channel, len(data)) + data
 
@@ -294,9 +298,9 @@ class PySocketConnection(contract.IConnection):
                 raise config.ConnectionClosed(f"Connection interrupted during read: {error}") from error
 
             channel, length = struct.unpack(">BI", header)
-            if length > config.MAX_TLV_FRAME_SIZE:
+            if length > self._max_tlv_frame_size:
                 self.close()
-                raise config.ConnectionClosed(f"TLV frame payload size {length} exceeds maximum {config.MAX_TLV_FRAME_SIZE}.")
+                raise config.ConnectionClosed(f"TLV frame payload size {length} exceeds maximum {self._max_tlv_frame_size}.")
 
             if channel == config.ChannelType.PROCESS_EXIT:
                 if length > 0:

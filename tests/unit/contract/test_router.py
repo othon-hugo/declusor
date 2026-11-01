@@ -98,7 +98,7 @@ class TestDummyRouterContract:
         """Verify DummyRouter connects and locates registered controllers."""
 
         router = testing.DummyRouter()
-        router.connect("sample", _sample_controller)
+        router.connect("sample", contract.RouteRegistration(_sample_controller))
 
         assert "sample" in router.routes
         assert router.locate("sample") is _sample_controller

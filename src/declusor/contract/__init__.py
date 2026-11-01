@@ -25,12 +25,14 @@ from .controller import (
 )
 from .input_source import (
     IInputSource,
+    IReadlineAdapter,
 )
 from .parser import (
     IArgumentParser,
     ParsedArguments,
 )
 from .plugin import (
+    IEntryPoint,
     IPluginExtension,
     IPluginProcessor,
     IPluginRuntime,
@@ -53,6 +55,7 @@ from .session import (
     SessionContext,
 )
 from .transport import (
+    ISocket,
     ITransport,
     ITransportLayer,
     ITransportListener,
@@ -76,14 +79,17 @@ __all__ = [
     "ICommand",
     "IConnection",
     "IControllerRequest",
+    "IEntryPoint",
     "IInputSource",
     "InvalidOperation",
     "IOperationRenderer",
     "IPluginExtension",
     "IPluginProcessor",
     "IPluginRuntime",
+    "IReadlineAdapter",
     "IRouter",
     "ISessionRunner",
+    "ISocket",
     "ITransport",
     "ITransportLayer",
     "ITransportListener",

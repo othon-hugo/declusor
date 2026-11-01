@@ -14,7 +14,7 @@ class SocketTransport(contract.ITransport):
     defined in declusor.config.
     """
 
-    def __init__(self, sock: socket.socket, /, timeout: float | None = None) -> None:
+    def __init__(self, sock: contract.ISocket, /, timeout: float | None = None) -> None:
         """Initialize the transport with an active socket."""
 
         self._socket = sock
@@ -48,10 +48,11 @@ class SocketTransport(contract.ITransport):
         try:
             peer = self._socket.getpeername()
 
-            if isinstance(peer, tuple) and len(peer) >= 2:
-                return f"{peer[0]}:{peer[1]}"
-
-            return str(peer)
+            match peer:
+                case (host, port, *_):
+                    return f"{host}:{port}"
+                case _:
+                    return str(peer)
         except OSError:
             return "unknown"
 

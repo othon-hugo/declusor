@@ -1,8 +1,5 @@
 """Unit tests for SocketTransport wrapping socket doubles."""
 
-import socket
-from typing import cast
-
 import pytest
 
 from declusor import config, testing, transport
@@ -11,7 +8,7 @@ from declusor import config, testing, transport
 def make_transport(sock: testing.DummySocket) -> transport.SocketTransport:
     """Helper to instantiate SocketTransport wrapping a typed DummySocket double."""
 
-    return transport.SocketTransport(cast(socket.socket, sock))
+    return transport.SocketTransport(sock)
 
 
 class FailingPeerSocket(testing.DummySocket):

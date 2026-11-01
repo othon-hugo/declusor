@@ -33,6 +33,7 @@ select = ["E", "F", "W", "I", "B", "UP"]
 [tool.mypy]
 python_version = "3.12"
 strict = true
+disallow_any_explicit = true
 show_error_codes = true
 warn_unused_ignores = true
 

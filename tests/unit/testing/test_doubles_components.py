@@ -167,7 +167,7 @@ class TestDummyRouter:
             """Sample documentation."""
             return contract.ControllerResult()
 
-        router.connect("sample", sample_handler)
+        router.connect("sample", contract.RouteRegistration(sample_handler))
 
         assert "sample" in router.routes
         assert router.locate("sample") is sample_handler
@@ -185,7 +185,7 @@ class TestDummyRouter:
         ) -> contract.ControllerResult:
             return contract.ControllerResult()
 
-        router.connect("cmd", dummy_handler)
+        router.connect("cmd", contract.RouteRegistration(dummy_handler))
         router.set_route_help("cmd", contract.RouteHelp("Short description.", "Additional details."))
 
         assert router.help("cmd") == contract.RouteHelp("Short description.", "Additional details.")
@@ -201,10 +201,10 @@ class TestDummyRouter:
         ) -> contract.ControllerResult:
             return contract.ControllerResult()
 
-        router.connect("dup", handler)
+        router.connect("dup", contract.RouteRegistration(handler))
 
         with pytest.raises(config.DuplicateRouteError, match="route already exists"):
-            router.connect("dup", handler)
+            router.connect("dup", contract.RouteRegistration(handler))
 
     def test_unknown_route_error(self) -> None:
         """Ensure locating an unmapped route raises RouterError."""
@@ -305,3 +305,95 @@ class TestDummyApplication:
         assert app.transport_registry is not None
         assert app.router is not None
         assert app.view is not None
+
+
+class TestDummyReadlineAdapter:
+    """Verify behavior of the DummyReadlineAdapter test double."""
+
+    def test_default_state(self) -> None:
+        """Ensure DummyReadlineAdapter initializes with sane default attributes."""
+
+        adapter = testing.DummyReadlineAdapter()
+
+        assert adapter.is_available is True
+        assert adapter.get_line_buffer() == ""
+        assert adapter.get_completer() is None
+        assert adapter.get_completer_delims() == ""
+        assert adapter.bindings == []
+        assert adapter.read_paths == []
+        assert adapter.written_paths == []
+
+    def test_positional_and_keyword_construction(self) -> None:
+        """Ensure DummyReadlineAdapter supports positional and keyword initialization."""
+
+        adapter_pos = testing.DummyReadlineAdapter(False, "test_buffer")
+        assert adapter_pos.is_available is False
+        assert adapter_pos.get_line_buffer() == "test_buffer"
+
+        adapter_kw = testing.DummyReadlineAdapter(is_available=True, line_buffer="kw_buffer")
+        assert adapter_kw.is_available is True
+        assert adapter_kw.get_line_buffer() == "kw_buffer"
+
+    def test_completer_and_delims_tracking(self) -> None:
+        """Ensure set_completer and set_completer_delims record and return callbacks."""
+
+        adapter = testing.DummyReadlineAdapter()
+
+        def dummy_completer(text: str, state: int) -> str | None:
+            return None
+
+        adapter.set_completer(dummy_completer)
+        assert adapter.get_completer() is dummy_completer
+
+        adapter.set_completer(None)
+        assert adapter.get_completer() is None
+
+        adapter.set_completer_delims(" \t\n;")
+        assert adapter.get_completer_delims() == " \t\n;"
+
+    def test_parse_and_bind_tracking(self) -> None:
+        """Ensure parse_and_bind appends binding lines to bindings list."""
+
+        adapter = testing.DummyReadlineAdapter()
+
+        adapter.parse_and_bind("tab: complete")
+        adapter.parse_and_bind("set editing-mode emacs")
+
+        assert adapter.bindings == ["tab: complete", "set editing-mode emacs"]
+
+    def test_history_file_tracking_and_simulated_errors(self) -> None:
+        """Ensure history file operations record paths and raise configured errors."""
+
+        adapter = testing.DummyReadlineAdapter()
+
+        adapter.read_history_file("/tmp/history.txt")
+        assert adapter.read_paths == ["/tmp/history.txt"]
+
+        adapter.write_history_file("/tmp/history.txt")
+        assert adapter.written_paths == ["/tmp/history.txt"]
+
+        adapter.read_error = PermissionError("Cannot read history")
+        with pytest.raises(PermissionError, match="Cannot read history"):
+            adapter.read_history_file("/tmp/history.txt")
+
+        adapter.write_error = OSError("Disk write failed")
+        with pytest.raises(OSError, match="Disk write failed"):
+            adapter.write_history_file("/tmp/history.txt")
+
+    def test_line_buffer_error(self) -> None:
+        """Ensure get_line_buffer raises line_buffer_error when configured."""
+
+        adapter = testing.DummyReadlineAdapter()
+        adapter.line_buffer_error = RuntimeError("Buffer unavailable")
+
+        with pytest.raises(RuntimeError, match="Buffer unavailable"):
+            adapter.get_line_buffer()
+
+    def test_is_available_setter(self) -> None:
+        """Ensure is_available property can be dynamically toggled."""
+
+        adapter = testing.DummyReadlineAdapter(is_available=True)
+        assert adapter.is_available is True
+
+        adapter.is_available = False
+        assert adapter.is_available is False

@@ -2,7 +2,6 @@
 
 import threading
 import time
-from collections.abc import Callable
 from pathlib import Path
 
 import declusor_shell_socket as shell_socket
@@ -10,13 +9,15 @@ import pytest
 
 from declusor import config, contract, testing
 
+from .conftest import ShellConnectionFactory
+
 
 class TestShellSocketConnectionLifecycle:
     """Tests for ShellSocketConnection lifecycle transitions, handshake, and configuration."""
 
     def test_connection_state__transitions_through_lifecycle(
         self,
-        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+        make_shell_connection: ShellConnectionFactory,
     ) -> None:
         """Verify connection lifecycle transitions: CREATED -> CONNECTED -> CLOSED."""
 
@@ -41,7 +42,7 @@ class TestShellSocketConnectionLifecycle:
 
     def test_handshake__when_already_connected__raises_connection_error(
         self,
-        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+        make_shell_connection: ShellConnectionFactory,
     ) -> None:
         """Verify handshake raises ConnectionError when connection is already connected."""
 
@@ -54,7 +55,7 @@ class TestShellSocketConnectionLifecycle:
 
     def test_handshake__when_connection_is_closed__raises_connection_error(
         self,
-        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+        make_shell_connection: ShellConnectionFactory,
     ) -> None:
         """Verify handshake raises ConnectionError when connection is already closed."""
 
@@ -66,7 +67,7 @@ class TestShellSocketConnectionLifecycle:
 
     def test_handshake__when_transport_fails__raises_connection_handshake_error(
         self,
-        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+        make_shell_connection: ShellConnectionFactory,
     ) -> None:
         """Verify handshake raises ConnectionHandshakeError when reading handshake envelope fails."""
 
@@ -79,7 +80,7 @@ class TestShellSocketConnectionLifecycle:
 
     def test_handshake__transport_establishment_failure__closes_connection(
         self,
-        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+        make_shell_connection: ShellConnectionFactory,
     ) -> None:
         """Close the connection when a transport layer cannot establish its session."""
 
@@ -98,7 +99,7 @@ class TestShellSocketConnectionLifecycle:
 
     def test_handshake__with_ephemeral_envelope__sends_helpers_and_transitions(
         self,
-        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+        make_shell_connection: ShellConnectionFactory,
     ) -> None:
         """Verify handshake sends helpers and waits for dynamic envelope."""
 
@@ -113,7 +114,7 @@ class TestShellSocketConnectionLifecycle:
 
     def test_handshake__staged_payload_present__transmits_nul_terminated_stage1_before_handshake(
         self,
-        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+        make_shell_connection: ShellConnectionFactory,
     ) -> None:
         """Verify ShellSocketConnection transmits NUL-terminated Stage 1 payload when staged."""
 
@@ -130,12 +131,12 @@ class TestShellSocketConnectionLifecycle:
 
     def test_handshake__with_segmented_envelope__accumulates_chunks_properly(
         self,
-        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+        make_shell_connection: ShellConnectionFactory,
     ) -> None:
         """Verify handshake envelope handles segmented byte streaming properly."""
 
         trans = testing.DummyTransport(
-            incoming_data=[
+            incoming_chunks=[
                 b"__DECLUSOR_EOF_",
                 b"test_",
                 b"nonce__\n",
@@ -148,7 +149,7 @@ class TestShellSocketConnectionLifecycle:
 
     def test_init__with_invalid_buffer_size__raises_connection_error(
         self,
-        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+        make_shell_connection: ShellConnectionFactory,
     ) -> None:
         """Verify ShellSocketConnection raises ConnectionError when buffer_size <= 0."""
 
@@ -160,7 +161,7 @@ class TestShellSocketConnectionLifecycle:
 
     def test_properties__renderer_and_timeout__delegate_correctly(
         self,
-        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+        make_shell_connection: ShellConnectionFactory,
     ) -> None:
         """Verify renderer and timeout property accessors."""
 
@@ -221,7 +222,7 @@ class TestShellSocketConnectionIO:
 
     def test_write__uses_ephemeral_envelope_framing(
         self,
-        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+        make_shell_connection: ShellConnectionFactory,
     ) -> None:
         """Verify write transmits ephemeral nonce prefix followed by null-delimited payload."""
 
@@ -232,7 +233,7 @@ class TestShellSocketConnectionIO:
 
     def test_write__when_connection_is_created__raises_connection_error(
         self,
-        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+        make_shell_connection: ShellConnectionFactory,
     ) -> None:
         """Verify write on CREATED connection raises ConnectionError before handshake."""
 
@@ -243,7 +244,7 @@ class TestShellSocketConnectionIO:
 
     def test_write__when_connection_is_closed__raises_connection_closed(
         self,
-        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+        make_shell_connection: ShellConnectionFactory,
     ) -> None:
         """Verify write on closed connection raises ConnectionClosed."""
 
@@ -255,7 +256,7 @@ class TestShellSocketConnectionIO:
 
     def test_write__when_transport_fails__translates_to_connection_error(
         self,
-        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+        make_shell_connection: ShellConnectionFactory,
     ) -> None:
         """Verify write translates transport errors into domain ConnectionError."""
 
@@ -271,7 +272,7 @@ class TestShellSocketConnectionIO:
 
     def test_read__when_connection_is_created__raises_connection_error(
         self,
-        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+        make_shell_connection: ShellConnectionFactory,
     ) -> None:
         """Verify read on CREATED connection raises ConnectionError before handshake."""
 
@@ -282,7 +283,7 @@ class TestShellSocketConnectionIO:
 
     def test_read__when_connection_is_closed__raises_connection_closed(
         self,
-        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+        make_shell_connection: ShellConnectionFactory,
     ) -> None:
         """Verify read on closed connection raises ConnectionClosed."""
 
@@ -321,7 +322,7 @@ class TestShellSocketConnectionIO:
 
     def test_read__with_ephemeral_envelope__terminates_at_delimiter(
         self,
-        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+        make_shell_connection: ShellConnectionFactory,
     ) -> None:
         """Verify write transmits ephemeral nonce prefix and read terminates at dynamic envelope."""
 
@@ -339,7 +340,7 @@ class TestShellSocketConnectionIO:
 
     def test_read__when_delimiter_is_split_across_chunks__yields_payload_cleanly(
         self,
-        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+        make_shell_connection: ShellConnectionFactory,
     ) -> None:
         """Verify read yields command output and terminates when envelope delimiter is split across reads."""
 
@@ -359,7 +360,7 @@ class TestShellSocketConnectionIO:
 
     def test_read__when_write_occurs_while_waiting__unblocks_and_yields_output(
         self,
-        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+        make_shell_connection: ShellConnectionFactory,
     ) -> None:
         """Verify read unblocks and consumes output when write occurs on another thread while waiting."""
 
@@ -380,7 +381,7 @@ class TestShellSocketConnectionIO:
 
     def test_read__when_closed_while_waiting__raises_connection_closed(
         self,
-        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+        make_shell_connection: ShellConnectionFactory,
     ) -> None:
         """Verify read unblocks immediately and raises ConnectionClosed when connection is closed while waiting."""
 
@@ -400,7 +401,7 @@ class TestShellSocketConnectionIO:
 
     def test_read__when_multiple_commands_pipelined__processes_sequential_envelopes(
         self,
-        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+        make_shell_connection: ShellConnectionFactory,
     ) -> None:
         """Verify sequential pipelined writes and reads process each transaction envelope in order."""
 
@@ -421,7 +422,7 @@ class TestShellSocketConnectionIO:
 
     def test_read__when_transport_times_out__raises_connection_timeout_error(
         self,
-        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+        make_shell_connection: ShellConnectionFactory,
     ) -> None:
         """Verify read raises ConnectionTimeoutError when transport read times out."""
 
@@ -436,7 +437,7 @@ class TestShellSocketConnectionIO:
 
     def test_read__when_client_closes_stream_unexpectedly__raises_connection_closed(
         self,
-        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+        make_shell_connection: ShellConnectionFactory,
     ) -> None:
         """Verify read raises ConnectionClosed when remote peer closes during stream."""
 
@@ -449,7 +450,7 @@ class TestShellSocketConnectionIO:
 
     def test_read__when_transport_error_during_read__translates_to_connection_closed(
         self,
-        make_shell_connection: Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]],
+        make_shell_connection: ShellConnectionFactory,
     ) -> None:
         """Verify read translates generic transport errors to ConnectionClosed."""
 

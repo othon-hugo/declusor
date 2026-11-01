@@ -1,7 +1,7 @@
 """Pytest configuration for shell_socket plugin tests."""
 
-from collections.abc import Callable
 from pathlib import Path
+from typing import Protocol
 
 import declusor_shell_socket as shell_socket
 import pytest
@@ -9,10 +9,24 @@ import pytest
 from declusor import config, contract, testing
 
 
+class ShellConnectionFactory(Protocol):
+    """Protocol for ShellSocketConnection factory fixtures."""
+
+    def __call__(
+        self,
+        transport_connection: testing.DummyTransport | None = None,
+        ack: bytes = b"ack",
+        framing_mode: config.FramingMode = config.FramingMode.EPHEMERAL_ENVELOPE,
+        default_nonce: str | None = "test_nonce",
+        buffer_size: int = shell_socket.ShellSocketConnection.DEFAULT_BUFFER_SIZE,
+        timeout: float | None = config.DEFAULT_CONNECTION_TIMEOUT,
+        connected: bool = False,
+        stage1_payload: bytes | None = None,
+    ) -> tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]: ...
+
+
 @pytest.fixture
-def make_shell_connection(
-    tmp_path: Path,
-) -> Callable[..., tuple[shell_socket.ShellSocketConnection, testing.DummyTransport]]:
+def make_shell_connection(tmp_path: Path) -> ShellConnectionFactory:
     """Helper factory for creating configured ShellSocketConnection instances."""
 
     def _create_connection(

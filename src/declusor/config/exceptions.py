@@ -1,7 +1,6 @@
 """Canonical domain exception and warning hierarchy for Declusor."""
 
 from pathlib import Path
-from typing import Any
 
 
 class DeclusorException(Exception):
@@ -129,7 +128,7 @@ class CommandValidationError(CommandError):
         /,
         *,
         field: str | None = None,
-        value: Any = None,
+        value: object = None,
         command_name: str | None = None,
     ) -> None:
         """Initialize command validation error with field and value context."""

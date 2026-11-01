@@ -3,11 +3,17 @@
 import importlib.metadata
 import inspect
 import warnings
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
-from typing import Any
+from typing import Protocol, cast
 
 from declusor import config, contract, util
+
+
+class _EntryPointsLoader(Protocol):
+    """Protocol for Python entry point discovery callables."""
+
+    def __call__(self, *, group: str) -> Iterable[contract.IEntryPoint]: ...
 
 
 class PluginRegistry:
@@ -22,7 +28,7 @@ class PluginRegistry:
 
         self._plugins: dict[str, contract.PluginExtensionType] = {}
 
-    def register(self, plugin: contract.PluginExtensionType, /) -> None:
+    def register[T: contract.ParsedArguments](self, plugin: type[contract.IPluginExtension[T]], /) -> None:
         """Register a client plugin.
 
         Args:
@@ -35,7 +41,7 @@ class PluginRegistry:
         if plugin.name in self._plugins:
             raise ValueError(f"Client already registered: {plugin.name}")
 
-        self._plugins[plugin.name] = plugin
+        self._plugins[plugin.name] = cast(contract.PluginExtensionType, plugin)
 
     def get(self, name: str, /) -> contract.PluginExtensionType:
         """Retrieve a registered client plugin.
@@ -101,48 +107,60 @@ class PluginManager(PluginRegistry):
         if not issubclass(candidate, contract.IPluginExtension):
             raise config.PluginValidationError(f"Plugin class {candidate.__name__!r} must implement 'IPluginExtension'.")
 
-        name = getattr(candidate, "name", None)
+        name = candidate.name
 
-        if not isinstance(name, str) or not name.strip():
-            raise config.PluginValidationError(f"Plugin class {candidate.__name__!r} must define a non-empty string 'name'.")
+        match name:
+            case str() if name.strip():
+                pass
+            case _:
+                raise config.PluginValidationError(f"Plugin class {candidate.__name__!r} must define a non-empty string 'name'.")
 
         # Check for unimplemented abstract methods
         if inspect.isabstract(candidate):
-            abstract_methods: set[str] = getattr(candidate, "__abstractmethods__", set())
+            abstract_methods = candidate.__abstractmethods__
 
             raise config.PluginValidationError(
                 f"Plugin class {candidate.__name__!r} has unimplemented abstract methods: {', '.join(sorted(abstract_methods))}"
             )
 
-        routes = getattr(candidate, "routes", None)
+        routes = candidate.routes
 
-        if not isinstance(routes, Mapping):
-            raise config.PluginValidationError(
-                f"Plugin class {candidate.__name__!r} must define 'routes' as a mapping of names to RouteRegistration values."
-            )
+        match routes:
+            case Mapping():
+                pass
+            case _:
+                raise config.PluginValidationError(
+                    f"Plugin class {candidate.__name__!r} must define 'routes' as a mapping of names to RouteRegistration values."
+                )
 
         normalized_routes: set[str] = set()
 
         for route, registration in routes.items():
-            if not isinstance(route, str) or not route.strip():
-                raise config.PluginValidationError(f"Plugin class {candidate.__name__!r} must define non-empty string route names.")
+            match route, registration:
+                case str(), contract.RouteRegistration() if route.strip():
+                    normalized_route = route.strip()
 
-            normalized_route = route.strip()
+                    if normalized_route in {"help", "exit"}:
+                        raise config.PluginValidationError(
+                            f"Plugin class {candidate.__name__!r} cannot override protected route {normalized_route!r}."
+                        )
 
-            if normalized_route in {"help", "exit"}:
-                raise config.PluginValidationError(f"Plugin class {candidate.__name__!r} cannot override protected route {normalized_route!r}.")
+                    if normalized_route in normalized_routes:
+                        raise config.PluginValidationError(
+                            f"Plugin class {candidate.__name__!r} defines duplicate normalized route {normalized_route!r}."
+                        )
 
-            if normalized_route in normalized_routes:
-                raise config.PluginValidationError(f"Plugin class {candidate.__name__!r} defines duplicate normalized route {normalized_route!r}.")
+                    normalized_routes.add(normalized_route)
+                case str(), _ if not route.strip():
+                    raise config.PluginValidationError(f"Plugin class {candidate.__name__!r} must define non-empty string route names.")
+                case str(), _:
+                    raise config.PluginValidationError(f"Plugin class {candidate.__name__!r} route {route.strip()!r} must be a RouteRegistration.")
+                case _:
+                    raise config.PluginValidationError(f"Plugin class {candidate.__name__!r} must define non-empty string route names.")
 
-            if not isinstance(registration, contract.RouteRegistration):
-                raise config.PluginValidationError(f"Plugin class {candidate.__name__!r} route {normalized_route!r} must be a RouteRegistration.")
-
-            normalized_routes.add(normalized_route)
-
-    def register(
+    def register[T: contract.ParsedArguments](
         self,
-        plugin: contract.PluginExtensionType,
+        plugin: type[contract.IPluginExtension[T]],
         /,
         *,
         source: str = "manual",
@@ -166,7 +184,7 @@ class PluginManager(PluginRegistry):
             existing_source = self._sources.get(plugin.name, "unknown")
             raise ValueError(f"Client plugin {plugin.name!r} already registered from {existing_source}.")
 
-        self._plugins[plugin.name] = plugin
+        self._plugins[plugin.name] = cast(contract.PluginExtensionType, plugin)
         self._sources[plugin.name] = source
 
     def get_source(self, name: str, /) -> str | None:
@@ -235,7 +253,7 @@ class PluginManager(PluginRegistry):
         *,
         group: str = config.ENTRY_POINT_GROUP,
         allow_override: bool = True,
-        entry_points_loader: Callable[..., Iterable[Any]] | None = None,
+        entry_points_loader: _EntryPointsLoader | None = None,
     ) -> list[str]:
         """Discover and load client plugins registered via Python Entry Points.
 
@@ -282,7 +300,8 @@ class PluginManager(PluginRegistry):
         /,
         *,
         enable_entry_points: bool = True,
-        entry_points_loader: Callable[..., Iterable[Any]] | None = None,
+        entry_points_loader: _EntryPointsLoader | None = None,
+        user_plugins_dir: Path | None = None,
     ) -> "PluginManager":
         """Run the multi-tier plugin discovery engine.
 
@@ -296,6 +315,7 @@ class PluginManager(PluginRegistry):
             search_dirs: Optional additional search directories (e.g. from CLI ``--plugin-dir``).
             enable_entry_points: Whether to query Python entry points.
             entry_points_loader: Optional custom entry points loader.
+            user_plugins_dir: Optional custom user drop-in directory.
 
         Returns:
             The populated ``PluginManager`` instance.
@@ -310,8 +330,9 @@ class PluginManager(PluginRegistry):
             self.load_from_entry_points(allow_override=True, entry_points_loader=entry_points_loader)
 
         # Tier 3: User drop-in directory (~/.declusor/plugins)
-        if config.USER_PLUGINS_DIR.exists():
-            self.load_from_directory(config.USER_PLUGINS_DIR, source_label="user-dropin", allow_override=True)
+        active_user_dir = user_plugins_dir if user_plugins_dir is not None else config.USER_PLUGINS_DIR
+        if active_user_dir.exists():
+            self.load_from_directory(active_user_dir, source_label="user-dropin", allow_override=True)
 
         # Tier 4: Explicit custom search directories (CLI flags, highest precedence)
         if search_dirs:

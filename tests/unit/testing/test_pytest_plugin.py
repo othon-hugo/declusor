@@ -74,3 +74,12 @@ class TestPytestPluginFixtures:
         assert isinstance(client_tx, testing.MemoryTransport)
         assert isinstance(server_tx, testing.MemoryTransport)
         assert isinstance(memory_transport_listener, testing.MemoryTransportListener)
+
+    def test_readline_fixture(
+        self,
+        dummy_readline: testing.DummyReadlineAdapter,
+    ) -> None:
+        """Ensure readline fixture injects configured dummy adapter double."""
+
+        assert isinstance(dummy_readline, testing.DummyReadlineAdapter)
+        assert dummy_readline.is_available is True

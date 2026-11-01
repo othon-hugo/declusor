@@ -1,8 +1,14 @@
 """Launcher delivery renderer dispatching staged and stageless client scripts to target outputs."""
 
-from collections.abc import Callable
+from typing import Protocol
 
 from declusor import config, contract, util
+
+
+class _ClipboardCopier(Protocol):
+    """Protocol for clipboard copier callables."""
+
+    def __call__(self, text: str, /, *, view: contract.IView | None = None) -> None: ...
 
 
 class LauncherRenderer:
@@ -13,7 +19,7 @@ class LauncherRenderer:
         view: contract.IView,
         /,
         *,
-        clipboard_copier: Callable[..., None] | None = None,
+        clipboard_copier: _ClipboardCopier | None = None,
     ) -> None:
         """Create a LauncherRenderer with the specified operator view.
 
@@ -23,7 +29,7 @@ class LauncherRenderer:
         """
 
         self._view = view
-        self._clipboard_copier = clipboard_copier or util.copy_to_clipboard
+        self._clipboard_copier: _ClipboardCopier = clipboard_copier or util.copy_to_clipboard
 
     def render(self, delivery: contract.LauncherDelivery, /) -> None:
         """Render and deliver the client launcher according to its envelope.

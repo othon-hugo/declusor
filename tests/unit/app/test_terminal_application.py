@@ -2,7 +2,6 @@
 
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Any, cast
 
 import pytest
 
@@ -183,7 +182,7 @@ class TestTerminalApplicationInitialization:
         runner = testing.DummySessionRunner()
 
         with pytest.raises(TypeError, match="positional-only"):
-            cast(Any, app.TerminalApplication)(
+            app.TerminalApplication(  # type: ignore[call-arg]
                 router=router,
                 view=view,
                 plugin_manager=manager,
@@ -199,7 +198,7 @@ class TestTerminalApplicationInitialization:
         runner = testing.DummySessionRunner()
 
         with pytest.raises(TypeError):
-            cast(Any, app.TerminalApplication)(
+            app.TerminalApplication(  # type: ignore[misc]
                 router,
                 view,
                 manager,
@@ -215,10 +214,10 @@ class TestTerminalApplicationInitialization:
         runner = testing.DummySessionRunner()
 
         with pytest.raises(TypeError):
-            cast(Any, app.TerminalApplication)(
+            app.TerminalApplication(  # type: ignore[call-arg, misc]
                 router,
                 view,
-                runner,
+                runner,  # type: ignore[arg-type]
                 plugin_manager=manager,
             )
 
@@ -232,10 +231,10 @@ class TestTerminalApplicationInitialization:
         input_source = testing.DummyInputSource()
 
         with pytest.raises(TypeError):
-            cast(Any, app.TerminalApplication)(
+            app.TerminalApplication(  # type: ignore[misc]
                 router,
                 view,
-                input_source,
+                input_source,  # type: ignore[arg-type]
                 plugin_manager=manager,
                 session_runner=runner,
             )

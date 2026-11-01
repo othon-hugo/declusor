@@ -3,12 +3,95 @@
 import atexit
 import glob
 import os
-import readline
 from collections.abc import Callable, Collection, Mapping, Sequence
 from contextlib import suppress
 from pathlib import Path
+from typing import Protocol
+
+try:
+    import readline
+except ImportError:
+    readline = None  # type: ignore[assignment]
 
 from declusor import config, contract
+
+
+class SystemReadlineAdapter(contract.IReadlineAdapter):
+    """System readline adapter delegating to Python standard library readline module."""
+
+    @property
+    def is_available(self) -> bool:
+        """Return True when an underlying readline implementation is available."""
+
+        return readline is not None
+
+    def get_line_buffer(self) -> str:
+        """Return the current contents of the readline line buffer."""
+
+        if readline is None:
+            return ""
+
+        return readline.get_line_buffer()
+
+    def get_completer(self) -> Callable[[str, int], str | None] | None:
+        """Return the currently registered completer callable."""
+
+        if readline is None:
+            return None
+
+        return readline.get_completer()
+
+    def get_completer_delims(self) -> str:
+        """Return the word delimiters used for tab completion."""
+
+        if readline is None:
+            return ""
+
+        return readline.get_completer_delims()
+
+    def set_completer(self, completer: Callable[[str, int], str | None] | None = None, /) -> None:
+        """Set the readline completer function."""
+
+        if readline is not None:
+            readline.set_completer(completer)
+
+    def set_completer_delims(self, string: str, /) -> None:
+        """Set the word delimiters for tab completion."""
+
+        if readline is not None:
+            readline.set_completer_delims(string)
+
+    def parse_and_bind(self, line: str, /) -> None:
+        """Execute a readline initialization line."""
+
+        if readline is not None:
+            readline.parse_and_bind(line)
+
+    def read_history_file(self, filename: str, /) -> None:
+        """Load a readline history file from disk."""
+
+        if readline is not None:
+            readline.read_history_file(filename)
+
+    def write_history_file(self, filename: str, /) -> None:
+        """Write the readline history buffer to disk."""
+
+        if readline is not None:
+            readline.write_history_file(filename)
+
+
+class _FileLister(Protocol):
+    """Structural protocol for filesystem globbing and directory listing."""
+
+    def __call__(
+        self,
+        pathname: str,
+        *,
+        root_dir: str | bytes | os.PathLike[str] | os.PathLike[bytes] | None = None,
+        dir_fd: int | None = None,
+        recursive: bool = False,
+        include_hidden: bool = False,
+    ) -> list[str]: ...
 
 
 class TerminalInputSource(contract.IInputSource):
@@ -20,6 +103,9 @@ class TerminalInputSource(contract.IInputSource):
         *,
         blocked_names: Collection[str] | None = None,
         blocked_extensions: Collection[str] | None = None,
+        readline_adapter: contract.IReadlineAdapter | None = None,
+        working_dir: Path | None = None,
+        file_lister: _FileLister | None = None,
     ) -> None:
         """Initialize terminal input source with reader function and completion exclusion filters."""
 
@@ -29,6 +115,15 @@ class TerminalInputSource(contract.IInputSource):
         self._blocked_extensions: frozenset[str] = (
             frozenset(blocked_extensions) if blocked_extensions is not None else config.DEFAULT_COMPLETION_BLOCKED_EXTENSIONS
         )
+        self._readline: contract.IReadlineAdapter = readline_adapter if readline_adapter is not None else SystemReadlineAdapter()
+        self._working_dir: Path | None = working_dir
+        self._file_lister: _FileLister = file_lister if file_lister is not None else glob.glob
+
+    @property
+    def readline_adapter(self) -> contract.IReadlineAdapter:
+        """Return the underlying readline adapter."""
+
+        return self._readline
 
     @property
     def blocked_names(self) -> frozenset[str]:
@@ -88,7 +183,7 @@ class TerminalInputSource(contract.IInputSource):
             blocked_extensions: Optional override of file extensions to exclude.
         """
 
-        if not readline:
+        if not self._readline.is_available:
             return
 
         active_blocked_names = frozenset(blocked_names) if blocked_names is not None else self._blocked_names
@@ -119,14 +214,17 @@ class TerminalInputSource(contract.IInputSource):
             is_explicit_host_path = search_term.startswith(("./", "../")) or os.path.isabs(search_term)
 
             if is_explicit_host_path or base_dir is None:
-                target_dir = searching_dir if searching_dir else "."
+                if self._working_dir is not None and not os.path.isabs(search_term):
+                    target_dir = str(self._working_dir / searching_dir) if searching_dir else str(self._working_dir)
+                else:
+                    target_dir = searching_dir if searching_dir else "."
             else:
                 target_dir = os.path.join(base_dir, searching_dir) if searching_dir else str(base_dir)
 
             try:
                 pattern = glob.escape(searching_file) + "*"
 
-                for filename in glob.glob(pattern, root_dir=target_dir):
+                for filename in self._file_lister(pattern, root_dir=target_dir):
                     if _is_blocked(filename):
                         continue
 
@@ -169,7 +267,7 @@ class TerminalInputSource(contract.IInputSource):
                 return None
 
             try:
-                line_buffer = readline.get_line_buffer()
+                line_buffer = self._readline.get_line_buffer()
                 commands = line_buffer.lstrip().split(" ", 1)
             except Exception:
                 return None
@@ -207,9 +305,9 @@ class TerminalInputSource(contract.IInputSource):
 
             return None
 
-        readline.set_completer_delims(" \t\n;")
-        readline.set_completer(_complete_line)
-        readline.parse_and_bind("tab: complete")
+        self._readline.set_completer_delims(" \t\n;")
+        self._readline.set_completer(_complete_line)
+        self._readline.parse_and_bind("tab: complete")
 
     def enable_history(self, history_file: Path, /) -> None:
         """Enable history saving and loading.
@@ -218,20 +316,22 @@ class TerminalInputSource(contract.IInputSource):
             history_file: Path to the history file.
         """
 
-        if not readline:
+        if not self._readline.is_available:
             return
 
         self._history_file = history_file
 
         if self._history_file.exists():
             with suppress(OSError):
-                readline.read_history_file(str(self._history_file))
+                self._readline.read_history_file(str(self._history_file))
 
         atexit.register(self._save_history)
 
     def _save_history(self) -> None:
         """Save history to file."""
 
-        if readline and self._history_file:
-            with suppress(OSError):
-                readline.write_history_file(str(self._history_file))
+        if not self._readline.is_available or not self._history_file:
+            return
+
+        with suppress(OSError):
+            self._readline.write_history_file(str(self._history_file))

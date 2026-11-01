@@ -3,8 +3,8 @@
 import shlex
 import types
 from argparse import ArgumentParser, HelpFormatter
-from collections.abc import Callable, Mapping
-from typing import Any, Final, NoReturn, Union, get_args, get_origin
+from collections.abc import Mapping
+from typing import Final, NoReturn, Protocol, Union, get_args, get_origin
 
 from declusor import config
 
@@ -13,21 +13,30 @@ UNION_TYPES = (Union, types.UnionType)
 type SupportedType = type[str] | type[int]
 """Primitive types accepted as command-line arguments."""
 
-type ArgumentType = SupportedType | types.UnionType | Any
+type ArgumentType = SupportedType | types.UnionType | object
 """Type specification for a command argument, including optional forms."""
 
 type ArgumentDefinitions = Mapping[str, ArgumentType]
 """Mapping of argument names to their expected types."""
 
-type ParsedArguments = dict[str, Any]
+type ParsedArguments = dict[str, object]
 """Extracted argument-value pairs resulting from parsing."""
+
+
+class _HelpFormatterFactory(Protocol):
+    """Protocol for HelpFormatter factory callables."""
+
+    def __call__(self, *, prog: str) -> HelpFormatter: ...
 
 
 class Parser(ArgumentParser):
     """Custom argument parser that extends argparse.ArgumentParser."""
 
-    _max_help_position: Final[int] = 64
+    MAX_HELP_POSITION: Final[int] = 64
     """Maximum character offset for aligning option help messages in formatting output."""
+
+    _max_help_position: Final[int] = MAX_HELP_POSITION
+    """Legacy alias for MAX_HELP_POSITION."""
 
     def __init__(self, /, prog: str | None = None, usage: str | None = None, description: str | None = None, add_help: bool = True) -> None:
         """Initialize custom argument parser with customized help formatter."""
@@ -42,12 +51,17 @@ class Parser(ArgumentParser):
             add_help=add_help,
         )
 
+    def add_argument(self, *name_or_flags: str, **kwargs: object) -> object:  # type: ignore[override]
+        """Register a command-line argument with arbitrary keyword arguments."""
+
+        return super().add_argument(*name_or_flags, **kwargs)  # type: ignore[arg-type]
+
     def error(self, message: str) -> NoReturn:
         """Overrides the default ArgumentParser error behavior."""
 
         raise config.ParserError(message)
 
-    def get_formatter_class(self) -> Callable[..., HelpFormatter]:
+    def get_formatter_class(self) -> _HelpFormatterFactory:
         """Subclasses can override this to customize help formatting."""
 
         return self._default_formatter_factory
@@ -56,7 +70,10 @@ class Parser(ArgumentParser):
     def _default_formatter_factory(cls, *, prog: str) -> HelpFormatter:
         """Construct a HelpFormatter configured with max_help_position."""
 
-        return HelpFormatter(prog, max_help_position=cls._max_help_position)
+        formatter = HelpFormatter(prog, max_help_position=cls.MAX_HELP_POSITION)
+        formatter._max_help_position = cls.MAX_HELP_POSITION
+
+        return formatter
 
 
 def build_command_parser(definitions: ArgumentDefinitions) -> Parser:
@@ -76,13 +93,13 @@ def build_command_parser(definitions: ArgumentDefinitions) -> Parser:
     parser: Parser = Parser(add_help=False)
 
     for arg_name, raw_type in definitions.items():
-        origin: Any = get_origin(raw_type)
-        is_optional: bool = False
-        target_type: Any = raw_type
+        origin: object = get_origin(raw_type)
+        target_type: object = raw_type
+        is_optional = False
 
         if origin in UNION_TYPES:
-            all_args: tuple[Any, ...] = get_args(raw_type)
-            non_none_args: list[Any] = [a for a in all_args if a is not type(None)]
+            all_args: tuple[object, ...] = get_args(raw_type)
+            non_none_args: list[object] = [a for a in all_args if a is not type(None)]
 
             if len(non_none_args) < len(all_args):
                 is_optional = True
@@ -93,7 +110,7 @@ def build_command_parser(definitions: ArgumentDefinitions) -> Parser:
         if target_type not in supported_types:
             raise config.InvalidOperation(f"Argument type {target_type!r} for {arg_name!r} is not supported.")
 
-        kwargs: dict[str, Any] = {"type": target_type}
+        kwargs: dict[str, object] = {"type": target_type}
 
         if is_optional:
             kwargs["nargs"] = "?"

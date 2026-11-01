@@ -150,7 +150,7 @@ class TestPromptLoopSessionRunnerProtocol:
 
         runner: contract.ISessionRunner = presentation.PromptLoop("runner_cli")
         dummy_input_source.feed_inputs("quit")
-        dummy_router.connect("quit", _terminate_controller)
+        dummy_router.connect("quit", contract.RouteRegistration(_terminate_controller))
 
         runner.run(test_session, dummy_router)
 
@@ -182,7 +182,7 @@ class TestPromptLoopSessionRunnerProtocol:
         )
 
         dummy_input_source.feed_inputs("exit")
-        dummy_router.connect("exit", _terminate_controller)
+        dummy_router.connect("exit", contract.RouteRegistration(_terminate_controller))
 
         prompt.run(test_session, dummy_router)
 

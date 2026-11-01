@@ -28,6 +28,13 @@ def dummy_input_source() -> doubles.DummyInputSource:
 
 
 @pytest.fixture
+def dummy_readline() -> doubles.DummyReadlineAdapter:
+    """Provide a fresh doubles.DummyReadlineAdapter."""
+
+    return doubles.DummyReadlineAdapter()
+
+
+@pytest.fixture
 def dummy_renderer() -> doubles.DummyOperationRenderer:
     """Provide a fresh doubles.DummyOperationRenderer."""
 
@@ -138,3 +145,24 @@ def dummy_app() -> doubles.DummyApplication:
     declusor_app.register_plugin(doubles.DummyPlugin)
 
     return declusor_app
+
+
+__all__ = [
+    "dummy_app",
+    "dummy_connection",
+    "dummy_file_store",
+    "dummy_input_source",
+    "dummy_plugin",
+    "dummy_plugin_config",
+    "dummy_readline",
+    "dummy_renderer",
+    "dummy_router",
+    "dummy_runtime",
+    "dummy_session_runner",
+    "dummy_socket",
+    "dummy_transport",
+    "dummy_view",
+    "memory_transport_listener",
+    "memory_transport_pair",
+    "test_session",
+]

@@ -185,18 +185,20 @@ class Application:
         normalized_registrations: dict[str, contract.RouteRegistration] = {}
 
         for route, registration in registrations.items():
-            if not isinstance(route, str) or not route.strip():
-                raise config.PluginValidationError("Route names must be non-empty strings.")
+            match route, registration:
+                case str(), contract.RouteRegistration() if route.strip():
+                    normalized_route = route.strip()
 
-            normalized_route = route.strip()
+                    if normalized_route in normalized_registrations:
+                        raise config.PluginValidationError(f"Duplicate route after normalization: {normalized_route!r}.")
 
-            if normalized_route in normalized_registrations:
-                raise config.PluginValidationError(f"Duplicate route after normalization: {normalized_route!r}.")
-
-            if not isinstance(registration, contract.RouteRegistration):
-                raise config.PluginValidationError(f"Route {normalized_route!r} must be a RouteRegistration.")
-
-            normalized_registrations[normalized_route] = registration
+                    normalized_registrations[normalized_route] = registration
+                case str(), _ if not route.strip():
+                    raise config.PluginValidationError("Route names must be non-empty strings.")
+                case str(), _:
+                    raise config.PluginValidationError(f"Route {route.strip()!r} must be a RouteRegistration.")
+                case _:
+                    raise config.PluginValidationError("Route names must be non-empty strings.")
 
         existing_routes = {route.strip() for route in self._router.routes}
 

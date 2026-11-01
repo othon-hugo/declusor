@@ -101,17 +101,16 @@ class TestIViewContract:
     def test_iview_method_signatures__enforce_positional_only_contract(self) -> None:
         """Verify IView method signatures define positional-only parameters."""
 
-        methods_to_param_name = {
-            "write_message": "message",
-            "write_error": "message",
-            "write_warning": "message",
-            "write_info": "message",
-            "write_success": "message",
-            "write_binary_data": "data",
-        }
+        methods_and_params = (
+            (contract.IView.write_message, "message"),
+            (contract.IView.write_error, "message"),
+            (contract.IView.write_warning, "message"),
+            (contract.IView.write_info, "message"),
+            (contract.IView.write_success, "message"),
+            (contract.IView.write_binary_data, "data"),
+        )
 
-        for method_name, param_name in methods_to_param_name.items():
-            func = getattr(contract.IView, method_name)
+        for func, param_name in methods_and_params:
             sig = inspect.signature(func)
             param = sig.parameters[param_name]
 

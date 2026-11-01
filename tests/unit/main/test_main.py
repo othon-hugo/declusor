@@ -1,8 +1,6 @@
 """Unit tests for the run composition root and CLI entry point in declusor.main.main."""
 
 import io
-import sys
-from typing import Any
 
 import pytest
 
@@ -29,12 +27,10 @@ class TestRunDispatch:
     def test_main__with_argv_none__reads_arguments_from_sys_argv(
         self,
         dummy_app: testing.DummyApplication,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """main falls back to sys.argv[1:] when argv is omitted or None."""
 
-        monkeypatch.setattr(sys, "argv", ["declusor", "10.0.0.1", "8888"])
-        exit_code = main.run(None, application=dummy_app)
+        exit_code = main.run(None, sys_argv=["declusor", "10.0.0.1", "8888"], application=dummy_app)
 
         assert exit_code == 0
         assert len(dummy_app.run_calls) == 1
@@ -88,7 +84,7 @@ class TestRunDispatch:
         """main rejects application instance passed as positional argument."""
 
         with pytest.raises(TypeError):
-            main.run(["127.0.0.1", "9000"], dummy_app)  # type: ignore[misc]
+            main.run(["127.0.0.1", "9000"], dummy_app)  # type: ignore[arg-type,misc]
 
 
 class TestRunPluginManagerResolution:
@@ -131,7 +127,7 @@ class TestRunPluginManagerResolution:
 
         factory_called = False
 
-        def tracking_factory(*, plugin_manager: core.PluginManager | None = None, **_: Any) -> core.Application:
+        def tracking_factory(*, plugin_manager: core.PluginManager | None = None, **_: object) -> core.Application:
             nonlocal factory_called
             factory_called = True
             assert plugin_manager is not None
@@ -158,7 +154,7 @@ class TestMainApplicationFactory:
 
         factory_called = False
 
-        def custom_factory(*, plugin_manager: core.PluginManager | None = None, **_: Any) -> core.Application:
+        def custom_factory(*, plugin_manager: core.PluginManager | None = None, **_: object) -> core.Application:
             nonlocal factory_called
             factory_called = True
             return dummy_app

@@ -49,7 +49,11 @@ def convert_to_bytes(data: bytes | str, /) -> bytes:
         The bytes representation of the input.
     """
 
-    return data.encode() if isinstance(data, str) else data
+    match data:
+        case str():
+            return data.encode()
+        case bytes():
+            return data
 
 
 def convert_bytes_to_hex(data: bytes, /) -> str:
@@ -75,7 +79,7 @@ def convert_to_base64(data: str | bytes, /) -> str:
         The Base64 encoded string.
     """
 
-    return b64encode(data.encode() if isinstance(data, str) else data).decode()
+    return b64encode(convert_to_bytes(data)).decode()
 
 
 def convert_base64_to_bytes(data: str, /) -> bytes:

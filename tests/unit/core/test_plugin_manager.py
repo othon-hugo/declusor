@@ -2,7 +2,6 @@
 
 from collections.abc import Iterable, Mapping
 from pathlib import Path
-from typing import Any
 
 import pytest
 
@@ -82,12 +81,12 @@ class MissingAbstractMethods(contract.IPluginExtension[contract.ParsedArguments]
 class DummyEntryPoint:
     """Typed test double simulating an importlib.metadata.EntryPoint."""
 
-    def __init__(self, name: str, plugin_cls: type[contract.IPluginExtension[Any]], load_error: Exception | None = None) -> None:
+    def __init__(self, name: str, plugin_cls: contract.PluginExtensionType, load_error: Exception | None = None) -> None:
         self.name = name
         self._plugin_cls = plugin_cls
         self._load_error = load_error
 
-    def load(self) -> type[contract.IPluginExtension[Any]]:
+    def load(self) -> contract.PluginExtensionType:
         if self._load_error is not None:
             raise self._load_error
         return self._plugin_cls
@@ -703,7 +702,7 @@ class TestPluginManagerDiscoveryPrecedence:
 
         queried = False
 
-        def loader(*, group: str) -> Iterable[Any]:
+        def loader(*, group: str) -> Iterable[contract.IEntryPoint]:
             nonlocal queried
             queried = True
             return []
@@ -843,7 +842,6 @@ class CustomShellPlugin(contract.IPluginExtension[CustomShellConfig]):
     def test_discover__user_dropin_overrides_entry_point(
         self,
         tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """User drop-in plugins override entry-point plugins with the same identifier."""
 
@@ -894,10 +892,9 @@ class UserPlugin(contract.IPluginExtension[UserConfig]):
 """,
             encoding="utf-8",
         )
-        monkeypatch.setattr(config, "USER_PLUGINS_DIR", user_plugins)
 
         manager = core.PluginManager()
-        manager.discover(enable_entry_points=True, entry_points_loader=loader)
+        manager.discover(enable_entry_points=True, entry_points_loader=loader, user_plugins_dir=user_plugins)
 
         assert manager.get("precedence_agent").description == "User drop-in implementation"
         assert manager.get_source("precedence_agent") == "user-dropin:precedence_agent"
@@ -960,7 +957,6 @@ class ContestedPlugin(contract.IPluginExtension[ContestedConfig]):
     def test_discover__user_plugins_dir__loads_plugins_when_directory_exists(
         self,
         tmp_path: Path,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """When USER_PLUGINS_DIR exists, drop-in plugins are loaded with 'user-dropin' source."""
 
@@ -1002,10 +998,8 @@ class UserPlugin(contract.IPluginExtension[UserConfig]):
 """
         (plugin_folder / "plugin.py").write_text(code, encoding="utf-8")
 
-        monkeypatch.setattr(config, "USER_PLUGINS_DIR", user_plugins)
-
         manager = core.PluginManager()
-        manager.discover(enable_entry_points=False)
+        manager.discover(enable_entry_points=False, user_plugins_dir=user_plugins)
 
         assert "user_agent" in manager.names()
         assert manager.get_source("user_agent") == "user-dropin:user_agent"

@@ -26,7 +26,7 @@ class UploadFileDTO:
     destination_path: str | None = None
     """Optional remote destination file path."""
 
-    def __init__(self, source_path: Path | str, destination_path: str | None = None) -> None:
+    def __init__(self, source_path: Path | str, destination_path: str | None = None, *, base_dir: Path | None = None) -> None:
         """Validate local source file and remote destination path constraints."""
 
         raw_path = str(source_path).strip()
@@ -37,7 +37,11 @@ class UploadFileDTO:
         if "\0" in raw_path:
             raise config.CommandValidationError("File path cannot contain null bytes.", field="filepath", value=str(source_path))
 
-        validated_path = util.ensure_file_exists(Path(source_path))
+        target = Path(source_path)
+        if base_dir is not None and not target.is_absolute():
+            target = base_dir / target
+
+        validated_path = util.ensure_file_exists(target)
         object.__setattr__(self, "source_path", validated_path)
 
         clean_dest: str | None = None
