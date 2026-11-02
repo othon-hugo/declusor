@@ -53,5 +53,7 @@ with open("/var/crash/edge-auth.core", "wb") as f:
 EOF
 chmod 644 /var/crash/edge-auth.core
 
-# 5. Assign CAP_DAC_READ_SEARCH to /usr/bin/tar (allows bypassing file read permissions)
-setcap cap_dac_read_search+ep /usr/bin/tar
+# 5. Assign CAP_DAC_READ_SEARCH to tar (resolving symlinks if needed)
+TAR_BIN="$(command -v tar 2>/dev/null || echo '/bin/tar')"
+TAR_REAL="$(readlink -f "$TAR_BIN" || echo "$TAR_BIN")"
+setcap cap_dac_read_search+ep "$TAR_REAL" 2>/dev/null || setcap cap_dac_read_search+ep "$TAR_BIN" 2>/dev/null || true
