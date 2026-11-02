@@ -1,0 +1,12 @@
+# ShellCheck Configuration File
+# Repository-wide static analysis and linting rules for shell scripts
+
+# Follow sourced files across the workspace
+external-sources=true
+
+# Search paths for sourced libraries (e.g. helpers)
+source-path=plugins/shell_socket/assets/helpers
+source-path=SCRIPTDIR/../../helpers
+
+# Allow ps | grep for reconnaissance scripts where pgrep is unavailable or lacks flags
+disable=SC2009

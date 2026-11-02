@@ -8,6 +8,7 @@ Reference guides for the protocol and runtime concepts used by Declusor.
 - [Execution Modes](execution-mode.md): interfaces exposed by the session engine.
 - [Framing Modes](framing-mode.md): boundaries and wire formats for command responses.
 - [Launcher Delivery](launcher-delivery.md): staged, stageless, and output delivery options.
+- [Plugin Assets](plugin-asset.md): target-side launchers, ACL helper libraries, and module hierarchies.
 - [Transport Layers](transport-layer.md): composable obfuscation, authentication, and encryption layers.
 
 ## Status Vocabulary

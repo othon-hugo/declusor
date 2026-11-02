@@ -130,3 +130,49 @@ class TestShellSocketStdHelpersUtilities:
         assert "HEADER TITLE" in proc.stdout
         assert "------------" in proc.stdout
         assert "payload data" in proc.stdout
+
+    def test_label__with_positional_content__prints_title_and_content(self) -> None:
+        """Verify label supports passing content directly as the second argument."""
+
+        proc = _run_in_std('label "Status Summary" "All systems operational"')
+        assert "STATUS SUMMARY" in proc.stdout
+        assert "--------------" in proc.stdout
+        assert "All systems operational" in proc.stdout
+
+
+class TestShellSocketStdHelpersCompression:
+    """Unit tests for compression and archiving primitives in std.sh."""
+
+    def test_compress_and_decompress_gzip__piped_stream__roundtrips(self) -> None:
+        """Verify compress_gzip and decompress_gzip roundtrip payload data through pipes."""
+
+        proc = _run_in_std('printf "compressed payload data" | compress_gzip | decompress_gzip')
+        assert proc.stdout == "compressed payload data"
+
+    def test_compress_gzip__argument_input__compresses_data(self) -> None:
+        """Verify compress_gzip accepts argument input and roundtrips with decompress_gzip."""
+
+        proc = _run_in_std('compress_gzip "argument payload" | decompress_gzip')
+        assert proc.stdout == "argument payload"
+
+    def test_archive_dir_and_extract_archive__roundtrips_files(self, tmp_path: Path) -> None:
+        """Verify archive_dir creates a valid tar.gz and extract_archive restores directory tree."""
+
+        src_dir = tmp_path / "src"
+        src_dir.mkdir()
+        (src_dir / "sample.txt").write_text("sample content")
+        (src_dir / "nested").mkdir()
+        (src_dir / "nested" / "nested.txt").write_text("nested content")
+
+        archive_file = tmp_path / "archive.tar.gz"
+        dest_dir = tmp_path / "extracted"
+
+        # Archive to file and extract from file
+        proc1 = _run_in_std(f'archive_dir "{src_dir}" "{archive_file}"')
+        assert proc1.returncode == 0
+        assert archive_file.exists()
+
+        proc2 = _run_in_std(f'extract_archive "{archive_file}" "{dest_dir}"')
+        assert proc2.returncode == 0
+        assert (dest_dir / "sample.txt").read_text() == "sample content"
+        assert (dest_dir / "nested" / "nested.txt").read_text() == "nested content"

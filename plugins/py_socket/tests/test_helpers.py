@@ -98,6 +98,47 @@ class TestPySocketStdHelpersStorage:
         # Should not raise for non-existent file
         std_helpers.remove_file(str(tmp_path / "nonexistent.bin"))
 
+    def test_compress_and_decompress_gzip(self) -> None:
+        """Verify gzip compression and decompression roundtrip and silent handling."""
+        data = b"Declusor telemetry payload data"
+        compressed = std_helpers.compress_gzip(data)
+        assert compressed != data
+        decompressed = std_helpers.decompress_gzip(compressed)
+        assert decompressed == data
+
+        # Invalid compressed data returns empty bytes without raising
+        assert std_helpers.decompress_gzip(b"not a valid gzip stream") == b""
+
+    def test_archive_and_extract_dir(self, tmp_path: Path) -> None:
+        """Verify directory archiving and extraction roundtrip and silent error handling."""
+        src_dir = tmp_path / "src"
+        src_dir.mkdir()
+        (src_dir / "file1.txt").write_text("content1")
+        (src_dir / "file2.txt").write_text("content2")
+
+        archive = std_helpers.archive_dir(str(src_dir))
+        assert len(archive) > 0
+
+        dest_dir = tmp_path / "extracted"
+        assert std_helpers.extract_archive(archive, str(dest_dir)) == str(dest_dir)
+        assert (dest_dir / "file1.txt").read_text() == "content1"
+        assert (dest_dir / "file2.txt").read_text() == "content2"
+
+        # Invalid archive extraction returns empty string silently
+        assert std_helpers.extract_archive(b"corrupt archive", str(dest_dir)) == ""
+
+    def test_fetch_url_silent_failure(self) -> None:
+        """Verify fetch_url returns empty bytes on unreachable connection without raising."""
+        assert std_helpers.fetch_url("http://127.0.0.1:65534/nonexistent", timeout=0.1) == b""
+
+    def test_run_command_fallback_execution(self) -> None:
+        """Verify run_command executes the first available command and returns stdout."""
+        result = std_helpers.run_command(["nonexistent_cmd_xyz", "python3 --version", "echo fallback"])
+        assert result != ""
+
+        # Returns empty string when all candidates fail
+        assert std_helpers.run_command(["cmd_invalid_1", "cmd_invalid_2"]) == ""
+
 
 class TestPySocketStdHelpersExecution:
     """Unit tests for execution primitives."""
